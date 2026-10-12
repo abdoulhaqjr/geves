@@ -27,8 +27,8 @@ function insertSession(string $id, ?int $accountId, string $ua = 'Mozilla/5.0 (W
 }
 
 it('décrit un User-Agent (navigateur + système)', function () {
-    expect(UserAgent::describe('Mozilla/5.0 (Windows NT 10.0) Chrome/120'))->toBe('Chrome · Windows');
-    expect(UserAgent::describe('Mozilla/5.0 (iPhone) Safari/605'))->toBe('Safari · iOS');
+    expect(UserAgent::describe('Mozilla/5.0 (Windows NT 10.0) Chrome/120'))->toBe('Chrome - Windows');
+    expect(UserAgent::describe('Mozilla/5.0 (iPhone) Safari/605'))->toBe('Safari - iOS');
     expect(UserAgent::describe(''))->toBe('Appareil inconnu');
 });
 
@@ -44,8 +44,8 @@ it('liste les sessions actives du compte, la courante marquée', function () {
     $this->actingAs($account, 'account')->get(route('account.security'))
         ->assertOk()
         ->assertSee('Sessions actives')
-        ->assertSee('Chrome · Windows')      // appareil de bureau du compte
-        ->assertSee('Firefox · Android')     // appareil mobile du compte
+        ->assertSee('Chrome - Windows')      // appareil de bureau du compte
+        ->assertSee('Firefox - Android')     // appareil mobile du compte
         ->assertDontSee('autre-compte-999'); // session d'un autre compte exclue
 });
 

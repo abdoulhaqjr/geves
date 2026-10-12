@@ -36,8 +36,8 @@
                 <div class="title-block">
                     <h1>{{ $s->title }}</h1>
                     <div class="meta">
-                        <span>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</span><span>·</span>
-                        <span>{{ $s->track ?: __('Axe non précisé') }}</span><span>·</span>
+                        <span>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</span><span>-</span>
+                        <span>{{ $s->track ?: __('Axe non précisé') }}</span><span>-</span>
                         <span>{{ __('Déposée le') }} {{ $s->created_at?->format('d/m/Y') ?? '-' }}</span>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
                                     <div style="font-size:13.5px;">
                                         <strong>{{ $a['name'] ?? '-' }}</strong>
                                         @if (!empty($a['corresponding']))<span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Correspondant') }}</span>@endif
-                                        @if (!empty($a['affiliation']))<span style="color:var(--ukc-muted);"> · {{ $a['affiliation'] }}@if (!empty($a['grade'])) · {{ $a['grade'] }}@endif</span>@endif
+                                        @if (!empty($a['affiliation']))<span style="color:var(--ukc-muted);"> - {{ $a['affiliation'] }}@if (!empty($a['grade'])) - {{ $a['grade'] }}@endif</span>@endif
                                     </div>
                                 @endforeach
                             </div>
@@ -211,7 +211,7 @@
                             <div class="ico"><x-ukc.icon name="file" :size="20" /></div>
                             <div style="flex:1;min-width:0;">
                                 <div class="name" style="word-break:break-all;">{{ basename(parse_url($s->file_url, PHP_URL_PATH) ?: $s->file_url) }}</div>
-                                <div class="meta">{{ __('PDF · Déposé le') }} {{ $s->created_at?->format('d/m/Y') }}</div>
+                                <div class="meta">{{ __('PDF - Déposé le') }} {{ $s->created_at?->format('d/m/Y') }}</div>
                             </div>
                             <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
                         </div>
@@ -220,7 +220,7 @@
                         <div class="ico"><x-ukc.icon name="diploma" :size="20" /></div>
                         <div style="flex:1;min-width:0;">
                             <div class="name">{{ __('Attestation de soumission') }}</div>
-                            <div class="meta">{{ __('PDF · Générée automatiquement · QR de vérification') }}</div>
+                            <div class="meta">{{ __('PDF - Générée automatiquement - QR de vérification') }}</div>
                         </div>
                         @if ($soumissionAtt)
                             <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -290,14 +290,14 @@
                     <h2>{{ __('Historique') }}</h2>
                     <ul class="timeline">
                         <li>
-                            <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
+                            <div class="when">{{ $s->created_at?->format('d/m/Y - H:i') }}</div>
                             <div class="what">{{ __('Soumission déposée') }}</div>
-                            <div class="detail">{{ __('Formulaire validé') }}@if($s->file_url) · {{ __('fichier résumé joint') }} @endif</div>
+                            <div class="detail">{{ __('Formulaire validé') }}@if($s->file_url) - {{ __('fichier résumé joint') }} @endif</div>
                         </li>
                         <li>
-                            <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
+                            <div class="when">{{ $s->created_at?->format('d/m/Y - H:i') }}</div>
                             <div class="what">{{ __('Accusé de réception') }}</div>
-                            <div class="detail">{{ __('E-mail envoyé') }}@if($soumissionAtt) · {{ __('attestation de soumission générée') }} @endif</div>
+                            <div class="detail">{{ __('E-mail envoyé') }}@if($soumissionAtt) - {{ __('attestation de soumission générée') }} @endif</div>
                         </li>
                         <li @class(['muted' => $s->status === 'submitted'])>
                             <div class="when">{{ $s->status === 'submitted' ? __('À venir') : __('En cours') }}</div>
@@ -329,7 +329,7 @@
                             <strong>{{ $slot->session_label ?: __('Présentation') }}</strong>
                             @if ($slot->starts_at){{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif
                             {{-- ⚠️ `room` nomme déjà le lieu : pas de préfixe, sinon « Salle Salle 5 ». --}}
-                            @if ($slot->room) · {{ $slot->room }}@endif
+                            @if ($slot->room) - {{ $slot->room }}@endif
                             @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Choisi') }}</span>@endif
                         </div>
                         @if ($slot->starts_at)
@@ -430,7 +430,7 @@
                                         <span>
                                             <strong>{{ $av->session_label ?: __('Créneau') }}</strong>
                                             @if ($av->starts_at)<span style="color:var(--ukc-muted);"> - {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
-                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · {{ $av->room }}</span>@endif
+                                            @if ($av->room)<span style="color:var(--ukc-muted);"> - {{ $av->room }}</span>@endif
                                         </span>
                                         <x-ukc.icon name="chevron" :size="16" />
                                     </button>

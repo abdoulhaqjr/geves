@@ -63,7 +63,7 @@
             window.setTimeout(() => this.pollProduction(), 2000);
         },
         productionPercent() { return Math.round((this.production?.requests || []).reduce((total, item) => total + Number(item.percent || 0), 0) / Math.max(1, this.production?.requests?.length || 1)); },
-        productionLabel() { const requests = this.production?.requests || []; return requests.length === 1 ? requests[0]?.label : `${requests.filter((item) => item.status === 'ready').length} vidéo(s) terminée(s) sur ${requests.length} · ${requests.find((item) => item.status !== 'ready')?.label || 'Publication terminée.'}`; },
+        productionLabel() { const requests = this.production?.requests || []; return requests.length === 1 ? requests[0]?.label : `${requests.filter((item) => item.status === 'ready').length} vidéo(s) terminée(s) sur ${requests.length} - ${requests.find((item) => item.status !== 'ready')?.label || 'Publication terminée.'}`; },
         closeProduction() { if (this.production?.requests?.some((item) => item.status === 'failed')) this.production = null; }
     }" @open-onboarding-video-batch.window="batchOpen = true">
         @if (session('success'))<div class="ukc-alert ukc-alert--success">{{ session('success') }}</div>@endif
@@ -98,7 +98,7 @@
                             <span class="onb-card__tag"><x-ukc.icon :name="$categories[$category]['icon'] ?? 'book'" :size="12" /> {{ $categories[$category]['label'] ?? 'Guide' }}</span>
                         </div>
                     </header>
-                    <p class="onb-card__intro"><strong>Objectif · </strong>{{ $guide->intro }}</p>
+                    <p class="onb-card__intro"><strong>Objectif - </strong>{{ $guide->intro }}</p>
                     <div class="onb-card__course"><span>{{ count($guide->steps ?: []) }} étapes</span><span>{{ $guide->audience === 'admin' ? 'Administration' : ($guide->audience === 'participant' ? 'Participants' : 'Tous les espaces') }}</span></div>
                     <details class="onb-guide-details">
                         <summary>Voir les étapes du guide <x-ukc.icon name="chevron" :size="15" /></summary>

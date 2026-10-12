@@ -366,7 +366,7 @@ class SecretariatController extends Controller
                 'format' => $format,
                 'dataset' => $dataset,
                 'preset' => $data['preset'] ?? null,
-                'created_at' => now()->format('d/m/Y · H:i'),
+                'created_at' => now()->format('d/m/Y - H:i'),
             ];
             $this->pushHistory($entry);
 
@@ -543,7 +543,7 @@ class SecretariatController extends Controller
         $lines = EventSession::where('event_id', $event->id)
             ->orderBy('starts_at')->orderBy('id')->get()
             ->map(function (EventSession $s) {
-                $when = $s->starts_at ? $s->starts_at->translatedFormat('D j M · H:i') : '';
+                $when = $s->starts_at ? $s->starts_at->translatedFormat('D j M - H:i') : '';
                 $bits = array_filter([
                     $s->label,
                     // ⚠️ « Lieu », pas « Salle » : la colonne nomme déjà le lieu

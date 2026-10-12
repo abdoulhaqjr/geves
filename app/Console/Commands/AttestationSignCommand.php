@@ -63,7 +63,7 @@ class AttestationSignCommand extends Command
             }
         });
 
-        $this->info(sprintf('Attestations signées : %d · échecs : %d.', $signed, $failed));
+        $this->info(sprintf('Attestations signées : %d - échecs : %d.', $signed, $failed));
 
         return self::SUCCESS;
     }

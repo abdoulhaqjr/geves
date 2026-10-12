@@ -22,7 +22,7 @@
                 </div>
                 <div class="ukc-avatar-actions">
                     <div style="font-size:14px;font-weight:700;color:var(--ukc-text);">{{ __('Photo de profil') }}</div>
-                    <p class="hint">{{ __('JPG, PNG ou WebP · max. 2 Mo · format carré recommandé') }}</p>
+                    <p class="hint">{{ __('JPG, PNG ou WebP - max. 2 Mo - format carré recommandé') }}</p>
                     <div class="row">
                         <input type="file" id="photo" name="photo" x-ref="photo" accept="image/jpeg,image/png,image/webp" @change="pick($event)" aria-label="{{ __('Choisir une photo') }}">
                         <label for="photo" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
@@ -101,7 +101,7 @@
                                             style="width:100%;text-align:left;padding:9px 12px;border:0;background:none;border-radius:8px;cursor:pointer;font-size:.9rem;"
                                             onmouseover="this.style.background='var(--ukc-bg)'" onmouseout="this.style.background='none'">
                                         <span style="font-weight:600;" x-text="s.label"></span>
-                                        <span style="color:var(--ukc-muted);" x-show="s.acronym" x-text="' · ' + s.acronym"></span>
+                                        <span style="color:var(--ukc-muted);" x-show="s.acronym" x-text="' - ' + s.acronym"></span>
                                         <span style="color:var(--ukc-light);" x-show="s.country" x-text="' (' + (s.country || '').toUpperCase() + ')'"></span>
                                     </button>
                                 </li>

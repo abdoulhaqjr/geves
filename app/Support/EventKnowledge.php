@@ -201,7 +201,7 @@ class EventKnowledge
             filled($c['address'] ?? null) ? $c['address'] : null,
         ]);
 
-        return $bits === [] ? '' : 'CONTACT ORGANISATION : '.implode(' · ', $bits);
+        return $bits === [] ? '' : 'CONTACT ORGANISATION : '.implode(' - ', $bits);
     }
 
     /** @param array<string,mixed> $s */

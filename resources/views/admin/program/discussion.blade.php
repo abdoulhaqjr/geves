@@ -13,14 +13,14 @@
     <div class="admin-page" style="max-width:900px;">
         <div class="ukc-card" style="margin-bottom:16px;">
             <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-                {{ $session->event?->series?->name ?: 'Colloque' }} · {{ $session->event?->title ?: $session->event?->year }}
+                {{ $session->event?->series?->name ?: 'Colloque' }} - {{ $session->event?->title ?: $session->event?->year }}
             </div>
             <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
             <div style="font-size:13px;color:var(--ukc-muted);">
-                @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F · H:i') }}@endif
+                @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F - H:i') }}@endif
                 @if ($session->ends_at) – {{ $session->ends_at->translatedFormat('H:i') }}@endif
-                @if ($session->room) · {{ $session->room }}@endif
-                · {{ $messages->count() }} message(s)
+                @if ($session->room) - {{ $session->room }}@endif
+                - {{ $messages->count() }} message(s)
             </div>
         </div>
 
@@ -30,7 +30,7 @@
                     <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;">
                         <strong style="font-size:13.5px;">{{ $m->author_name }}</strong>
                         <span style="font-size:12px;color:var(--ukc-muted);white-space:nowrap;">
-                            {{ $m->created_at?->translatedFormat('j M · H:i') }}
+                            {{ $m->created_at?->translatedFormat('j M - H:i') }}
                         </span>
                     </div>
                     @if ($m->reply_uid)

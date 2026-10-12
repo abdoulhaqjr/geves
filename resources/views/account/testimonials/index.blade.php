@@ -40,7 +40,7 @@
                     <div class="ukc-field">
                         <label for="author_role">{{ __('Qualité / rôle') }}</label>
                         <input type="text" id="author_role" name="author_role" maxlength="160"
-                               value="{{ old('author_role', $account->grade) }}" placeholder="{{ __('Ex. Doctorante · Sciences sociales') }}">
+                               value="{{ old('author_role', $account->grade) }}" placeholder="{{ __('Ex. Doctorante - Sciences sociales') }}">
                     </div>
                     <div class="ukc-field">
                         <label for="author_affiliation">{{ __('Affiliation') }}</label>

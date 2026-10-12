@@ -98,7 +98,7 @@ class DocumentController extends Controller
         $prefix = (string) EventSettings::get($event, 'badges.prefix', 'UKC-'.$event->year.'-');
         $badgeRef = $prefix.Str::upper($account->initials).'-'.str_pad((string) $participant->id, 4, '0', STR_PAD_LEFT);
         $grade = $participant->title ?: (string) $account->grade;
-        $role = trim(($grade !== '' ? $grade.' · ' : '').$participant->roleLabel());
+        $role = trim(($grade !== '' ? $grade.' - ' : '').$participant->roleLabel());
         $badgeRole = $role ?: 'Participant';
         $didIssuer = (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
 

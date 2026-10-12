@@ -5,7 +5,7 @@
         {{-- En-tête + onglets « Mon compte » - même présentation que l'espace participant. --}}
         <div class="account-head" style="display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:4px;">
             @if ($twoFactorEnabled)
-                <span class="ukc-pill ukc-pill--ok account-badge">2FA activée · TOTP</span>
+                <span class="ukc-pill ukc-pill--ok account-badge">2FA activée - TOTP</span>
             @else
                 <span class="ukc-pill ukc-pill--muted account-badge">2FA désactivée</span>
             @endif
@@ -38,7 +38,7 @@
                         </div>
                         <div class="ukc-avatar-actions">
                             <div style="font-size:14px;font-weight:700;color:var(--ukc-text);">Photo de profil</div>
-                            <p class="hint">JPG, PNG ou WebP · max. 2 Mo · format carré recommandé</p>
+                            <p class="hint">JPG, PNG ou WebP - max. 2 Mo - format carré recommandé</p>
                             <div class="row">
                                 <input type="file" id="photo" name="photo" x-ref="photo" accept="image/jpeg,image/png,image/webp" @change="pick($event)" aria-label="Choisir une photo">
                                 <label for="photo" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
@@ -174,7 +174,7 @@
                 @endif
 
                 @if ($twoFactorEnabled)
-                    <p><span class="ukc-pill ukc-pill--ok">Activée</span> · {{ $recoveryCount }} code(s) de secours restant(s).</p>
+                    <p><span class="ukc-pill ukc-pill--ok">Activée</span> - {{ $recoveryCount }} code(s) de secours restant(s).</p>
                     <form method="POST" action="{{ route('admin.profile.2fa.recovery') }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:10px;">
                         @csrf
                         <div class="ukc-field" style="margin:0;max-width:260px;"><label>Mot de passe actuel</label><input type="password" name="current_password" required></div>

@@ -8,6 +8,8 @@ use App\Models\EventSession;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\EventSettings;
+use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -370,7 +372,7 @@ class LivretDocx
                 $dates .= ' – '.$this->event->date_end->format('d/m/Y');
             }
             if ($location = trim((string) $this->event->location)) {
-                $dates .= '   ·   '.$location;
+                $dates .= '   -   '.$location;
             }
             $section->addText($dates, ['size' => 11, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 80]);
         }
@@ -912,7 +914,7 @@ class LivretDocx
         }
 
         // Mots-clés (trait d'union dans le style FSS, conforme au livret).
-        if ($keywords = \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator())) {
+        if ($keywords = SubmissionKeywords::join($s->keywords, (new SubmissionFormConfig($s->event))->keywordSeparator())) {
             $kwRun = $section->addTextRun(['spaceBefore' => 40, 'spaceAfter' => 40]);
             $kwRun->addText($fss ? 'Mots-clés : ' : 'Mots clés : ', ['bold' => true, 'size' => $sizeBody]);
             $kwRun->addText($keywords, ['italic' => true, 'size' => $sizeBody, 'color' => self::MUTED]);

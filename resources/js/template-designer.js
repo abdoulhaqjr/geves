@@ -1638,9 +1638,9 @@
         { type: 'text', label: 'Lieu / date', x: 80, y: 470, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 470, w: 320, cls: 'sub', text: 'Le Coordinateur du projet,' },
         { type: 'text', label: 'Signataire', x: 520, y: 530, w: 320, cls: '', text: '[signatory.name]' },
-        { type: 'text', label: 'Partenaires', x: 80, y: 540, w: 300, cls: 'sub', text: 'UE · AUF · RRIWA' },
+        { type: 'text', label: 'Partenaires', x: 80, y: 540, w: 300, cls: 'sub', text: 'UE - AUF - RRIWA' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 56, qrUrl: DEFAULT_QR_URL },
-        { type: 'text', label: 'Référence', x: 48, y: 580, w: 500, cls: 'sub', text: 'Référence : [certificate.uuid] · forvarrito.tg' }
+        { type: 'text', label: 'Référence', x: 48, y: 580, w: 500, cls: 'sub', text: 'Référence : [certificate.uuid] - forvarrito.tg' }
       ]
     };
     var list = T[key] || T.participation;

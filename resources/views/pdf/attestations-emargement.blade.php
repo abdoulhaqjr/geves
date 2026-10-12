@@ -22,10 +22,10 @@
     </style>
 </head>
 <body>
-    <h1>Liste d’émargement · Attestations</h1>
+    <h1>Liste d’émargement - Attestations</h1>
     <div class="meta">
-        {{ $event->series?->name }} · {{ $event->title ?: $event->year }} —
-        {{ $typeLabel }} · {{ $attestations->count() }} bénéficiaire(s) ·
+        {{ $event->series?->name }} - {{ $event->title ?: $event->year }} —
+        {{ $typeLabel }} - {{ $attestations->count() }} bénéficiaire(s) -
         éditée le {{ now()->format('d/m/Y à H:i') }}
     </div>
 

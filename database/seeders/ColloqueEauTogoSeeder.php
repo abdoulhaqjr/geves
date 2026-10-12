@@ -28735,7 +28735,7 @@ ARCHIVE;
             'confirmed_event_dates' => '11–13 novembre 2026',
         ];
         $settings['practical']['venue'] ??= 'Université de Kara, Kara, Togo';
-        $settings['practical']['contacts'] ??= 'colloque_eau_uk@univkara.tg · +228 92168064 / 90721274 / 90212606';
+        $settings['practical']['contacts'] ??= 'colloque_eau_uk@univkara.tg - +228 92168064 / 90721274 / 90212606';
 
         if ($settings !== ($event->settings ?? [])) {
             $event->settings = $settings;

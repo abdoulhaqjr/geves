@@ -83,7 +83,7 @@
                             <span class="ukc-pill ukc-pill--err tdb-live__tag">
                                 <span class="dot" aria-hidden="true"></span>{{ __('EN DIRECT') }}
                             </span>
-                            <span class="w">{{ $s->atelier?->title ?: $s->label }}@if ($s->room) · {{ $s->room }}@endif</span>
+                            <span class="w">{{ $s->atelier?->title ?: $s->label }}@if ($s->room) - {{ $s->room }}@endif</span>
                         </div>
                         <p class="t">{{ __('Cette séance vous concerne et elle a commencé.') }}</p>
                     </div>
@@ -153,7 +153,7 @@
                     <span class="n">{{ $passage->starts_at->format('H\hi') }}</span>
                     <span class="w">
                         {{ \Illuminate\Support\Str::ucfirst($passage->starts_at->translatedFormat('l j F')) }}
-                        · {{ $passage->starts_at->diffForHumans() }}
+                        - {{ $passage->starts_at->diffForHumans() }}
                     </span>
                 </div>
                 <p class="tdb-next__title">{{ $passage->submission?->title ?: __('Ma communication') }}</p>
@@ -295,7 +295,7 @@
                     @if ($axes->isNotEmpty())
                         {{-- ⚠️ UN AXE PAR LIGNE, et la coupe est faite par le CSS.
                              Trois intitulés d'atelier rognés à 48 caractères puis
-                             joints par « · » donnaient un pavé où l'on ne voyait
+                             joints par « - » donnaient un pavé où l'on ne voyait
                              plus où l'un finissait : la coupe tombait en plein mot
                              et les points de suspension se mêlaient aux
                              séparateurs. --}}
@@ -413,7 +413,7 @@
                                                 $s->ref_code,
                                                 $s->type === 'poster' ? __('Poster') : __('Orale'),
                                                 $s->track ? \Illuminate\Support\Str::limit($s->track, 34) : null,
-                                            ])->filter()->implode(' · ') }}
+                                            ])->filter()->implode(' - ') }}
                                         </div>
                                     </td>
                                     <td>
@@ -514,7 +514,7 @@
                             <span class="i"><x-ukc.icon name="award" :size="17" /></span>
                             <span class="b">
                                 <span class="t">{{ __('Comité') }}</span>
-                                <span class="d">{{ $c->person_title ?: __('Membre') }} · {{ $c->event?->title }}</span>
+                                <span class="d">{{ $c->person_title ?: __('Membre') }} - {{ $c->event?->title }}</span>
                             </span>
                         </div>
                     @endforeach

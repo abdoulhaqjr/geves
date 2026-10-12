@@ -1,6 +1,6 @@
 @php($editing = $user->exists)
 <x-layouts.admin :title="$editing ? 'Modifier - '.$user->name : 'Associer un utilisateur'"
-                 :subtitle="'Compte staff · rôles '.config('app.name').' & permissions'">
+                 :subtitle="'Compte staff - rôles '.config('app.name').' & permissions'">
     <x-slot:actions>
         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Utilisateurs</a>
     </x-slot:actions>
@@ -39,7 +39,7 @@
                                 <option value="{{ $key }}" @selected(old('access_level', $user->access_level ?? \App\Models\User::ACCESS_USER) === $key)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <span class="hint">Super admin : toute la plateforme · Admin de colloque : crée &amp; gère des colloques · Utilisateur : accès par colloque.</span>
+                        <span class="hint">Super admin : toute la plateforme - Admin de colloque : crée &amp; gère des colloques - Utilisateur : accès par colloque.</span>
                     </div>
                     <div class="ukc-field">
                         <label for="notes">Notes internes</label>

@@ -231,7 +231,7 @@
                         @foreach ($days as $i => $d)
                             @php $cd = Carbon::parse($d); @endphp
                             <button type="button" @click="day='{{ $d }}'" :class="{ active: day==='{{ $d }}' }">
-                                Jour {{ $i + 1 }}<span class="d-sub">{{ $cd->translatedFormat('d M · D') }}</span>
+                                Jour {{ $i + 1 }}<span class="d-sub">{{ $cd->translatedFormat('d M - D') }}</span>
                             </button>
                         @endforeach
                     </div>
@@ -365,7 +365,7 @@
                                                          @click='openSession(@json($sessJs($s)))' title="{{ $roomClash ? 'Conflit de salle : « '.$roomConflicts[$s->id].' » est occupée par une autre séance au même moment.' : 'Éditer la session' }}">
                                                         <span class="badge">Plénière</span>
                                                         <span class="t">{{ Str::limit($s->label, 70) }}</span>
-                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->room) · <x-ukc.icon name="pin" :size="11" /> {{ $s->room }}@endif @if ($s->moderator_name)· {{ $s->moderator_name }}@endif</span>
+                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->room) - <x-ukc.icon name="pin" :size="11" /> {{ $s->room }}@endif @if ($s->moderator_name)- {{ $s->moderator_name }}@endif</span>
                                                     </div>
                                                 @endforeach
 
@@ -380,7 +380,7 @@
                                                 @if ($lunchOn && $le > $ls && $le > $dayStart && $ls < $dayEnd)
                                                     @php $bs = max($ls, $dayStart); $be = min($le, $dayEnd); @endphp
                                                     <div class="plan-break" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($bs) }} / {{ $rowLine($be) }};">
-                                                        <span>Pause déjeuner · {{ sprintf('%02d:%02d', intdiv($ls, 60), $ls % 60) }}–{{ sprintf('%02d:%02d', intdiv($le, 60), $le % 60) }}</span>
+                                                        <span>Pause déjeuner - {{ sprintf('%02d:%02d', intdiv($ls, 60), $ls % 60) }}–{{ sprintf('%02d:%02d', intdiv($le, 60), $le % 60) }}</span>
                                                     </div>
                                                 @endif
 
@@ -428,7 +428,7 @@
                                                 @foreach ($untimed as $s)
                                                     <div class="u" @click='openSession(@json($sessJs($s)))' title="Ajouter un horaire">
                                                         <strong>{{ Str::limit($s->label, 40) }}</strong>
-                                                        <span style="color:var(--ukc-muted);"> · {{ $s->atelier?->title ? Str::limit($s->atelier->title, 22) : 'Plénière' }}</span>
+                                                        <span style="color:var(--ukc-muted);"> - {{ $s->atelier?->title ? Str::limit($s->atelier->title, 22) : 'Plénière' }}</span>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -589,7 +589,7 @@
                                                                 @endphp
                                                                 <button type="button" class="wk-chip{{ $roomClash ? ' conflict' : '' }}"
                                                                         @click='openSession(@json($sessJsFor($s, $dd)))'
-                                                                        title="{{ ($s->atelier?->title ?: $s->label).' · '.$wkRoomOf($s).' · '.$placed.'/'.$tot.' communication(s) placée(s)'.($roomClash ? ' (conflit : salle occupée par une autre séance au même moment)' : '') }}">
+                                                                        title="{{ ($s->atelier?->title ?: $s->label).' - '.$wkRoomOf($s).' - '.$placed.'/'.$tot.' communication(s) placée(s)'.($roomClash ? ' (conflit : salle occupée par une autre séance au même moment)' : '') }}">
                                                                     @if ($roomClash)<span class="cflag"><x-ukc.icon name="alert-triangle" :size="10" /></span>@endif
                                                                     <span class="a">{{ $atelierShort }}</span>
                                                                     <span class="r"><x-ukc.icon name="pin" :size="10" /> {{ $wkRoomOf($s) }}</span>
@@ -605,7 +605,7 @@
                                     @endforeach
                                 </div>
                             </div>
-                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · chaque colonne = un jour, les blocs sont classés par heure. Chaque pastille indique un <strong>atelier</strong> et sa <strong>salle</strong> ; survolez-la pour voir le nombre de communications placées. Cliquez une plénière ou un atelier pour l’éditer ; le placement des communications se fait en vue « Jour ».</p>
+                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine - chaque colonne = un jour, les blocs sont classés par heure. Chaque pastille indique un <strong>atelier</strong> et sa <strong>salle</strong> ; survolez-la pour voir le nombre de communications placées. Cliquez une plénière ou un atelier pour l’éditer ; le placement des communications se fait en vue « Jour ».</p>
                         @endif
                     </div>
                 @endif
@@ -662,7 +662,7 @@
                                 @else<span class="ukc-pill ukc-pill--warn">Salle à définir</span>@endif
                             </h3>
                             <div class="meta">
-                                {{ $atelier->sessions->count() }} session(s) · {{ $creneaux->whereIn('session_id', $atelier->sessions->pluck('id'))->count() }} créneau(x)
+                                {{ $atelier->sessions->count() }} session(s) - {{ $creneaux->whereIn('session_id', $atelier->sessions->pluck('id'))->count() }} créneau(x)
                             </div>
                             <div class="chip-list">
                                 @forelse ($atelier->tracks ?: [] as $t)
@@ -988,7 +988,7 @@
                                     $space['building'] ?? null,
                                     $space['note'] ?? null,
                                 ]))
-                                {{ implode(' · ', $bits) ?: '-' }}
+                                {{ implode(' - ', $bits) ?: '-' }}
                             </div>
                             <div class="ukc-actions row-actions">
                                 <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?event_id={{ $event_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
@@ -1107,7 +1107,7 @@
                                 <button type="submit" class="ukc-btn ukc-btn--green" @disabled($stats['toPlan'] === 0 || $creneaux->where('submission_id', 0)->isEmpty())>
                                     <x-ukc.icon name="check-circle" :size="16" /> Lancer une passe d'affectation
                                 </button>
-                                <span style="font-size:12.5px;color:var(--ukc-muted);">{{ $stats['toPlan'] }} à planifier · {{ $creneaux->where('submission_id', 0)->count() }} créneau(x) libre(s)</span>
+                                <span style="font-size:12.5px;color:var(--ukc-muted);">{{ $stats['toPlan'] }} à planifier - {{ $creneaux->where('submission_id', 0)->count() }} créneau(x) libre(s)</span>
                             </div>
                             @if ($creneaux->where('submission_id', 0)->isEmpty())
                                 <p class="ukc-hint" style="font-size:12px;color:var(--ukc-light);margin-top:8px;">Aucun créneau libre : générez-les d'abord ci-dessus, ou ajoutez-en manuellement.</p>

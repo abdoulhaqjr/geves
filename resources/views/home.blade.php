@@ -27,7 +27,7 @@
         <div class="ukc-container">
             <div class="hero-grid">
                 <div>
-                    <div class="hero-kicker">{{ __('Université de Kara · Direction de la Recherche et de l’Innovation') }}</div>
+                    <div class="hero-kicker">{{ __('Université de Kara - Direction de la Recherche et de l’Innovation') }}</div>
                     <h1>{!! __('Plateforme de gestion de <em>séminaires, colloques et journées scientifiques</em> de l’Université de Kara') !!}</h1>
                     <p class="lead">
                         {{ __('Service institutionnel de la DRI pour piloter l’ensemble du cycle de vie des manifestations scientifiques : appels à communications, évaluation, inscriptions, programme, documents officiels et archives. Un espace unique pour les organisateurs, les comités et la communauté universitaire.') }}
@@ -50,7 +50,7 @@
                             @if ($featured->theme)<div><strong>{{ __('Thème') }}</strong> - {{ $featured->tr('theme') }}</div>@endif
                             <div><strong>{{ __('Dates') }}</strong> -
                                 {{ $featured->date_start?->translatedFormat('F Y') ?? __('à préciser') }}
-                                @if ($featured->location) · {{ $featured->tr('location') }}@endif
+                                @if ($featured->location) - {{ $featured->tr('location') }}@endif
                             </div>
                             @if ($featured->submission_deadline)
                                 <div><strong>{{ __('Soumissions') }}</strong> - {{ __('jusqu’au') }} {{ $featured->submission_deadline->translatedFormat('d F Y') }}</div>
@@ -75,7 +75,7 @@
 
     {{-- ===================== Indicateurs =====================
          ⚠️ Rien à montrer quand tout est à zéro : sur un site neuf, quatre
-         cartes annonçant « 0 événement · 0 communication · 0 participant · 0
+         cartes annonçant « 0 événement - 0 communication - 0 participant - 0
          établissement » ne renseignent personne et donnent une plateforme à
          l'abandon. On masque le bandeau ENTIER, pas les cartes une à une :
          retirer deux cartes sur quatre laisse une rangée trouée. --}}
@@ -166,7 +166,7 @@
                                 <h3>{{ $e->tr('title') ?: $e->series?->name }}</h3>
                                 <div class="info">
                                     @if ($e->theme)<div>{{ __('Thème :') }} {{ $e->tr('theme') }}</div>@endif
-                                    <div>{{ $e->location ? $e->tr('location').' · ' : '' }}{{ $e->date_start?->translatedFormat('F Y') ?? $e->year }}</div>
+                                    <div>{{ $e->location ? $e->tr('location').' - ' : '' }}{{ $e->date_start?->translatedFormat('F Y') ?? $e->year }}</div>
                                     @if ($e->submission_deadline)<div>{{ __('Date limite :') }} {{ $e->submission_deadline->translatedFormat('d F Y') }}</div>@endif
                                 </div>
                                 <div class="foot">
@@ -200,7 +200,7 @@
                             <div class="body">
                                 <h3>{{ $e->tr('title') ?: $e->series?->name }}</h3>
                                 <div class="info">
-                                    <div>{{ $e->year }}{{ $e->location ? ' · '.$e->tr('location') : '' }}</div>
+                                    <div>{{ $e->year }}{{ $e->location ? ' - '.$e->tr('location') : '' }}</div>
                                     @if ($e->theme)<div>{{ $e->tr('theme') }}</div>@endif
                                 </div>
                                 <div class="foot">
@@ -351,7 +351,7 @@
                             <div class="av" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
                             <div>
                                 <strong>{{ $t->author_name }}</strong>
-                                <span>{{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' · ') }}</span>
+                                <span>{{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' - ') }}</span>
                             </div>
                         </figcaption>
                     </figure>

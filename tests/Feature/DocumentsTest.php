@@ -337,7 +337,7 @@ it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () 
 
     // Options.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
-        ->assertOk()->assertSee('Options générales · Attestations');
+        ->assertOk()->assertSee('Options générales - Attestations');
 });
 
 it('persiste l’avant-propos du livre dans les réglages et l’injecte au .docx', function () {
@@ -374,7 +374,7 @@ it('persiste l’apparence du livre (typographie, couleurs, page de garde)', fun
         'livretSizeBody' => '12',
         'livretColorPrimary' => '#123456',
         'livretAlignBody' => 'Gauche',
-        'livretCoverMention' => 'Livre des résumés · UK',
+        'livretCoverMention' => 'Livre des résumés - UK',
         'livretNumber' => '1',
     ])->assertSessionHasNoErrors();
 
@@ -382,7 +382,7 @@ it('persiste l’apparence du livre (typographie, couleurs, page de garde)', fun
     expect(EventSettings::get($event, 'livret.font_body'))->toBe('Georgia');
     expect((int) EventSettings::get($event, 'livret.size_body'))->toBe(12);
     expect(EventSettings::get($event, 'livret.color_primary'))->toBe('#123456');
-    expect(EventSettings::get($event, 'livret.cover_mention'))->toBe('Livre des résumés · UK');
+    expect(EventSettings::get($event, 'livret.cover_mention'))->toBe('Livre des résumés - UK');
     expect((bool) EventSettings::get($event, 'livret.number_abstracts'))->toBeTrue();
 });
 
@@ -590,7 +590,7 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
         ->assertOk()->assertSee('Awa Kodjo');
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
-        ->assertOk()->assertSee('Options générales · Badges');
+        ->assertOk()->assertSee('Options générales - Badges');
 });
 
 it('sert chaque onglet principal de Documents par son URL (?tab=)', function () {

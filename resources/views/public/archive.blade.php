@@ -76,7 +76,7 @@
                             @endif
                         </strong></div>
                         <div class="row"><span>Type</span><strong>{{ $event->series?->name ?: __('Événement') }}</strong></div>
-                        <div class="row"><span>Organisateur</span><strong>DRI · Université de Kara</strong></div>
+                        <div class="row"><span>Organisateur</span><strong>DRI - Université de Kara</strong></div>
                     </div>
 
                     <div class="card docs">

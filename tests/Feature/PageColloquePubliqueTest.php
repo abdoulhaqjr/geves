@@ -70,7 +70,11 @@ it('rend le barème en liste, chaque catégorie avec son montant et ses grades',
     // ⚠️ Les grades couverts tiennent sur UNE ligne qui s'enroule. En puces,
     // la catégorie qui en couvre six gonflait sa rangée entière - et c'est ce
     // gonflement qui creusait les voisines.
-    $page->assertSee('Professeur · Maître-assistant', false);
+    //
+    // ⚠️ La VIRGULE les sépare, pas le tiret : « Maître-assistant » en porte un,
+    // et surtout « Enseignant » et « Chercheur » sont deux grades distincts que
+    // « Enseignant - Chercheur » soudait en un seul à la lecture.
+    $page->assertSee('Professeur, Maître-assistant', false);
 });
 
 /**

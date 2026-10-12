@@ -28,7 +28,7 @@ class ReconcilePaymentsCommand extends Command
         );
 
         $this->info(sprintf(
-            'Paiements vérifiés : %d · confirmés : %d · échoués : %d · injoignables : %d.',
+            'Paiements vérifiés : %d - confirmés : %d - échoués : %d - injoignables : %d.',
             $report['checked'],
             $report['paid'],
             $report['failed'],

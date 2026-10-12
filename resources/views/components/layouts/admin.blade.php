@@ -6,7 +6,7 @@
     <div class="wp-bar">
         <strong>{{ config('app.name') }}</strong>
         <span>Back-office</span>
-        <span class="right">Admin · Université de Kara</span>
+        <span class="right">Admin - Université de Kara</span>
     </div>
 
     <div class="ukc-shell ukc-shell--admin"
@@ -19,7 +19,7 @@
                         <img src="{{ \App\Support\Branding::mark() }}" alt="{{ config('app.name') }}">
                     </a>
                     <span class="brand-rule" aria-hidden="true"></span>
-                    <div class="logo-sub"><strong>{{ config('app.name') }}</strong><span>Back-office · Colloques</span></div>
+                    <div class="logo-sub"><strong>{{ config('app.name') }}</strong><span>Back-office - Colloques</span></div>
                 </div>
                 <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"
                         :aria-pressed="compact" aria-label="Réduire ou déployer le menu" title="Réduire / déployer le menu">

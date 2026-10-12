@@ -14,6 +14,6 @@
 @endphp
 <span class="tw-stat__trend tw-stat__trend--{{ $tone }}" title="{{ __('vs période précédente') }}">
     <span class="ar">{{ $arrow }}</span>
-    <span>{{ $delta > 0 ? '+' : '' }}{{ $delta }}@if ($pct !== null) · {{ $pct }}%@endif</span>
+    <span>{{ $delta > 0 ? '+' : '' }}{{ $delta }}@if ($pct !== null) - {{ $pct }}%@endif</span>
     <span class="per">/ {{ $period }}</span>
 </span>

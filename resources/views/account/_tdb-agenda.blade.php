@@ -76,7 +76,7 @@
                                 $e['lieu'] !== '' ? $e['lieu'] : null,
                                 $e['detail'] !== '' ? $e['detail'] : null,
                                 $e['ref'] !== '' ? $e['ref'] : null,
-                            ])->filter()->implode(' · ') }}
+                            ])->filter()->implode(' - ') }}
                         </div>
                     </div>
                     <div class="a">

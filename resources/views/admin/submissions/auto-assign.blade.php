@@ -20,8 +20,8 @@
              des réglages de l'événement, pas des paramètres de cette page). --}}
         @if ($event)
             <p style="margin:-4px 0 16px;font-size:13px;color:var(--ukc-muted);">
-                Règles appliquées : <strong>{{ $target }}</strong> relecteur(s) par soumission ·
-                charge max <strong>{{ $maxLoad > 0 ? $maxLoad : 'illimitée' }}</strong> ·
+                Règles appliquées : <strong>{{ $target }}</strong> relecteur(s) par soumission -
+                charge max <strong>{{ $maxLoad > 0 ? $maxLoad : 'illimitée' }}</strong> -
                 <a href="{{ route('admin.submissions.options', ['event_id' => $event_id]) }}"
                    style="color:var(--ukc-blue);font-weight:600;">modifier</a>
             </p>

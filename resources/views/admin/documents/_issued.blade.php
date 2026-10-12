@@ -70,7 +70,7 @@
             <a class="ukc-btn ukc-btn--outline ukc-btn--sm"
                href="{{ route('admin.documents.attestations.lot', $exportParams + ['event_id' => $event_id, 'lot' => $l]) }}">
                 <x-ukc.icon name="diploma" :size="14" />
-                {{ $lots > 1 ? 'Lot '.$l.' · '.(($l - 1) * $exportLot + 1).'-'.min($l * $exportLot, $issued->total()) : 'Lot PDF à imprimer' }}
+                {{ $lots > 1 ? 'Lot '.$l.' - '.(($l - 1) * $exportLot + 1).'-'.min($l * $exportLot, $issued->total()) : 'Lot PDF à imprimer' }}
             </a>
         @endfor
     @endif

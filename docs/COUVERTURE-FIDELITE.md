@@ -4,7 +4,7 @@
 > référence `~/Downloads/gesco-mockup/*.html` est portée sur une route Laravel
 > implémentée, avec sa vue Blade et son niveau de test.
 >
-> **31 maquettes · 31 routes portées · aucune page manquante.**
+> **31 maquettes - 31 routes portées - aucune page manquante.**
 > Dernière vérification : 2026-08-28 — 357 tests verts, 1175 assertions, Pint conforme.
 
 ## Niveaux de test
@@ -16,7 +16,7 @@
 
 ---
 
-## Site public — 10 pages · layout `app`
+## Site public — 10 pages - layout `app`
 
 Accessibles sans connexion. Le widget flottant Gesco est monté globalement via le
 layout `app` (`resources/views/components/layouts/app.blade.php`), sous
@@ -37,18 +37,18 @@ visio et de la page chat dédiée.
 | `inscription.html` | `account.register` | `account.auth.register` | Test métier |
 | `attestation-verify.html` | `attestation.verify.landing` | `attestations.verify-landing` | Smoke 200 |
 
-## Espace participant — 4 pages · layout `participant`
+## Espace participant — 4 pages - layout `participant`
 
 Réservées au compte connecté (garde `account`).
 
 | Maquette | Route | Vue Blade | Test |
 |----------|-------|-----------|------|
 | `espace-participant.html` | `account.dashboard` | `account.dashboard` | Smoke 200 |
-| `compte.html` | `account.profile` · `account.security` | `account.profile` · `account.security` | Smoke 200 |
+| `compte.html` | `account.profile` - `account.security` | `account.profile` - `account.security` | Smoke 200 |
 | `soumission-formulaire.html` | `account.submissions.create` | `account.submissions.create` | Test métier |
 | `soumission-detail.html` | `account.submissions.show` | `account.submissions.show` | Test métier |
 
-## Back-office — 17 pages · layout `admin`
+## Back-office — 17 pages - layout `admin`
 
 Réservées au staff habilité (permission `manage_colloques`). Toutes vérifiées en
 rendu `200` par la suite de fumée.

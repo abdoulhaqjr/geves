@@ -18,7 +18,7 @@
                 </div>
 
                 <div style="font-size:.78rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.05em;">
-                    {{ $session->type === 'plenary' ? 'Session plénière' : ('Atelier · ' . ($session->atelier?->title ?? '')) }}
+                    {{ $session->type === 'plenary' ? 'Session plénière' : ('Atelier - ' . ($session->atelier?->title ?? '')) }}
                 </div>
                 <h2 style="font-size:1.4rem;font-weight:900;margin:4px 0 10px;">{{ $session->label }}</h2>
 

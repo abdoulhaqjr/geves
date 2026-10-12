@@ -218,7 +218,7 @@ class FormationController extends Controller
                 'ok' => true,
                 'is_moderator' => $trainer->is_moderator,
                 'display_name' => trim(($trainer->title ? $trainer->title.' ' : '').$trainer->name),
-                'sub' => collect([$trainer->specialty, $trainer->email])->filter()->join(' · '),
+                'sub' => collect([$trainer->specialty, $trainer->email])->filter()->join(' - '),
             ]);
         }
 

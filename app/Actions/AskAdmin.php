@@ -205,14 +205,14 @@ class AskAdmin
             }
 
             $context = implode("\n", array_filter([
-                'Événement : '.($event->title ?: 'Événement').' ('.$event->year.') · statut '.$event->status
-                    .($event->submission_deadline ? ' · clôture soumissions le '.$event->submission_deadline->translatedFormat('d/m/Y') : ''),
+                'Événement : '.($event->title ?: 'Événement').' ('.$event->year.') - statut '.$event->status
+                    .($event->submission_deadline ? ' - clôture soumissions le '.$event->submission_deadline->translatedFormat('d/m/Y') : ''),
                 'Participants : '.$s['participants'],
                 'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' - '.$byStatus : ''),
                 $axes ? 'Axes principaux : '.$axes : null,
                 $reviewLine,
                 'Paiements : '.$pay['ok'].' réglés, '.$pay['pending'].' en attente, '.$pay['failed'].' échoués/annulés',
-                'Recettes : '.number_format($s['collected'], 0, ',', ' ').' '.$s['currency'].' encaissés · '
+                'Recettes : '.number_format($s['collected'], 0, ',', ' ').' '.$s['currency'].' encaissés - '
                     .number_format($s['pending'], 0, ',', ' ').' '.$s['currency'].' en attente',
                 $formationLine,
                 $reportLine,

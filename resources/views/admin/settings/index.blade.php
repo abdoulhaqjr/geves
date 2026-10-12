@@ -96,7 +96,7 @@
                                                     }
                                                  }">
                                                 <div class="shot shot--{{ $slot['fond'] }}">
-                                                    <img :src="preview" :class="{ 'logo-auto-white': whiten }" alt="{{ $logo['titre'] }} · {{ $slot['label'] }}">
+                                                    <img :src="preview" :class="{ 'logo-auto-white': whiten }" alt="{{ $logo['titre'] }} - {{ $slot['label'] }}">
                                                 </div>
                                                 <div class="body">
                                                     <div class="name">{{ $slot['label'] }}</div>
@@ -236,7 +236,7 @@
                                     <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="custom" x-cloak @click="reset()">
                                         Supprimer
                                     </button>
-                                    <span class="hint">{{ number_format(\App\Http\Controllers\Admin\SettingController::bannerMaxKb() / 1024, 1, ',', ' ') }} Mo max · JPG, PNG ou WebP</span>
+                                    <span class="hint">{{ number_format(\App\Http\Controllers\Admin\SettingController::bannerMaxKb() / 1024, 1, ',', ' ') }} Mo max - JPG, PNG ou WebP</span>
                                 </div>
                                 {{-- Champ caché plutôt qu'une case : la remise à zéro se décide par
                                      le bouton, qui met aussi l'aperçu à jour. --}}

@@ -18,19 +18,19 @@
             </a>
         @endif
         @if ($frozen)
-            <span class="ukc-pill ukc-pill--muted">{{ __('Événement archivé · lecture seule') }}</span>
+            <span class="ukc-pill ukc-pill--muted">{{ __('Événement archivé - lecture seule') }}</span>
         @endif
     </div>
 
     <div class="ukc-card">
         <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
+            {{ $session->event?->series?->name ?: __('Colloque') }} - {{ $session->event?->title ?: $session->event?->year }}
         </div>
         <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
         <div style="font-size:13px;color:var(--ukc-muted);">
-            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F · H:i') }}@endif
+            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F - H:i') }}@endif
             @if ($session->ends_at) – {{ $session->ends_at->translatedFormat('H:i') }}@endif
-            @if ($session->room) · {{ $session->room }}@endif
+            @if ($session->room) - {{ $session->room }}@endif
         </div>
 
         {{-- Ce que « Valider » déclenche : la page doit le dire AVANT le clic. --}}

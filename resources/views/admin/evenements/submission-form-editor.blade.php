@@ -8,12 +8,12 @@
     @php
         $systemKeys = ['title', 'abstract', 'track'];
         $fieldMeta = [
-            'title' => 'Texte court · obligatoire',
-            'track' => 'Liste · axes de l’événement',
-            'type' => 'Liste · Orale / Poster',
-            'keywords' => 'Texte · '.$rules['keywords_min'].' à '.$rules['keywords_max'].' mots-clés',
-            'abstract' => 'Zone de texte · '.$rules['word_min'].' à '.$rules['word_limit'].' mots · obligatoire',
-            'file' => 'Upload · '.$rules['file_formats'].' · max '.$rules['file_max_mb'].' Mo',
+            'title' => 'Texte court - obligatoire',
+            'track' => 'Liste - axes de l’événement',
+            'type' => 'Liste - Orale / Poster',
+            'keywords' => 'Texte - '.$rules['keywords_min'].' à '.$rules['keywords_max'].' mots-clés',
+            'abstract' => 'Zone de texte - '.$rules['word_min'].' à '.$rules['word_limit'].' mots - obligatoire',
+            'file' => 'Upload - '.$rules['file_formats'].' - max '.$rules['file_max_mb'].' Mo',
         ];
 
         // Liste ordonnée des champs standard, avec leurs contraintes d'événement.
@@ -87,7 +87,7 @@
                     <span class="handle" aria-hidden="true">⠿</span>
                     <div class="meta">
                         <strong>Auteurs</strong>
-                        <span>Répéteur · nom, affiliation, e-mail · min 1</span>
+                        <span>Répéteur - nom, affiliation, e-mail - min 1</span>
                     </div>
                     <span class="ukc-pill ukc-pill--info">Système</span>
                 </div>

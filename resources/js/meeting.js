@@ -209,7 +209,7 @@ export async function startFromConfig() {
 
         pipEl.innerHTML = '<div class="pip-avatar"></div>'
             + '<div class="pip-size-hint"></div>'
-            + '<div class="pip-resize" title="Glisser pour redimensionner · molette · double-clic">' + flecheRedim + '</div>';
+            + '<div class="pip-resize" title="Glisser pour redimensionner - molette - double-clic">' + flecheRedim + '</div>';
         host.appendChild(pipEl);
         poseAvatar(pipEl.querySelector('.pip-avatar'), state.name);
         makeDraggable(pipEl, host); makeResizable(pipEl, host);
@@ -812,7 +812,7 @@ export async function startFromConfig() {
             const meta = elt('div', 'meta');
             meta.appendChild(elt('strong', '', p.name));
 
-            // ⚠️ Plus de « · » entre les états : la ligne les range par un écart
+            // ⚠️ Plus de point médian entre les états : la ligne les range par un écart
             // (cf. la feuille de style). Quatre séparateurs, c'était une quarantaine
             // de pixels pris au nom, et la ligne passait sur deux étages.
             const etat = elt('span');
@@ -2192,11 +2192,11 @@ export async function startFromConfig() {
             // ⚠️ « En salle » n'est affiché que si LiveKit a su répondre : on ne
             // laisse pas croire que personne n'est là quand on ne sait pas.
             if (data.roomKnown && r.inRoom) {
-                meta.appendChild(document.createTextNode(' · '));
+                meta.appendChild(document.createTextNode(' - '));
                 meta.appendChild(elt('span', 'in-room', '● En salle'));
             }
             if (r.auto && r.status) {
-                meta.appendChild(document.createTextNode(' · '));
+                meta.appendChild(document.createTextNode(' - '));
                 meta.appendChild(elt('span', 'pr-avoir', 'entré en visio - à confirmer'));
             }
             item.appendChild(meta);

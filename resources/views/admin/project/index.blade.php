@@ -24,7 +24,7 @@
     $prioClass = "{'ukc-pill--muted':t.priority==='low','ukc-pill--info':t.priority==='normal','ukc-pill--warn':t.priority==='high','ukc-pill--err':t.priority==='urgent'}";
 @endphp
 
-<x-layouts.admin title="Projet" :subtitle="$event ? (($event->title ?: $event->year).' · piloté comme un projet') : 'Pilotez chaque événement comme un projet'">
+<x-layouts.admin title="Projet" :subtitle="$event ? (($event->title ?: $event->year).' - piloté comme un projet') : 'Pilotez chaque événement comme un projet'">
     @if ($event)
         <x-slot:actions>
             <a href="{{ route('admin.project.export', ['event_id' => $event->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Export Excel</a>
@@ -326,7 +326,7 @@
 
                     {{-- Checklist --}}
                     <div class="ukc-form-row">
-                        <label>Checklist <span x-show="checklistProgress().total" style="color:var(--ukc-muted);font-weight:500;" x-text="'· ' + checklistProgress().done + '/' + checklistProgress().total"></span></label>
+                        <label>Checklist <span x-show="checklistProgress().total" style="color:var(--ukc-muted);font-weight:500;" x-text="'- ' + checklistProgress().done + '/' + checklistProgress().total"></span></label>
                         <div class="ukc-checklist">
                             <template x-for="(item, i) in task.checklist" :key="i">
                                 <div class="ukc-checklist__item">

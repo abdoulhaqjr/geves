@@ -31,7 +31,7 @@
             <div class="av">{!! $avatarHtml !!}</div>
             <div class="meta">
                 <strong>{{ $agentName }}</strong>
-                <span>{{ __('Assistante événements · en ligne') }}</span>
+                <span>{{ __('Assistante événements - en ligne') }}</span>
             </div>
             <div class="tools">
                 <button type="button" @click="reset()" x-show="messages.length > 1" title="Nouvelle discussion" aria-label="Nouvelle discussion">

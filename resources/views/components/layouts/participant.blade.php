@@ -71,7 +71,7 @@
                                             <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
                                             <span class="txt">
                                                 <span class="c">{{ $ed->series?->name ?: 'Évènement' }}</span>
-                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                                <span class="e">{{ $ed->title }} - {{ $ed->year }}</span>
                                             </span>
                                         </button>
                                     </form>
@@ -87,7 +87,7 @@
                                             <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
                                             <span class="txt">
                                                 <span class="c">{{ $ed->series?->name ?: 'Évènement' }}</span>
-                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                                <span class="e">{{ $ed->title }} - {{ $ed->year }}</span>
                                             </span>
                                         </button>
                                     </form>
@@ -96,7 +96,7 @@
                         </div>
                     </div>
                 @else
-                    <div class="sub">{{ $colloqueEdition?->title ?: config('app.name').' · Université de Kara' }}</div>
+                    <div class="sub">{{ $colloqueEdition?->title ?: config('app.name').' - Université de Kara' }}</div>
                 @endif
             </div>
             <nav class="ukc-sidebar-nav">

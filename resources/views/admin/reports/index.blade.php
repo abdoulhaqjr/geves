@@ -76,11 +76,11 @@
             {{-- Vue d'ensemble --}}
             <div class="ukc-panel" :class="{ active: tab==='overview' }">
                 <div class="ukc-stats">
-                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue · {{ $summary['accepted'] }} acceptées</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue - {{ $summary['accepted'] }} acceptées</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
-                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relectures rendues</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['pending'] }} en attente{{ $rev['late'] > 0 ? ' · '.$rev['late'].' en retard' : '' }}</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relectures rendues</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['pending'] }} en attente{{ $rev['late'] > 0 ? ' - '.$rev['late'].' en retard' : '' }}</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="award" :size="20" /></div><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
                 </div>
 
@@ -321,7 +321,7 @@
                         <div class="report-item">
                             <h3>Liste complète des soumissions</h3>
                             <p>Référence, titre, auteur correspondant, axe, type, statut, note moyenne.</p>
-                            <div class="meta">CSV · XLSX · ~{{ $counts['submissions'] }} lignes</div>
+                            <div class="meta">CSV - XLSX - ~{{ $counts['submissions'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                                 <a href="{{ route('admin.reports.export', [$event, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
@@ -330,7 +330,7 @@
                         <div class="report-item">
                             <h3>Liste des participants</h3>
                             <p>Identité, catégorie, institution, pays, paiement, montant, invité.</p>
-                            <div class="meta">CSV · XLSX · ~{{ $counts['participants'] }} lignes</div>
+                            <div class="meta">CSV - XLSX - ~{{ $counts['participants'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                                 <a href="{{ route('admin.reports.export', [$event, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
@@ -339,7 +339,7 @@
                         <div class="report-item">
                             <h3>Journal des paiements</h3>
                             <p>Transactions FedaPay / CashPay : reçu, montant, passerelle, statut, date.</p>
-                            <div class="meta">CSV · XLSX · ~{{ $counts['payments'] }} lignes</div>
+                            <div class="meta">CSV - XLSX - ~{{ $counts['payments'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                                 <a href="{{ route('admin.reports.export', [$event, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
@@ -348,7 +348,7 @@
                         <div class="report-item">
                             <h3>Bilan scientifique (PDF)</h3>
                             <p>Synthèse : participants, communications, taux d’acceptation, paiements.</p>
-                            <div class="meta">PDF · {{ $event->title ?: $event->year }}</div>
+                            <div class="meta">PDF - {{ $event->title ?: $event->year }}</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.pdf', $event) }}" target="_blank" class="ukc-btn ukc-btn--sm">Télécharger PDF</a>
                             </div>
@@ -356,7 +356,7 @@
                         <div class="report-item">
                             <h3>Attestations émises</h3>
                             <p>Attestations générées avec UUID de vérification publique et statut.</p>
-                            <div class="meta">CSV · ~{{ $counts['attestations'] }} lignes</div>
+                            <div class="meta">CSV - ~{{ $counts['attestations'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'attestations', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                             </div>
@@ -364,7 +364,7 @@
                         <div class="report-item">
                             <h3>Export comptable</h3>
                             <p>Récapitulatif des recettes réglées par passerelle, avec total.</p>
-                            <div class="meta">XLSX · {{ $summary['currency'] }}</div>
+                            <div class="meta">XLSX - {{ $summary['currency'] }}</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
                             </div>
@@ -372,7 +372,7 @@
                         <div class="report-item">
                             <h3>Rapports de séance</h3>
                             <p>Synthèses des séances rédigées par les rapporteurs : état, affluence, points saillants.</p>
-                            <div class="meta">CSV · XLSX · ~{{ $counts['session_reports'] }} lignes</div>
+                            <div class="meta">CSV - XLSX - ~{{ $counts['session_reports'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'session_reports', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                                 <a href="{{ route('admin.reports.export', [$event, 'session_reports', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
@@ -433,7 +433,7 @@
                                      @drop.prevent="$el.classList.remove('dragover'); dropFile($event)">
                                     <div class="icon">📄</div>
                                     <strong>Glissez un fichier ici ou cliquez pour parcourir</strong>
-                                    <p>PDF, Word (.docx), Excel (.xlsx) · max. 10 Mo</p>
+                                    <p>PDF, Word (.docx), Excel (.xlsx) - max. 10 Mo</p>
                                     <input type="file" x-ref="aiFile" name="aiExample" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" style="display:none;" @change="pickFile()">
                                 </div>
                                 <div class="ai-file-chip" x-show="aiFileName" x-cloak style="display:none;">
@@ -556,7 +556,7 @@
                         <div class="ai-history-item">
                             <div>
                                 <div class="title">{{ $h['title'] }}</div>
-                                <div class="meta">{{ strtoupper($h['format'] ?? 'xlsx') }} · {{ $h['created_at'] ?? '' }} ·
+                                <div class="meta">{{ strtoupper($h['format'] ?? 'xlsx') }} - {{ $h['created_at'] ?? '' }} -
                                     {{ ['describe' => 'Description libre', 'template' => 'À partir d’un modèle'][$h['mode'] ?? 'describe'] ?? 'Description libre' }}</div>
                             </div>
                             <a href="{{ route('admin.reports.ai-download', [$event, $h['id']]) }}" @if(($h['format'] ?? '')==='pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>

@@ -116,7 +116,7 @@ class ClaimController extends Controller
         $history = is_array($meta['analyses'] ?? null) ? $meta['analyses'] : [];
         array_unshift($history, $analysis + [
             'by' => $request->user()->name,
-            'at' => now()->format('d/m/Y · H:i'),
+            'at' => now()->format('d/m/Y - H:i'),
         ]);
         $meta['analyses'] = array_slice($history, 0, 10);
         $claim->update(['meta' => $meta]);

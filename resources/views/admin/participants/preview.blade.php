@@ -42,7 +42,7 @@
                 <div style="font-size:.88rem;color:var(--ukc-muted);">
                     {{ $participant->email }}
                     @if ($participant->title) - {{ $participant->title }} @endif
-                    @if ($participant->institution) · {{ $participant->institution }} @endif
+                    @if ($participant->institution) - {{ $participant->institution }} @endif
                 </div>
                 @if ($participant->user?->orcidUrl())
                     <div style="font-size:.82rem;margin-top:4px;">
@@ -81,7 +81,7 @@
                 <div style="padding:10px 0;border-top:1px solid var(--ukc-border);display:flex;justify-content:space-between;gap:10px;align-items:center;">
                     <div>
                         <div style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</div>
-                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $p->methodLabel() }} · {{ $p->paid_at?->format('d/m/Y') ?? '-' }}</div>
+                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $p->methodLabel() }} - {{ $p->paid_at?->format('d/m/Y') ?? '-' }}</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span class="ukc-pill ukc-pill--{{ $p->statusPill() }}">{{ $p->statusLabel() }}</span>

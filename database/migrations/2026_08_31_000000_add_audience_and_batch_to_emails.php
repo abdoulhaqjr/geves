@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Ajoute `audience` (libellé de l'audience ciblée) et `batch_id` (identifiant de
  * campagne) aux e-mails, pour regrouper les envois par campagne dans le
- * back-office « E-mails · Programmés » (fidèle au mockup admin-emails.html).
+ * back-office « E-mails - Programmés » (fidèle au mockup admin-emails.html).
  */
 return new class extends Migration
 {

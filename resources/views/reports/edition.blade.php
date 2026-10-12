@@ -40,7 +40,7 @@
             </div>
             <p style="font-size:.85rem;color:var(--ukc-muted);margin:6px 0 0;">
                 Communications par statut :
-                @foreach ($statuses as $key => $label){{ $label }} ({{ $summary['submissionsByStatus'][$key] ?? 0 }}){{ ! $loop->last ? ' · ' : '' }}@endforeach
+                @foreach ($statuses as $key => $label){{ $label }} ({{ $summary['submissionsByStatus'][$key] ?? 0 }}){{ ! $loop->last ? ' - ' : '' }}@endforeach
             </p>
 
             @php

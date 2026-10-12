@@ -1,5 +1,5 @@
 /**
- * Design system « UK · Colloques » - porté des mockups (gesco-mockup).
+ * Design system « UK - Colloques » - porté des mockups (gesco-mockup).
  * Charte Université de Kara : bleu #223ea4, or #ffd700, vert #009933, police Jost.
  * Regle : icones = SVG (composant <x-ukc.icon>), jamais d'emoji dans l'UI.
  */
@@ -592,7 +592,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-banner-card .row .hint { font-size: 12px; color: var(--ukc-light); }
 .ukc-banner-card input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
 
-/* Interrupteurs (Mon compte · Préférences / Notifications - mockup compte.html) */
+/* Interrupteurs (Mon compte - Préférences / Notifications - mockup compte.html) */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
 .switch-row:last-of-type { border-bottom: none; }
 .switch-row .meta { flex: 1; min-width: 0; }
@@ -634,13 +634,13 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-nav a.active,
 .account-nav button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
 
-/* Table des sessions actives (Mon compte · Sécurité - mockup compte.html) */
+/* Table des sessions actives (Mon compte - Sécurité - mockup compte.html) */
 .sessions-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; min-width: 520px; }
 .sessions-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); padding: 8px 10px; border-bottom: 1px solid var(--ukc-border); }
 .sessions-table td { padding: 12px 10px; border-bottom: 1px solid var(--ukc-border); vertical-align: middle; }
 .sessions-table tr:last-child td { border-bottom: none; }
 
-/* Centre de notifications (Mon compte · Notifications - mockup compte.html) */
+/* Centre de notifications (Mon compte - Notifications - mockup compte.html) */
 .notif-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
 .notif-item:last-child { border-bottom: none; }
 .notif-item.unread { background: rgba(34, 62, 164, .03); margin: 0 -12px; padding: 12px; border-radius: 10px; border-bottom: none; }

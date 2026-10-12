@@ -8,7 +8,7 @@
             <div class="eyebrow">{{ __('Archives scientifiques') }}</div>
             <h1>{{ __('Événements passés') }}</h1>
             <p>{!! __('Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme :app est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong> - sans vocation commerciale.', ['app' => config('app.name')]) !!}</p>
-            <div class="note">{{ __('Programmes · galeries · documents publics · actes') }}</div>
+            <div class="note">{{ __('Programmes - galeries - documents publics - actes') }}</div>
         </div>
     </section>
 

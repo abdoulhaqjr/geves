@@ -54,8 +54,8 @@
                         <blockquote style="margin:0 0 8px;font-style:italic;">« {{ $t->quote }} »</blockquote>
                         <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;">
                             <strong>{{ $t->author_name }}</strong>
-                            {{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' · ') }}
-                            @if ($t->event) · <span>{{ $t->event->title }}</span> @endif
+                            {{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' - ') }}
+                            @if ($t->event) - <span>{{ $t->event->title }}</span> @endif
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <form method="POST" action="{{ route('admin.testimonials.approve', $t) }}">@csrf
@@ -78,7 +78,7 @@
                         <div class="ukc-field"><label>Nom <span class="req">*</span></label>
                             <input type="text" name="author_name" value="{{ old('author_name') }}" maxlength="160" required></div>
                         <div class="ukc-field"><label>Qualité / rôle</label>
-                            <input type="text" name="author_role" value="{{ old('author_role') }}" maxlength="160" placeholder="Ex. Doctorante · Sciences sociales"></div>
+                            <input type="text" name="author_role" value="{{ old('author_role') }}" maxlength="160" placeholder="Ex. Doctorante - Sciences sociales"></div>
                         <div class="ukc-field"><label>Affiliation</label>
                             <input type="text" name="author_affiliation" value="{{ old('author_affiliation') }}" maxlength="200"></div>
                         <div class="ukc-field"><label>Témoignage <span class="req">*</span></label>
@@ -106,7 +106,7 @@
                         </div>
                         <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;">
                             <strong>{{ $t->author_name }}</strong>
-                            {{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' · ') }}
+                            {{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' - ') }}
                         </div>
                         @if ($t->impact_reason)
                             <p style="font-size:12.5px;color:var(--ukc-light);margin:0 0 10px;">IA : {{ $t->impact_reason }}</p>

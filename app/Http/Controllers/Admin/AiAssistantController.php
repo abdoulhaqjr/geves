@@ -25,7 +25,7 @@ class AiAssistantController extends Controller
 {
     public function page(Request $request): View
     {
-        // Identité de l'assistant (nom + avatar) paramétrée dans Réglages · Agents IA.
+        // Identité de l'assistant (nom + avatar) paramétrée dans Réglages - Agents IA.
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
         $avatarUrl = AiAgents::avatarUrl($agent['avatar']);
 
@@ -101,7 +101,7 @@ class AiAssistantController extends Controller
 
         $entry = [
             'id' => (string) Str::uuid(),
-            'when' => now()->format('d/m/Y · H:i'),
+            'when' => now()->format('d/m/Y - H:i'),
             'what' => Str::limit($action->label(), 120, ''),
             'label' => 'Exécutée',
             'pill' => 'ok',

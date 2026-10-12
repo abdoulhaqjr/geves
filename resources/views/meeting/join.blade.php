@@ -255,8 +255,8 @@
            attraper. Elle se place maintenant sur le disque lui-même, et se montre
            au survol pour ne pas encombrer l'image en permanence. */
         /* ⚠️ 14 % et pas moins : la poignée est posée sur la DIAGONALE, où elle
-           s'éloigne du centre en 0,55·taille quand le disque, lui, ne grandit
-           qu'en 0,5·taille. En deçà de cet encart, elle ressort du disque aux
+           s'éloigne du centre en 0,55 x taille quand le disque, lui, ne grandit
+           qu'en 0,5 x taille. En deçà de cet encart, elle ressort du disque aux
            grandes tailles et le masque circulaire la rogne. */
         #visio-room .pip-resize{position:absolute;right:14%;bottom:14%;z-index:5;width:24px;height:24px;border-radius:50%;
             background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.45);cursor:nwse-resize;
@@ -398,7 +398,7 @@
         #visio-room .person .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
         #visio-room .person .meta{flex:1;min-width:0;}
         #visio-room .person .meta strong{display:block;font-size:13.5px;font-weight:700;}
-        /* ⚠️ Les états se suivent par un ÉCART et non par des « · » : rang, micro,
+        /* ⚠️ Les états se suivent par un ÉCART et non par des « - » : rang, micro,
            réseau et deux boutons dans 400 px, et la ligne passait sur deux étages.
            Quatre séparateurs, c'est une quarantaine de pixels pris au nom. */
         /* ⚠️ `>` et non un descendant quelconque : la ligne d'état CONTIENT le rang,
@@ -1233,7 +1233,7 @@
             <aside class="side" id="sidePanel">
                 <div class="side-grip" id="sideGrip" role="separator" aria-orientation="vertical" tabindex="0"
                      aria-label="Largeur du panneau"
-                     title="Glisser pour élargir · flèches gauche/droite · double-clic pour revenir à la largeur normale"></div>
+                     title="Glisser pour élargir - flèches gauche/droite - double-clic pour revenir à la largeur normale"></div>
                 <div class="side-head">
                 <div class="side-tabs">
                     <button type="button" class="active" data-side="chat">Chat<span class="tab-count" id="chatUnread"></span></button>
@@ -1527,7 +1527,7 @@
             <div class="mlobby-head">
                 <strong>{{ $label }}</strong>
                 <span>
-                    {{ $editionTitle }}@if ($role->canJoin()) · Vous rejoignez en tant que
+                    {{ $editionTitle }}@if ($role->canJoin()) - Vous rejoignez en tant que
                         <strong>{{ ['moderator' => 'modérateur', 'presenter' => 'présentateur', 'attendee' => 'participant'][$role->value] ?? '' }}</strong>@endif
                 </span>
             </div>

@@ -228,7 +228,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
             ->where('gateway', 'manual')->where('status', 'paid')->count();
 
         $this->command?->info(sprintf(
-            '%d communications sur « %s » · %d paiements validés manuellement (%.1f %%) · %d liens d’auteurs.',
+            '%d communications sur « %s » - %d paiements validés manuellement (%.1f %%) - %d liens d’auteurs.',
             $created,
             $event->title,
             $paid,
@@ -243,7 +243,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
             ->where('submission_id', '>', 0)->count());
 
         $this->command?->info(sprintf(
-            '%d séances d’atelier, toutes en visioconférence · %d à %d communications par séance (minimum visé : %d).',
+            '%d séances d’atelier, toutes en visioconférence - %d à %d communications par séance (minimum visé : %d).',
             $sessions->count(),
             $parSeance->min() ?? 0,
             $parSeance->max() ?? 0,

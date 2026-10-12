@@ -142,7 +142,7 @@ it('remplit les jetons de la palette du concepteur', function () {
     // que l'expression régulière ne reconnaissait pas.
     $layout = LayoutSanitizer::sanitize([
         'elements' => [
-            ['type' => 'text', 'x' => 0, 'y' => 0, 'w' => 600, 'h' => 30, 'text' => '[recipient.name] · [certificate.issued_on] · [edition.theme] · [certificate.uuid]'],
+            ['type' => 'text', 'x' => 0, 'y' => 0, 'w' => 600, 'h' => 30, 'text' => '[recipient.name] - [certificate.issued_on] - [edition.theme] - [certificate.uuid]'],
         ],
     ], 'attestation');
 

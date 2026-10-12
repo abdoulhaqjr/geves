@@ -129,7 +129,7 @@
             <select name="slSessionId" x-model="form.session_id">
                 <option value="">- Aucune -</option>
                 @foreach ($sessions as $s)
-                    <option value="{{ $s->id }}">{{ $s->atelier?->title ? $s->atelier->title.' · ' : '' }}{{ $s->label }}</option>
+                    <option value="{{ $s->id }}">{{ $s->atelier?->title ? $s->atelier->title.' - ' : '' }}{{ $s->label }}</option>
                 @endforeach
             </select>
         </div>
@@ -169,7 +169,7 @@
             <select name="atelierRoom" x-model="form.room">
                 <option value="">- Aucune (salle à définir) -</option>
                 @foreach ($spaces as $space)
-                    <option value="{{ $space['name'] }}">{{ $space['name'] }}@if (! empty($space['capacity'])) · cap. {{ $space['capacity'] }}@endif</option>
+                    <option value="{{ $space['name'] }}">{{ $space['name'] }}@if (! empty($space['capacity'])) - cap. {{ $space['capacity'] }}@endif</option>
                 @endforeach
                 @foreach ($usedRooms as $r)
                     @unless (collect($spaces)->pluck('name')->contains($r))<option value="{{ $r }}">{{ $r }}</option>@endunless

@@ -13,7 +13,7 @@
             @if ($help)
                 {{ $help }}
             @elseif (($min ?? 0) > 0)
-                {{ __('Minimum :min mots · maximum :max mots.', ['min' => (int) $min, 'max' => (int) ($max ?? 300)]) }}
+                {{ __('Minimum :min mots - maximum :max mots.', ['min' => (int) $min, 'max' => (int) ($max ?? 300)]) }}
             @else
                 {{ __('Maximum :max mots.', ['max' => (int) ($max ?? 300)]) }}
             @endif

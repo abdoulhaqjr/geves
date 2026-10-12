@@ -1799,7 +1799,7 @@ document.addEventListener('alpine:init', () => {
             return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
         },
         corrMeta() {
-            return [this.corr.affiliation, this.corr.grade].filter((v) => (v || '').trim()).join(' · ')
+            return [this.corr.affiliation, this.corr.grade].filter((v) => (v || '').trim()).join(' - ')
                 || 'Affiliation non renseignée';
         },
 
@@ -2507,12 +2507,12 @@ document.addEventListener('alpine:init', () => {
             this.persist();
         },
         metaFor(f) {
-            return (f.meta || '') + (f.canRequired ? ' · ' + (f.required ? 'obligatoire' : 'optionnel') : '')
-                + (f.canEnabled && !f.enabled ? ' · masqué' : '');
+            return (f.meta || '') + (f.canRequired ? ' - ' + (f.required ? 'obligatoire' : 'optionnel') : '')
+                + (f.canEnabled && !f.enabled ? ' - masqué' : '');
         },
         customMeta(co) {
             const types = cfg.customTypes || {};
-            return (types[co.type] || co.type) + (co.required ? ' · obligatoire' : ' · optionnel');
+            return (types[co.type] || co.type) + (co.required ? ' - obligatoire' : ' - optionnel');
         },
         async persist() {
             this.saving = true;

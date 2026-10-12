@@ -7,7 +7,7 @@ on:
 
 jobs:
   quality:
-    name: Lint · Analyse · Tests
+    name: Lint - Analyse - Tests
     runs-on: ubuntu-latest
 
     steps:

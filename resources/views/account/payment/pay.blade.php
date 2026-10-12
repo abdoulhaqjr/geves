@@ -120,7 +120,7 @@
                 </form>
 
                 <div class="ukc-pay-secure">
-                    <x-ukc.icon name="shield" :size="16" /> Paiement chiffré · Reçu automatique après confirmation
+                    <x-ukc.icon name="shield" :size="16" /> Paiement chiffré - Reçu automatique après confirmation
                 </div>
             @endif
         </div>

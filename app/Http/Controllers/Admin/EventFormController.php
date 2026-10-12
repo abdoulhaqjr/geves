@@ -215,7 +215,7 @@ class EventFormController extends Controller
                 'pill' => StaffRoles::pill((string) $r->role),
                 'caps' => collect(StaffRoles::permissionsFor((string) $r->role))
                     ->map(fn ($c) => StaffRoles::PERMISSIONS[$c] ?? $c)
-                    ->implode(' · '),
+                    ->implode(' - '),
             ])->values();
     }
 

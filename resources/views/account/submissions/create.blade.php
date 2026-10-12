@@ -96,7 +96,7 @@
                 </div>
                 <div style="min-width:0;flex:1;">
                     <div style="font-weight:800;">{{ $account->full_name }}
-                        <span style="font-weight:500;color:var(--ukc-muted);">· {{ $account->grade }}</span>
+                        <span style="font-weight:500;color:var(--ukc-muted);">- {{ $account->grade }}</span>
                     </div>
                     <div style="font-size:.85rem;color:var(--ukc-muted);">
                         {{ $account->email }} - {{ $account->affiliation ?: __('affiliation manquante') }}
@@ -163,7 +163,7 @@
                                 <div style="display:flex;justify-content:space-between;gap:12px;">
                                     <span class="hint">
                                         @if ($config->help('title')){{ $config->help('title') }}
-                                        @elseif ($config->titleMin() > 0){{ __('Minimum :min caractères · maximum :max.', ['min' => $config->titleMin(), 'max' => $config->titleMax()]) }}
+                                        @elseif ($config->titleMin() > 0){{ __('Minimum :min caractères - maximum :max.', ['min' => $config->titleMin(), 'max' => $config->titleMax()]) }}
                                         @else {{ __('Maximum :max caractères.', ['max' => $config->titleMax()]) }}@endif
                                     </span>
                                     <span class="hint"><span x-text="title.length"></span>/{{ $config->titleMax() }}</span>
@@ -325,7 +325,7 @@
                                 <span class="hint">
                                     @if ($config->help('keywords')){{ $config->help('keywords') }}
                                     @elseif ($config->keywordsMin() > 0){{ __('De :min à :max mots-clés.', ['min' => $config->keywordsMin(), 'max' => $config->keywordsMax()]) }}
-                                    @else Jusqu’à {{ $config->keywordsMax() }} mots-clés · {{ match ($config->keywordSeparator()) { 'semicolon' => 'séparez-les par un point-virgule', 'both' => 'séparez-les par une virgule ou un point-virgule', default => 'séparez-les par une virgule' } }}. @endif
+                                    @else Jusqu’à {{ $config->keywordsMax() }} mots-clés - {{ match ($config->keywordSeparator()) { 'semicolon' => 'séparez-les par un point-virgule', 'both' => 'séparez-les par une virgule ou un point-virgule', default => 'séparez-les par une virgule' } }}. @endif
                                 </span>
                                 @error('keywords') <span class="error">{{ $message }}</span> @enderror
                             </div>

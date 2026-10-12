@@ -22,7 +22,7 @@ class SendDueEmailsCommand extends Command
         $report = $action->handle($limit !== null ? (int) $limit : null);
 
         $this->info(sprintf(
-            'E-mails envoyés : %d · échecs : %d (dus : %d).',
+            'E-mails envoyés : %d - échecs : %d (dus : %d).',
             $report['sent'],
             $report['failed'],
             $report['total'],

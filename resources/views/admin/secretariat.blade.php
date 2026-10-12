@@ -1,4 +1,4 @@
-<x-layouts.admin title="Secrétariat" subtitle="Rapports de séance · suivi administratif">
+<x-layouts.admin title="Secrétariat" subtitle="Rapports de séance - suivi administratif">
     @php($me = auth('web')->user())
     <x-slot:actions>
         @if ($me?->canAnyEdition('participants'))
@@ -100,10 +100,10 @@
                                     @php($s = $row->s)
                                     @php($report = $s->report)
                                     @php($meta = collect([
-                                        $s->starts_at?->translatedFormat('l j F · H:i'),
+                                        $s->starts_at?->translatedFormat('l j F - H:i'),
                                         $s->room ?: null,
                                         (filled($s->rapporteur_name) || filled($s->rapporteur_email)) ? 'Rapporteur : '.($s->rapporteur_name ?: $s->rapporteur_email) : null,
-                                    ])->filter()->implode(' · '))
+                                    ])->filter()->implode(' - '))
                                     @php($rowData = [
                                         'action' => route('admin.program.reports.save', $s),
                                         'reopen' => route('admin.program.reports.reopen', $s),

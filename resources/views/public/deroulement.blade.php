@@ -43,7 +43,7 @@
                     <div class="live-meta">
                         @if ($event->location)<div>{!! $iconPin !!} {{ $event->tr('location') }}</div>@endif
                         <div>{!! $iconCal !!} {{ $dates }}</div>
-                        @if ($dayNo && $dayNo >= 1)<div>{!! $iconClock !!} {{ __('Jour :n · en direct', ['n' => $dayNo]) }}</div>@endif
+                        @if ($dayNo && $dayNo >= 1)<div>{!! $iconClock !!} {{ __('Jour :n - en direct', ['n' => $dayNo]) }}</div>@endif
                     </div>
                     <div class="live-actions">
                         <button type="button" class="ukc-btn ukc-btn--primary" @click="modal = 'programme'">{{ __('Programme du jour') }}</button>
@@ -143,7 +143,7 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'programme'" x-transition @click.self="modal = null">
                 <div class="modal modal--lg" x-data="{ day: {{ $currentDayIndex }} }">
                     <div class="modal-head">
-                        <div><h2>{{ __('Programme de l’événement') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }} · {{ $dates }}</div></div>
+                        <div><h2>{{ __('Programme de l’événement') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }} - {{ $dates }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
@@ -153,7 +153,7 @@
                             <div class="day-tabs">
                                 @foreach ($byDay as $date => $daySessions)
                                     <button type="button" :class="day === {{ $loop->index }} ? 'active' : ''" @click="day = {{ $loop->index }}">
-                                        {{ __('Jour') }} {{ $loop->iteration }}@if ($date) · {{ \Illuminate\Support\Carbon::parse($date)->translatedFormat('d M') }}@endif
+                                        {{ __('Jour') }} {{ $loop->iteration }}@if ($date) - {{ \Illuminate\Support\Carbon::parse($date)->translatedFormat('d M') }}@endif
                                     </button>
                                 @endforeach
                             </div>
@@ -171,9 +171,9 @@
                                             <h3>{{ $s->label }}</h3>
                                             <div class="meta">
                                                 {{ $s->room ?: __('Lieu à préciser') }}
-                                                @if (($isNow)($s)) · {{ __('En cours') }} @elseif ($s->ends_at && $s->ends_at->lt($now)) · {{ __('Terminé') }} @else · {{ __('À venir') }} @endif
-                                                @if ($s->type !== 'plenary' && $s->starts_at && $parallelStarts->contains($s->starts_at->format('H:i'))) · {{ __('En parallèle') }} @endif
-                                                @if ($s->isLive()) · {{ __('Visio') }} @endif
+                                                @if (($isNow)($s)) - {{ __('En cours') }} @elseif ($s->ends_at && $s->ends_at->lt($now)) - {{ __('Terminé') }} @else - {{ __('À venir') }} @endif
+                                                @if ($s->type !== 'plenary' && $s->starts_at && $parallelStarts->contains($s->starts_at->format('H:i'))) - {{ __('En parallèle') }} @endif
+                                                @if ($s->isLive()) - {{ __('Visio') }} @endif
                                             </div>
                                         </div>
                                     @endforeach
@@ -197,7 +197,7 @@
                             @if ($event->theme)<div class="info-item"><strong>{{ __('Thème') }}</strong>{{ $event->tr('theme') }}</div>@endif
                             <div class="info-item"><strong>{{ __('Dates') }}</strong>{{ $dates }}</div>
                             @if ($event->location)<div class="info-item"><strong>{{ __('Lieu') }}</strong>{{ $event->tr('location') }}</div>@endif
-                            <div class="info-item"><strong>{{ __('Organisateurs') }}</strong>{{ $set['organisers'] ?? ($event->series?->name.' · DRI · Université de Kara') }}</div>
+                            <div class="info-item"><strong>{{ __('Organisateurs') }}</strong>{{ $set['organisers'] ?? ($event->series?->name.' - DRI - Université de Kara') }}</div>
                             @if (! empty($set['formats']))<div class="info-item"><strong>{{ __('Formats') }}</strong>{{ $set['formats'] }}</div>@endif
                             @if (! empty($set['visio']))<div class="info-item"><strong>{{ __('Visio') }}</strong>{{ $set['visio'] }}</div>@endif
                         </div>
@@ -253,7 +253,7 @@
                                         @foreach ($rooms as $room => $roomSessions)
                                             <tr>
                                                 <td class="room">{{ $room }}</td>
-                                                <td>{{ $roomSessions->pluck('label')->filter()->take(3)->implode(' · ') }}</td>
+                                                <td>{{ $roomSessions->pluck('label')->filter()->take(3)->implode(', ') }}</td>
                                                 <td><span class="type">{{ $roomSessions->contains('type', 'plenary') ? __('Plénière / atelier') : __('Atelier') }}</span></td>
                                             </tr>
                                         @endforeach
@@ -276,7 +276,7 @@
                         @forelse ($announcements as $a)
                             @php($urgent = $a['urgent'] ?? false)
                             <div class="annonce {{ $urgent ? 'urgent' : '' }}">
-                                @if (! empty($a['when']) || $urgent)<div class="when">{{ $a['when'] ?? '' }}@if ($urgent) · {{ __('Urgent') }} @endif</div>@endif
+                                @if (! empty($a['when']) || $urgent)<div class="when">{{ $a['when'] ?? '' }}@if ($urgent) - {{ __('Urgent') }} @endif</div>@endif
                                 <strong>{{ $a['title'] ?? '' }}</strong>
                                 <span class="desc">{{ $a['text'] ?? '' }}</span>
                             </div>

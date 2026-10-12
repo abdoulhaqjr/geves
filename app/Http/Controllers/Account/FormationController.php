@@ -104,7 +104,7 @@ class FormationController extends Controller
         }
 
         if ($enrollment->isPaid()) {
-            return $back->with('ukc_status', 'Vous êtes déjà inscrit·e à cette formation.');
+            return $back->with('ukc_status', 'Vous êtes déjà inscrit(e) à cette formation.');
         }
 
         // Formation gratuite : inscription immédiate, sans paiement.

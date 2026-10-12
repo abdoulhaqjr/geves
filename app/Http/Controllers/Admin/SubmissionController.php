@@ -364,7 +364,7 @@ class SubmissionController extends Controller
     {
         $provider = $plagiarism->active();
         if ($provider === null) {
-            return back()->with('ukc_error', 'Aucun fournisseur anti-plagiat web n’est configuré (Réglages · Intégrations).');
+            return back()->with('ukc_error', 'Aucun fournisseur anti-plagiat web n’est configuré (Réglages - Intégrations).');
         }
 
         try {
@@ -376,7 +376,7 @@ class SubmissionController extends Controller
 
             return back()->with('ukc_error', match (true) {
                 $status === 429 => 'Quota du fournisseur anti-plagiat atteint. Réessayez plus tard.',
-                in_array($status, [401, 403], true) => 'Accès '.$provider->label().' refusé'.($apiMsg !== '' ? ' - '.$apiMsg : '').'. Vérifiez la configuration dans Réglages · Intégrations.',
+                in_array($status, [401, 403], true) => 'Accès '.$provider->label().' refusé'.($apiMsg !== '' ? ' - '.$apiMsg : '').'. Vérifiez la configuration dans Réglages - Intégrations.',
                 default => 'Service anti-plagiat indisponible (code '.$status.'). Réessayez plus tard.',
             });
         } catch (\Throwable $e) {

@@ -23,7 +23,7 @@
                     <button type="button" @click="active = i"
                             class="ukc-btn ukc-btn--sm" :class="active === i ? 'ukc-btn--blue' : 'ukc-btn--ghost'">
                         <span x-text="agent.name || 'Agent'"></span>
-                        <span style="opacity:.7;font-weight:600;" x-text="'· ' + (agent.audience === 'admin' ? 'admin' : 'participants')"></span>
+                        <span style="opacity:.7;font-weight:600;" x-text="'- ' + (agent.audience === 'admin' ? 'admin' : 'participants')"></span>
                     </button>
                 </template>
             </div>
@@ -51,7 +51,7 @@
                             </template>
                         </div>
                         <div style="min-width:0;flex:1;">
-                            <label style="font-size:13px;font-weight:700;display:block;margin-bottom:8px;">Avatar de l’agent <span style="font-weight:500;color:var(--ukc-muted);">· choisissez un visage ou ajoutez le vôtre</span></label>
+                            <label style="font-size:13px;font-weight:700;display:block;margin-bottom:8px;">Avatar de l’agent <span style="font-weight:500;color:var(--ukc-muted);">- choisissez un visage ou ajoutez le vôtre</span></label>
                             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                                 <template x-for="g in gallery" :key="g.path">
                                     {{-- ⚠️ Tout le style tient dans `:style` : Alpine REMPLACE le
@@ -81,7 +81,7 @@
                             </div>
                             @error('agents.*.avatar') <span class="error">{{ $message }}</span> @enderror
                             @error('avatars.*') <span class="error">{{ $message }}</span> @enderror
-                            <p style="font-size:12px;color:var(--ukc-light);margin-top:8px;">Cliquez un visage pour le choisir (recliquez pour l’enlever), ou « + » pour ajouter votre image (PNG, JPG, WEBP · 2 Mo max). Affiché dans le chat de l’agent.</p>
+                            <p style="font-size:12px;color:var(--ukc-light);margin-top:8px;">Cliquez un visage pour le choisir (recliquez pour l’enlever), ou « + » pour ajouter votre image (PNG, JPG, WEBP - 2 Mo max). Affiché dans le chat de l’agent.</p>
                         </div>
                     </div>
 

@@ -51,7 +51,7 @@
                         @if ($f->theme)<div style="font-size:13.5px;opacity:.85;">{{ $f->theme }}</div>@endif
                         <div style="font-size:12.5px;opacity:.8;margin-top:6px;">
                             @if ($f->starts_at){{ $f->starts_at->format('d/m/Y H:i') }}@if ($f->ends_at) - {{ $f->ends_at->format('d/m/Y H:i') }}@endif @endif
-                            @if ($f->location) · {{ $f->location }}@endif @if ($f->room) · {{ $f->room }}@endif
+                            @if ($f->location) - {{ $f->location }}@endif @if ($f->room) - {{ $f->room }}@endif
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
@@ -94,7 +94,7 @@
             <h2>Formateurs <span class="ukc-badge-count">{{ $f->trainers->count() }}</span></h2>
 
             @forelse ($f->trainers as $t)
-                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', signatureUrl: '{{ route('admin.formations.trainers.signature', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' · ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })"
+                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', signatureUrl: '{{ route('admin.formations.trainers.signature', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' - ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })"
                      style="padding:8px 0;border-bottom:1px solid var(--ukc-border,#f1f1f1);">
                     <div style="display:flex;align-items:center;gap:10px;">
                         <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">

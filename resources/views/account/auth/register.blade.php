@@ -95,7 +95,7 @@
                 </button>
             </div>
             @error('password') <span class="error">{{ $message }}</span> @enderror
-            <span class="hint">{{ __('8 caractères min. · lettres, chiffres, symbole') }}</span>
+            <span class="hint">{{ __('8 caractères min. - lettres, chiffres, symbole') }}</span>
         </div>
 
         <div class="ukc-field" x-data="{ show: false }">

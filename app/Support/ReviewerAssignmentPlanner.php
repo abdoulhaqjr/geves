@@ -137,6 +137,6 @@ class ReviewerAssignmentPlanner
             ? 'Expertise sur l’axe'
             : ($generalist ? 'Relecteur généraliste' : 'Hors axe (équilibrage)');
 
-        return $volunteer ? $base.' · volontaire' : $base;
+        return $volunteer ? $base.' - volontaire' : $base;
     }
 }

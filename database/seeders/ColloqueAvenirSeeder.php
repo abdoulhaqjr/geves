@@ -486,12 +486,12 @@ class ColloqueAvenirSeeder extends Seeder
         $this->buildFormation($event, $start);
 
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (événement open, 6 ateliers).');
-        $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
-        $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
+        $this->command?->info('Modérateurs : moderateur1@test.tg - moderateur2@test.tg');
+        $this->command?->info('Rapporteurs : rapporteur1@test.tg - rapporteur2@test.tg');
         $this->command?->info('Secrétariat (back-office) : secretaire@test.tg - mot de passe : password');
         $this->command?->info('Comptabilité (back-office) : comptable@test.tg - mot de passe : password');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg - mot de passe : password');
-        $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
+        $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) - auteur2@test.tg (réponse ouverte) - auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
         }

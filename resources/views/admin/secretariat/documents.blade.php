@@ -28,7 +28,7 @@
                         <div style="margin-top:10px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             @if ($header['logo'])<img src="{{ \App\Support\Branding::mark() }}" alt="" style="height:24px;width:auto;">@endif
                             <strong>{{ $header['org'] }}</strong>
-                            @if ($header['subtitle'])<span style="color:var(--ukc-muted);">· {{ $header['subtitle'] }}</span>@endif
+                            @if ($header['subtitle'])<span style="color:var(--ukc-muted);">- {{ $header['subtitle'] }}</span>@endif
                             <span class="ukc-pill ukc-pill--muted">{{ $header['align'] === 'center' ? 'centré' : 'aligné à gauche' }}</span>
                         </div>
                     </div>

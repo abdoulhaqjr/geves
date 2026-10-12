@@ -7,7 +7,7 @@
 ## 1. Modèle cible
 
 - **Une personne = un `User`, une seule connexion** (fusion de `Account` dans `users`).
-- **3 niveaux d'accès globaux** : `super_admin` · `colloque_admin` (crée + gère/co-gère des colloques) · `user` (aucun accès global).
+- **3 niveaux d'accès globaux** : `super_admin` - `colloque_admin` (crée + gère/co-gère des colloques) - `user` (aucun accès global).
 - **Rôles par colloque cumulables** (une personne peut en avoir plusieurs), 2 natures :
   - **Scientifiques** : Communicant, Co-auteur, Relecteur, Modérateur, Rapporteur, **Comité scientifique**, Auditeur.
   - **Organisation** : Gérant/Co-gérant (réservé `colloque_admin`), **Comité d'organisation**, Secrétariat, Comptabilité, Accueil, Appui.

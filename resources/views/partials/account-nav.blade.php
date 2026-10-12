@@ -8,7 +8,7 @@
 <div class="account-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <h1>{{ __('Mon compte') }}</h1>
     @if ($navTwoFaOn)
-        <span class="ukc-pill ukc-pill--ok account-badge">{{ __('2FA activée') }} · {{ $navTwoFaMethod }}</span>
+        <span class="ukc-pill ukc-pill--ok account-badge">{{ __('2FA activée') }} - {{ $navTwoFaMethod }}</span>
     @else
         <span class="ukc-pill ukc-pill--muted account-badge">{{ __('2FA désactivée') }}</span>
     @endif

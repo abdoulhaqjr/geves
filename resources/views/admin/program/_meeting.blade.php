@@ -46,7 +46,7 @@
             @if ($prov === 'custom')
                 Lien externe{{ filled($s->meeting_url) ? '' : ' (non renseigné)' }}
             @else
-                {{ $prov === 'livekit' ? 'LiveKit' : 'Jitsi' }} · salle {{ filled($s->meeting_room) ? '« '.$s->meeting_room.' »' : 'auto' }}
+                {{ $prov === 'livekit' ? 'LiveKit' : 'Jitsi' }} - salle {{ filled($s->meeting_room) ? '« '.$s->meeting_room.' »' : 'auto' }}
             @endif
         </span>
     </div>

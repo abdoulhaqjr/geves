@@ -56,10 +56,10 @@
                                 <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>
                                 <dl>
                                     <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badgeRef }}</strong></dd>
-                                    <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} · {{ __('ID compte') }} #{{ $participant->id }}</dd>
+                                    <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} - {{ __('ID compte') }} #{{ $participant->id }}</dd>
                                     <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
                                     <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
-                                    <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} · {{ __('Sessions plénières + ateliers') }}</dd>
+                                    <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} - {{ __('Sessions plénières + ateliers') }}</dd>
                                     <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} – {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
                                     <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
                                 </dl>
@@ -100,7 +100,7 @@
                 <div class="ukc-doc-section">{{ __('Par communication') }}</div>
                 @foreach ($submissions as $i => $s)
                     <div class="ukc-doc-group">
-                        <div class="g-title">{{ __('Communication :num', ['num' => $i + 1]) }} - {{ $s->type === 'poster' ? __('Poster') : __('Orale') }}@if ($s->track) · {{ $s->track }}@endif</div>
+                        <div class="g-title">{{ __('Communication :num', ['num' => $i + 1]) }} - {{ $s->type === 'poster' ? __('Poster') : __('Orale') }}@if ($s->track) - {{ $s->track }}@endif</div>
                         <div class="g-sub">{{ $s->title }}</div>
                         <ul class="ukc-doc-list">
                             @include('account._doc-row', [
@@ -120,7 +120,7 @@
                                  deux communications renvoyaient au même document. --}}
                             @include('account._doc-row', [
                                 'name' => __('Attestation de communication'),
-                                'sub' => __('Après validation du passage · QR DIDs'),
+                                'sub' => __('Après validation du passage - QR DIDs'),
                                 'att' => $attsParCommunication[$s->id] ?? null,
                                 'status' => __('Après le passage'),
                             ])
@@ -153,7 +153,7 @@
             <ul class="ukc-doc-list">
                 @include('account._doc-row', [
                     'name' => __('Attestation de participation'),
-                    'sub' => __('1 seule · présence aux sessions · QR DIDs'),
+                    'sub' => __('1 seule - présence aux sessions - QR DIDs'),
                     'att' => $atts['participation'] ?? null,
                     'status' => __('Après le colloque'),
                 ])

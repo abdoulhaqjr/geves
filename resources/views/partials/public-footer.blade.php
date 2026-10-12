@@ -47,7 +47,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <div>© {{ now()->year }} {{ __('Université de Kara · Direction de la Recherche et de l’Innovation') }}</div>
+            <div>© {{ now()->year }} {{ __('Université de Kara - Direction de la Recherche et de l’Innovation') }}</div>
             <div>Kara, Togo</div>
         </div>
     </div>

@@ -260,8 +260,8 @@ class DocumentHubController extends Controller
             'livretSectionCount' => count($sections),
             'livretSectionsFilled' => count(array_filter($sections)),
             'livretBuiltins' => [
-                ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre · commissions numérotées · programme par jour', 'download' => null],
-                ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre · comités simples · programme par jour, salle et séance', 'download' => null],
+                ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre - commissions numérotées - programme par jour', 'download' => null],
+                ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre - comités simples - programme par jour, salle et séance', 'download' => null],
                 ['key' => 'base', 'name' => 'Modèle de base '.config('app.name'), 'desc' => 'Document .docx à balises de fusion, à personnaliser dans Word', 'download' => route('admin.documents.livret.base-template')],
             ],
         ];

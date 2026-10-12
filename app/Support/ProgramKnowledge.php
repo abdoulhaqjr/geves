@@ -82,7 +82,7 @@ class ProgramKnowledge
                     filled($s->rapporteur_name) ? 'rapporteur '.$s->rapporteur_name : '',
                     $n > 0 ? $n.' communication'.($n > 1 ? 's' : '') : '',
                 ]);
-                $lines[] = '   - '.$type.' « '.$name.' »'.($meta !== [] ? ' : '.implode(' · ', $meta) : '');
+                $lines[] = '   - '.$type.' « '.$name.' »'.($meta !== [] ? ' : '.implode(' - ', $meta) : '');
             }
         }
 
@@ -141,7 +141,7 @@ class ProgramKnowledge
                     $sl->wasRescheduled() ? 'REPROGRAMMÉ' : '',
                     $sl->wasPresented() ? 'passage constaté' : '',
                 ]);
-                $lines[] = '   - « '.$title.' »'.($meta !== [] ? ' : '.implode(' · ', $meta) : '');
+                $lines[] = '   - « '.$title.' »'.($meta !== [] ? ' : '.implode(' - ', $meta) : '');
             }
         }
 

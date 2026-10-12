@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Mes relectures')" :subtitle="__('Espace relecteur · évaluations confiées')">
+<x-layouts.participant :title="__('Mes relectures')" :subtitle="__('Espace relecteur - évaluations confiées')">
 <div class="account-reviews" x-data="ukcReviews(@js($reviewsData), @js($recommendations), {{ $scale }})">
 
     {{-- Sous-navigation : elle n'a de sens que s'il y a réellement deux tâches. --}}
@@ -103,7 +103,7 @@
                                     <template x-if="r.completed">
                                         <span style="font-size:13px;">
                                             <span x-text="recoLabel(r.recommendation) || '-'"></span>
-                                            <template x-if="r.score !== null"><strong style="color:var(--ukc-blue);" x-text="' · ' + r.score + '/20'"></strong></template>
+                                            <template x-if="r.score !== null"><strong style="color:var(--ukc-blue);" x-text="' - ' + r.score + '/20'"></strong></template>
                                         </span>
                                     </template>
                                     <template x-if="!r.completed"><span style="color:var(--ukc-muted);">-</span></template>

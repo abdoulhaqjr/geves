@@ -168,7 +168,7 @@ class LivretTemplate
         $section->addText('[[TITRE]]', ['bold' => true, 'size' => 24, 'color' => '111827'], ['alignment' => 'center']);
         $section->addText('[[EDITION]]', ['size' => 13, 'color' => '6B7280'], ['alignment' => 'center']);
         $section->addText('« [[THEME]] »', ['italic' => true, 'size' => 12, 'color' => '223EA4'], ['alignment' => 'center']);
-        $section->addText('[[DATES]]   ·   [[LIEU]]', ['size' => 11, 'color' => '6B7280'], ['alignment' => 'center']);
+        $section->addText('[[DATES]]   -   [[LIEU]]', ['size' => 11, 'color' => '6B7280'], ['alignment' => 'center']);
         $section->addTextBreak(2);
         $section->addText('LIVRE DES RÉSUMÉS', ['bold' => true, 'size' => 13, 'color' => '223EA4'], ['alignment' => 'center']);
         $section->addPageBreak();

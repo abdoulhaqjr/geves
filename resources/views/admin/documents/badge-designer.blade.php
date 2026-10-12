@@ -16,7 +16,7 @@
 
   <header class="ed-top">
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
-    <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
+    <div class="crumb">{{ $typeLabel }} - {{ $scope ?? 'Participant' }}</div>
     <input class="name-input" id="tplName" value="{{ $typeLabel }}" title="Nom du modèle, repris dans la liste des documents">
     <button type="button" class="btn-save" id="btnSave">Save</button>
   </header>
@@ -64,7 +64,7 @@
           <p class="ly-meta">Decrivez le badge souhaite (role, couleurs, photo, QR…). L IA propose une mise en page editable.</p>
           <div class="ai-box">
             <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge communicant, bandeau bleu UK, photo ronde, nom en grand, role COMMUNICATION, QR en bas, reference UKC-2026-…"></textarea>
-            <div class="ai-drop" id="aiDrop">Image / PDF de reference<br><span style="font-size:11px;">PNG, JPG, PDF · max 8 Mo</span></div>
+            <div class="ai-drop" id="aiDrop">Image / PDF de reference<br><span style="font-size:11px;">PNG, JPG, PDF - max 8 Mo</span></div>
             <input type="file" id="aiFile" accept="image/*,.pdf" style="display:none;">
             <div id="aiFileList"></div>
             <button type="button" class="ai-run" id="aiRun">Generer</button>
@@ -79,11 +79,11 @@
           <div class="ed-panel-section">Formats portrait</div>
           <div class="ed-tpl-card active" data-tpl="participant">
             <div class="mini">PARTICIPANT</div>
-            Bandeau bleu · photo · nom · QR
+            Bandeau bleu - photo - nom - QR
           </div>
           <div class="ed-tpl-card" data-tpl="communicant">
             <div class="mini" style="background:linear-gradient(160deg,#009933 0%,#009933 38%,#fff 38%);color:#fff;">COMMUNICANT</div>
-            Bandeau vert · role COMMUNICATION
+            Bandeau vert - role COMMUNICATION
           </div>
           <div class="ed-tpl-card" data-tpl="staff">
             <div class="mini" style="background:linear-gradient(160deg,#0f172a 0%,#0f172a 38%,#fff 38%);">STAFF / ORGA</div>
@@ -101,7 +101,7 @@
       <div class="panel-view" id="panel-uploads">
         <div class="ed-panel-head">Uploads</div>
         <div class="ed-panel-body">
-          <div class="ed-upload" id="btnUploadImg">Upload Image<br><span style="font-size:11px;">SVG, PNG, JPG · max 2 Mo</span></div>
+          <div class="ed-upload" id="btnUploadImg">Upload Image<br><span style="font-size:11px;">SVG, PNG, JPG - max 2 Mo</span></div>
           <input type="file" id="fileUpload" accept="image/*" style="display:none;">
           <div class="ed-panel-section">Images ajoutees</div>
           <div class="ed-grid-2" id="uploadList">
@@ -168,7 +168,7 @@
             <button type="button" id="lyDup" title="Dupliquer">⧉</button>
             <button type="button" id="lyDel" title="Supprimer">⌫</button>
           </div>
-          <p class="ly-meta">Glisser ⠿ · double-clic pour renommer · <span class="kbd">Ctrl+L</span> verrouiller</p>
+          <p class="ly-meta">Glisser ⠿ - double-clic pour renommer - <span class="kbd">Ctrl+L</span> verrouiller</p>
           <div id="layersList"></div>
           <div class="ly-controls" id="lyControls">
             <label>Opacite <input type="range" id="lyOpacity" min="10" max="100" value="100"><span id="lyOpacityVal">100%</span></label>

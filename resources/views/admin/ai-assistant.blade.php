@@ -5,7 +5,7 @@
         .'Dites-moi ce que vous souhaitez examiner. Quand une action est possible, je vous la proposerai '
         .'et vous l’autoriserez d’un clic avant qu’elle ne soit exécutée.';
 @endphp
-<x-layouts.admin title="Administration assistée" subtitle="Copilote IA · chaque action est exécutée après votre autorisation">
+<x-layouts.admin title="Administration assistée" subtitle="Copilote IA - chaque action est exécutée après votre autorisation">
     <x-slot:actions>
         <span class="ukc-pill ukc-pill--info">Agent : {{ $agentName }}</span>
         <a href="{{ route('admin.settings', ['tab' => 'agents-ia']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Configurer l’agent</a>
@@ -91,7 +91,7 @@
                     <template x-for="(m, i) in messages" :key="i">
                         <div class="chat-row" :class="m.role === 'user' ? 'user' : 'bot'">
                             <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
-                                <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' · copilote')"></div>
+                                <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' - copilote')"></div>
                                 <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
                                 <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
 

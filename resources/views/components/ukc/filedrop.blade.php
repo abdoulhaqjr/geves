@@ -18,7 +18,7 @@
     <div class="ukc-filedrop__prompt" x-show="!file">
         <x-ukc.icon name="upload" :size="26" />
         <strong>{{ __('Glissez un fichier ici') }}</strong>
-        <span>{{ __('ou cliquez pour parcourir') }}@if ($hint) · {{ $hint }}@endif</span>
+        <span>{{ __('ou cliquez pour parcourir') }}@if ($hint) - {{ $hint }}@endif</span>
     </div>
     {{-- Aperçu image --}}
     <div class="ukc-filedrop__preview" x-show="file && previewUrl" x-cloak style="display:none;">

@@ -26,7 +26,7 @@
             <h1 style="margin:0;">{{ __('Formations') }}</h1>
             <p style="color:var(--ukc-muted);margin:4px 0 0;font-size:14px;">
                 {{ __('Formations proposées par') }}
-                <strong>{{ $event->series?->name ?: $event->title }}</strong>@if ($event->year) · {{ $event->year }}@endif.
+                <strong>{{ $event->series?->name ?: $event->title }}</strong>@if ($event->year) - {{ $event->year }}@endif.
             </p>
         </div>
 
@@ -146,7 +146,7 @@
                             @elseif ($enr)
                                 <span style="color:#b45309;font-weight:600;">{{ __('Frais à régler') }}</span>
                                 @if ($f->isLive())
-                                    <span style="color:var(--ukc-light);">· {{ __('la formation est réservée aux inscrits ayant réglé') }}</span>
+                                    <span style="color:var(--ukc-light);">- {{ __('la formation est réservée aux inscrits ayant réglé') }}</span>
                                 @endif
                             @else
                                 {{ $f->isFree() ? __('Inscription libre') : __('Inscription avec frais') }}

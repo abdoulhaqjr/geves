@@ -7,10 +7,10 @@
         <div class="ukc-card metabar">
             <div class="info">
                 <strong>{{ $s->ref_code }}</strong>
-                · {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}
-                @if ($s->track) · {{ $s->track }} @endif
-                · Déposée le {{ $s->created_at?->format('d/m/Y') }}
-                @if ($s->version > 1) · <span class="ukc-pill ukc-pill--info">v{{ $s->version }}</span> @endif
+                - {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}
+                @if ($s->track) - {{ $s->track }} @endif
+                - Déposée le {{ $s->created_at?->format('d/m/Y') }}
+                @if ($s->version > 1) - <span class="ukc-pill ukc-pill--info">v{{ $s->version }}</span> @endif
             </div>
             <div class="acts">
                 <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.index') }}">
@@ -57,7 +57,7 @@
                                         @if ($link)
                                             @php([$pill, $txt] = match ($link->status) {
                                                 'linked' => $link->match_type === 'self' ? ['muted', 'Déposant'] : ['ok', 'Compte rattaché'],
-                                                'invited' => ['warn', 'Invité·e'],
+                                                'invited' => ['warn', 'Invité(e)'],
                                                 'declined' => ['err', 'Association déclinée'],
                                                 default => ['muted', 'Non rattaché'],
                                             })
@@ -65,14 +65,14 @@
                                         @endif
                                     </div>
                                     @if (!empty($author['affiliation']))
-                                        <div class="aff">{{ $author['affiliation'] }}@if (!empty($author['grade'])) · {{ $author['grade'] }}@endif</div>
+                                        <div class="aff">{{ $author['affiliation'] }}@if (!empty($author['grade'])) - {{ $author['grade'] }}@endif</div>
                                     @endif
                                     @if (!empty($author['email']))<div class="aff">{{ $author['email'] }}</div>@endif
                                     @if ($link && $link->user)
                                         <div class="aff" style="color:var(--ukc-green);">
                                             <x-ukc.icon name="check" :size="13" /> {{ $link->user->full_name ?: $link->user->name }}
                                             @if ($link->match_type && ($matchLabels[$link->match_type] ?? null))
-                                                <span style="color:var(--ukc-muted);">· {{ $matchLabels[$link->match_type] }}</span>
+                                                <span style="color:var(--ukc-muted);">- {{ $matchLabels[$link->match_type] }}</span>
                                             @endif
                                         </div>
                                     @elseif ($link && $link->status === 'invited')
@@ -152,18 +152,18 @@
                         <div x-show="sim" x-cloak @click.self="sim = null" @keydown.escape.window="sim = null" class="sim-modal">
                             <div class="sim-modal__box">
                                 <div class="sim-modal__head">
-                                    <div style="font-weight:800;">Comparaison de similarité · <span x-text="(sim?.percent ?? 0) + '%'"></span></div>
+                                    <div style="font-weight:800;">Comparaison de similarité - <span x-text="(sim?.percent ?? 0) + '%'"></span></div>
                                     <button type="button" class="ukc-btn--icon" @click="sim = null"><x-ukc.icon name="close" :size="18" /></button>
                                 </div>
                                 <div class="sim-compare-grid">
                                     <div>
                                         <div style="font-weight:700;">{{ \Illuminate\Support\Str::limit($s->title, 90) }}</div>
-                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;">{{ $s->ref_code }} · cette soumission</div>
+                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;">{{ $s->ref_code }} - cette soumission</div>
                                         <div class="sim-abstract" x-html="sim?.aHtml"></div>
                                     </div>
                                     <div>
                                         <div style="font-weight:700;" x-text="sim?.title"></div>
-                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;"><span x-text="sim?.ref"></span> · soumission proche</div>
+                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;"><span x-text="sim?.ref"></span> - soumission proche</div>
                                         <div class="sim-abstract" x-html="sim?.bHtml"></div>
                                     </div>
                                 </div>
@@ -185,7 +185,7 @@
                             @php($col = $pp >= 30 ? '#b4231c' : ($pp >= 15 ? '#8a5a00' : 'var(--ukc-green)'))
                             <div style="display:flex;align-items:baseline;gap:14px;">
                                 <span style="font-size:1.6rem;font-weight:800;color:{{ $col }};">{{ $pp }}%</span>
-                                <span style="color:var(--ukc-muted);font-size:13px;">de similarité web · {{ (int) round($webPlag['uniquePercent'] ?? 0) }}% unique · via {{ $webPlag['provider'] ?? 'externe' }}</span>
+                                <span style="color:var(--ukc-muted);font-size:13px;">de similarité web - {{ (int) round($webPlag['uniquePercent'] ?? 0) }}% unique - via {{ $webPlag['provider'] ?? 'externe' }}</span>
                             </div>
                             @if (! empty($webPlag['sources']))
                                 <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
@@ -238,7 +238,7 @@
                                 <div class="ico" style="background:#ecfdf5;color:#0f7a3d;">OK</div>
                                 <div class="name">
                                     <strong>Version définitive déposée</strong>
-                                    <div class="sub">Le {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->format('d/m/Y H:i') }} · gabarit confirmé par l’auteur</div>
+                                    <div class="sub">Le {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->format('d/m/Y H:i') }} - gabarit confirmé par l’auteur</div>
                                 </div>
                                 <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ $cr['file_url'] }}" target="_blank">Télécharger</a>
                             </div>
@@ -337,7 +337,7 @@
                     @endforelse
                     @php($coiIgnoresInstitution = \App\Support\ConflictOfInterest::ignoresSameInstitution($s))
                     <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">
-                        Règles : {{ $coiIgnoresInstitution ? '' : 'même institution · ' }}co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.
+                        Règles : {{ $coiIgnoresInstitution ? '' : 'même institution - ' }}co-auteur &lt; 5 ans - homonymie (lien familial possible) → vérification manuelle.
                         {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cet événement (onglet Options).' : '' }}
                     </p>
                 </div>
@@ -386,7 +386,7 @@
                                 @endif
                                 @if ($review->isCompleted())
                                     <div class="rev-detail">
-                                        <em>{{ $review->recommendationLabel() }}</em>@if ($review->score !== null) · {{ number_format((float) $review->score, 1, ',', ' ') }}/20 @endif
+                                        <em>{{ $review->recommendationLabel() }}</em>@if ($review->score !== null) - {{ number_format((float) $review->score, 1, ',', ' ') }}/20 @endif
                                         @php($critScores = $review->criterionScores())
                                         @if (! empty($critScores))
                                             <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">
@@ -463,7 +463,7 @@
                             @if ($s->hasRebuttal())
                                 @php($reb = $s->rebuttal())
                                 <div style="background:#f5f7ff;border:1px solid #c7d2fe;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:.9rem;">
-                                    <div style="font-weight:700;margin-bottom:4px;">Réponse de l’auteur{{ ! empty($reb['submitted_at']) ? ' · '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d/m/Y H:i') : '' }}</div>
+                                    <div style="font-weight:700;margin-bottom:4px;">Réponse de l’auteur{{ ! empty($reb['submitted_at']) ? ' - '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d/m/Y H:i') : '' }}</div>
                                     <div style="white-space:pre-line;">{{ $s->rebuttalText() }}</div>
                                 </div>
                             @else

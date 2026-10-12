@@ -263,7 +263,7 @@ class ReportController extends Controller
                 'format' => $format,
                 'scope' => $scope,
                 'mode' => $mode,
-                'created_at' => now()->format('d/m/Y · H:i'),
+                'created_at' => now()->format('d/m/Y - H:i'),
             ];
             $this->pushHistory($entry);
 

@@ -53,7 +53,7 @@ class EmailController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // Campagnes agrégées (fidèle au mockup « E-mails · Programmés ») : on
+        // Campagnes agrégées (fidèle au mockup « E-mails - Programmés ») : on
         // regroupe les e-mails par lot d'envoi (batch_id) ou par déclencheur auto.
         $campaigns = Email::query()
             ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))

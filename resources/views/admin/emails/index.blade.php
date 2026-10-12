@@ -86,7 +86,7 @@
                                 <tr>
                                     <td>
                                         <strong>{{ \Illuminate\Support\Str::limit($c['label'], 60) }}</strong>
-                                        <div style="font-size:12px;color:var(--ukc-muted);">{{ $c['is_campaign'] ? 'Campagne ciblée' : 'Auto · '.\App\Support\EmailTemplates::label($c['template']) }}</div>
+                                        <div style="font-size:12px;color:var(--ukc-muted);">{{ $c['is_campaign'] ? 'Campagne ciblée' : 'Auto - '.\App\Support\EmailTemplates::label($c['template']) }}</div>
                                     </td>
                                     <td>{{ $c['audience'] }}</td>
                                     <td style="white-space:nowrap;">{{ $c['scheduled_at']?->format('d/m/Y H:i') ?? '-' }}</td>
@@ -141,7 +141,7 @@
             <div class="ukc-toolbar" style="margin-bottom:12px;">
                 <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="tnew = true"><x-ukc.icon name="plus" :size="16" /> Nouveau modèle</button>
                 <span class="sep"></span>
-                <span style="font-size:13px;color:var(--ukc-muted);">Balises de fusion · objet &amp; corps · déclencheurs</span>
+                <span style="font-size:13px;color:var(--ukc-muted);">Balises de fusion - objet &amp; corps - déclencheurs</span>
             </div>
             <div class="ukc-card" style="padding:0;">
                 <div class="ukc-table-wrap">
@@ -413,7 +413,7 @@
                 <div class="box-body">
                     <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">
                         <strong x-text="log?.label"></strong> - <span x-text="log?.total"></span> destinataire(s)
-                        <template x-if="log && log.total > log.rows.length"><span> · <span x-text="log.rows.length"></span> premiers affichés</span></template>
+                        <template x-if="log && log.total > log.rows.length"><span> - <span x-text="log.rows.length"></span> premiers affichés</span></template>
                     </p>
                     <div class="log-wrap">
                         <table class="log-table">

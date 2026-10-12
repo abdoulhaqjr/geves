@@ -62,7 +62,7 @@ class AgendaController extends Controller
             'start' => $slot->starts_at,
             'end' => $slot->ends_at,
             'location' => (string) ($slot->room ?: $slot->session?->room ?: ''),
-            'description' => trim(($slot->session_label ? $slot->session_label.' · ' : '').(string) ($slot->event->title ?? '')),
+            'description' => trim(($slot->session_label ? $slot->session_label.' - ' : '').(string) ($slot->event->title ?? '')),
         ];
     }
 }

@@ -45,7 +45,7 @@
                                 <strong>{{ $n->data['title'] ?? __('Notification') }}</strong>
                                 @if (! empty($n->data['body']))<p>{{ $n->data['body'] }}</p>@endif
                             </span>
-                            <span class="when">{{ $n->created_at->translatedFormat('d/m · H:i') }}</span>
+                            <span class="when">{{ $n->created_at->translatedFormat('d/m - H:i') }}</span>
                         </button>
                     </form>
                 @empty

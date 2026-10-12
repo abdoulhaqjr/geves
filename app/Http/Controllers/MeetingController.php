@@ -227,7 +227,7 @@ class MeetingController extends Controller
             'embed' => $embed,
             'liveKit' => $liveKit,
             'externalUrl' => $externalUrl,
-            // Arrière-plans virtuels proposés (configurés dans Réglages · Visio).
+            // Arrière-plans virtuels proposés (configurés dans Réglages - Visio).
             'backgrounds' => $this->backgrounds(),
         ]);
     }

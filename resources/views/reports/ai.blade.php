@@ -20,7 +20,7 @@
                     <div style="font-size:.85rem;color:var(--ukc-muted);">Université de Kara - Rapport personnalisé (assisté par IA)</div>
                 </div>
                 <div style="text-align:right;font-size:.8rem;color:var(--ukc-muted);">
-                    {{ $entry['created_at'] ?? now()->format('d/m/Y · H:i') }}
+                    {{ $entry['created_at'] ?? now()->format('d/m/Y - H:i') }}
                 </div>
             </div>
 

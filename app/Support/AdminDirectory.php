@@ -47,7 +47,7 @@ class AdminDirectory
         }
 
         $total = count($rows);
-        $lines = ['ANNUAIRE DES PARTICIPANTS (nominatif - '.$total.') : « Prénom Nom <e-mail> · grade · rôle · institution · état »'];
+        $lines = ['ANNUAIRE DES PARTICIPANTS (nominatif - '.$total.') : « Prénom Nom <e-mail> - grade - rôle - institution - état »'];
         foreach (array_slice($rows, 0, $max) as $r) {
             $name = trim(((string) $r[1]).' '.((string) $r[0]));
             $meta = array_filter([
@@ -57,7 +57,7 @@ class AdminDirectory
                 ((string) $r[4]) !== '' ? (string) $r[4] : null,
                 $r[8] === 'Oui' ? 'payé' : 'à régler',
             ]);
-            $lines[] = '- '.($name !== '' ? $name : 'Sans nom').' : '.implode(' · ', $meta);
+            $lines[] = '- '.($name !== '' ? $name : 'Sans nom').' : '.implode(' - ', $meta);
         }
         if ($total > $max) {
             $lines[] = '… ('.($total - $max).' autre(s) non listé(s) - utiliser les filtres/export de la page Participants)';
@@ -76,7 +76,7 @@ class AdminDirectory
         }
 
         $total = count($rows);
-        $lines = ['PAIEMENTS (nominatif, les plus récents - '.$total.') : « reçu · Payeur <e-mail> · montant devise · méthode · statut · date »'];
+        $lines = ['PAIEMENTS (nominatif, les plus récents - '.$total.') : « reçu - Payeur <e-mail> - montant devise - méthode - statut - date »'];
         foreach (array_slice($rows, 0, $max) as $r) {
             $payer = (string) $r[1];
             $meta = array_filter([
@@ -87,7 +87,7 @@ class AdminDirectory
                 (string) $r[7],
                 ((string) $r[8]) !== '' ? (string) $r[8] : null,
             ]);
-            $lines[] = '- '.implode(' · ', $meta);
+            $lines[] = '- '.implode(' - ', $meta);
         }
         if ($total > $max) {
             $lines[] = '… ('.($total - $max).' autre(s) non listé(s) - utiliser les filtres/export de la page Paiements)';
@@ -106,7 +106,7 @@ class AdminDirectory
         }
 
         $total = count($rows);
-        $lines = ['COMMUNICATIONS & AUTEURS CORRESPONDANTS (nominatif - '.$total.') : « réf · « titre » · Auteur <e-mail> · axe · statut »'];
+        $lines = ['COMMUNICATIONS & AUTEURS CORRESPONDANTS (nominatif - '.$total.') : « réf - « titre » - Auteur <e-mail> - axe - statut »'];
         foreach (array_slice($rows, 0, $max) as $r) {
             $meta = array_filter([
                 ((string) $r[0]) !== '' ? (string) $r[0] : null,
@@ -115,7 +115,7 @@ class AdminDirectory
                 ((string) $r[4]) !== '' ? (string) $r[4] : null,
                 (string) $r[6],
             ]);
-            $lines[] = '- '.implode(' · ', $meta);
+            $lines[] = '- '.implode(' - ', $meta);
         }
         if ($total > $max) {
             $lines[] = '… ('.($total - $max).' autre(s) non listée(s) - utiliser les filtres/export de la page Soumissions)';

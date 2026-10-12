@@ -250,7 +250,7 @@ it('annonce les destinataires écartés faute de présence avant d’émettre', 
             'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles',
         ]))
         ->assertOk()
-        ->assertSee('écarté(s) · absents');
+        ->assertSee('écarté(s) - absents');
 });
 
 /** Sans réserve de présence, rien n'est écarté : le compteur reste muet. */

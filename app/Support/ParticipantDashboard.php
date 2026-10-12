@@ -557,7 +557,7 @@ class ParticipantDashboard
             'unite' => '',
             'detail' => $coauteur > 0
                 ? trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees])
-                    .' · '.trans_choice(':count en co-auteur|:count en co-auteur', $coauteur, ['count' => $coauteur])
+                    .' - '.trans_choice(':count en co-auteur|:count en co-auteur', $coauteur, ['count' => $coauteur])
                 : trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees]),
             'icone' => 'file',
             'ton' => 'blue',
@@ -582,7 +582,7 @@ class ParticipantDashboard
                 'libelle' => __('Frais d’inscription'),
                 'valeur' => number_format((float) $paiement->amount, 0, ',', ' '),
                 'unite' => (string) $paiement->currency,
-                'detail' => __('Réglés').($paiement->receipt_no ? ' · '.__('reçu :no', ['no' => $paiement->receipt_no]) : ''),
+                'detail' => __('Réglés').($paiement->receipt_no ? ' - '.__('reçu :no', ['no' => $paiement->receipt_no]) : ''),
                 'icone' => 'card',
                 'ton' => 'green',
             ]

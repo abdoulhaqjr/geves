@@ -209,6 +209,27 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
   `getComputedStyle(el).color`.
 - **Ne jamais utiliser le tiret cadratin `—` (U+2014)** dans le projet (UI, code,
   seeds, docs) : utiliser un tiret simple `-`.
+- **Ni le point médian U+00B7**, même règle, même remède : `-`. Il servait de
+  séparateur dans une cinquantaine d'écrans ; c'est un caractère qu'on ne tape
+  pas au clavier, il arrive par copier-coller et repart en mojibake dès qu'un
+  maillon perd l'UTF-8. Gardé par `tests/Feature/PointMedianTest.php`, qui
+  balaie les sources, le HTML rendu **et** `lang/*.json`.
+  - ⚠️ **La règle porte sur le CODE, pas sur les données.** Ce qu'une personne
+    saisit lui appartient et traverse la plateforme tel quel.
+  - ⚠️ **Deux emplois ne sont pas des séparateurs** et ne deviennent pas `-` :
+    l'**écriture inclusive** (le point médian entre « Invité » et « e »), qui
+    prend la forme parenthésée du
+    projet - « Invité(e) », déjà employée par `Co-auteur(s)` ; et le caractère
+    **cité comme sujet du propos** dans un commentaire, qu'on nomme en toutes
+    lettres (« point médian ») plutôt que de le remplacer, sous peine de faire
+    dire au journal l'inverse de ce qui s'est passé.
+  - ⚠️ **Une liste dont les éléments portent déjà un tiret se joint par une
+    virgule**, pas par `-`. Mesuré : 30 intitulés de séance sur 30 (« Session -
+    Atelier 1 - Sciences… »), 6 axes sur 12, et surtout « Enseignant » et
+    « Chercheur », deux grades distincts que « Enseignant - Chercheur » soude en
+    un seul à la lecture. Concerne `implode()` / `join()` sur des listes
+    d'éléments de même nature, pas les paires de champs différents
+    (`rôle - affiliation`), qui restent au tiret.
 - Charte UK : bleu `#223ea4`, or `#ffd700`, vert `#009933`, police **Jost**.
 - **Dégradé des héros publics = un seul token `--ukc-hero`** (`ukc.css`, bleu-foncé →
   bleu → `--ukc-blue-bright`). Tous les héros publics (accueil, pages internes, colloque,
@@ -238,9 +259,9 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - Vérif visuelle : viewport ≥1024px pour voir le menu déployé (reset `desktop` après).
 - ⚠️ **Catégories du menu latéral** (`components/layouts/admin.blade.php`, `<span class="nav-label">`),
   chacune masquée si aucun de ses liens n'est accessible : **Scientifique** (Événements,
-  Soumissions, Programme, Formations) · **Gestion** (Participants, Paiements, Secrétariat,
-  Documents) · **Communication** (E-mails, Annonces, Témoignages, Réclamations) · **Pilotage**
-  (Projet, Rapports, Assistant IA) · **Système** (Utilisateurs, Réglages). En ajoutant un lien,
+  Soumissions, Programme, Formations) - **Gestion** (Participants, Paiements, Secrétariat,
+  Documents) - **Communication** (E-mails, Annonces, Témoignages, Réclamations) - **Pilotage**
+  (Projet, Rapports, Assistant IA) - **Système** (Utilisateurs, Réglages). En ajoutant un lien,
   le ranger dans la bonne catégorie **et** inclure sa capacité dans la garde du `nav-label` du
   groupe (sinon un label vide peut apparaître).
 
@@ -420,7 +441,7 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   séance et sa salle. Seules les **plénières** s'ajoutent aux passages et aux
   formations.
 - ⚠️ **Ne jamais tronquer un intitulé en PHP dans cet écran** : `Str::limit()`
-  coupe en plein mot et, joint par « · », rend un pavé. La coupe revient au CSS
+  coupe en plein mot et, joint par un point médian, rend un pavé. La coupe revient au CSS
   (`line-clamp`), qui coupe au bord de la boîte, avec l'intitulé entier dans
   `title`. Vaut pour « Mes axes », un axe par ligne.
 - ⚠️ **Aucun dégradé maison** : la carte haute porte **`var(--ukc-hero)`**. Ce
@@ -714,8 +735,8 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   motif a déjà été écrit à trois endroits : un **test de garde**
   (`ReviewLifecycleTest`, « ne déduit jamais l'attente de son inachèvement »)
   scanne `app/` et `resources/views/` et échoue s'il revient.
-- **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions · Formulaire
-  de soumission · Attribution auto · Relecteurs & expertise · Options*, définis
+- **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions - Formulaire
+  de soumission - Attribution auto - Relecteurs & expertise - Options*, définis
   **une seule fois** dans `resources/views/admin/submissions/_nav.blade.php`
   (⚠️ ajouter un onglet = un seul fichier à éditer ; chaque page passe sa clé via
   `['current' => '…']`). Chaque page porte le **sélecteur d'édition** puis la
@@ -850,8 +871,8 @@ paiement (`pay`), inscription à une formation.
   doublon rattachait donc une communication au mauvais compte, en silence.
   Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
   Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
-- **Module Programme = un seul écran, neuf onglets** : *Programme · Planning ·
-  Ateliers · Sessions · Créneaux · Espaces · Discussions · Affectation auto · Options*,
+- **Module Programme = un seul écran, neuf onglets** : *Programme - Planning -
+  Ateliers - Sessions - Créneaux - Espaces - Discussions - Affectation auto - Options*,
   pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
   `resources/views/admin/program/_nav.blade.php`. Route canonique
   **`admin.program.index`** (`/admin/programme`). Onglet par défaut = **`apercu`**.
@@ -1564,7 +1585,7 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
     et le communicateur **seulement** - « Auditeur » répété quarante fois n'apprend
     rien et mange la place du nom. Masqué dans le bandeau (150 px : le nom passe
     d'abord).
-  - **La ligne de la liste se range par un ÉCART**, plus par des « · ».
+  - **La ligne de la liste se range par un ÉCART**, plus par des points médians.
     ⚠️ Et la règle s'écrit `#visio-room .person .meta > span`, avec le **chevron** :
     sans lui elle est plus spécifique que celles du rang, du micro et du réseau
     qu'elle contient, et les repeint tous en gris - un rang gris sur fond or.
@@ -2280,7 +2301,7 @@ regles de degagement avait ete remise en dur - on examine chaque bloc).
   le lien mort revient par là - c'est le pied de page qui avait été oublié, et
   c'est le cas Pest qui l'a trouvé.
 - ⚠️ **Le bandeau d'indicateurs tombe quand tout est à zéro.** Sur un site
-  neuf, « 0 événement · 0 colloque · 0 participant · 0 établissement » donne
+  neuf, « 0 événement - 0 colloque - 0 participant - 0 établissement » donne
   une plateforme à l'abandon. On masque le bandeau **entier** : retirer deux
   cartes sur quatre laisserait une rangée trouée (même raison que pour les
   ateliers).
@@ -2701,12 +2722,12 @@ et le pied de page du site. On y arrive un diplôme à la main, pas en naviguant
 
 ### Le nom court se saisit SANS l'année
 
-La barre collante de la page colloque affiche `nom court · année` : l'année est
+La barre collante de la page colloque affiche `nom court - année` : l'année est
 ajoutée par la vue, elle ne se saisit pas.
 
 - ⚠️ L'exemple proposé sous le champ était « CSIUK 2026 », ce qui poussait
   justement à la saisir - une édition s'est retrouvée annoncée **« Colloque
-  Avenir durable 2025 · 2026 »**, deux années contradictoires sur la même ligne.
+  Avenir durable 2025 - 2026 »**, deux années contradictoires sur la même ligne.
   Un placeholder est un **exemple à copier** : s'il montre la faute, elle est
   commise.
 - Le champ affiche désormais **la ligne telle qu'elle sortira**, et prévient
@@ -3109,7 +3130,7 @@ bandes qui se chevauchent l'une SUR l'autre** (ex. 08:30-11:30 et 09:00-11:00) :
 cachaient et les chips débordaient. Désormais chaque colonne-jour empile ses **blocs dans
 l'ordre chronologique** (aucun chevauchement possible) : plénières = blocs bleus (badge or),
 ateliers = blocs blancs regroupés par tranche horaire, avec **une chip par atelier** libellée
-**« Atelier N · 📍 Salle X »** (`.wk-chip .a` = nom court de l'atelier via `Str::before(title, ' -')`,
+**« Atelier N - 📍 Salle X »** (`.wk-chip .a` = nom court de l'atelier via `Str::before(title, ' -')`,
 `.wk-chip .r` = salle avec pictogramme). ⚠️ Ne PAS remettre le compteur brut `placés/total`
 sur la chip : il était incompris (« 1/1 », « 2/2 ») - il vit désormais dans l'**infobulle**
 (survol). Les **conflits de salle** du jour (même salle réelle, horaires qui se
@@ -3182,7 +3203,7 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
 ### Secrétariat = TROIS onglets portés par l'URL
 
 `SecretariatController` + `admin/secretariat/_nav.blade.php` (pilules `.ukc-nav-docs`,
-`['current' => …]`). **Ordre des onglets : Documents · Secrétariat assisté · Rapports de
+`['current' => …]`). **Ordre des onglets : Documents - Secrétariat assisté - Rapports de
 séance** (le défaut `admin.secretariat` reste le tableau de bord des rapports, même s'il
 est listé en dernier) :
 
@@ -3190,7 +3211,7 @@ est listé en dernier) :
   **poste de travail unifié**, **scopé par événement** (sélecteur « Événement » en tête,
   `?event_id=`, défaut `currentEditionId()` - comme les onglets Documents et Assisté).
   Quatre cartes KPI **cliquables = filtres** (`à valider` / `en attente` / `validés` /
-  `toutes`) sur **un tableau unique** (séance · rapporteur · statut · date · action),
+  `toutes`) sur **un tableau unique** (séance - rapporteur - statut - date - action),
   filtré côté client (Alpine). Statut calculé une fois dans `index()` (`to_validate` →
   `awaiting` → `scheduled` → `validated`, rang de priorité). ⚠️ **Cliquer « Validés »
   montre TOUS les rapports validés de l'événement** (il n'y a plus de « 6 récents » ni de
@@ -3245,7 +3266,7 @@ est listé en dernier) :
     (left/center), via `EventSettings`. Résolus par `SecretariatController::docHeader()`
     et rendus par le **partial partagé `secretariat/print/_head.blade.php`** (inclus par
     presence/emargement/ordre_jour avec `title`+`sub`). ⚠️ Ne pas réécrire un en-tête en
-    dur « {app} · {type} » dans une vue d'impression : passer par `_head`.
+    dur « {app} - {type} » dans une vue d'impression : passer par `_head`.
   - **Liste de présence / émargement : case « Liste vierge »** (`blank=1` + `rows`) =
     aucun participant pré-rempli, uniquement des lignes numérotées vides à remplir à la
     main. Sinon participants triés par nom (émargement garde ses `extra` lignes en plus).

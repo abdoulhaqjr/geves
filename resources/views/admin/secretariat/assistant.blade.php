@@ -122,7 +122,7 @@
                         <div style="padding:12px 0;border-top:1px solid var(--ukc-border);display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
                             <div>
                                 <div style="font-weight:600;font-size:.92rem;">{{ $h['title'] }}</div>
-                                <div style="font-size:12px;color:var(--ukc-muted);margin-top:2px;">{{ strtoupper($h['format'] ?? 'pdf') }} · {{ $h['created_at'] ?? '' }}</div>
+                                <div style="font-size:12px;color:var(--ukc-muted);margin-top:2px;">{{ strtoupper($h['format'] ?? 'pdf') }} - {{ $h['created_at'] ?? '' }}</div>
                             </div>
                             <a href="{{ route('admin.secretariat.assist.download', [$h['event_id'], $h['id']]) }}" @if (($h['format'] ?? '') === 'pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="15" /> Télécharger</a>
                         </div>

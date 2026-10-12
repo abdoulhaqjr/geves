@@ -52,8 +52,8 @@
                                 <td>
                                     <div class="title"><a href="{{ route('account.submissions.show', $s) }}" style="color:var(--ukc-blue);font-weight:600;">{{ $s->title }}</a></div>
                                     <div class="meta" style="font-size:12px;color:var(--ukc-muted);">
-                                        {{ implode(' · ', $metaBits) }}
-                                        @if ($s->status === 'revision') · <span style="color:#b45309;font-weight:700;">{{ __('Correction demandée') }}</span>@endif
+                                        {{ implode(' - ', $metaBits) }}
+                                        @if ($s->status === 'revision') - <span style="color:#b45309;font-weight:700;">{{ __('Correction demandée') }}</span>@endif
                                     </div>
                                 </td>
                                 <td>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</td>
@@ -77,7 +77,7 @@
         <h3>{{ __('Déposer un nouveau résumé') }}</h3>
         <p style="font-size:13.5px;color:var(--ukc-muted);margin-bottom:16px;">
             {{ __('Formulaire guidé : informations générales, auteurs, résumé structuré (≤ 250 mots), fichier PDF et validation.') }}
-            {{ __('Consignes : français ou anglais · objectifs / méthodes / résultats · 3 à 5 mots-clés.') }}
+            {{ __('Consignes : français ou anglais - objectifs / méthodes / résultats - 3 à 5 mots-clés.') }}
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
             @if ($submitEdition && $submitEdition->submission_open && $submitRemaining > 0)

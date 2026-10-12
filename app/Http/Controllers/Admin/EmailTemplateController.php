@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 /**
  * Événement des modèles d'e-mails (objet / corps / actif) avec balises de fusion.
- * Créés, édités et supprimés via les modales de la page « E-mails · Modèles »
+ * Créés, édités et supprimés via les modales de la page « E-mails - Modèles »
  * (contrôleur + Blade, sans Livewire). Stockés dans le réglage `email_templates`
  * (surcharges des modèles intégrés + modèles personnalisés).
  */

@@ -628,7 +628,7 @@ class ProjectController extends Controller
             kind: 'task_assigned',
             title: 'Une tâche vous a été assignée',
             body: '« '.$task->title.' » - '.($event?->title ?: 'colloque')
-                .($task->due_date ? ' · échéance '.$task->due_date->format('d/m/Y') : ''),
+                .($task->due_date ? ' - échéance '.$task->due_date->format('d/m/Y') : ''),
             url: $event ? route('admin.project.index', ['event_id' => $event->id]) : null,
             icon: 'layers',
         );

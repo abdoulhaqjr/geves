@@ -43,8 +43,8 @@ class Payment extends Model
      * « sur place / virement » (le payeur choisit, l'admin valide ensuite).
      */
     public const ONLINE_METHODS = [
-        'fedapay' => 'En ligne · Mobile money / carte',
-        'cashpay' => 'En ligne · Mobile money',
+        'fedapay' => 'En ligne - Mobile money / carte',
+        'cashpay' => 'En ligne - Mobile money',
         'manual' => 'Sur place / virement (à valider)',
     ];
 

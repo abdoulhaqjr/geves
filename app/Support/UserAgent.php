@@ -18,7 +18,7 @@ class UserAgent
         $browser = self::browser($ua);
         $os = self::os($ua);
 
-        return trim($browser.($os ? ' · '.$os : '')) ?: 'Appareil inconnu';
+        return trim($browser.($os ? ' - '.$os : '')) ?: 'Appareil inconnu';
     }
 
     protected static function browser(string $ua): string

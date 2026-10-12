@@ -38,7 +38,7 @@ class GescoController extends Controller
     /** Page dédiée /assistante. */
     public function page(): View
     {
-        // Identité de l'assistante (nom + avatar) paramétrée dans Réglages · Agents IA.
+        // Identité de l'assistante (nom + avatar) paramétrée dans Réglages - Agents IA.
         $agent = AiAgents::find('gesco') ?? AiAgents::defaults()[0];
         $avatarUrl = AiAgents::avatarUrl($agent['avatar']);
 
@@ -211,7 +211,7 @@ class GescoController extends Controller
         $participantIds = Participant::where('user_id', $account->id)->pluck('id');
 
         $head = 'Utilisateur connecté : '.$account->full_name.' ('.$account->email.').'
-            .' Profil : '.($account->affiliation ?: 'affiliation non renseignée').($account->grade ? ' · '.$account->grade : '').'.';
+            .' Profil : '.($account->affiliation ?: 'affiliation non renseignée').($account->grade ? ' - '.$account->grade : '').'.';
 
         if ($participantIds->isEmpty()) {
             return $head.' Aucune participation enregistrée : aucune soumission, aucun paiement, aucun document pour l’instant.';
@@ -222,7 +222,7 @@ class GescoController extends Controller
 
         $subLines = $subs->map(fn (Submission $s) => '- « '.Str::limit((string) $s->title, 70).' » ('
             .($s->event?->title ?: $s->event?->year).') - statut : '.$s->statusLabel()
-            .($s->track ? ' · axe '.$s->track : '').($s->ref_code ? ' · réf '.$s->ref_code : ''))->implode("\n");
+            .($s->track ? ' - axe '.$s->track : '').($s->ref_code ? ' - réf '.$s->ref_code : ''))->implode("\n");
 
         $accepted = $subs->where('status', 'accepted')->count();
         $paidCount = Payment::whereIn('participant_id', $participantIds)->forParticipation()->where('status', 'paid')->count();
@@ -317,7 +317,7 @@ class GescoController extends Controller
                 $when = $e->formation?->starts_at?->locale('fr')->translatedFormat('j F Y à H\hi');
                 $status = $e->isPaid() ? 'inscription réglée' : 'inscrit (règlement en attente)';
 
-                return '- « '.$title.' » : '.$status.($when ? ' · le '.$when : '');
+                return '- « '.$title.' » : '.$status.($when ? ' - le '.$when : '');
             })->implode("\n");
             $lines[] = 'Formations ('.$enrollments->count().') :'."\n".$f;
         }

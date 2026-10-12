@@ -23,9 +23,9 @@ Un espace unique pour les **organisateurs**, les **comités**, le **secrétariat
 ## 🧱 Stack technique
 
 - **Backend** : Laravel (PHP **8.3+**)
-- **Frontend** : Blade · **Alpine.js 3** · **Vite 8** · **Tailwind CSS 4**
+- **Frontend** : Blade - **Alpine.js 3** - **Vite 8** - **Tailwind CSS 4**
 - **Composants** : Tom Select, intl-tel-input, FullCalendar, Chart.js, LiveKit (visio)
-- **Tests** : **Pest** (SQLite en mémoire) · **PHPStan / Larastan** (niveau 5)
+- **Tests** : **Pest** (SQLite en mémoire) - **PHPStan / Larastan** (niveau 5)
 - **Environnement de dev** : [Laravel Herd](https://herd.laravel.com/) (Windows)
 
 ## ✅ Prérequis

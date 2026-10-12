@@ -85,7 +85,7 @@ it('modifie un formateur en AJAX et renvoie l’affichage en JSON', function () 
         'ok' => true,
         'is_moderator' => true,
         'display_name' => 'Pr. Ama Doe',
-        'sub' => 'Chimie · ama@example.tg',
+        'sub' => 'Chimie - ama@example.tg',
     ]);
 });
 

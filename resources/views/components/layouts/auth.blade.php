@@ -34,7 +34,7 @@
                 @endisset
             </div>
             <div class="foot">
-                <a href="{{ url('/') }}">← Retour à l’accueil</a> · Service institutionnel non commercial
+                <a href="{{ url('/') }}">← Retour à l’accueil</a> - Service institutionnel non commercial
             </div>
         </aside>
 

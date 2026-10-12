@@ -177,7 +177,7 @@
                         <div class="ukc-field" style="max-width:280px;">
                             <label for="phone">{{ __('Numéro de téléphone') }} <span class="req">*</span></label>
                             <x-ukc.phone name="phone" :value="$phone" required />
-                            <span class="hint">{{ __('Indicatif pays inclus · utilisé pour l’envoi des codes') }}</span>
+                            <span class="hint">{{ __('Indicatif pays inclus - utilisé pour l’envoi des codes') }}</span>
                             @error('phone') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">

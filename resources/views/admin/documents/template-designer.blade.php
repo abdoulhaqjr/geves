@@ -17,7 +17,7 @@
   <header class="ed-top">
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
     {{-- Identité du modèle renseignée à sa création (libellé + portée). --}}
-    <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
+    <div class="crumb">{{ $typeLabel }} - {{ $scope ?? 'Participant' }}</div>
     <input class="name-input" id="tplName" value="{{ $typeLabel }}" title="Nom du modèle, repris dans la liste des documents">
     <button type="button" class="btn-save" id="btnSave">Enregistrer</button>
   </header>
@@ -64,27 +64,27 @@
         <div class="ed-panel-head">Modèles de départ</div>
         <div class="ed-panel-body">
           <p class="ly-meta" style="margin-bottom:12px;">Bases inspirees des attestations CSIUK / For-VaRRITO. Choisissez un design, puis personnalisez les elements.</p>
-          <div class="ed-panel-section">Colloque CSIUK (UK · Parakou)</div>
+          <div class="ed-panel-section">Colloque CSIUK (UK - Parakou)</div>
           <div class="ed-tpl-card active" data-tpl="participation">
             <div class="mini">PARTICIPATION</div>
-            Logos UK/UP · theme · signature president
+            Logos UK/UP - theme - signature president
           </div>
           <div class="ed-tpl-card" data-tpl="communication">
             <div class="mini">COMMUNICATION</div>
-            Titre + type de communication · theme
+            Titre + type de communication - theme
           </div>
           <div class="ed-tpl-card" data-tpl="moderation">
             <div class="mini">MODÉRATION</div>
-            Session moderee · theme colloque
+            Session moderee - theme colloque
           </div>
           <div class="ed-tpl-card" data-tpl="formation-csiuk">
             <div class="mini">FORMATION CSIUK</div>
-            Fond coins UK · formation en marge du colloque
+            Fond coins UK - formation en marge du colloque
           </div>
           <div class="ed-panel-section">Projet For-VaRRITO</div>
           <div class="ed-tpl-card" data-tpl="formation-forvarrito">
             <div class="mini">FORMATION FOR-VaRRITO</div>
-            Bordure motifs · logos multi-partenaires
+            Bordure motifs - logos multi-partenaires
           </div>
           <div class="ed-panel-section">Nouveau</div>
           <button type="button" class="ed-tool-btn" id="btnBlank">+ Design vierge (A4 paysage)</button>
@@ -94,11 +94,11 @@
       <div class="panel-view" id="panel-uploads">
         <div class="ed-panel-head">Images</div>
         <div class="ed-panel-body">
-          <div class="ed-upload" id="btnUploadImg">Téléverser une image<br><span style="font-size:11px;">SVG, PNG, JPG · max 2 Mo</span></div>
+          <div class="ed-upload" id="btnUploadImg">Téléverser une image<br><span style="font-size:11px;">SVG, PNG, JPG - max 2 Mo</span></div>
           <input type="file" id="fileUpload" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;">
           <div class="ed-panel-section">Images ajoutées</div>
           <div class="ed-grid-2" id="uploadList">
-            <div class="ed-thumb" data-logo="uk">UK · Univ. Kara</div>
+            <div class="ed-thumb" data-logo="uk">UK - Univ. Kara</div>
             <div class="ed-thumb" data-logo="up">Univ. Parakou</div>
           </div>
           <p class="ly-meta" style="margin-top:10px;">Cliquez une image pour l’ajouter sur la page. Le fond se change avec <strong>Image de fond</strong>.</p>
@@ -179,7 +179,7 @@
             <button type="button" id="lyGroup" title="Grouper la sélection">⊞</button>
             <button type="button" id="lyDel" title="Supprimer (Del)">⌫</button>
           </div>
-          <p class="ly-meta">Glisser ⠿ pour réordonner · double-clic nom pour renommer · <span class="kbd">Ctrl+G</span> grouper</p>
+          <p class="ly-meta">Glisser ⠿ pour réordonner - double-clic nom pour renommer - <span class="kbd">Ctrl+G</span> grouper</p>
           <div id="layersList"></div>
           <div class="ly-controls" id="lyControls">
             <label>
@@ -217,7 +217,7 @@
             <textarea id="aiPrompt" rows="8" placeholder="Ex. : Attestation de participation au colloque CSIUK, logos UK et UP en haut, titre centré, nom du participant en grand, QR de verification en bas a gauche, signature du president a droite..."></textarea>
             <div class="ai-drop" id="aiDrop">
               Deposer une image, PDF ou Word<br>
-              <span style="font-size:11px;">PNG, JPG, PDF, DOC, DOCX · max 8 Mo</span>
+              <span style="font-size:11px;">PNG, JPG, PDF, DOC, DOCX - max 8 Mo</span>
             </div>
             <input type="file" id="aiFile" accept="image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;">
             <div id="aiFileList"></div>

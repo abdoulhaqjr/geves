@@ -33,8 +33,8 @@
                         <tr>
                             <td><strong>{{ $s->label }}</strong></td>
                             <td style="font-size:13px;color:var(--ukc-muted);">
-                                @if ($s->starts_at){{ $s->starts_at->translatedFormat('D j M · H:i') }}@elseif ($s->session_day){{ $s->session_day->translatedFormat('D j M') }}@endif
-                                @if ($s->room) · {{ $s->room }}@endif
+                                @if ($s->starts_at){{ $s->starts_at->translatedFormat('D j M - H:i') }}@elseif ($s->session_day){{ $s->session_day->translatedFormat('D j M') }}@endif
+                                @if ($s->room) - {{ $s->room }}@endif
                             </td>
                             <td style="font-size:13px;color:var(--ukc-muted);">{{ $s->moderator_email ?: '-' }}</td>
                             <td>

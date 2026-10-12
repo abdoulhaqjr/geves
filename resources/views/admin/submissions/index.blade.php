@@ -94,12 +94,12 @@
                                     @php $words = str_word_count(strip_tags((string) $s->abstract)); @endphp
                                     <div class="meta">
                                         {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}
-                                        · {{ count($s->authors ?? []) ?: 1 }} auteur(s){{ $words ? ' · '.$words.' mots' : '' }}
+                                        - {{ count($s->authors ?? []) ?: 1 }} auteur(s){{ $words ? ' - '.$words.' mots' : '' }}
                                     </div>
                                 </td>
                                 <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-') }}
                                     @if (($s->unlinked_authors_count ?? 0) > 0)
-                                        <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché·s</span>
+                                        <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché(s)</span>
                                     @endif
                                 </td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
@@ -155,7 +155,7 @@
 
         {{-- Aperçu de la soumission (panneau latéral Tailwise) --}}
         <x-ukc.slideover open="pv" onClose="pv = null" width="460px">
-            <x-slot:header><span x-text="pv?.ref"></span> · Aperçu</x-slot:header>
+            <x-slot:header><span x-text="pv?.ref"></span> - Aperçu</x-slot:header>
             <div class="detail-grid">
                 <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
                 <div class="k">Auteur principal</div><div class="v" x-text="pv?.author"></div>

@@ -84,7 +84,7 @@ it('n’annonce jamais dans le menu une section absente de la page', function ()
 
 /**
  * ⚠️ **Quatre zéros n'informent personne.** Sur un site neuf, le bandeau
- * annonçait « 0 événement · 0 colloque · 0 participant · 0 établissement » et
+ * annonçait « 0 événement - 0 colloque - 0 participant - 0 établissement » et
  * donnait une plateforme à l'abandon. On masque le bandeau ENTIER : retirer
  * deux cartes sur quatre laisserait une rangée trouée.
  */

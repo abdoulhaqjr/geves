@@ -1,4 +1,4 @@
-<x-layouts.admin :title="$claim->reference" :subtitle="$claim->typeLabel().' · '.$claim->subject">
+<x-layouts.admin :title="$claim->reference" :subtitle="$claim->typeLabel().' - '.$claim->subject">
     <x-slot:actions>
         <a href="{{ route('admin.claims.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="chevron" :size="15" /> Toutes les réclamations</a>
     </x-slot:actions>
@@ -16,9 +16,9 @@
                     </div>
                     <h3 style="margin:0 0 4px;">{{ $claim->subject }}</h3>
                     <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">
-                        {{ $claim->name ?: 'Déclarant inconnu' }} · {{ $claim->email }}
-                        @if ($claim->event) · {{ $claim->event->series?->name ? $claim->event->series->name.' - ' : '' }}{{ $claim->event->title ?: $claim->event->year }}@endif
-                        · reçue le {{ $claim->created_at?->translatedFormat('d/m/Y à H:i') }}
+                        {{ $claim->name ?: 'Déclarant inconnu' }} - {{ $claim->email }}
+                        @if ($claim->event) - {{ $claim->event->series?->name ? $claim->event->series->name.' - ' : '' }}{{ $claim->event->title ?: $claim->event->year }}@endif
+                        - reçue le {{ $claim->created_at?->translatedFormat('d/m/Y à H:i') }}
                     </div>
                     <div class="ukc-rte" style="white-space:pre-line;line-height:1.6;">{{ $claim->message }}</div>
 
@@ -83,7 +83,7 @@
                             @else
                                 <span class="ukc-pill ukc-pill--warn">Procédure à suivre</span>
                             @endif
-                            <span style="font-size:11.5px;color:var(--ukc-muted);">{{ $a['at'] ?? '' }} @if (! empty($a['by']))· {{ $a['by'] }}@endif</span>
+                            <span style="font-size:11.5px;color:var(--ukc-muted);">{{ $a['at'] ?? '' }} @if (! empty($a['by']))- {{ $a['by'] }}@endif</span>
                         </div>
 
                         @if (! empty($a['summary']))<div style="margin-top:8px;line-height:1.55;">{{ $a['summary'] }}</div>@endif

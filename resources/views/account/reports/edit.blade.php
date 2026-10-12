@@ -5,9 +5,9 @@
             <x-ukc.icon name="chevron" :size="16" /> {{ __('Mes séances à rapporter') }}
         </a>
         @if ($locked)
-            <span class="ukc-pill ukc-pill--ok">{{ __('Validé par le secrétariat') }} @if ($report->validated_at)· {{ $report->validated_at->translatedFormat('d/m/Y H:i') }}@endif</span>
+            <span class="ukc-pill ukc-pill--ok">{{ __('Validé par le secrétariat') }} @if ($report->validated_at)- {{ $report->validated_at->translatedFormat('d/m/Y H:i') }}@endif</span>
         @elseif ($report->exists && $report->isSubmitted())
-            <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }} {{ $report->submitted_at ? '· '.$report->submitted_at->translatedFormat('d/m/Y H:i') : '' }}</span>
+            <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }} {{ $report->submitted_at ? '- '.$report->submitted_at->translatedFormat('d/m/Y H:i') : '' }}</span>
         @elseif ($report->exists)
             <span class="ukc-pill ukc-pill--warn">{{ __('Brouillon') }}</span>
         @endif
@@ -15,12 +15,12 @@
 
     <div class="ukc-card">
         <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
+            {{ $session->event?->series?->name ?: __('Colloque') }} - {{ $session->event?->title ?: $session->event?->year }}
         </div>
         <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
         <div style="font-size:13px;color:var(--ukc-muted);">
-            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F · H:i') }}@endif
-            @if ($session->room) · {{ $session->room }}@endif
+            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F - H:i') }}@endif
+            @if ($session->room) - {{ $session->room }}@endif
         </div>
 
         @if ($communications)
@@ -67,7 +67,7 @@
             @if ($presence['present'] > 0)
                 <div style="margin-top:12px;font-size:13px;color:var(--ukc-muted);">
                     {{ __('Présence pointée') }} : <strong>{{ $presence['present'] }}</strong> {{ __('sur') }} {{ $presence['expected'] }} {{ __('inscrits') }}
-                    · <a href="{{ route('account.attendance.edit', $session) }}">{{ __('Consulter') }}</a>
+                    - <a href="{{ route('account.attendance.edit', $session) }}">{{ __('Consulter') }}</a>
                 </div>
             @elseif ($report->attendance !== null)
                 <div style="margin-top:12px;font-size:13px;color:var(--ukc-muted);">{{ __('Affluence estimée') }} : <strong>{{ $report->attendance }}</strong></div>

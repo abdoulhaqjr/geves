@@ -401,7 +401,7 @@ it('n’annonce pas le badge comme un fichier, et mène à l’ancre du badge', 
 });
 
 it('montre chaque axe en entier, un par ligne', function () {
-    // ⚠️ Les axes étaient rognés à 48 caractères PUIS joints par « · » : un
+    // ⚠️ Les axes étaient rognés à 48 caractères PUIS joints par un point médian : un
     // intitulé d'atelier en fait couramment 70, et trois d'affilée dans la
     // colonne étroite donnaient un pavé où la coupe tombait en plein mot. La
     // coupe revient au CSS (deux lignes, `title` porte l'intitulé entier) ;

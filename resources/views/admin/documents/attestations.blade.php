@@ -1,4 +1,4 @@
-<x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active · '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
+<x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active - '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
     <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
         {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -48,7 +48,7 @@
                             <x-ukc.icon name="plus" :size="16" /> Nouveau modèle
                         </button>
                         <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’événement · génération PDF + QR de vérification. Émission idempotente.</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’événement - génération PDF + QR de vérification. Émission idempotente.</span>
                     </div>
 
                     {{-- ⚠️ On est sur l'écran qui ÉMET : il doit dire ce que l'émission
@@ -89,7 +89,7 @@
                                             @if ($row['excluded'] > 0)
                                                 <div style="font-size:11.5px;color:var(--ukc-muted);margin-top:2px;"
                                                      title="Auteurs non pointés présents à la séance où leur communication est programmée.">
-                                                    {{ $row['excluded'] }} écarté(s) · absents
+                                                    {{ $row['excluded'] }} écarté(s) - absents
                                                 </div>
                                             @endif
                                         </td>
@@ -146,7 +146,7 @@
                     <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card">
                         <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
-                        <h3>Options générales · Attestations</h3>
+                        <h3>Options générales - Attestations</h3>
                         <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cet événement.</div>
                         {{-- ⚠️ LE choix qui commande les autres : en ligne, le passage d'une
@@ -267,7 +267,7 @@
                     <div class="ukc-toolbar">
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="newBadge = true"><x-ukc.icon name="plus" :size="16" /> Nouveau modèle de badge</button>
                         <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 · QR d’identification</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 - QR d’identification</span>
                     </div>
 
                     <div class="ukc-table-wrap">
@@ -300,7 +300,7 @@
                     <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card">
                         <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
-                        <h3>Options générales · Badges</h3>
+                        <h3>Options générales - Badges</h3>
                         <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
                         <div class="ukc-opts-grid">
@@ -553,7 +553,7 @@
                                 @php($isActive = $opts['livretTemplate'] === $tpl['name'])
                                 <div class="ukc-tpl-item" @if ($isActive) style="border-color:var(--ukc-blue);box-shadow:0 0 0 1px var(--ukc-blue) inset;" @endif>
                                     <div class="ico">DOC</div>
-                                    <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko · importé le {{ $tpl['date'] ?? '-' }}</span></div>
+                                    <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko - importé le {{ $tpl['date'] ?? '-' }}</span></div>
                                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                                         <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank"><x-ukc.icon name="download" :size="15" /> Télécharger</a>
                                         @if ($isActive)
@@ -589,7 +589,7 @@
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
                         <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
-                        <h3>Apparence du livre · modèles intégrés</h3>
+                        <h3>Apparence du livre - modèles intégrés</h3>
                         <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Typographie, couleurs et page de garde appliquées aux <strong>deux modèles intégrés</strong> (par défaut et Journées scientifiques). Les modèles .docx importés gardent leur propre mise en forme.</div>
 
@@ -668,13 +668,13 @@
                         <h3 style="font-size:13px;margin:16px 0 10px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">Page de garde</h3>
                         <div class="ukc-form-row">
                             <label>Mention sur la page de garde</label>
-                            <input type="text" name="livretCoverMention" value="{{ $opts['livretCoverMention'] }}" placeholder="Livre des résumés · Colloque … · Université de Kara">
+                            <input type="text" name="livretCoverMention" value="{{ $opts['livretCoverMention'] }}" placeholder="Livre des résumés - Colloque … - Université de Kara">
                         </div>
                         <div class="ukc-form-row">
                             <label>Logo(s) page de garde</label>
                             <label class="ukc-drop" style="padding:14px;">
                                 Ajouter logo UK / UP / partenaires<br>
-                                <span style="font-size:11px;">PNG, SVG · fond transparent recommandé</span>
+                                <span style="font-size:11px;">PNG, SVG - fond transparent recommandé</span>
                                 <input type="file" name="livretCoverLogo" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;">
                             </label>
                             @if ($opts['livretCoverLogo'])

@@ -14,7 +14,7 @@ use App\Models\Event;
  * l'événement atteintes). {@see Event::phase()}.
  *
  * Correspondance avec les 3 vues publiques ({@see publicView()}) :
- *  - à venir  ← call_open · under_review · registration
+ *  - à venir  ← call_open - under_review - registration
  *  - en cours ← ongoing
  *  - passé    ← closed
  *  - (brouillon : non publié, invisible)

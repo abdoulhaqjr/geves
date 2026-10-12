@@ -39,12 +39,12 @@
                 <div style="font-size:12px;margin-bottom:4px;color:var(--ukc-light);">
                     <a href="{{ route('admin.evenements.index') }}" style="color:var(--ukc-blue);font-weight:600;">Événements</a>
                     <span> / </span><span style="color:var(--ukc-muted);">{{ $event ? 'Modifier' : 'Nouvelle' }}</span>
-                    <span> · </span><code x-text="f.year || '-'"></code>
+                    <span> - </span><code x-text="f.year || '-'"></code>
                 </div>
                 <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $event ? 'Événement' : 'Nouvel événement' }}'"></h1>
                 <div class="sub" style="font-size:13px;color:var(--ukc-muted);margin-top:4px;">
                     <span class="ukc-pill" :class="statusLive() ? 'ukc-pill--live' : 'ukc-pill--muted'" x-text="statusLabel()"></span>
-                    &nbsp; Paramétrage complet · assisté IA
+                    &nbsp; Paramétrage complet - assisté IA
                 </div>
             </div>
             <div class="head-actions" x-data="{}">
@@ -164,17 +164,17 @@
                                     <input type="text" id="event_label" name="event_label" x-model="f.event_label" placeholder="3e événement">
                                 </div>
                                 {{-- ⚠️ SANS L'ANNÉE : la barre collante de la page publique
-                                     l'ajoute elle-même (« nom court · année »). L'exemple
+                                     l'ajoute elle-même (« nom court - année »). L'exemple
                                      proposé ici était « CSIUK 2026 », ce qui poussait à la
                                      saisir - un événement s'est retrouvée annoncée
-                                     « Colloque Avenir durable 2025 · 2026 », deux années
+                                     « Colloque Avenir durable 2025 - 2026 », deux années
                                      contradictoires sur la même ligne. L'aperçu ci-dessous
                                      montre la ligne telle qu'elle sortira. --}}
                                 <div class="ukc-form-row">
                                     <label for="short_name">Nom court <span class="ukc-hint" style="display:inline;">(en-têtes, badges)</span></label>
                                     <input type="text" id="short_name" name="short_name" x-model="f.short_name" placeholder="Colloque Avenir durable">
                                     <div class="ukc-hint" x-show="f.short_name" x-cloak>
-                                        Sur la page publique : <strong x-text="f.short_name + (f.year ? ' · ' + f.year : '')"></strong>
+                                        Sur la page publique : <strong x-text="f.short_name + (f.year ? ' - ' + f.year : '')"></strong>
                                     </div>
                                     <div class="ukc-hint" style="color:#b45309;" x-cloak
                                          x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
@@ -184,7 +184,7 @@
                             </div>
                             <div class="ukc-form-row">
                                 <label for="subtitle">Accroche / sous-titre</label>
-                                <input type="text" id="subtitle" name="subtitle" x-model="f.subtitle" placeholder="Université de Kara · en collaboration avec…">
+                                <input type="text" id="subtitle" name="subtitle" x-model="f.subtitle" placeholder="Université de Kara - en collaboration avec…">
                             </div>
                             <div class="ukc-form-row">
                                 <label for="theme">Thème</label>
@@ -654,7 +654,7 @@
                             @foreach ([
                                 ['key' => 'hero_image', 'titre' => 'Image du bandeau (hero)', 'aide' => 'Fond du bandeau en tête de la page publique. Paysage large, 1920 x 800 environ.', 'url' => $v('hero_image')],
                                 ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image'), 'toggle' => 'banner_enabled', 'toggleLabel' => 'Afficher la bannière officielle sur la page du colloque'],
-                                ['key' => 'hero_video', 'type' => 'video', 'titre' => 'Vidéo de fond du bandeau', 'aide' => 'MP4 ou WEBM, '.$maxUpload.' maximum (limite du serveur). Elle remplace l’image du bandeau, qui lui sert alors d’affiche pendant le chargement.', 'url' => $v('hero_video'), 'toggle' => 'hero_video_enabled', 'toggleLabel' => 'Activer la vidéo de fond du bandeau', 'extra' => '<label class="ukc-check"><input type="checkbox" name="hero_video_muted" value="1" '.($v('hero_video_muted') ? 'checked' : '').'> Muet · boucle · lecture automatique</label>'],
+                                ['key' => 'hero_video', 'type' => 'video', 'titre' => 'Vidéo de fond du bandeau', 'aide' => 'MP4 ou WEBM, '.$maxUpload.' maximum (limite du serveur). Elle remplace l’image du bandeau, qui lui sert alors d’affiche pendant le chargement.', 'url' => $v('hero_video'), 'toggle' => 'hero_video_enabled', 'toggleLabel' => 'Activer la vidéo de fond du bandeau', 'extra' => '<label class="ukc-check"><input type="checkbox" name="hero_video_muted" value="1" '.($v('hero_video_muted') ? 'checked' : '').'> Muet - boucle - lecture automatique</label>'],
                             ] as $art)
                                 <div class="artwork-field" :class="{ 'is-off': ! on }" x-data="{
                                         preview: '{{ e($art['url']) }}',
@@ -807,7 +807,7 @@
                     </div>
                 </form>
 
-                {{-- ===== INTÉGRATIONS · PAIEMENT (sauvegarde dédiée) ===== --}}
+                {{-- ===== INTÉGRATIONS - PAIEMENT (sauvegarde dédiée) ===== --}}
                 @if ($event)
                     @php($pay = $event->settings['payment'] ?? [])
                     <div class="ukc-panel" :class="{ active: tab==='integrations' }">
@@ -886,7 +886,7 @@
                     </div>
                 @endif
 
-                {{-- ===== INTÉGRATIONS · VISIOCONFÉRENCE (sauvegarde dédiée) ===== --}}
+                {{-- ===== INTÉGRATIONS - VISIOCONFÉRENCE (sauvegarde dédiée) ===== --}}
                 {{-- ⚠️ Deuxième panneau du MÊME onglet : les deux gardent leur propre
                      formulaire et leur propre bouton, parce qu'ils enregistrent des
                      réglages distincts. Les fondre en un seul ferait d'une correction
@@ -990,7 +990,7 @@
                                 <select name="user_id" required data-tom data-placeholder="Rechercher un membre du staff…">
                                     <option value="">- Choisir un membre du staff -</option>
                                     @foreach ($assignableUsers as $u)
-                                        <option value="{{ $u->id }}">{{ $u->name }} · {{ $u->email }}</option>
+                                        <option value="{{ $u->id }}">{{ $u->name }} - {{ $u->email }}</option>
                                     @endforeach
                                 </select>
                                 <select name="role" required>
@@ -1036,7 +1036,7 @@
                         </div>
                     </div>
 
-                    {{-- ===== APPARENCE · TRADUCTIONS (i18n : contenu par langue) ===== --}}
+                    {{-- ===== APPARENCE - TRADUCTIONS (i18n : contenu par langue) ===== --}}
                     {{-- ⚠️ Même onglet que l'apparence, mais HORS du formulaire principal :
                          chaque langue a son formulaire et son bouton (le contrôleur
                          enregistre une locale à la fois). Imbriquer un formulaire dans un
@@ -1138,7 +1138,7 @@
                         <div><span class="k">Dates</span><br><strong x-text="datesLabel()"></strong></div>
                         <div><span class="k">Lieu</span><br><span x-text="(f.location || '-').split('\n')[0]"></span></div>
                         <div><span class="k">Format</span><br><span x-text="f.format || '-'"></span></div>
-                        <div><span class="k">Soumissions</span><br><span x-text="f.submission_open ? ('Ouvertes' + (f.submission_deadline ? ' · limite ' + f.submission_deadline.slice(0,10) : '')) : 'Fermées'"></span></div>
+                        <div><span class="k">Soumissions</span><br><span x-text="f.submission_open ? ('Ouvertes' + (f.submission_deadline ? ' - limite ' + f.submission_deadline.slice(0,10) : '')) : 'Fermées'"></span></div>
                         <div><span class="k">Langues</span><br><span x-text="(f.languages && f.languages.length) ? f.languages.join(', ') : '-'"></span></div>
                         <div style="margin-bottom:0;"><span class="k">Chiffres</span><br><span x-text="statsLabel()"></span></div>
                     </div>
@@ -1195,12 +1195,12 @@
                 },
                 statsLabel() {
                     const s = (this.stats || []).filter(x => x.label || x.value);
-                    return s.length ? s.map(x => (x.value + ' ' + x.label).trim()).join(' · ') : '-';
+                    return s.length ? s.map(x => (x.value + ' ' + x.label).trim()).join(' - ') : '-';
                 },
                 fileLabel() {
                     if (this.aiOver) return 'Relâchez pour ajouter';
                     return this.aiFiles.length
-                        ? (this.aiFiles.length + ' document(s) · cliquez pour en ajouter')
+                        ? (this.aiFiles.length + ' document(s) - cliquez pour en ajouter')
                         : 'Glissez un document ici (PDF, image) ou cliquez';
                 },
                 // Cumulatif : on ajoute aux documents déjà choisis plutôt que de les
@@ -1215,7 +1215,7 @@
                 suggestionList() {
                     const s = this.aiSuggestions || {}, labels = { title:'Nom', theme:'Thème', subtitle:'Accroche', location:'Lieu', year:'Année', date_start:'Début', date_end:'Fin', submission_deadline:'Limite', intro:'Présentation' }, out = {};
                     Object.keys(labels).forEach(k => { if (s[k]) out[k] = { label: labels[k], value: String(s[k]).slice(0,120) }; });
-                    if (Array.isArray(s.tracks) && s.tracks.length) out.tracks = { label:'Axes', value: s.tracks.join(' · ') };
+                    if (Array.isArray(s.tracks) && s.tracks.length) out.tracks = { label:'Axes', value: s.tracks.join(', ') };
                     if (Array.isArray(s.fees) && s.fees.length) out.fees = { label:'Tarifs', value: s.fees.length + ' catégorie(s)' };
                     if (Array.isArray(s.committees) && s.committees.length) out.committees = { label:'Comités', value: s.committees.length + ' membre(s)' };
                     if (Array.isArray(s.partners) && s.partners.length) out.partners = { label:'Partenaires', value: s.partners.length };

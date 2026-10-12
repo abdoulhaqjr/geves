@@ -31,7 +31,7 @@
     {{-- ===== Hero (fidèle au mockup page-colloque-amelioree.html) ===== --}}
     @php
         $languages = $e->settings['languages'] ?? null;
-        $languages = is_array($languages) ? implode(' · ', $languages) : $languages;
+        $languages = is_array($languages) ? implode(' - ', $languages) : $languages;
         $countdownToDeadline = $e->submission_open && $e->submission_deadline && $e->submission_deadline->isFuture();
         $cdTarget = $countdownToDeadline ? $e->submission_deadline : $e->date_start;
         $cdLabel = $countdownToDeadline ? 'Clôture des soumissions dans' : 'Le colloque commence dans';
@@ -76,7 +76,7 @@
                             <div><x-ukc.icon name="calendar" :size="16" /> <strong>{{ $dateLabel }}</strong></div>
                         @endif
                         @if ($e->location)
-                            <div><x-ukc.icon name="pin" :size="16" /> {{ str_replace(["\r\n", "\r", "\n"], ' · ', $e->tr('location')) }}</div>
+                            <div><x-ukc.icon name="pin" :size="16" /> {{ str_replace(["\r\n", "\r", "\n"], ' - ', $e->tr('location')) }}</div>
                         @endif
                         @if ($languages)
                             <div><x-ukc.icon name="users" :size="16" /> {{ $languages }}</div>
@@ -124,7 +124,7 @@
                 @endphp
                 <a href="#top" class="ukc-nav-brand">
                     <span class="dot" aria-hidden="true"></span>
-                    {{ $cfShort }} <span>· {{ $e->year ?: $e->date_start?->format('Y') }}</span>
+                    {{ $cfShort }} <span>- {{ $e->year ?: $e->date_start?->format('Y') }}</span>
                 </a>
                 <ul class="ukc-nav-links">
                     @if (count($stats))
@@ -424,7 +424,7 @@
                                     @if ($gradesCouverts !== [])
                                         <p class="ukc-fee__grades">
                                             <span class="k">{{ __('Grades concernés') }}</span>
-                                            <span class="v">{{ implode(' · ', $gradesCouverts) }}</span>
+                                            <span class="v">{{ implode(', ', $gradesCouverts) }}</span>
                                         </p>
                                     @endif
                                 </div>
@@ -482,7 +482,7 @@
                                 @if ($f->theme)<div style="color:var(--ukc-muted);font-size:.9rem;">{{ $f->theme }}</div>@endif
                                 <div style="font-size:.82rem;color:var(--ukc-light);margin-top:6px;">
                                     @if ($f->starts_at){{ $f->starts_at->format('d/m/Y H:i') }}@endif
-                                    @if ($f->location) · {{ $f->location }}@endif @if ($f->room) · {{ $f->room }}@endif
+                                    @if ($f->location) - {{ $f->location }}@endif @if ($f->room) - {{ $f->room }}@endif
                                 </div>
                                 @if ($f->objective)<p style="font-size:.9rem;margin:10px 0 0;">{{ \Illuminate\Support\Str::limit($f->objective, 160) }}</p>@endif
                                 @if ($f->trainers->isNotEmpty())

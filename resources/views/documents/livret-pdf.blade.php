@@ -57,7 +57,7 @@
     @if ($opts['show_dates'] && $event->date_start)
         <p class="center muted" style="margin-top:8px;">
             {{ $event->date_start->format('d/m/Y') }}@if ($event->date_end) - {{ $event->date_end->format('d/m/Y') }}@endif
-            @if ($loc = trim((string) $event->location)) &nbsp;·&nbsp; {{ $loc }} @endif
+            @if ($loc = trim((string) $event->location)) &nbsp;-&nbsp; {{ $loc }} @endif
         </p>
     @endif
     <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>

@@ -1,4 +1,4 @@
-<x-layouts.admin title="Tableau de bord" :subtitle="'Vue d’ensemble'.($event ? ' · '.($event->title ?: $event->series?->name) : '')">
+<x-layouts.admin title="Tableau de bord" :subtitle="'Vue d’ensemble'.($event ? ' - '.($event->title ?: $event->series?->name) : '')">
     <x-slot:actions>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.dashboard') }}">
             <x-ukc.icon name="refresh" :size="14" /> Actualiser
@@ -30,10 +30,10 @@
                     </h2>
                     @if ($event->theme)<p>{{ $event->theme }}</p>@endif
                     <div class="meta">
-                        @if ($event->date_start){{ $event->date_start->translatedFormat('d M') }} – {{ $event->date_end?->translatedFormat('d M Y') }} · @endif
+                        @if ($event->date_start){{ $event->date_start->translatedFormat('d M') }} – {{ $event->date_end?->translatedFormat('d M Y') }} - @endif
                         {{ $event->location ?: 'Lieu à préciser' }}
                         @if ($event->submission_open)
-                            · Soumissions ouvertes @if ($event->submission_deadline) jusqu’au {{ $event->submission_deadline->translatedFormat('d/m') }} @endif
+                            - Soumissions ouvertes @if ($event->submission_deadline) jusqu’au {{ $event->submission_deadline->translatedFormat('d/m') }} @endif
                         @endif
                     </div>
                 </div>
@@ -58,7 +58,7 @@
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div>
-                <div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div><div class="hint">{{ $stats['oral'] }} orales · {{ $stats['poster'] }} posters</div>
+                <div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div><div class="hint">{{ $stats['oral'] }} orales - {{ $stats['poster'] }} posters</div>
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div>

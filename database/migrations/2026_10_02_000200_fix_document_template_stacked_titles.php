@@ -17,7 +17,7 @@ use Illuminate\Database\Migrations\Migration;
 return new class extends Migration
 {
     /** Préfixes que le concepteur ajoutait en double. */
-    private const PREFIXES = ['Attestation de ', 'Attestation d’', 'Badge · '];
+    private const PREFIXES = ['Attestation de ', 'Attestation d’', 'Badge - '];
 
     public function up(): void
     {

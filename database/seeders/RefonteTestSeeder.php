@@ -69,7 +69,7 @@ class RefonteTestSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Comptes de test : super@uk.tg · gerant@uk.tg · membre@uk.tg (mot de passe : password)'
+        $this->command?->info('Comptes de test : super@uk.tg - gerant@uk.tg - membre@uk.tg (mot de passe : password)'
             .($event ? '' : ' - aucun événement trouvé, participant non rattaché.'));
     }
 }

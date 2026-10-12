@@ -91,7 +91,7 @@
                                             <span class="ukc-pill ukc-pill--warn">Non vérifié</span>
                                         @endif
                                     </td>
-                                    <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y · H:i') ?? 'Jamais' }}</td>
+                                    <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y - H:i') ?? 'Jamais' }}</td>
                                     <td><span class="ip-cell">{{ $u->last_login_ip ?: '-' }}</span></td>
                                     <td>
                                         @if ($u->is_active)<span class="ukc-pill ukc-pill--ok">Actif</span>
@@ -141,7 +141,7 @@
                     <div class="role-card">
                         <h3>{{ $meta['label'] }} <span class="ukc-pill ukc-pill--{{ $meta['category'] === 'Système' ? 'ok' : $meta['pill'] }}">{{ $meta['category'] }}</span></h3>
                         <p>{{ $meta['description'] }}</p>
-                        <div class="meta">{{ $countsByRole[$name] ?? 0 }} utilisateur(s) · {{ count(array_intersect($rolePermissions[$name] ?? [], array_keys($permissions))) }} permission(s)</div>
+                        <div class="meta">{{ $countsByRole[$name] ?? 0 }} utilisateur(s) - {{ count(array_intersect($rolePermissions[$name] ?? [], array_keys($permissions))) }} permission(s)</div>
                     </div>
                 @endforeach
             </div>

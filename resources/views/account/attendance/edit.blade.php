@@ -20,21 +20,21 @@
             </a>
         @endif
         @if ($validated)
-            <span class="ukc-pill ukc-pill--ok">{{ __('Rapport validé · présence figée') }}</span>
+            <span class="ukc-pill ukc-pill--ok">{{ __('Rapport validé - présence figée') }}</span>
         @elseif ($frozen)
-            <span class="ukc-pill ukc-pill--muted">{{ __('Événement archivée · lecture seule') }}</span>
+            <span class="ukc-pill ukc-pill--muted">{{ __('Événement archivée - lecture seule') }}</span>
         @endif
     </div>
 
     <div class="ukc-card">
         <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
+            {{ $session->event?->series?->name ?: __('Colloque') }} - {{ $session->event?->title ?: $session->event?->year }}
         </div>
         <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
         <div style="font-size:13px;color:var(--ukc-muted);">
-            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F · H:i') }}@endif
+            @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F - H:i') }}@endif
             @if ($session->ends_at) – {{ $session->ends_at->translatedFormat('H:i') }}@endif
-            @if ($session->room) · {{ $session->room }}@endif
+            @if ($session->room) - {{ $session->room }}@endif
         </div>
 
         @if ($roster)
@@ -97,7 +97,7 @@
                                     <strong>{{ $ligne['name'] }}</strong>
                                     <div style="font-size:12.5px;color:var(--ukc-muted);">
                                         {{ $ligne['corresponding'] ? __('Auteur correspondant') : __('Co-auteur') }}
-                                        @if ($ligne['institution']) · {{ $ligne['institution'] }}@endif
+                                        @if ($ligne['institution']) - {{ $ligne['institution'] }}@endif
                                     </div>
                                     {{-- ⚠️ Le modérateur doit voir ce qu'il n'a PAS posé
                                          lui-même : il endosse ces chiffres dans le PV. --}}
