@@ -21,7 +21,7 @@
 {{-- Footer --}}
 <x-slot:footer>
 <x-mail::footer>
-© {{ date('Y') }} {{ config('app.name') }} - {{ __('Université de Kara') }}
+© {{ date('Y') }} {{ config('app.name') }} - {{ __('Université de Kara') }}<br>
 {{ __('Cet e-mail vous a été envoyé par :app, plateforme de gestion des événements scientifiques.', ['app' => config('app.name')]) }}
 </x-mail::footer>
 </x-slot:footer>
