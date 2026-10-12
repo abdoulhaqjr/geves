@@ -201,13 +201,10 @@
   color: #fff; border-radius: 18px; box-shadow: 0 16px 40px rgba(15, 26, 51, .14);
 }
 .about-side::before { content: ''; position: absolute; z-index: -1; width: 320px; height: 320px; right: -110px; bottom: -180px; border-radius: 50%; background: rgba(255, 255, 255, .08); }
-.about-side .mark-lg {
-  width: 56px; height: 56px; margin-bottom: 22px; border-radius: 15px; background: rgba(255, 255, 255, .12);
-  display: flex; align-items: center; justify-content: center; padding: 8px;
+.about-side .logo-wide {
+  display: flex; align-items: center; width: min(100%, 260px); min-height: 68px; margin-bottom: 20px;
 }
-/* Le logo s'INSCRIT dans la pastille (`contain`), il ne la remplit pas : un
-   monogramme recadré n'est plus un monogramme. */
-.about-side .mark-lg img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.about-side .logo-wide img { display: block; width: auto; height: auto; max-width: 100%; max-height: 68px; object-fit: contain; object-position: left center; }
 .about-side__eyebrow { display: block; margin-bottom: 10px; color: var(--ukc-gold); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .about-side h3 { max-width: 17em; margin: 0 0 14px; font-size: clamp(1.35rem, 2vw, 1.7rem); font-weight: 900; line-height: 1.25; }
 .about-side p { max-width: 48ch; margin: 0; color: rgba(255, 255, 255, .9); font-size: 15px; line-height: 1.6; }

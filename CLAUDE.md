@@ -37,7 +37,7 @@ Larastan **niveau 5**.
 
 ### Accueil public : À propos
 
-- La section `#apropos` de `home.blade.php` est une présentation concise en deux panneaux : rôle de la plateforme et responsabilité de la DRI. Les fonctionnalités détaillées restent dans `#fonctionnalites` ; éviter de réintroduire des cartes qui répètent le même contenu. Les textes sont traduits dans `lang/en.json` et les styles résident dans `resources/css/public.css`.
+- La section `#apropos` de `home.blade.php` est une présentation concise en deux panneaux : rôle de la plateforme et responsabilité de la DRI. Le panneau bleu utilise le **logo large pour fond sombre** (`Branding::wideWhite()` + secours `logo-auto-white`), adapté à sa largeur. Les fonctionnalités détaillées restent dans `#fonctionnalites` ; éviter de réintroduire des cartes qui répètent le même contenu. Les textes sont traduits dans `lang/en.json` et les styles résident dans `resources/css/public.css`.
 
 ### Colloque Eau au Togo - import réel
 

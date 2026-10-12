@@ -237,16 +237,12 @@
                     </div>
                 </div>
                 <aside class="about-side">
-                    {{-- ⚠️ Le logo compact, pas trois lettres dessinées à la main :
-                         une marque redessinée dans une vue ne suit pas celle que
-                         l'administration téléverse dans Réglages, et c'est
-                         exactement ce qui faisait mentir la configuration dans la
-                         salle de visio. Carte sombre, donc variante pour fond
-                         sombre - et `logo-auto-white` seulement en secours, quand
-                         aucune version claire n'a été fournie. --}}
-                    <div class="mark-lg">
-                        <img src="{{ \App\Support\Branding::markWhite() }}" alt=""
-                             @class(['logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
+                    {{-- Le panneau dispose de la largeur nécessaire au logo complet.
+                         Utiliser sa variante pour fond sombre et le secours CSS prévu
+                         pour un logo large personnalisé sans variante claire. --}}
+                    <div class="logo-wide">
+                        <img src="{{ \App\Support\Branding::wideWhite() }}" alt=""
+                             @class(['logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::WIDE)])>
                     </div>
                     <span class="about-side__eyebrow">{{ __('Porté par l’Université de Kara') }}</span>
                     <h3>{{ __('Direction de la Recherche et de l’Innovation') }}</h3>
