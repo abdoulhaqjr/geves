@@ -121,8 +121,8 @@ class SaveEventRequest extends FormRequest
             'hero_image' => ['nullable', 'string', 'max:500'],
             'banner_image' => ['nullable', 'string', 'max:500'],
             // Habillage téléversé : c'est le fichier qui l'emporte sur l'URL saisie.
-            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EventArtwork::maxUploadKb())],
-            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EventArtwork::maxUploadKb())],
+            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,avif', 'max:'.min(3072, EventArtwork::maxUploadKb())],
+            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,avif', 'max:'.min(3072, EventArtwork::maxUploadKb())],
             // ⚠️ Plafond = celui du serveur : au-delà, PHP coupe la requête avant
             // la validation et l'admin n'obtiendrait aucun message.
             'hero_video_file' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm', 'max:'.EventArtwork::maxUploadKb()],

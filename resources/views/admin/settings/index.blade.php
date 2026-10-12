@@ -229,14 +229,14 @@
                                 </div>
                                 <div class="row">
                                     <input type="file" id="{{ $banniere['key'] }}" name="{{ $banniere['key'] }}" x-ref="f"
-                                           accept="image/png,image/jpeg,image/webp" @change="pick($event)">
+                                           accept="image/png,image/jpeg,image/webp,image/avif" @change="pick($event)">
                                     <label for="{{ $banniere['key'] }}" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
                                         <x-ukc.icon name="upload" :size="16" /> <span x-text="custom ? 'Remplacer' : 'Téléverser'">Téléverser</span>
                                     </label>
                                     <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="custom" x-cloak @click="reset()">
                                         Supprimer
                                     </button>
-                                    <span class="hint">{{ number_format(\App\Http\Controllers\Admin\SettingController::bannerMaxKb() / 1024, 1, ',', ' ') }} Mo max - JPG, PNG ou WebP</span>
+                                    <span class="hint">{{ number_format(\App\Http\Controllers\Admin\SettingController::bannerMaxKb() / 1024, 1, ',', ' ') }} Mo max - JPG, PNG, WebP ou AVIF</span>
                                 </div>
                                 {{-- Champ caché plutôt qu'une case : la remise à zéro se décide par
                                      le bouton, qui met aussi l'aperçu à jour. --}}

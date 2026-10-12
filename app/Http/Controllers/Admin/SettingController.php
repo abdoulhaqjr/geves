@@ -208,8 +208,8 @@ class SettingController extends Controller
             // plus généreuse que `upload_max_filesize` ne sert à rien : PHP
             // coupe la requête avant la validation et l'admin reçoit une page
             // vide au lieu d'un message.
-            SiteBanners::HOME => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.self::bannerMaxKb()],
-            SiteBanners::EVENT_DEFAULT => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.self::bannerMaxKb()],
+            SiteBanners::HOME => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,avif', 'max:'.self::bannerMaxKb()],
+            SiteBanners::EVENT_DEFAULT => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,avif', 'max:'.self::bannerMaxKb()],
         ]);
 
         if ($validator->fails()) {

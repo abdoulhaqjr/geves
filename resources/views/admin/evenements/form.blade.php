@@ -677,7 +677,7 @@
                                         <strong>{{ $art['titre'] }}</strong>
                                         <div class="row">
                                             <input type="file" id="{{ $art['key'] }}_file" name="{{ $art['key'] }}_file" x-ref="f"
-                                                   accept="{{ ($art['type'] ?? 'image') === 'video' ? 'video/mp4,video/webm' : 'image/png,image/jpeg,image/webp' }}" @change="pick($event)">
+                                                   accept="{{ ($art['type'] ?? 'image') === 'video' ? 'video/mp4,video/webm' : 'image/png,image/jpeg,image/webp,image/avif' }}" @change="pick($event)">
                                             <label for="{{ $art['key'] }}_file" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
                                                 <x-ukc.icon name="upload" :size="16" /> <span x-text="preview ? 'Remplacer' : 'Téléverser'">Téléverser</span>
                                             </label>
