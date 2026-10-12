@@ -107,9 +107,9 @@
 
                 {{-- ===== Ma participation : ce que je dépose, règle, suis et reçois ===== --}}
                 <span class="nav-label">{{ __('Ma participation') }}</span>
-                <a href="{{ route('account.submissions.index') }}" title="{{ __('Soumissions') }}"
+                <a href="{{ route('account.submissions.index') }}" title="{{ __('Communications') }}"
                    @class(['active' => request()->routeIs('account.submissions.*')])>
-                    <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Soumissions') }}</span>
+                    <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Communications') }}</span>
                 </a>
                 <a href="{{ ($payEditionId ?: $colloqueEdition?->id) ? route('account.payment', $payEditionId ?: $colloqueEdition->id) : route('account.dashboard') }}" title="{{ __('Inscription & paiement') }}"
                    @class(['active' => request()->routeIs('account.payment')])>

@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Soumissions')" :subtitle="__('Vos communications & dépôt d’un résumé')">
+<x-layouts.participant :title="__('Communications')" :subtitle="__('Vos communications & dépôt d’un résumé')">
 <div>
     {{-- Bandeau : échéance / appel à communications --}}
     @php
