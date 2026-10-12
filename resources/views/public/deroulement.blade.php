@@ -26,7 +26,13 @@
 
         <div class="deroulement" x-data="{ modal: null }" @keydown.escape.window="modal = null">
             {{-- ===== Hero live ===== --}}
-            @php($pageBanner = $event->banner_url ?: (($event->settings['hero_image'] ?? null) ?: \App\Support\SiteBanners::pageDefault()))
+            @php
+                // ⚠️ Forme BLOC obligatoire : cette vue contient plus bas des blocs
+                // PHP bruts (modale programme). Un calcul en ligne ici, AVANT eux,
+                // télescope l'extraction des blocs par Blade et rend une variable du
+                // bloc du bas indéfinie -> 500 sur la page (cf. pièges CLAUDE.md).
+                $pageBanner = $event->banner_url ?: (($event->settings['hero_image'] ?? null) ?: \App\Support\SiteBanners::pageDefault());
+            @endphp
             <section @class(['live-hero', 'has-bg' => $pageBanner])
                      @if ($pageBanner) style="--live-hero-bg: url('{{ $pageBanner }}');" @endif>
                 <div class="ukc-container">
