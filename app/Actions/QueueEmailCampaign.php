@@ -58,7 +58,7 @@ class QueueEmailCampaign
     {
         $event = $participant->event;
         $dates = $event && $event->date_start
-            ? trim($event->date_start->format('d/m/Y').($event->date_end ? ' – '.$event->date_end->format('d/m/Y') : ''))
+            ? trim($event->date_start->format('d/m/Y').($event->date_end ? ' - '.$event->date_end->format('d/m/Y') : ''))
             : '';
 
         return strtr($text, [

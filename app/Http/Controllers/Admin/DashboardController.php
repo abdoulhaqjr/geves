@@ -85,7 +85,7 @@ class DashboardController extends Controller
             ['Événement', $event?->date_start],
         ])->filter(fn ($r) => $r[1] instanceof Carbon)->map(function ($r) use ($event) {
             $val = $r[0] === 'Événement' && $event?->date_end
-                ? $event->date_start->format('d/m').'–'.$event->date_end->format('d/m/Y')
+                ? $event->date_start->format('d/m').'-'.$event->date_end->format('d/m/Y')
                 : $r[1]->format('d/m/Y');
 
             return ['label' => $r[0], 'value' => $val];

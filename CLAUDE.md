@@ -31,7 +31,7 @@ Larastan **niveau 5**.
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).
 - Le seeder conserve les réponses libres de co-auteurs et les préférences de paiement en `meta`. Il crée ou retrouve le compte global de chacun des 44 auteurs répondants, relie leur fiche et leurs soumissions, avec mot de passe aléatoire et réinitialisation obligatoire. Une adresse source invalide reçoit un compte réservé `@geves.invalid` à corriger manuellement avant accès ; aucun e-mail de vérification n'est envoyé par l'import. Les co-auteurs libres ne sont pas provisionnés sans identité fiable. Aucun paiement ni décision n'est créé. `colloques:reseed` efface tout le domaine des événements, y compris ce colloque : ne pas l'utiliser pour actualiser cet import.
 - Le séparateur des mots-clés est réglable par événement dans le champ « Mots-clés » du formulaire de soumission : virgule, point-virgule ou les deux. `SubmissionKeywords` centralise le découpage des badges, de l'export et des documents ; le seeder Eau au Togo choisit les deux, car les réponses sources mélangent les séparateurs. Le nom court de cet événement est « Colloque Eau au Togo ».
-- Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches et la date confirmée par l'organisateur indiquent **11–13 novembre 2026**. Ces affiches portrait restent des documents de l'événement ; le format de bannière publique recadrerait leur texte.
+- Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches et la date confirmée par l'organisateur indiquent **11-13 novembre 2026**. Ces affiches portrait restent des documents de l'événement ; le format de bannière publique recadrerait leur texte.
 
 ### Prise en main back-office
 
@@ -209,11 +209,27 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
   `getComputedStyle(el).color`.
 - **Ne jamais utiliser le tiret cadratin `—` (U+2014)** dans le projet (UI, code,
   seeds, docs) : utiliser un tiret simple `-`.
-- **Ni le point médian U+00B7**, même règle, même remède : `-`. Il servait de
-  séparateur dans une cinquantaine d'écrans ; c'est un caractère qu'on ne tape
-  pas au clavier, il arrive par copier-coller et repart en mojibake dès qu'un
-  maillon perd l'UTF-8. Gardé par `tests/Feature/PointMedianTest.php`, qui
-  balaie les sources, le HTML rendu **et** `lang/*.json`.
+  - ⚠️ **Règle énoncée mais NON gardée, et violée 70 fois** (relevé le
+    2026-10-12 : surtout des titres de `PASSATION.md` et `docs/`, mais aussi
+    `.env.example`, `eslint.config.js`, `phpstan.neon` et quelques vues). Il
+    suffirait de l'ajouter à `caracteresProscrits()` dans `TypographieTest.php`
+    - avec une tolérance pour `AutoAssignReviewersTest`, dont le jeu d'essai
+    **doit** porter un cadratin : il simule une expertise saisie à la main que
+    l'appariement doit retrouver.
+- **Ni le point médian U+00B7, ni le tiret demi-cadratin U+2013**, même règle,
+  même remède : `-`. Le premier séparait (« Chrome - Windows »), le second
+  marquait les plages (« 08:30 - 11:30 », « 11 - 13 novembre »). Ce sont des
+  caractères qu'on ne tape pas au clavier : ils arrivent par copier-coller et
+  repartent en mojibake dès qu'un maillon perd l'UTF-8. Gardés par
+  `tests/Feature/TypographieTest.php`, qui balaie les sources, le HTML rendu
+  **et** `lang/*.json`.
+  - ⚠️ **Deux tolérances, et elles sont BORNÉES** : le heredoc `RESPONSES_JSON`
+    du seeder Eau-Togo (résumés et affiliations **tels que les auteurs les ont
+    tapés**, « Abomey - Calavi » compris) et la **clé** de la table de
+    correspondance de `fix_document_template_typography` (elle transcrit le
+    texte déjà en base qu'il faut retrouver ; sa valeur, elle, porte bien un
+    tiret simple). Hors de ces régions, les deux fichiers restent tenus par la
+    règle - un cas dédié vérifie que chaque tolérance sert encore.
   - ⚠️ **La règle porte sur le CODE, pas sur les données.** Ce qu'une personne
     saisit lui appartient et traverse la plateforme tel quel.
   - ⚠️ **Deux emplois ne sont pas des séparateurs** et ne deviennent pas `-` :
@@ -352,7 +368,7 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Créneaux : heure de fin** figée à la création/modif (`Slot::ends_at`) d'après la durée
   présumée (`slotMinutes()` : `poster_min` pour un poster, sinon `oral_min`) - `generateSlots`
   la posait déjà ; `storeSlot`/`updateSlot` la posent désormais aussi. La liste des créneaux
-  affiche **« début – fin »** (repli sur `oral_min` pour d'anciens créneaux sans `ends_at`).
+  affiche **« début - fin »** (repli sur `oral_min` pour d'anciens créneaux sans `ends_at`).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 - **Passerelle de paiement par édition** : le gestionnaire/co-gestionnaire peut renseigner

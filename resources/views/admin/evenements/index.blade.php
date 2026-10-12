@@ -62,7 +62,7 @@
                     </h3>
                     @if ($e->theme)<p>{{ \Illuminate\Support\Str::limit($e->theme, 90) }}</p>@endif
                     <div class="meta">
-                        <span>@if ($e->date_start){{ $e->date_start->translatedFormat('d M') }} – {{ $e->date_end?->translatedFormat('d M Y') }}@else{{ $e->year }}@endif</span>
+                        <span>@if ($e->date_start){{ $e->date_start->translatedFormat('d M') }} - {{ $e->date_end?->translatedFormat('d M Y') }}@else{{ $e->year }}@endif</span>
                         @if ($e->location)<span>-</span><span>{{ $e->location }}</span>@endif
                         <span>-</span><span>{{ $e->submissions_count }} soumission(s) - {{ $e->participants_count }} inscrit(s)</span>
                     </div>

@@ -365,7 +365,7 @@
                                                          @click='openSession(@json($sessJs($s)))' title="{{ $roomClash ? 'Conflit de salle : « '.$roomConflicts[$s->id].' » est occupée par une autre séance au même moment.' : 'Éditer la session' }}">
                                                         <span class="badge">Plénière</span>
                                                         <span class="t">{{ Str::limit($s->label, 70) }}</span>
-                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->room) - <x-ukc.icon name="pin" :size="11" /> {{ $s->room }}@endif @if ($s->moderator_name)- {{ $s->moderator_name }}@endif</span>
+                                                        <span class="m">{{ $s->starts_at->format('H:i') }}-{{ $s->ends_at->format('H:i') }}@if ($s->room) - <x-ukc.icon name="pin" :size="11" /> {{ $s->room }}@endif @if ($s->moderator_name)- {{ $s->moderator_name }}@endif</span>
                                                     </div>
                                                 @endforeach
 
@@ -380,7 +380,7 @@
                                                 @if ($lunchOn && $le > $ls && $le > $dayStart && $ls < $dayEnd)
                                                     @php $bs = max($ls, $dayStart); $be = min($le, $dayEnd); @endphp
                                                     <div class="plan-break" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($bs) }} / {{ $rowLine($be) }};">
-                                                        <span>Pause déjeuner - {{ sprintf('%02d:%02d', intdiv($ls, 60), $ls % 60) }}–{{ sprintf('%02d:%02d', intdiv($le, 60), $le % 60) }}</span>
+                                                        <span>Pause déjeuner - {{ sprintf('%02d:%02d', intdiv($ls, 60), $ls % 60) }}-{{ sprintf('%02d:%02d', intdiv($le, 60), $le % 60) }}</span>
                                                     </div>
                                                 @endif
 
@@ -396,7 +396,7 @@
                                                         <div class="ahead">
                                                             <div>
                                                                 <span class="t" title="{{ $roomClash ? $atelierTitle.' - conflit de salle : « '.$roomConflicts[$s->id].' » occupée par une autre séance au même moment.' : $atelierTitle }}">@if ($roomClash)<span class="rflag"><x-ukc.icon name="alert-triangle" :size="11" /></span>@endif{{ $atelierTitle }}</span>
-                                                                <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
+                                                                <span class="time">{{ $s->starts_at->format('H:i') }}-{{ $s->ends_at->format('H:i') }}</span>
                                                             </div>
                                                             <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
                                                         </div>
@@ -555,15 +555,15 @@
                                             @forelse ($entries as $en)
                                                 @if ($en['type'] === 'break')
                                                     <div class="wk-block wk-block--break">
-                                                        <span class="wk-time">{{ $en['ls'] }}–{{ $en['le'] }}</span>
+                                                        <span class="wk-time">{{ $en['ls'] }}-{{ $en['le'] }}</span>
                                                         <span class="wk-brk">Pause déjeuner</span>
                                                     </div>
                                                 @elseif ($en['type'] === 'plen')
                                                     @php $s = $en['plen']; @endphp
                                                     <button type="button" class="wk-block wk-block--plenary"
                                                             @click='openSession(@json($sessJsFor($s, $dd)))'
-                                                            title="Plénière : {{ $s->label }} ({{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }})">
-                                                        <span class="wk-time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
+                                                            title="Plénière : {{ $s->label }} ({{ $s->starts_at->format('H:i') }}-{{ $s->ends_at->format('H:i') }})">
+                                                        <span class="wk-time">{{ $s->starts_at->format('H:i') }}-{{ $s->ends_at->format('H:i') }}</span>
                                                         <span class="wk-badge">Plénière</span>
                                                         <span class="wk-title">{{ Str::limit($s->label, 48) }}</span>
                                                     </button>
@@ -575,7 +575,7 @@
                                                     @endphp
                                                     <div class="wk-block wk-block--band{{ $bandConf ? ' room-conflict' : '' }}">
                                                         <div class="wk-bhead">
-                                                            <span class="wk-time">{{ $g0->starts_at->format('H:i') }}–{{ $g0->ends_at->format('H:i') }}</span>
+                                                            <span class="wk-time">{{ $g0->starts_at->format('H:i') }}-{{ $g0->ends_at->format('H:i') }}</span>
                                                             <span class="wk-count">{{ $grp->count() }} atelier{{ $grp->count() > 1 ? 's en parallèle' : '' }}</span>
                                                         </div>
                                                         <div class="wk-chips">
@@ -804,7 +804,7 @@
                                         <td>{{ $sDay?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $session->atelier?->title ?: '- (plénière)' }}</td>
                                         <td><strong>{{ $session->label }}</strong></td>
-                                        <td>{{ $session->starts_at?->format('H:i') ?: '-' }}@if ($session->ends_at) – {{ $session->ends_at->format('H:i') }}@endif</td>
+                                        <td>{{ $session->starts_at?->format('H:i') ?: '-' }}@if ($session->ends_at) - {{ $session->ends_at->format('H:i') }}@endif</td>
                                         <td>@if ($session->moderator_name)<span class="ukc-pill ukc-pill--mod">{{ $session->moderator_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
                                         <td>@if ($session->rapporteur_name)<span class="ukc-pill ukc-pill--rap">{{ $session->rapporteur_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
                                         <td class="num">{{ $sessionSlots->count() }}</td>
@@ -923,7 +923,7 @@
                                     @endphp
                                     <tr>
                                         <td>{{ $slot->starts_at?->format('d/m') ?: '-' }}</td>
-                                        <td style="white-space:nowrap;">{{ $slot->starts_at?->format('H:i') ?: '-' }}@if ($slot->starts_at && $slotEnd) – {{ $slotEnd->format('H:i') }}@endif</td>
+                                        <td style="white-space:nowrap;">{{ $slot->starts_at?->format('H:i') ?: '-' }}@if ($slot->starts_at && $slotEnd) - {{ $slotEnd->format('H:i') }}@endif</td>
                                         <td>{{ $slot->room ?: '-' }}</td>
                                         {{-- Atelier et session sur deux niveaux : concaténés, ils
                                              répétaient le nom de l'atelier (les libellés de session

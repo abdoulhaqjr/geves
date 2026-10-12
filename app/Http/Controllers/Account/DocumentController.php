@@ -169,7 +169,7 @@ class DocumentController extends Controller
         }, (array) ($layout['elements'] ?? []));
 
         $dates = $event->date_start
-            ? $event->date_start->translatedFormat('d/m/Y').($event->date_end ? ' – '.$event->date_end->translatedFormat('d/m/Y') : '')
+            ? $event->date_start->translatedFormat('d/m/Y').($event->date_end ? ' - '.$event->date_end->translatedFormat('d/m/Y') : '')
             : '';
         $institution = $account->affiliation ?: (string) $participant->institution;
 

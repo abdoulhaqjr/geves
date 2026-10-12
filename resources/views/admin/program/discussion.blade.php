@@ -18,7 +18,7 @@
             <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
             <div style="font-size:13px;color:var(--ukc-muted);">
                 @if ($session->starts_at){{ $session->starts_at->translatedFormat('l j F - H:i') }}@endif
-                @if ($session->ends_at) – {{ $session->ends_at->translatedFormat('H:i') }}@endif
+                @if ($session->ends_at) - {{ $session->ends_at->translatedFormat('H:i') }}@endif
                 @if ($session->room) - {{ $session->room }}@endif
                 - {{ $messages->count() }} message(s)
             </div>

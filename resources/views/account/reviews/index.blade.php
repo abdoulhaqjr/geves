@@ -286,7 +286,7 @@
         </div>
 
         <form @submit.prevent="save()" id="reviewForm" :inert="cur.frozen">
-            {{-- Grille de critères notés (0–scale). Note /20 dérivée. --}}
+            {{-- Grille de critères notés (0-scale). Note /20 dérivée. --}}
             <div class="ukc-form-row">
                 <label style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">
                     <span>{{ __('Grille d’évaluation') }}</span>

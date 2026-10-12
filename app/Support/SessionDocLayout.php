@@ -141,7 +141,7 @@ class SessionDocLayout
         return match ($key) {
             'date' => $session->session_day?->translatedFormat('l d F Y') ?? '-',
             'horaire' => $session->starts_at
-                ? $session->starts_at->format('H:i').($session->ends_at ? '–'.$session->ends_at->format('H:i') : '')
+                ? $session->starts_at->format('H:i').($session->ends_at ? '-'.$session->ends_at->format('H:i') : '')
                 : '-',
             'salle' => $session->room ?: '-',
             'atelier' => optional($session->atelier)->title ?? '-',

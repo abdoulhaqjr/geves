@@ -6,7 +6,7 @@ use App\Models\Event;
 use App\Models\Review;
 
 /**
- * Grille d'évaluation structurée des relectures : liste de critères notés (0–5),
+ * Grille d'évaluation structurée des relectures : liste de critères notés (0-5),
  * dont on dérive une note globale /20. La grille est configurable par événement
  * (réglage `review_criteria`), avec un jeu de critères académiques par défaut.
  *
@@ -14,7 +14,7 @@ use App\Models\Review;
  */
 class ReviewGrid
 {
-    /** Note maximale par critère (échelle 0–SCALE). */
+    /** Note maximale par critère (échelle 0-SCALE). */
     public const SCALE = 5;
 
     /** Relecteurs visés par soumission, à défaut de réglage d'événement. */

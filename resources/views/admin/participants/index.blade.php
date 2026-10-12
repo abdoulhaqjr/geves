@@ -118,7 +118,7 @@
                 </div>
                 <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <span style="font-size:12.5px;color:var(--ukc-muted);">
-                        {{ $participants->firstItem() }}–{{ $participants->lastItem() }} sur {{ $participants->total() }} participant(s)
+                        {{ $participants->firstItem() }}-{{ $participants->lastItem() }} sur {{ $participants->total() }} participant(s)
                     </span>
                     @if ($participants->hasPages())<div>{{ $participants->links() }}</div>@endif
                 </div>

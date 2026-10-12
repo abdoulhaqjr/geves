@@ -369,7 +369,7 @@ class LivretDocx
         if ($showDates && $this->event->date_start) {
             $dates = $this->event->date_start->format('d/m/Y');
             if ($this->event->date_end) {
-                $dates .= ' – '.$this->event->date_end->format('d/m/Y');
+                $dates .= ' - '.$this->event->date_end->format('d/m/Y');
             }
             if ($location = trim((string) $this->event->location)) {
                 $dates .= '   -   '.$location;
@@ -538,7 +538,7 @@ class LivretDocx
             foreach ($day['rows'] ?? [] as $row) {
                 $s = $hm($row['start'] ?? '');
                 $e = $hm($row['end'] ?? '');
-                $time = $e !== '' ? $s.' – '.$e : $s;
+                $time = $e !== '' ? $s.' - '.$e : $s;
                 $label = trim((string) ($row['label'] ?? ''));
                 $text = $time !== '' ? trim($time.' : '.$label) : $label;
                 if ($text !== '') {
@@ -701,7 +701,7 @@ class LivretDocx
         foreach ($slots as $sl) {
             $h = $sl->starts_at?->format('H:i') ?? '-';
             if ($sl->ends_at) {
-                $h .= '–'.$sl->ends_at->format('H:i');
+                $h .= '-'.$sl->ends_at->format('H:i');
             }
             $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
             $authors = $this->slotAuthors($sl);

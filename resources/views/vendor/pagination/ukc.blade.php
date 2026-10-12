@@ -2,7 +2,7 @@
     <nav class="ukc-pagination" role="navigation" aria-label="{{ __('Navigation des pages') }}">
         <div class="ukc-pagination__info">
             @if ($paginator->total() > 0)
-                {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} <span>sur</span> {{ $paginator->total() }}
+                {{ $paginator->firstItem() }}-{{ $paginator->lastItem() }} <span>sur</span> {{ $paginator->total() }}
             @endif
         </div>
 

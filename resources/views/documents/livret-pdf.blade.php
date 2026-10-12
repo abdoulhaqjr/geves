@@ -141,7 +141,7 @@
                 @foreach ($day['rows'] ?? [] as $row)
                     @php
                         $rs = $hmp($row['start'] ?? ''); $re = $hmp($row['end'] ?? '');
-                        $rtime = $re !== '' ? $rs.' – '.$re : $rs;
+                        $rtime = $re !== '' ? $rs.' - '.$re : $rs;
                         $rlabel = trim((string) ($row['label'] ?? ''));
                         $rtext = $rtime !== '' ? trim($rtime.' : '.$rlabel) : $rlabel;
                     @endphp

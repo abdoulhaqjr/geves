@@ -151,7 +151,7 @@
                 </div>
                 <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <span style="font-size:12.5px;color:var(--ukc-muted);">
-                        {{ $payments->firstItem() }}–{{ $payments->lastItem() }} sur {{ $payments->total() }} paiement(s)
+                        {{ $payments->firstItem() }}-{{ $payments->lastItem() }} sur {{ $payments->total() }} paiement(s)
                     </span>
                     @if ($payments->hasPages())<div>{{ $payments->links() }}</div>@endif
                 </div>

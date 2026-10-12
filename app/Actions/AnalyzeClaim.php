@@ -73,7 +73,7 @@ class AnalyzeClaim
           manquantes, contrainte réglementaire…). Donne alors "reason" = ce qui bloque et pourquoi,
           et éventuellement ce qu'il faudrait pour débloquer.
 
-        "summary" = un résumé bref (1–2 phrases) de ton analyse.
+        "summary" = un résumé bref (1-2 phrases) de ton analyse.
 
         Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
         { "verdict": "resolvable"|"procedure"|"unresolvable", "summary": string,

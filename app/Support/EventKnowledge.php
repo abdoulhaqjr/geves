@@ -55,7 +55,7 @@ class EventKnowledge
         }
         if ($event->date_start) {
             $dates = $event->date_start->translatedFormat('d/m/Y')
-                .($event->date_end ? ' – '.$event->date_end->translatedFormat('d/m/Y') : '');
+                .($event->date_end ? ' - '.$event->date_end->translatedFormat('d/m/Y') : '');
             $lines[] = '- Dates : '.$dates;
         }
         if (filled($event->location ?? null)) {

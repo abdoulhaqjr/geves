@@ -560,7 +560,7 @@ Recueil des témoignages des participants et affichage d'une sélection sur la *
 - **Périmètre** : **global plateforme** (pas par édition). Table `testimonials` (modèle `App\Models\Testimonial`) : `user_id?`, `edition_id?` (contexte optionnel), `author_name/role/affiliation` (dénormalisés), `quote`, `rating?`, `status` (`pending`/`approved`/`rejected`), `featured`, `position`, `impact_score?`, `impact_reason?`, `consent`, `moderated_at`. Scope `forHome()` = `approved` + `featured`, trié `position` puis `impact_score`.
 - **Dépôt** : par un **participant connecté** (guard `account`, `/mes-temoignages`, `Account\TestimonialController`) → `pending`, **consentement obligatoire** (`accepted`), un seul en attente à la fois, `edition_id` vérifié contre les participations (anti-forgerie), nom pré-rempli depuis le compte. Notifie le staff (`Notifier::staff`, nouveau `NotificationKind` `testimonial`). L'admin peut aussi **saisir** un témoignage (approuvé d'office, il en répond).
 - **Back-office** (`Admin\TestimonialController`, **capacité globale `testimonials`** ajoutée à `StaffRoles::PERMISSIONS` + rôle `administrator` ; routes `/admin/temoignages` sous `can:testimonials`) : approuver / refuser, **basculer la mise en avant** (uniquement si approuvé), **réordonner** (`order[]`, UI Alpine ▲▼), supprimer.
-- **IA à la demande** : bouton « Proposer la sélection (IA) » → `App\AI\ScoreTestimonials` envoie les témoignages **approuvés** à `AiManager::extract()` (JSON), attribue `impact_score` (0–100) + `impact_reason`, et **pré-remplit** `featured`/`position` pour les plus percutants. **L'IA ne fait que proposer** : l'admin ajuste ensuite. Dégradation propre si aucun fournisseur IA (bouton désactivé + `AiUnavailableException` → message).
+- **IA à la demande** : bouton « Proposer la sélection (IA) » → `App\AI\ScoreTestimonials` envoie les témoignages **approuvés** à `AiManager::extract()` (JSON), attribue `impact_score` (0-100) + `impact_reason`, et **pré-remplit** `featured`/`position` pour les plus percutants. **L'IA ne fait que proposer** : l'admin ajuste ensuite. Dégradation propre si aucun fournisseur IA (bouton désactivé + `AiUnavailableException` → message).
 - **Accueil** : `HomeController` charge `Testimonial::forHome()->take(6)` ; `home.blade.php` rend les cartes dynamiquement (nom + rôle - affiliation), **section masquée si vide** (plus de faux témoignage).
 - **Sécurité/contenu** : modération obligatoire (rien de public sans `approved`), consentement requis côté participant, texte échappé par Blade. **Choix v1** : pas d'upload de photo (avatar SVG), note (`rating`) optionnelle et non affichée sur l'accueil.
 - **Tests** : `tests/Feature/TestimonialTest.php` (13 cas : dépôt/consentement/unicité/anti-forgerie édition, modération, mise en avant gardée, réordonnancement, saisie admin, application de la proposition IA (AiManager mocké), IA indisponible, accueil ne montre que approved+featured). **616 tests verts, PHPStan niveau 5 propre.**
@@ -851,7 +851,7 @@ Ne pas retirer ce réglage ; lors d'une exécution manuelle, fixer également
 - Source de l'en-tête du formulaire : échéance du 15 octobre 2026, trois numéros de téléphone et `colloque_eau_uk@univkara.tg`. L'organisateur a confirmé les dates du **11 au 13 novembre 2026**, qui correspondent aux affiches officielles. Le lieu, Université de Kara, est mentionné dans les documents. Les six axes proviennent des réponses. Pas de paiements réglés, décisions scientifiques, comptes utilisateur ou affectations staff inventés.
 - Les coordonnées originales, préférences de présentation et de paiement, liens Drive et champs libres de co-auteurs sont conservés dans `meta`. Le seeder crée ou réutilise les comptes globaux des 44 auteurs répondants et relie leurs fiches et 47 liens de soumission. Les nouveaux comptes ont un mot de passe aléatoire inaccessible et `must_reset_password` ; les titulaires devront utiliser « Mot de passe oublié » et vérifier leur adresse. Une adresse source invalide reçoit un compte réservé `@geves.invalid` à corriger manuellement ; aucun message n'est envoyé par l'import. Les co-auteurs en texte libre ne sont pas transformés arbitrairement en personnes distinctes. Le seeder est idempotent et vérifie SHA-256 des pièces jointes ; il ne figure pas dans `DatabaseSeeder` parce qu'il s'agit de données réelles. **Ne pas utiliser `colloques:reseed` après cet import** : cette commande efface tous les événements avant de recréer la démo.
 - La correction de date du 11 novembre est appliquée aussi lors d'une nouvelle exécution sur un événement déjà importé, sans écraser ses autres réglages. Vérification sur une copie isolée (premier passage, relance, correction d'une ancienne date), puis import dans la base locale : 44 participants, 47 soumissions, 47 liens d'auteur, six ateliers et 47 fichiers Word contrôlés par SHA-256 ; `PRAGMA quick_check = ok`.
-- Deux affiches officielles ont été remises ensuite. Elles sont embarquées en JPEG dans le seeder avec contrôle SHA-256 et enregistrées comme documents de l'événement. Le seeder reprend le thème officiel, l'appel lancé le 22 mai 2026, la notification du 16 octobre, les six catégories tarifaires (35 000 / 30 000 / 10 000 / 45 000 / 50 000 / 100 000 FCFA), la limite de résumé à 250 mots et les consignes Times New Roman 12/interligne simple. Le lien Google Forms reste une référence de source ; GEVES garde son propre parcours de soumission. Les affiches indiquent **11–13 novembre**, conformément à la date confirmée. Elles restent des documents de l'événement car leur format portrait serait fortement recadré comme bannière publique.
+- Deux affiches officielles ont été remises ensuite. Elles sont embarquées en JPEG dans le seeder avec contrôle SHA-256 et enregistrées comme documents de l'événement. Le seeder reprend le thème officiel, l'appel lancé le 22 mai 2026, la notification du 16 octobre, les six catégories tarifaires (35 000 / 30 000 / 10 000 / 45 000 / 50 000 / 100 000 FCFA), la limite de résumé à 250 mots et les consignes Times New Roman 12/interligne simple. Le lien Google Forms reste une référence de source ; GEVES garde son propre parcours de soumission. Les affiches indiquent **11-13 novembre**, conformément à la date confirmée. Elles restent des documents de l'événement car leur format portrait serait fortement recadré comme bannière publique.
 - La relance du seeder sur la base locale a ajouté les deux médias et la grille tarifaire sans dupliquer les 44 participants ni les 47 soumissions ; les deux JPEG stockés correspondent à leur SHA-256 et la base passe `PRAGMA quick_check`. Les profils « Professionnel », « Association », « ONG » et « Entreprise privée du secteur de l’eau » ne figurent pas dans les types de participant globaux par défaut : les ajouter dans Réglages avant de compter sur l'affectation automatique de leurs tarifs. Le seeder ne modifie pas ces réglages globaux partagés par les autres événements.
 - Le nom court devient « Colloque Eau au Togo ». Pour les mots-clés, l'éditeur du champ propose virgule, point-virgule ou les deux par événement ; le seeder sélectionne les deux pour cet import. `SubmissionKeywords` est utilisé dans la validation, Tom Select, les badges et les sorties documentaires afin de ne pas afficher les délimiteurs comme des mots-clés.
 
@@ -1448,3 +1448,41 @@ sabotage l'a montré. Il crée désormais trois événements et vérifie des poi
 d'appui avant de conclure. Trois sabotages vérifiés, restauration bit pour bit.
 
 1175 tests / 4174 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+## 2026-10-12 - Le tiret demi-cadratin, et deux tolérances bornées
+
+Même règle, même remède : U+2013 devient `-`. Il marquait les plages
+(« 08:30 - 11:30 », « 11 - 13 novembre », pagination « 1 - 20 sur 48 »).
+**66 occurrences : 45 remplacées, 21 gardées volontairement.**
+
+**Ce qui reste, et pourquoi.** Deux endroits ne *nomment* pas, ils
+**transcrivent un texte qui existe ailleurs et qu'il faut retrouver tel quel** :
+
+- **20 dans le heredoc `RESPONSES_JSON`** du seeder Eau-Togo : résumés,
+  mots-clés et `coauthors_raw` importés du formulaire, donc le texte que **les
+  auteurs ont tapé** - « Abomey - Calavi » y est écrit au demi-cadratin. Le
+  réécrire falsifierait des soumissions.
+- **1 dans la CLÉ** de la table de correspondance de
+  `fix_document_template_typography`. Elle apparie le texte déjà en base pour le
+  corriger, et sa **valeur porte déjà un tiret simple** : la migration convertit
+  précisément ce demi-cadratin. Changer la clé aurait désactivé en silence la
+  correction de cette phrase - sans rien casser de visible.
+
+⚠️ **Les tolérances sont BORNÉES, pas des blancs-seings de fichier.** Le reste
+du seeder reste tenu par la règle (ses deux `poster_source` ont bien été
+corrigés), et un sabotage le prouve : un demi-cadratin posé hors du heredoc est
+attrapé. Un second cas vérifie que chaque tolérance **sert encore** - fichier
+disparu, heredoc renommé ou caractère parti, elle doit être retirée.
+
+`PointMedianTest` devient `TypographieTest` : une table `caracteresProscrits()`
+au lieu d'un caractère en dur, les quatre cas portant sur les deux. Quatre
+sabotages vérifiés (code, hors-heredoc, heredoc renommé, HTML rendu),
+restauration bit pour bit.
+
+⚠️ **Le tiret cadratin U+2014 reste, lui, énoncé mais non gardé : 70
+occurrences.** Surtout des titres de `PASSATION.md` et `docs/`, mais aussi
+`.env.example`, `eslint.config.js`, `phpstan.neon` et quelques vues. Une ligne
+dans `caracteresProscrits()` suffirait, avec une tolérance pour
+`AutoAssignReviewersTest` dont le jeu d'essai **doit** en porter un.
+
+1176 tests / 4175 assertions, Pint et PHPStan niveau 5 sans erreur.

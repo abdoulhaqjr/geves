@@ -18,7 +18,7 @@
             <h1 style="font-size:1.9rem;font-weight:900;margin:14px 0 8px;">Livret des résumés</h1>
             <p style="color:var(--ukc-muted);">{{ $event->title }}</p>
             @if ($event->date_start)
-                <p style="color:var(--ukc-muted);font-size:.9rem;">{{ $event->date_start->format('d/m/Y') }}@if ($event->date_end) – {{ $event->date_end->format('d/m/Y') }}@endif</p>
+                <p style="color:var(--ukc-muted);font-size:.9rem;">{{ $event->date_start->format('d/m/Y') }}@if ($event->date_end) - {{ $event->date_end->format('d/m/Y') }}@endif</p>
             @endif
         </div>
 

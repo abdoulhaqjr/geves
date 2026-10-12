@@ -68,7 +68,7 @@
 <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <span style="font-size:12.5px;color:var(--ukc-muted);">
         @if ($badgeReady->total() > 0)
-            {{ $badgeReady->firstItem() }}–{{ $badgeReady->lastItem() }} sur {{ $badgeReady->total() }} badge(s) prêt(s)
+            {{ $badgeReady->firstItem() }}-{{ $badgeReady->lastItem() }} sur {{ $badgeReady->total() }} badge(s) prêt(s)
         @else
             Aucun badge prêt pour ce filtre.
         @endif

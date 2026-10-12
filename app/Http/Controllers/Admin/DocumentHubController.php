@@ -421,7 +421,7 @@ class DocumentHubController extends Controller
             $event->title ? 'Événement : '.$event->title : null,
             $event->event_label ? 'Libellé : '.$event->event_label : null,
             $event->theme ? 'Thème : '.$event->theme : null,
-            $event->date_start ? 'Dates : '.$event->date_start->format('d/m/Y').($event->date_end ? ' – '.$event->date_end->format('d/m/Y') : '') : null,
+            $event->date_start ? 'Dates : '.$event->date_start->format('d/m/Y').($event->date_end ? ' - '.$event->date_end->format('d/m/Y') : '') : null,
             $event->location ? 'Lieu : '.$event->location : null,
             $tracks ? 'Axes thématiques : '.implode(' ; ', $tracks) : null,
             'Nombre de résumés retenus : '.$nbAccepted,

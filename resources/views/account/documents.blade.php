@@ -60,7 +60,7 @@
                                     <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
                                     <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
                                     <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} - {{ __('Sessions plénières + ateliers') }}</dd>
-                                    <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} – {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
+                                    <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} - {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
                                     <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
                                 </dl>
                                 <p class="note">

@@ -149,7 +149,7 @@
 <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;" data-filter-part="attestations-foot">
     <span style="font-size:12.5px;color:var(--ukc-muted);">
         @if ($issued->total() > 0)
-            {{ $issued->firstItem() }}–{{ $issued->lastItem() }} sur {{ $issued->total() }} attestation(s)
+            {{ $issued->firstItem() }}-{{ $issued->lastItem() }} sur {{ $issued->total() }} attestation(s)
         @else
             Aucune attestation pour ce filtre.
         @endif

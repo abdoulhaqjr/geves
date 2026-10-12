@@ -30,7 +30,7 @@
                     </h2>
                     @if ($event->theme)<p>{{ $event->theme }}</p>@endif
                     <div class="meta">
-                        @if ($event->date_start){{ $event->date_start->translatedFormat('d M') }} – {{ $event->date_end?->translatedFormat('d M Y') }} - @endif
+                        @if ($event->date_start){{ $event->date_start->translatedFormat('d M') }} - {{ $event->date_end?->translatedFormat('d M Y') }} - @endif
                         {{ $event->location ?: 'Lieu à préciser' }}
                         @if ($event->submission_open)
                             - Soumissions ouvertes @if ($event->submission_deadline) jusqu’au {{ $event->submission_deadline->translatedFormat('d/m') }} @endif

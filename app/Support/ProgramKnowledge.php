@@ -166,7 +166,7 @@ class ProgramKnowledge
         return filled($s->room) ? (string) $s->room : '';
     }
 
-    /** « 08:30–11:30 », « à partir de 09:00 », ou chaîne vide. */
+    /** « 08:30-11:30 », « à partir de 09:00 », ou chaîne vide. */
     private static function hours(?Carbon $start, ?Carbon $end): string
     {
         if (! $start) {
@@ -174,7 +174,7 @@ class ProgramKnowledge
         }
 
         return $end
-            ? $start->format('H:i').'–'.$end->format('H:i')
+            ? $start->format('H:i').'-'.$end->format('H:i')
             : 'à partir de '.$start->format('H:i');
     }
 

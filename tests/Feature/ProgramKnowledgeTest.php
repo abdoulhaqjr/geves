@@ -126,7 +126,7 @@ it('décrit le programme (séances) en vue d’ensemble', function () {
     expect($digest)->toContain('PROGRAMME')
         ->and($digest)->toContain('Atelier Innovation')
         ->and($digest)->toContain('Salle 2')
-        ->and($digest)->toContain('08:30–11:30')
+        ->and($digest)->toContain('08:30-11:30')
         ->and($digest)->toContain('modérateur Dr Kossi');
 });
 
