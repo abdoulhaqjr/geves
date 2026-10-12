@@ -161,8 +161,8 @@
                      liens n'est accessible. --}}
                 @if ($colloqueEdition)
                     <span class="nav-label">{{ __('L’événement') }}</span>
-                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ $colloqueEdition->publicPageLabel() }}">
-                        <x-ukc.icon name="globe" :size="18" /> <span class="txt">{{ $colloqueEdition->publicPageLabel() }}</span>
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ __('Page de l’événement') }}">
+                        <x-ukc.icon name="globe" :size="18" /> <span class="txt">{{ __('Page de l’événement') }}</span>
                     </a>
                     <a href="{{ route('public.colloque', $colloqueEdition->slug) }}#programme" title="{{ __('Programme') }}">
                         <x-ukc.icon name="calendar" :size="18" /> <span class="txt">{{ __('Programme') }}</span>
