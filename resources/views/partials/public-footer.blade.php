@@ -5,7 +5,8 @@
             <div>
                 <img src="{{ \App\Support\Branding::wideWhite() }}" alt="{{ config('app.name') }}"
                      @class(['footer-logo', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::WIDE)])>
-                {{ __('Service de l’Université de Kara - Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.') }}
+                {{ __('Plateforme de Gestion des événements Scientifiques') }}<br>
+                {{ __('Direction de la Recherche et de l’Innovation (DRI)') }}
             </div>
             <div>
                 <h4>{{ __('Navigation') }}</h4>
@@ -37,7 +38,7 @@
                 <h4>{{ __('Contact DRI') }}</h4>
                 <span style="display:block;padding:4px 0;">{{ __('Campus Sud, Présidence') }}</span>
                 <span style="display:block;padding:4px 0;">BP 404 Kara, Togo</span>
-                <a href="mailto:colloque@univkara.tg">colloque@univkara.tg</a>
+                <a href="mailto:dri@univkara.tg">dri@univkara.tg</a>
             </div>
         </div>
         <div class="footer-bottom">
