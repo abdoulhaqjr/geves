@@ -25,7 +25,7 @@ class AccountResetPassword extends ResetPassword
         $minutes = (int) Config::get('auth.passwords.users.expire', 60);
 
         return (new MailMessage)
-            ->subject(__('Réinitialisation de votre mot de passe · :app', ['app' => $app]))
+            ->subject(__('Réinitialisation de votre mot de passe - :app', ['app' => $app]))
             ->greeting(__('Bonjour,'))
             ->line(__('Vous recevez cet e-mail car une réinitialisation du mot de passe a été demandée pour votre compte :app.', ['app' => $app]))
             ->action(__('Réinitialiser mon mot de passe'), $url)

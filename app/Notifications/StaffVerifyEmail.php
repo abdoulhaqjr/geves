@@ -33,7 +33,7 @@ class StaffVerifyEmail extends VerifyEmail
         $minutes = (int) Config::get('auth.verification.expire', 60);
 
         return (new MailMessage)
-            ->subject(__('Vérifiez votre adresse · Back-office :app', ['app' => $app]))
+            ->subject(__('Vérifiez votre adresse - Back-office :app', ['app' => $app]))
             ->greeting(__('Bonjour,'))
             ->line(__('Confirmez votre adresse e-mail pour activer votre accès au back-office de :app.', ['app' => $app]))
             ->action(__('Vérifier mon adresse'), $url)

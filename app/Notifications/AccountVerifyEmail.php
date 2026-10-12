@@ -26,7 +26,7 @@ class AccountVerifyEmail extends VerifyEmail
         $minutes = (int) Config::get('auth.verification.expire', 60);
 
         return (new MailMessage)
-            ->subject(__('Confirmez votre adresse e-mail · :app', ['app' => $app]))
+            ->subject(__('Confirmez votre adresse e-mail - :app', ['app' => $app]))
             ->greeting(__('Bienvenue sur :app !', ['app' => $app]))
             ->line(__('Votre compte vient d’être créé. Il reste une étape pour l’activer : confirmer votre adresse e-mail. Elle sécurise votre compte et vous ouvre l’ensemble des services (soumissions, inscriptions, documents).'))
             ->action(__('Confirmer mon adresse'), $url)
