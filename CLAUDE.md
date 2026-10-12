@@ -625,8 +625,10 @@ et **habillés à la charte de l'Université de Kara** :
   (routes `account.*`) : les notifications ne redéfinissent QUE `buildMailMessage` (le texte).
 - Rédaction via **`__('texte FR')`** (clé = français), traductions dans **`lang/en.json`**.
   ⚠️ Ajouter une ligne d'e-mail = ajouter la clé FR **et** sa traduction `en`.
-- **Accueil personnalisé** : les greetings « Bonjour, » saluent par **civilité + nom**
-  quand ils sont connus (« Bonjour Dr Awa Doumbia, »), sinon repli générique. Source
+- **Accueil personnalisé** : l'accueil (« Bonjour, » de la réinitialisation/vérification
+  staff **et** la bienvenue à l'inscription « Bienvenue sur :app ! ») salue par
+  **civilité + nom** quand ils sont connus (« Bonjour Dr Awa Doumbia, », « Bienvenue sur
+  :app, Dr Awa Doumbia ! »), sinon repli générique. Source
   unique **`App\Notifications\Greeting::for($user)`** + **`User::salutationName()`**
   (⚠️ jamais `name`, qui peut valoir l'e-mail faute de prénom/nom). Les notifications
   captent le destinataire dans **`toMail($notifiable)`** (buildMailMessage ne le reçoit
