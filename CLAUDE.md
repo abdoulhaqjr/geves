@@ -656,6 +656,58 @@ est **legacy et mort**. Toute nouvelle table liée à un participant référence
   gardes « pas soi-même » / « pas le dernier administrateur ». Messages via flash (toast).
   Tests : `AdminUsersTest`.
 
+### Rôles : TROIS niveaux système, tout le reste est PAR ÉVÉNEMENT
+
+⚠️ **C'est le modèle de référence.** Un compte porte des rôles de **deux natures**, et
+les confondre est la source d'erreur numéro un de ce projet.
+
+**1. Le niveau d'accès SYSTÈME** - `users.access_level`, trois valeurs et pas une de
+plus (`User::accessLevels()`), sur la plateforme entière :
+
+| Niveau | Ce qu'il fait |
+| --- | --- |
+| `super_admin` | Tout. Seul à ouvrir Réglages, Utilisateurs & rôles, Témoignages. |
+| `colloque_admin` | **Crée les événements** et y nomme gestionnaire / co-gestionnaire. Rien sur les réglages de la plateforme ni sur les comptes. |
+| `user` | Aucun accès global. **C'est le défaut**, et c'est le niveau de l'immense majorité. |
+
+**2. Tous les autres rôles sont RELATIFS À UN ÉVÉNEMENT**, en trois familles :
+
+- **L'équipe de l'événement** - `event_user.role` (clé unique `event_id + user_id + role`,
+  donc plusieurs fonctions possibles sur un même événement). Les fonctions et leurs
+  capacités vivent dans **`StaffRoles::ROLES`** / `PERMISSIONS` (gestionnaire,
+  co-gestionnaire, comités, relecteur, organisateur, secrétariat, comptabilité, appui,
+  accueil). Elles se lisent par `rolesOnEdition()` et donnent `capabilitiesOnEdition()`.
+- **Le programme** - **modérateur** et **rapporteur** d'une séance. ⚠️ **Ce ne sont pas
+  des rôles stockés** : ils se DÉDUISENT des affectations du programme
+  (`isModeratorSomewhere()`, `isRapporteurSomewhere()`). Les chercher dans `event_user`
+  est une erreur.
+- **L'évaluation** - **relecteur**, déduit des relectures confiées
+  (`isReviewerSomewhere()`, via `participants.role = 'reviewer'`).
+
+⚠️ **Un même compte est « utilisateur » au système ET gestionnaire d'un événement,
+relecteur sur un autre, rien du tout sur un troisième.** Gérer un événement n'élève
+personne au rang d'administrateur de la plateforme.
+
+⚠️ **Deux gardes de routes, une seule source de vérité.** `edition.cap:<capacité>` (16
+groupes) passe par `canOnEdition()` ; `can:<capacité>` (3 groupes : Réglages,
+Utilisateurs & rôles, Témoignages) passe par le Gate spatie. **Les deux doivent
+s'accorder sur le super-admin** : `Gate::before` interroge donc
+`isColloqueSuperAdmin()`, qui couvre à la fois le niveau d'accès, le rôle spatie
+`administrator` et la permission `manage_colloques`. Avant ce branchement, un compte
+`access_level = super_admin` sans rôle spatie ouvrait 16 groupes sur 19 et tombait en
+**403 sur les 3 autres** - le modèle disait « super-administrateur », le portail disait
+non. Le défaut ne se voyait pas, le seul super-admin de la base portant aussi le rôle
+spatie.
+
+⚠️ Le défaut `'user'` d'`access_level` vit **en base**, pas dans le modèle : une
+instance tout juste créée porte `null` jusqu'au rechargement. Inoffensif (les
+comparaisons `===` retombent du bon côté), mais ne lisez pas l'attribut juste après un
+`create()`.
+
+Garde : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
+l'équipe attachée à UN événement, les rôles déduits et non stockés, et l'accord des deux
+portails.
+
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 
 Les e-mails d'**authentification** (confirmation d'adresse à l'inscription, mot de

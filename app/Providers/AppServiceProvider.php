@@ -42,9 +42,17 @@ class AppServiceProvider extends ServiceProvider
         // de permissions granulaires. Les autres rôles UKC (Comité, Relecteur,
         // Organisateur, Secrétariat, Comptabilité, Appui, Accueil) sont gouvernés
         // par leurs permissions granulaires (matrice d'accès), appliquées par route.
+        //
+        // ⚠️ **Le niveau d'accès SYSTÈME passe par ici aussi.** Sans lui, un
+        // compte `access_level = super_admin` ouvrait les 16 groupes de routes
+        // gardés par `edition.cap:` (qui s'appuient sur `canOnEdition()`, donc sur
+        // `isColloqueSuperAdmin()`) mais tombait en 403 sur les 3 gardés par
+        // `can:` - Réglages, Utilisateurs & rôles, Témoignages. Le modèle disait
+        // « super-administrateur », le portail disait non. `isColloqueSuperAdmin()`
+        // est la SEULE source : elle couvre le niveau d'accès, le rôle spatie
+        // `administrator` et la permission `manage_colloques`.
         Gate::before(function ($user, string $ability) {
-            if ($user instanceof User
-                && ($user->hasRole('administrator') || $user->getAllPermissions()->contains('name', 'manage_colloques'))) {
+            if ($user instanceof User && $user->isColloqueSuperAdmin()) {
                 return true;
             }
 

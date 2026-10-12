@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\EventType;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\Formation;
@@ -144,9 +145,15 @@ it('range chaque lien dans la bonne catégorie', function () {
 
     expect($libelles($tete))->toBe(['Tableau de bord']);
 
+    // ⚠️ Le libellé du lien public s'ACCORDE AU TYPE (`Event::publicPageLabel()`) :
+    // « Page du colloque », « Page du séminaire », « Page de la journée
+    // scientifique »… On le demande au modèle plutôt que de le figer, sans quoi
+    // ce cas interdirait l'accord qu'il est censé laisser vivre.
+    $pagePublique = Event::where('slug', 'colloque-menu')->firstOrFail()->publicPageLabel();
+
     $attendu = [
         'Ma participation' => ['Soumissions', 'Inscription & paiement', 'Formations', 'Documents'],
-        'L’événement' => ['Page de l’événement', 'Programme'],
+        'L’événement' => [$pagePublique, 'Programme'],
         'La plateforme' => ['Déroulement', 'Archives', 'Témoignage', 'Accueil plateforme', 'Assistante Peace'],
         'Mon compte' => ['Mon compte', 'Prise en main'],
     ];
@@ -239,7 +246,13 @@ it('ne répète aucune icône dans le menu', function () {
  * l'espace connecté.
  */
 it('dit « événement », pas « colloque », dans le menu', function () {
-    $texte = texteDuMenu(menuParticipant(participantAvecEvenement()));
+    // ⚠️ Un événement de type « Autre » : le seul où AUCUN libellé n'a de raison
+    // de nommer un type. Avec un colloque, « Page du colloque » serait juste.
+    $account = participantAvecEvenement();
+    $event = Event::where('slug', 'colloque-menu')->firstOrFail();
+    $event->series->update(['type' => EventType::Autre]);
+
+    $texte = texteDuMenu(menuParticipant($account));
 
     // ⚠️ On éprouve le TEXTE VISIBLE, pas le HTML : la route `/colloque/{slug}`
     // est délibérément conservée (des liens sont déjà partis par e-mail), et
@@ -249,6 +262,29 @@ it('dit « événement », pas « colloque », dans le menu', function () {
 
     expect($texte)->toContain('L’événement');
     expect($texte)->toContain('Page de l’événement');
+});
+
+/**
+ * ⚠️ **Le pendant : « colloque » reste JUSTE quand il nomme le type.** Le
+ * libellé du lien public s'accorde à `EventType` (`Event::publicPageLabel()`).
+ * Sans ce cas, le précédent pousserait à bannir le mot partout - et effacerait
+ * l'accord que le projet vient d'introduire.
+ */
+it('accorde le libellé du lien public au type de l’événement', function () {
+    $account = participantAvecEvenement();
+    $event = Event::where('slug', 'colloque-menu')->firstOrFail();
+
+    // ⚠️ Liste de paires et non tableau associatif : une énumération ne peut pas
+    // servir de clé de tableau en PHP.
+    foreach ([
+        [EventType::Colloque, 'Page du colloque'],
+        [EventType::Seminaire, 'Page du séminaire'],
+        [EventType::Autre, 'Page de l’événement'],
+    ] as [$type, $attendu]) {
+        $event->series->update(['type' => $type]);
+
+        expect(texteDuMenu(menuParticipant($account)))->toContain($attendu);
+    }
 });
 
 /** Le site est bilingue : les intitulés neufs ont leur traduction. */

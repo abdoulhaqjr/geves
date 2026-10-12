@@ -1681,3 +1681,47 @@ Deux issues, et c'est un arbitrage, pas un oubli de frappe :
    d'une protection absente sur toute installation non configurée.
 
 Rien n'a été touché dans ce commit : la décision appartient à l'auteur.
+
+## 2026-10-12 - Le modèle des rôles, écrit une fois pour toutes
+
+La relation entre un compte et ses rôles était dispersée entre quatre mécanismes
+sans qu'aucun texte ne dise lequel fait quoi. Elle est désormais énoncée dans
+CLAUDE.md et tenue par `ModeleDesRolesTest`.
+
+**Le modèle.** Un compte porte des rôles de deux natures. (1) **Trois niveaux
+système** et pas un de plus, sur `users.access_level` : `super_admin`,
+`colloque_admin` (il crée les événements et y nomme gestionnaire /
+co-gestionnaire) et `user`. (2) **Tout le reste est relatif à un événement** :
+l'équipe (`event_user.role` + `StaffRoles`), le programme (modérateur,
+rapporteur) et l'évaluation (relecteur). ⚠️ Ces trois derniers **ne sont pas
+stockés comme rôles** : ils se déduisent du travail confié.
+
+⚠️ **Le défaut trouvé en écrivant le modèle, et mesuré.** Deux gardes de routes
+cohabitent : `edition.cap:` (16 groupes), qui passe par `canOnEdition()` donc par
+`isColloqueSuperAdmin()`, et `can:` (3 groupes : Réglages, Utilisateurs & rôles,
+Témoignages), qui passe par le Gate spatie. Ce Gate n'interrogeait QUE le rôle
+spatie `administrator` et la permission `manage_colloques`. Résultat sondé : un
+compte `access_level = super_admin` sans rôle spatie a
+`isColloqueSuperAdmin() = true`, ouvre les 16 groupes `edition.cap:` et tombe en
+**403 sur les 3 autres**. Le modèle disait « super-administrateur », le portail
+disait non.
+
+Le défaut **ne se voyait pas** : le seul super-admin de la base porte aussi le
+rôle spatie `administrator`. Il aurait surgi au premier compte promu par le seul
+niveau d'accès - c'est-à-dire exactement par l'écran prévu pour ça.
+`Gate::before` interroge désormais `isColloqueSuperAdmin()`, source unique.
+
+Garde : `ModeleDesRolesTest` (7 cas), un sabotage vérifié (ancien portail remis,
+les trois capacités retombent).
+
+⚠️ **Deux cas tombés au passage, venus d'ailleurs.** `8be7ccf4` (section À
+propos) a réintroduit un point médian - corrigé. Et `13fee7de` accorde désormais
+le libellé du lien public au TYPE de l'événement (`Event::publicPageLabel()` :
+« Page du colloque », « Page du séminaire »…) : `MenuParticipantTest` figeait
+« Page de l'événement » et interdisait le mot « colloque » dans tout le menu. Les
+deux cas ont été repris pour **laisser vivre l'accord** - le premier demande le
+libellé au modèle, le second éprouve un événement de type « Autre », et un
+nouveau cas vérifie les trois accords. ⚠️ C'est la règle du vocabulaire
+appliquée : « colloque » reste juste quand il nomme le TYPE.
+
+1210 tests / 4301 assertions, Pint et PHPStan niveau 5 sans erreur.
