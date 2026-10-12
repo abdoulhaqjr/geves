@@ -731,8 +731,9 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 }
 .payment-eyebrow { display: block; color: var(--ukc-blue); font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .payment-overview { padding: 26px 30px; background: linear-gradient(115deg, #fff 0%, #fff 62%, #f2f5ff 100%); }
-.payment-overview__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 25px; }
-.payment-overview h2 { max-width: 780px; margin: 6px 0 0; font-size: clamp(19px, 2vw, 25px); font-weight: 800; line-height: 1.3; color: var(--ukc-text); }
+.payment-overview__top { margin-bottom: 20px; }
+.payment-overview__meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.payment-overview h2 { margin: 0; font-size: clamp(19px, 1.8vw, 23px); font-weight: 800; line-height: 1.3; color: var(--ukc-text); }
 .payment-status { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 8px 12px; border-radius: 100px; font-size: 12px; font-weight: 750; }
 .payment-status__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .payment-status--muted { background: #f1f5f9; color: #475569; }
@@ -748,9 +749,10 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-state { display: flex; align-items: flex-start; gap: 20px; padding: 26px 30px; }
 .payment-state__icon { display: grid; place-items: center; flex: none; width: 50px; height: 50px; border-radius: 14px; background: #e9efff; color: var(--ukc-blue); }
 .payment-state--success .payment-state__icon { background: #e6f8ed; color: #087c35; }
-.payment-state__body { max-width: 850px; }
-.payment-state h3, .payment-checkout h3 { margin: 5px 0 8px; font-size: 21px; font-weight: 800; line-height: 1.25; color: var(--ukc-text); }
-.payment-state p, .payment-checkout__heading p { margin: 0; color: var(--ukc-muted); font-size: 14px; line-height: 1.6; }
+.payment-state__body { flex: 1; min-width: 0; }
+.payment-state h2, .payment-state h3, .payment-checkout h3 { margin: 5px 0 10px; font-size: 21px; font-weight: 800; line-height: 1.25; color: var(--ukc-text); }
+.payment-state p { margin: 0; color: var(--ukc-muted); font-size: 16px; line-height: 1.55; }
+.payment-checkout__heading p { margin: 0; color: var(--ukc-muted); font-size: 14px; line-height: 1.6; }
 .payment-state .ukc-btn { margin-top: 18px; }
 .payment-state__actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .payment-checkout { padding: 26px 30px; }
@@ -778,7 +780,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-tariff__tag { color: var(--ukc-blue); font-size: 11px; font-weight: 800; }
 .payment-tariffs__hint { margin: 0; padding: 0 26px 20px; color: var(--ukc-muted); font-size: 12px; }
 @media (max-width: 800px) {
-  .payment-overview__top, .payment-checkout__heading { flex-direction: column; }
+  .payment-checkout__heading { flex-direction: column; }
   .payment-progress__step { gap: 7px; padding: 10px 8px; font-size: 12px; }
   .payment-tariffs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -788,7 +790,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
   .payment-progress { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payment-state { gap: 12px; }
   .payment-state__icon { width: 40px; height: 40px; }
-  .payment-state h3, .payment-checkout h3 { font-size: 18px; }
+  .payment-state h2, .payment-state h3, .payment-checkout h3 { font-size: 18px; }
   .payment-checkout__amount { width: 100%; }
   .payment-tariffs summary { padding: 18px; }
   .payment-tariffs__grid { grid-template-columns: 1fr; padding: 0 18px 16px; }

@@ -3,20 +3,18 @@
     $steps = ['Participation', 'Décision', 'Paiement', 'Confirmé'];
     $status = $paid ? 'Inscription confirmée' : ($frozen ? 'Événement clôturé' : ($eligible ? 'Paiement à effectuer' : ($participant ? 'Décision en attente' : 'Participation à créer')));
     $statusPill = $paid ? 'ok' : (($eligible && ! $frozen) ? 'info' : 'muted');
-    // Petit surtitre (eyebrow) réutilisé, au bleu de la charte.
-    $eye = 'display:block;font-weight:800;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ukc-blue);margin-bottom:3px;';
 @endphp
 
 <x-layouts.participant title="Inscription & paiement" subtitle="Suivez votre participation et réglez vos frais">
 <div class="account-payment">
     {{-- ===== Parcours d'inscription ===== --}}
-    <div class="ukc-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
-            <div style="min-width:0;">
-                <span style="{{ $eye }}">Votre parcours d’inscription</span>
-                <h2 style="margin:0;font-size:clamp(18px,2vw,23px);line-height:1.3;">{{ $event->title ?: $event->year }}</h2>
+    <div class="payment-overview">
+        <div class="payment-overview__top">
+            <div class="payment-overview__meta">
+                <span class="payment-eyebrow">Votre parcours d’inscription</span>
+                <span class="payment-status payment-status--{{ ['ok' => 'success', 'info' => 'ready', 'muted' => 'muted'][$statusPill] }}"><span class="payment-status__dot" aria-hidden="true"></span>{{ $status }}</span>
             </div>
-            <span class="ukc-pill ukc-pill--{{ $statusPill }}" style="flex:none;">{{ $status }}</span>
+            <h2>{{ $event->title ?: $event->year }}</h2>
         </div>
         <div class="ukc-steps" style="margin-bottom:0;" aria-label="Étapes de l’inscription">
             @foreach ($steps as $index => $label)
@@ -30,14 +28,17 @@
 
     {{-- ===== Étape courante ===== --}}
     @if (! $participant && ! $frozen)
-        <div class="ukc-card">
-            <h2><x-ukc.icon name="file" :size="20" /> Aucune participation liée à cet événement</h2>
-            <p style="color:var(--ukc-muted);margin:0 0 16px;max-width:760px;">Vos frais apparaîtront ici lorsque votre participation sera enregistrée. Si vous avez déposé un résumé, consultez son suivi dans vos communications. Pour assister sans présenter de communication, contactez l’organisation.</p>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">Voir mes communications</a>
-                @if ($event->submission_open && $event->slug)
-                    <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--outline">Déposer un résumé</a>
-                @endif
+        <div class="payment-state">
+            <span class="payment-state__icon" aria-hidden="true"><x-ukc.icon name="file" :size="24" /></span>
+            <div class="payment-state__body">
+                <h2>Aucune participation liée à cet événement</h2>
+                <p>Vos frais apparaîtront ici lorsque votre participation sera enregistrée. Si vous avez déposé un résumé, consultez son suivi dans vos communications. Pour assister sans présenter de communication, contactez l’organisation.</p>
+                <div class="payment-state__actions">
+                    <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">Voir mes communications</a>
+                    @if ($event->submission_open && $event->slug)
+                        <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--outline">Déposer un résumé</a>
+                    @endif
+                </div>
             </div>
         </div>
     @elseif ($paid)
@@ -110,26 +111,23 @@
 
     {{-- ===== Tarifs publiés ===== --}}
     @if (! empty($tiers))
-        <div class="ukc-card" style="padding:0;">
-            <details @if ($participant && ! $paid) open @endif>
-                <summary style="display:flex;justify-content:space-between;align-items:center;gap:15px;padding:18px 24px;cursor:pointer;list-style:none;">
-                    <span><span style="{{ $eye }}">Tarifs publiés</span><strong style="font-size:16px;">Grille des frais d’inscription</strong></span>
-                    <span style="color:var(--ukc-muted);font-size:12px;font-weight:650;flex:none;">{{ count($tiers) }} catégories</span>
-                </summary>
-                <div style="padding:0 24px 20px;">
-                    <div style="display:flex;flex-direction:column;gap:8px;">
-                        @foreach ($tiers as $tier)
-                            @php($isApplicable = $participant && $applicableLabel !== null && ($tier['label'] ?? null) === $applicableLabel)
-                            <div @class(['pay-tier']) style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid {{ $isApplicable ? '#9cafff' : 'var(--ukc-border)' }};background:{{ $isApplicable ? '#f0f3ff' : '#fff' }};">
-                                <span style="font-weight:650;">{{ $tier['label'] ?? 'Tarif' }}@if ($isApplicable) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Votre catégorie</span>@endif</span>
-                                <span style="font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ number_format((float) ($tier['amount'] ?? 0), 0, ',', ' ') }} <small style="font-weight:600;color:var(--ukc-muted);">FCFA</small></span>
-                            </div>
-                        @endforeach
+        <details class="payment-tariffs" @if ($participant && ! $paid) open @endif>
+            <summary>
+                <span><span class="payment-eyebrow">Tarifs publiés</span><strong>Grille des frais d’inscription</strong></span>
+                <span class="payment-tariffs__meta">{{ count($tiers) }} catégories <span class="payment-tariffs__chevron" aria-hidden="true"></span></span>
+            </summary>
+            <div class="payment-tariffs__grid">
+                @foreach ($tiers as $tier)
+                    @php($isApplicable = $participant && $applicableLabel !== null && ($tier['label'] ?? null) === $applicableLabel)
+                    <div @class(['payment-tariff', 'is-applicable' => $isApplicable])>
+                        <span class="payment-tariff__label">{{ $tier['label'] ?? 'Tarif' }}</span>
+                        <strong class="payment-tariff__price">{{ number_format((float) ($tier['amount'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></strong>
+                        @if ($isApplicable)<span class="payment-tariff__tag">Votre catégorie</span>@endif
                     </div>
-                    <p style="color:var(--ukc-muted);font-size:12.5px;margin:14px 0 0;">Le montant dépend de votre catégorie de participant. Vérifiez les informations de votre profil si le tarif affiché ne correspond pas à votre situation.</p>
-                </div>
-            </details>
-        </div>
+                @endforeach
+            </div>
+            <p class="payment-tariffs__hint">Le montant dépend de votre catégorie de participant. Vérifiez les informations de votre profil si le tarif affiché ne correspond pas à votre situation.</p>
+        </details>
     @endif
 </div>
 </x-layouts.participant>
