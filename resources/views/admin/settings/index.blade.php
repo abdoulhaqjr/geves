@@ -358,7 +358,7 @@
                         </div>
                         <div class="ukc-field">
                             <label for="turnstile_secret_key">Clé secrète <span class="req">*</span></label>
-                            <input type="password" id="turnstile_secret_key" name="turnstile_secret_key" value="" autocomplete="new-password" placeholder="{{ filled(config('services.turnstile.secret_key')) ? 'Clé enregistrée — laisser vide pour conserver' : 'Clé secrète Turnstile' }}">
+                            <input type="password" id="turnstile_secret_key" name="turnstile_secret_key" value="" autocomplete="new-password" placeholder="{{ filled(config('services.turnstile.secret_key')) ? 'Clé enregistrée - laisser vide pour conserver' : 'Clé secrète Turnstile' }}">
                             <span class="hint">Enregistrée chiffrée ; jamais réaffichée. Laissez vide pour conserver la clé actuelle.</span>
                             @error('turnstile_secret_key') <span class="error">{{ $message }}</span> @enderror
                         </div>
