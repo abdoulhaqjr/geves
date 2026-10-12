@@ -17,10 +17,12 @@ final class Turnstile
 
     public static function validate(Request $request, string $action): void
     {
+        // Anti-bot OPTIONNEL : sans clés (dev, test, ou prod pas encore réglée), on
+        // n'exige rien - sinon l'absence de configuration bloquerait TOUTE
+        // inscription/tout message de contact. La protection s'active dès que les
+        // clés Turnstile sont renseignées (Réglages / .env).
         if (! self::configured()) {
-            throw ValidationException::withMessages([
-                'cf-turnstile-response' => 'La vérification de sécurité est temporairement indisponible.',
-            ]);
+            return;
         }
 
         $token = $request->input('cf-turnstile-response');
