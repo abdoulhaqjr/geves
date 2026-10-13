@@ -33,6 +33,7 @@ class Attestation extends Model
         'moderation' => 'Modération',
         'rapporteur' => 'Rapporteur',
         'organisation' => 'Participation à l’organisation',
+        'comite_organisation' => 'Comité d’organisation',
         'formation' => 'Formation',
         'formation_animation' => 'Animation de formation',
     ];

@@ -640,7 +640,7 @@ it('provisionne un modèle enregistré pour chaque type sur l’onglet Modèles'
 
     // Tous les types listés ont un modèle : la suppression est proposée partout.
     // ⚠️ « soumission » et « acceptation » ne sont plus proposés par défaut.
-    foreach (['communication', 'participation', 'moderation', 'rapporteur', 'organisation', 'formation', 'formation_animation'] as $type) {
+    foreach (['communication', 'participation', 'moderation', 'rapporteur', 'organisation', 'comite_organisation', 'formation', 'formation_animation'] as $type) {
         expect(DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', $type)->exists())
             ->toBeTrue("modèle manquant pour {$type}");
     }

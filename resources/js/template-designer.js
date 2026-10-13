@@ -1754,6 +1754,7 @@
       moderation: officialTpl('ATTESTATION DE MODÉRATION', 'pour avoir modéré une session lors du [edition.name], [edition.dates], à [edition.location].'),
       rapporteur: officialTpl('ATTESTATION DE RAPPORTEUR', 'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'),
       organisation: officialTpl('ATTESTATION DE PARTICIPATION À L’ORGANISATION', 'pour avoir travaillé en appui au comité d’organisation, lors du [edition.name], [edition.dates], à [edition.location].', 24),
+      comite_organisation: officialTpl('ATTESTATION DU COMITÉ D’ORGANISATION', 'pour avoir été membre du comité d’organisation du [edition.name], [edition.dates], à [edition.location].'),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1826,7 +1827,7 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation') {
+    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation' || key === 'comite_organisation') {
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
@@ -2115,7 +2116,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', formation: 'formation-csiuk' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', formation: 'formation-csiuk' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {

@@ -3109,18 +3109,22 @@ ajoutée par la vue, elle ne se saisit pas.
   `Submission::usedCountFor()`). Illimité en tant que **co-auteur**.
 - **Types d'attestation proposés PAR DÉFAUT** (hub Documents, `DocumentHubController::$typeMeta`) :
   communication, participation, modération, rapporteur, **participation à l'organisation**,
-  formation, animation de formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS
+  **comité d'organisation**, formation, animation de formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS
   offerts d'office** - ils restent dans `Attestation::TYPES` (données existantes) mais ne
   sont ni créés (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans
   `$typeMeta` sans demande.
-- **Participation à l'organisation** (type `organisation`, soutien au comité d'organisation) :
-  bénéficiaires = **toute l'ÉQUIPE de l'événement (`event_user`) SAUF les trois comités**
-  (organisation, scientifique, supervision). Un compte membre d'un de ces comités est exclu
-  **même s'il porte aussi un rôle d'appui** (l'exclusion l'emporte). Éligibilité via
-  `DocumentHubController::organisationTargets()` (rôles exclus : `scientific`,
-  `comite_supervision`, `comite_organisation`), rapprochée vers les `Participant` par
-  `user_id`. Un membre d'équipe sans fiche `Participant` sur l'événement n'est donc pas atteint
-  (comme pour modération/rapporteur). Test : `AttestationOrganisationTemplateTest`.
+- **Attestations adossées à l'ÉQUIPE** (`event_user`), rapprochées vers les `Participant` par
+  `user_id` via **`DocumentHubController::teamRoleTargets($event, $include, $exclude)`** :
+  `$include` → doit porter au moins un de ces rôles ; `$exclude` → n'en porte aucun
+  (l'exclusion l'emporte sur l'inclusion). Un membre d'équipe sans fiche `Participant` sur
+  l'événement n'est pas atteint (comme modération/rapporteur). Deux types l'utilisent :
+  - **Participation à l'organisation** (type `organisation`, appui au comité) : **toute
+    l'équipe SAUF les trois comités** (`exclude: scientific, comite_supervision,
+    comite_organisation`). Test : `AttestationOrganisationTemplateTest`.
+  - **Comité d'organisation** (type `comite_organisation`, les membres du comité) :
+    `include: comite_organisation`. Un compte qui porte ce rôle **et** un rôle d'appui le
+    reçoit (l'inclusion suffit). Test : `AttestationComiteOrganisationTemplateTest`.
+  ⚠️ Les deux sont complémentaires : « les autres ont travaillé en appui au comité ».
 - **Modération / rapporteur = UNE attestation par PERSONNE et par événement** : le
   bénéficiaire est une personne qui a **modéré** (resp. **rapporté**) **au moins une
   séance**, dédoublonnée. Éligibilité via `DocumentHubController::sessionRoleTargets()`
@@ -3271,14 +3275,15 @@ ajoutée par la vue, elle ne se saisit pas.
   formation.
   - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
     `match` ; les types **`communication`** (`attestationCommunication()`), **`participation`**,
-    **`moderation`**, **`rapporteur`** et **`organisation`** renvoient le **modèle officiel UK x
-    Université de Parakou**. Chaque modèle PHP (rendu quand aucun modèle n'est enregistré) et son
-    jumeau du **concepteur** (`loadTemplate('communication'|'participation'|'moderation'|
-    'rapporteur'|'organisation')` dans `template-designer.js`, aussi chargés à l'ouverture d'un
-    type sans `editor_state`) décrivent la **MÊME maquette** : toucher à l'un, c'est toucher à
-    l'autre. Gardes : `AttestationCommunicationTemplateTest`, `AttestationParticipationTemplateTest`,
-    `AttestationModerationTemplateTest`, `AttestationRapporteurTemplateTest`,
-    `AttestationOrganisationTemplateTest`.
+    **`moderation`**, **`rapporteur`**, **`organisation`** et **`comite_organisation`** renvoient
+    le **modèle officiel UK x Université de Parakou**. Chaque modèle PHP (rendu quand aucun modèle
+    n'est enregistré) et son jumeau du **concepteur** (`loadTemplate('communication'|'participation'
+    |'moderation'|'rapporteur'|'organisation'|'comite_organisation')` dans `template-designer.js`,
+    aussi chargés à l'ouverture d'un type sans `editor_state`) décrivent la **MÊME maquette** :
+    toucher à l'un, c'est toucher à l'autre. Gardes : `AttestationCommunicationTemplateTest`,
+    `AttestationParticipationTemplateTest`, `AttestationModerationTemplateTest`,
+    `AttestationRapporteurTemplateTest`, `AttestationOrganisationTemplateTest`,
+    `AttestationComiteOrganisationTemplateTest`.
     - **Participation / modération / rapporteur / organisation = même maquette**, factorisée :
       `officialAttestation($title, $body, $titleSize = 28)` (PHP) et `officialTpl(title, body,
       titleSize)` (JS). Même cadre (image de fond **partagée**), même en-tête (logos, titre Times,

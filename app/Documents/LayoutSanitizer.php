@@ -165,6 +165,7 @@ class LayoutSanitizer
             'moderation' => self::attestationModeration(),
             'rapporteur' => self::attestationRapporteur(),
             'organisation' => self::attestationOrganisation(),
+            'comite_organisation' => self::attestationComiteOrganisation(),
             default => self::defaultAttestation(),
         };
     }
@@ -290,6 +291,20 @@ class LayoutSanitizer
         return self::officialAttestation(
             'ATTESTATION DE RAPPORTEUR',
             'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'
+        );
+    }
+
+    /**
+     * Attestation du COMITÉ D'ORGANISATION (membres du comité, par opposition à
+     * l'attestation d'appui). Même maquette officielle ; titre « ATTESTATION DU COMITÉ
+     * D'ORGANISATION » (tient à 28 px). Doit rester identique au modèle du concepteur
+     * (`loadTemplate('comite_organisation')`).
+     */
+    protected static function attestationComiteOrganisation(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION DU COMITÉ D’ORGANISATION',
+            'pour avoir été membre du comité d’organisation du [edition.name], [edition.dates], à [edition.location].'
         );
     }
 

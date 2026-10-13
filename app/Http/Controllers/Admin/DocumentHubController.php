@@ -56,6 +56,7 @@ class DocumentHubController extends Controller
             'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Modérateurs de séance', 'scope' => 'Une par modérateur'],
             'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par rapporteur'],
             'organisation' => ['title' => 'Attestation de participation à l’organisation', 'sub' => 'Équipe d’appui au comité d’organisation', 'scope' => 'Hors comités'],
+            'comite_organisation' => ['title' => 'Attestation du comité d’organisation', 'sub' => 'Membres du comité d’organisation', 'scope' => 'Comité d’organisation'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
             'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
@@ -726,6 +727,7 @@ class DocumentHubController extends Controller
             'moderation' => $this->sessionRoleTargets($event, 'moderator_email'),
             'rapporteur' => $this->sessionRoleTargets($event, 'rapporteur_email'),
             'organisation' => $this->organisationTargets($event),
+            'comite_organisation' => $this->teamRoleTargets($event, ['comite_organisation']),
             // 'formation' et 'formation_animation' sont gérées par formation
             // (émission depuis la page Formations, cf. Admin\FormationController).
             'participation' => $this->participationTargets($event),
@@ -763,18 +765,44 @@ class DocumentHubController extends Controller
      * de l'ÉQUIPE de l'événement (pivot `event_user`) qui ont travaillé en appui, soit
      * TOUTE l'équipe SAUF les trois comités (organisation, scientifique, supervision).
      * Un compte membre d'un de ces comités est exclu, même s'il porte aussi un rôle
-     * d'appui. Rapprochement vers les `Participant` (une attestation vise un participant).
+     * d'appui.
      */
     private function organisationTargets(Event $event): Collection
     {
-        $excluded = ['scientific', 'comite_supervision', 'comite_organisation'];
+        return $this->teamRoleTargets($event, exclude: ['scientific', 'comite_supervision', 'comite_organisation']);
+    }
 
+    /**
+     * Bénéficiaires d'une attestation adossée à l'ÉQUIPE de l'événement (pivot
+     * `event_user`), rapprochés vers les `Participant` par `user_id` (une attestation
+     * vise un participant).
+     *
+     * - `$include` non vide : le compte doit porter AU MOINS un de ces rôles.
+     * - `$exclude` non vide : le compte ne doit porter AUCUN de ces rôles (l'exclusion
+     *   l'emporte sur l'inclusion - un membre d'un comité exclu est écarté même s'il a
+     *   aussi un rôle d'appui).
+     * - Sans `$include`, tout membre d'équipe convient (sous réserve de `$exclude`).
+     *
+     * @param  list<string>  $include
+     * @param  list<string>  $exclude
+     */
+    private function teamRoleTargets(Event $event, array $include = [], array $exclude = []): Collection
+    {
         $rolesByUser = $event->team()->get()
             ->groupBy('id')
             ->map(fn ($rows) => $rows->pluck('pivot.role')->filter()->values()->all());
 
         $userIds = $rolesByUser
-            ->filter(fn (array $roles) => $roles !== [] && array_intersect($roles, $excluded) === [])
+            ->filter(function (array $roles) use ($include, $exclude) {
+                if ($roles === []) {
+                    return false;
+                }
+                if ($exclude !== [] && array_intersect($roles, $exclude) !== []) {
+                    return false;
+                }
+
+                return $include === [] || array_intersect($roles, $include) !== [];
+            })
             ->keys()->all();
 
         if ($userIds === []) {
