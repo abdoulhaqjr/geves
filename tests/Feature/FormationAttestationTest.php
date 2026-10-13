@@ -1,6 +1,9 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\DocumentVars;
+use App\Documents\LayoutRenderer;
+use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
@@ -109,4 +112,55 @@ it('fige le thème et les signatures des formateurs sur l’attestation de forma
     expect($attestation->meta['formation_trainers'])->toBe(['Pr. Awa Kodjo']);
     expect($attestation->meta['formation_signatures'][0]['name'])->toBe('Pr. Awa Kodjo');
     expect($attestation->meta['formation_signatures'][0]['src'])->toContain('sign.png');
+});
+
+it('plafonne à DEUX les signatures de formateurs sur l’attestation', function () {
+    Storage::fake('public');
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'T', 'theme' => 'X', 'fee' => 0, 'published' => true]);
+    foreach (['A', 'B', 'C'] as $i => $n) {
+        $t = $formation->trainers()->create(['name' => "Formateur $n", 'title' => 'Dr']);
+        $t->update(['signature_path' => "formation-signatures/s{$i}.png"]);
+    }
+    $participant = enrolledFormation($formation, verifiedAccount(), 'registered');
+
+    $attestation = app(IssueAttestation::class)->handle($participant, 'formation', null, $formation);
+
+    expect($attestation->meta['formation_signatures'])->toHaveCount(2);
+});
+
+it('rend l’attestation de formation sur le modèle officiel (cadre dédié, première personne, signatures)', function () {
+    $layout = LayoutSanitizer::default('attestation', 'formation');
+
+    expect($layout['bg_image'])->toBe('/img/attestations/attestation-formation-bg.png');
+    $texts = collect($layout['elements'])->pluck('text')->filter()->implode(' | ');
+    expect($texts)
+        ->toContain('ATTESTATION DE FORMATION')
+        ->toContain('Je soussigné, [signatory.name], [signatory.role], atteste que')
+        ->toContain('[formation.title]')
+        ->toContain('Référence de l’attestation');
+    expect(collect($layout['elements'])->firstWhere('type', 'signatures'))->not->toBeNull();
+    expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
+    // Titre de formation plus grand (Times 38), distinct du cadre kente des autres.
+    $title = collect($layout['elements'])->firstWhere('text', 'ATTESTATION DE FORMATION');
+    expect($title['font'])->toBe('times');
+    expect($title['size'])->toBe(38);
+
+    $html = LayoutRenderer::render($layout, DocumentVars::expand([
+        'name' => 'Jean Test', 'formation' => 'la rédaction scientifique', 'event' => 'UK 2026',
+        'dates' => 'du 06 au 10 octobre 2026', 'location' => 'Kara', 'theme' => 'Thème X',
+        'signatory' => 'Prof. Padabô KADOUZA', 'signatory_role' => "Président du Comité d'Organisation",
+        'date' => '13 octobre 2026', 'ref' => 'uuid-x', 'verify_url' => 'https://example.test/attestation/uuid-x',
+        'signatures' => [
+            ['name' => 'Dr A. Mensah', 'src' => 'https://example.test/s1.png'],
+            ['name' => 'Dr B. Koffi', 'src' => 'https://example.test/s2.png'],
+        ],
+    ]));
+
+    expect($html)
+        ->toContain('ATTESTATION DE FORMATION')
+        ->toContain('la rédaction scientifique')
+        ->toContain('Dr A. Mensah')
+        ->toContain('Dr B. Koffi')
+        ->toContain('Prof. Padabô KADOUZA');
 });

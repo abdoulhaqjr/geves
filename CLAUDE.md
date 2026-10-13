@@ -3336,7 +3336,24 @@ ajoutée par la vue, elle ne se saisit pas.
     en **14 px** (ni 13 ni plus) ; le titre reste en Times 28 px.
   - ⚠️ **`[communication.type]` = le FORMAT** (orale / affichée), **figé à l'émission** dans
     `meta` (`IssueAttestation` : `poster → « Affichée »`, sinon `« Orale »`), comme le titre.
-    La référence de la communication reste en `[communication.ref]` / `{communication_ref}`. **Signatures des formateurs** : élément de mise en page **`signatures`**
+    La référence de la communication reste en `[communication.ref]` / `{communication_ref}`.
+  - **Attestation de FORMATION = modèle à part** (`attestationFormation()` / `loadTemplate('formation')`,
+    pas la maquette `officialAttestation`) : **cadre différent** - design « moderne » à coins
+    colorés sur carte grise (`/img/attestations/attestation-formation-bg.png`, reconstruit du PDF
+    officiel en ne gardant que les décorations vives), titre **Times 38**, rédaction à la **première
+    personne** (« Je soussigné, [signatory.name], [signatory.role], atteste que »), sujet de la
+    formation **`[formation.title]`** + thème du colloque `[edition.theme]` dans le corps. Jetons
+    de formation **ajoutés à la palette** (`DocumentVars` : `[formation.title]`→`formation`,
+    `[formation.theme]`, `[formation.trainers]`). Gardes : `FormationAttestationTest`.
+  - ⚠️ **Deux signatures sur l'attestation de formation** : le **responsable** de l'événement
+    (bloc texte à droite : `Le [signatory.role],` + `[signatory.name]`) ET, en plus, **jusqu'à
+    DEUX formateurs** via l'élément **`signatures`** (à gauche). Le plafond de 2 est posé à
+    l'émission (`IssueAttestation` : `->take(2)` sur `formation_signatures`). Sans signature de
+    formateur téléversée, l'élément est vide et seul le responsable signe.
+  - ⚠️ **Le concepteur gère l'élément `signatures`** (ajouté : `createEl` en pose un repère à deux
+    emplacements, `serializeLayout` le préserve via `el.dataset.sig`). Sans cela, « Enregistrer »
+    dans l'éditeur le reconvertissait en texte et les signatures de formateurs disparaissaient du
+    modèle enregistré. **Signatures des formateurs** : élément de mise en page **`signatures`**
   (`LayoutSanitizer::ELEMENT_TYPES`) rendu par `LayoutRenderer::renderSignatures()` à
   partir de `$vars['signatures']` - seule valeur **structurée** des variables (les
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page

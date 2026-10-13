@@ -56,10 +56,12 @@ class IssueAttestation
             // changer si l'équipe de formateurs évolue ensuite.
             $trainers = $formation->trainers()->orderBy('id')->get();
             $meta['formation_trainers'] = $trainers->map(fn ($t) => $t->displayName())->all();
+            // Au plus DEUX signatures de formateurs sur l'attestation (en plus du
+            // responsable de l'événement) : le modèle réserve deux emplacements.
             $meta['formation_signatures'] = $trainers
                 ->filter(fn ($t) => $t->signatureUrl() !== null)
                 ->map(fn ($t) => ['name' => $t->displayName(), 'src' => $t->signatureUrl()])
-                ->values()->all();
+                ->take(2)->values()->all();
         }
 
         // uuid généré par AttestationObserver.

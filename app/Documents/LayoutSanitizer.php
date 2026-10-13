@@ -166,6 +166,7 @@ class LayoutSanitizer
             'rapporteur' => self::attestationRapporteur(),
             'organisation' => self::attestationOrganisation(),
             'comite_organisation' => self::attestationComiteOrganisation(),
+            'formation' => self::attestationFormation(),
             default => self::defaultAttestation(),
         };
     }
@@ -292,6 +293,54 @@ class LayoutSanitizer
             'ATTESTATION DE RAPPORTEUR',
             'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'
         );
+    }
+
+    /**
+     * Attestation de FORMATION (modèle officiel UK x Parakou - design « moderne » à
+     * coins colorés, distinct du cadre kente des autres). Rédaction à la première
+     * personne (« Je soussigné, … »), sujet de la formation + thème du colloque.
+     *
+     * ⚠️ Deux signatures possibles : le responsable de l'événement (bloc à droite,
+     * texte : rôle + nom) ET, EN PLUS, jusqu'à deux FORMATEURS (élément `signatures`
+     * à gauche, images figées à l'émission depuis `formation_trainers.signature_path`,
+     * cf. AttestationVars['signatures']). Sans signature de formateur téléversée,
+     * l'élément est vide et seul le responsable signe.
+     *
+     * Doit rester identique au modèle du concepteur (`loadTemplate('formation')`).
+     */
+    protected static function attestationFormation(): array
+    {
+        $dark = '#1a2332';
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => 14, 'weight' => 500, 'color' => $dark,
+            'align' => 'left', 'font' => 'lato', 'italic' => false, 'leading' => 1.3,
+        ];
+
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
+        return [
+            'width' => 900, 'height' => 636, 'bg' => '#f0f0f0', 'accent' => '#223ea4',
+            'bg_image' => '/img/attestations/attestation-formation-bg.png',
+            'elements' => [
+                ['type' => 'image', 'x' => 48, 'y' => 38, 'w' => 210, 'h' => 64, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 702, 'y' => 34, 'w' => 150, 'h' => 96, 'src' => '/img/attestations/logo-parakou.png'],
+                // Titre plus grand que les autres modèles (mesuré ≈ 576 px à Times 38 px).
+                $t(['x' => 80, 'y' => 118, 'w' => 740, 'h' => 52, 'text' => 'ATTESTATION DE FORMATION', 'size' => 38, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                $t(['x' => 70, 'y' => 186, 'w' => 760, 'h' => 28, 'text' => 'Je soussigné, [signatory.name], [signatory.role], atteste que', 'size' => 13]),
+                $t(['x' => 70, 'y' => 220, 'w' => 760, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 22, 'weight' => 800, 'align' => 'center']),
+                $t(['x' => 70, 'y' => 272, 'w' => 765, 'h' => 120, 'text' => 'a suivi avec diligence la formation sur [formation.title], tenue en marge des travaux du [edition.name], qui s’est tenu [edition.dates] à [edition.location], sur le thème : « [edition.theme] ».', 'size' => 13, 'leading' => 1.45]),
+                $t(['x' => 70, 'y' => 398, 'w' => 760, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 13]),
+                // Signatures des formateurs (jusqu'à deux) - à gauche, en vis-à-vis du responsable.
+                ['type' => 'signatures', 'x' => 70, 'y' => 470, 'w' => 350, 'h' => 92, 'size' => 11, 'names' => true],
+                ['type' => 'qr', 'x' => 436, 'y' => 486, 'size' => 66, 'value' => '{verify_url}'],
+                // Responsable de l'événement - à droite (texte, comme la maquette).
+                $t(['x' => 500, 'y' => 438, 'w' => 360, 'h' => 22, 'text' => 'Fait à Kara, le [certificate.issued_on]', 'size' => 13]),
+                $t(['x' => 500, 'y' => 470, 'w' => 360, 'h' => 24, 'text' => 'Le [signatory.role],', 'size' => 14, 'weight' => 700]),
+                $t(['x' => 500, 'y' => 558, 'w' => 360, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
+                $t(['x' => 40, 'y' => 600, 'w' => 520, 'h' => 20, 'text' => 'Référence de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
+            ],
+        ];
     }
 
     /**

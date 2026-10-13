@@ -50,6 +50,10 @@ class DocumentVars
         // référence : les modèles livrés l'emploient sous « Type de communication ».
         'communication.type' => 'communication_type',
         'communication.ref' => 'communication_ref',
+        // Attestation de formation : sujet de la formation + thème du colloque.
+        'formation.title' => 'formation',
+        'formation.theme' => 'formation_theme',
+        'formation.trainers' => 'formateurs',
         'signatory.name' => 'signatory',
         'signatory.role' => 'signatory_role',
         'badge.ref' => 'ref',

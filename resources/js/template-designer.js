@@ -396,6 +396,20 @@
       if (cfg.outline) {
         el.style.background = 'transparent'; el.style.border = '2px solid #111';
       }
+    } else if (cfg.type === 'signatures') {
+      // Bloc des signatures des formateurs : au rendu réel, les vraies signatures
+      // (figées à l'émission) sont posées par LayoutRenderer::renderSignatures.
+      // Dans le concepteur, on montre un repère : deux emplacements de signature.
+      el.classList.add('sig-box');
+      el.dataset.sig = '1';
+      el.dataset.sigSize = String(cfg.size || 11);
+      el.dataset.sigNames = cfg.names === false ? '0' : '1';
+      el.style.width = (cfg.w || 350) + 'px';
+      el.style.height = (cfg.h || 92) + 'px';
+      el.style.display = 'flex';
+      el.style.gap = '8px';
+      el.innerHTML = '<div style="flex:1;border:1px dashed #94a3b8;border-radius:6px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:10px;color:#64748b;">Signature formateur 1</div>'
+        + '<div style="flex:1;border:1px dashed #94a3b8;border-radius:6px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:10px;color:#64748b;">Signature formateur 2</div>';
     } else {
       el.classList.add('text');
       if (cfg.cls) cfg.cls.split(/\s+/).forEach(function (c) { if (c) el.classList.add(c); });
@@ -1488,6 +1502,11 @@
       var cls = el.className || '';
       var img = el.querySelector('img');
       var text = (el.innerText || '').trim();
+      // Bloc de signatures des formateurs (élément structuré, rendu côté serveur) :
+      // préservé tel quel, sinon il repartirait en « texte » et disparaîtrait.
+      if (el.dataset.sig === '1') {
+        return { type: 'signatures', x: x, y: y, w: w, h: h, size: parseInt(el.dataset.sigSize, 10) || 11, names: el.dataset.sigNames !== '0' };
+      }
       if (el.dataset.qrUrl || /\bqr\b/i.test(cls) || (img && /qrserver|qrcode/i.test(img.src))) {
         return { type: 'qr', x: x, y: y, size: Math.max(w, h) || 96, value: el.dataset.qrUrl || '{verify_url}' };
       }
@@ -1755,6 +1774,33 @@
       rapporteur: officialTpl('ATTESTATION DE RAPPORTEUR', 'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'),
       organisation: officialTpl('ATTESTATION DE PARTICIPATION À L’ORGANISATION', 'pour avoir travaillé en appui au comité d’organisation, lors du [edition.name], [edition.dates], à [edition.location].', 24),
       comite_organisation: officialTpl('ATTESTATION DU COMITÉ D’ORGANISATION', 'pour avoir été membre du comité d’organisation du [edition.name], [edition.dates], à [edition.location].'),
+      // Attestation de FORMATION : design distinct (coins colorés), première personne,
+      // signature du responsable + jusqu'à deux formateurs (élément « signatures »).
+      // ⚠️ Doit rester identique à LayoutSanitizer::attestationFormation() (PHP).
+      formation: (function () {
+        var SERIF = "'Times New Roman', Times, serif";
+        var SANS = "'Lato', system-ui, sans-serif";
+        var DARK = '#1a2332';
+        var LOGOS = (window.UKC_EDITOR || {}).logos || {};
+        var imgHtml = function (src) {
+          return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        };
+        return [
+          { type: 'logo', label: 'Logo UK', x: 48, y: 38, w: 210, h: 64, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 702, y: 34, w: 150, h: 96, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
+          { type: 'text', label: 'Titre', x: 80, y: 118, w: 740, text: 'ATTESTATION DE FORMATION', font: SERIF, size: 38, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Je soussigné', x: 70, y: 186, w: 760, text: 'Je soussigné, [signatory.name], [signatory.role], atteste que', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'text', label: 'Destinataire', x: 70, y: 220, w: 760, text: '[recipient.civility] [recipient.name]', font: SANS, size: 22, weight: 800, color: DARK, align: 'center' },
+          { type: 'text', label: 'Corps', x: 70, y: 272, w: 765, text: 'a suivi avec diligence la formation sur [formation.title], tenue en marge des travaux du [edition.name], qui s’est tenu [edition.dates] à [edition.location], sur le thème : « [edition.theme] ».', font: SANS, size: 13, weight: 500, color: DARK, leading: 1.45 },
+          { type: 'text', label: 'Formule', x: 70, y: 398, w: 760, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'signatures', label: 'Signatures formateurs', x: 70, y: 470, w: 350, h: 92, size: 11, names: true },
+          { type: 'qr', label: 'QR vérification', x: 436, y: 486, w: 66, qrUrl: DEFAULT_QR_URL },
+          { type: 'text', label: 'Lieu / date', x: 500, y: 438, w: 360, text: 'Fait à Kara, le [certificate.issued_on]', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'text', label: 'Fonction', x: 500, y: 470, w: 360, text: 'Le [signatory.role],', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Responsable', x: 500, y: 558, w: 360, text: '[signatory.name]', font: SANS, size: 16, weight: 700, color: DARK },
+          { type: 'text', label: 'Référence', x: 40, y: 600, w: 520, text: 'Référence de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
+        ];
+      })(),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1830,6 +1876,10 @@
     if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation' || key === 'comite_organisation') {
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
+      bgEl.style.backgroundSize = '100% 100%';
+    } else if (key === 'formation') {
+      // Cadre officiel de l'attestation de formation (coins colorés, carte grise).
+      bgEl.style.backgroundImage = "url('/img/attestations/attestation-formation-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
     } else if (key === 'formation-csiuk') {
       bgEl.style.backgroundImage = "url('/img/bg-attestation-uk.png')";
@@ -2116,7 +2166,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', formation: 'formation-csiuk' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', formation: 'formation' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {
