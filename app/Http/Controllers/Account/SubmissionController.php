@@ -20,6 +20,7 @@ use App\Support\Html;
 use App\Support\ParticipantTypes;
 use App\Support\RorClient;
 use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -299,7 +300,7 @@ class SubmissionController extends Controller
         $submission->update([
             'title' => $data['title'],
             'abstract' => Html::clean($data['abstract']),
-            'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, $config->keywordSeparator()),
+            'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, $config->keywordSeparator()),
         ]);
 
         return redirect()->route('account.submissions.show', $submission)
@@ -342,7 +343,7 @@ class SubmissionController extends Controller
         $submission->update([
             'title' => $data['title'],
             'abstract' => Html::clean($data['abstract']),
-            'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($submission->event))->keywordSeparator()),
+            'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($submission->event))->keywordSeparator()),
             'file_url' => $fileUrl,
             'version' => $submission->version + 1,
             'status' => 'submitted',

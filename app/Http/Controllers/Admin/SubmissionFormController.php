@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,7 +90,7 @@ class SubmissionFormController extends Controller
             if ($key === 'keywords') {
                 $currentSeparator = (new SubmissionFormConfig($event))->keywordSeparator();
                 $separator = (string) ($conf['separator'] ?? $currentSeparator);
-                $entry['separator'] = array_key_exists($separator, \App\Support\SubmissionKeywords::SEPARATORS) ? $separator : $currentSeparator;
+                $entry['separator'] = array_key_exists($separator, SubmissionKeywords::SEPARATORS) ? $separator : $currentSeparator;
             }
             $fields[$key] = $entry;
         }

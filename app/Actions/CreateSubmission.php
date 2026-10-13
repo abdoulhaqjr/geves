@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -109,7 +110,7 @@ class CreateSubmission
                 'title' => $data['title'],
                 'authors' => $authors,
                 'abstract' => Html::clean($data['abstract']),
-                'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, (new \App\Support\SubmissionFormConfig($event))->keywordSeparator()),
+                'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($event))->keywordSeparator()),
                 'track' => ($data['track'] ?? null) ?: null,
                 'type' => $data['type'] ?? 'oral',
                 'status' => 'submitted',
