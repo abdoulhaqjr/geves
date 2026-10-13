@@ -123,6 +123,7 @@ class TemplateDesignerController extends Controller
         'participation' => 'Participant',
         'moderation' => 'Par session',
         'rapporteur' => 'Par session',
+        'organisation' => 'Équipe d’organisation',
         'formation' => 'Par formation',
         'formation_animation' => 'Par formation',
     ];

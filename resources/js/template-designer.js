@@ -1721,7 +1721,7 @@
   // cadre, logos, typographie (Times titre + Lato corps), QR et bloc signataire ;
   // seuls le TITRE et le CORPS varient. ⚠️ Doit rester identique à
   // LayoutSanitizer::officialAttestation() (PHP).
-  function officialTpl(title, body) {
+  function officialTpl(title, body, titleSize) {
     var SERIF = "'Times New Roman', Times, serif";
     var SANS = "'Lato', system-ui, sans-serif";
     var DARK = '#1a2332';
@@ -1732,7 +1732,7 @@
     return [
       { type: 'logo', label: 'Logo UK', x: 135, y: 26, w: 230, h: 60, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
       { type: 'logo', label: 'Logo Parakou', x: 620, y: 26, w: 260, h: 60, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
-      { type: 'text', label: 'Titre', x: 120, y: 104, w: 660, text: title, font: SERIF, size: 28, weight: 700, color: DARK, align: 'center' },
+      { type: 'text', label: 'Titre', x: 120, y: 104, w: 660, text: title, font: SERIF, size: titleSize || 28, weight: 700, color: DARK, align: 'center' },
       { type: 'text', label: 'Sous-titre', x: 120, y: 152, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
       { type: 'text', label: 'Destinataire', x: 120, y: 178, w: 660, text: '[recipient.civility] [recipient.name]', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },
       { type: 'text', label: 'Corps', x: 125, y: 234, w: 648, text: body, font: SANS, size: 14, weight: 500, color: DARK, leading: 1.4 },
@@ -1753,6 +1753,7 @@
       participation: officialTpl('ATTESTATION DE PARTICIPATION', 'pour avoir participé au [edition.name], [edition.dates], à [edition.location].'),
       moderation: officialTpl('ATTESTATION DE MODÉRATION', 'pour avoir modéré une session lors du [edition.name], [edition.dates], à [edition.location].'),
       rapporteur: officialTpl('ATTESTATION DE RAPPORTEUR', 'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'),
+      organisation: officialTpl('ATTESTATION DE PARTICIPATION À L’ORGANISATION', 'pour avoir travaillé en appui au comité d’organisation, lors du [edition.name], [edition.dates], à [edition.location].', 24),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1825,7 +1826,7 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur') {
+    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation') {
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
@@ -2114,7 +2115,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', formation: 'formation-csiuk' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', formation: 'formation-csiuk' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {

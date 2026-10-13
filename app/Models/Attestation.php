@@ -32,6 +32,7 @@ class Attestation extends Model
         'communication' => 'Communication',
         'moderation' => 'Modération',
         'rapporteur' => 'Rapporteur',
+        'organisation' => 'Participation à l’organisation',
         'formation' => 'Formation',
         'formation_animation' => 'Animation de formation',
     ];

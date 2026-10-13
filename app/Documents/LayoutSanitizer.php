@@ -164,6 +164,7 @@ class LayoutSanitizer
             'participation' => self::attestationParticipation(),
             'moderation' => self::attestationModeration(),
             'rapporteur' => self::attestationRapporteur(),
+            'organisation' => self::attestationOrganisation(),
             default => self::defaultAttestation(),
         };
     }
@@ -293,6 +294,20 @@ class LayoutSanitizer
     }
 
     /**
+     * Attestation de PARTICIPATION À L'ORGANISATION (soutien au comité d'organisation).
+     * Même maquette officielle ; titre plus long, ramené à Times 24 px pour tenir sur
+     * une ligne. Doit rester identique au modèle du concepteur (`loadTemplate('organisation')`).
+     */
+    protected static function attestationOrganisation(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION DE PARTICIPATION À L’ORGANISATION',
+            'pour avoir travaillé en appui au comité d’organisation, lors du [edition.name], [edition.dates], à [edition.location].',
+            24
+        );
+    }
+
+    /**
      * Maquette officielle UK x Parakou commune (participation, modération…) : même
      * cadre décoratif (image de fond partagée), mêmes logos en éléments image, même
      * typographie (Times pour le titre, Lato pour le corps), QR de vérification et
@@ -301,7 +316,7 @@ class LayoutSanitizer
      * ⚠️ Toute retouche de géométrie doit être reportée dans le modèle jumeau du
      * concepteur (`officialTemplate()` dans `template-designer.js`).
      */
-    protected static function officialAttestation(string $title, string $body): array
+    protected static function officialAttestation(string $title, string $body, int $titleSize = 28): array
     {
         $dark = '#1a2332';
 
@@ -319,7 +334,9 @@ class LayoutSanitizer
             'elements' => [
                 ['type' => 'image', 'x' => 135, 'y' => 26, 'w' => 230, 'h' => 60, 'src' => (string) $ukLogo],
                 ['type' => 'image', 'x' => 620, 'y' => 26, 'w' => 260, 'h' => 60, 'src' => '/img/attestations/logo-parakou.png'],
-                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => $title, 'size' => 28, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                // ⚠️ $titleSize est mesuré pour tenir sur UNE ligne dans la boîte de 660 px
+                // (titre long « … À L'ORGANISATION » : Times 24 px ≈ 642 px, cf. mesure).
+                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => $title, 'size' => $titleSize, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
                 $t(['x' => 120, 'y' => 152, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
                 $t(['x' => 120, 'y' => 178, 'w' => 660, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 23, 'weight' => 800, 'align' => 'center']),
                 $t(['x' => 125, 'y' => 234, 'w' => 648, 'h' => 58, 'text' => $body, 'size' => 14, 'leading' => 1.4]),

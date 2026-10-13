@@ -3094,11 +3094,19 @@ ajoutée par la vue, elle ne se saisit pas.
   communications où le compte est **auteur correspondant** (participant déposant,
   `Submission::usedCountFor()`). Illimité en tant que **co-auteur**.
 - **Types d'attestation proposés PAR DÉFAUT** (hub Documents, `DocumentHubController::$typeMeta`) :
-  communication, participation, modération, rapporteur, formation, animation de
-  formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS offerts d'office** -
-  ils restent dans `Attestation::TYPES` (données existantes) mais ne sont ni créés
-  (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans `$typeMeta`
-  sans demande.
+  communication, participation, modération, rapporteur, **participation à l'organisation**,
+  formation, animation de formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS
+  offerts d'office** - ils restent dans `Attestation::TYPES` (données existantes) mais ne
+  sont ni créés (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans
+  `$typeMeta` sans demande.
+- **Participation à l'organisation** (type `organisation`, soutien au comité d'organisation) :
+  bénéficiaires = **toute l'ÉQUIPE de l'événement (`event_user`) SAUF les trois comités**
+  (organisation, scientifique, supervision). Un compte membre d'un de ces comités est exclu
+  **même s'il porte aussi un rôle d'appui** (l'exclusion l'emporte). Éligibilité via
+  `DocumentHubController::organisationTargets()` (rôles exclus : `scientific`,
+  `comite_supervision`, `comite_organisation`), rapprochée vers les `Participant` par
+  `user_id`. Un membre d'équipe sans fiche `Participant` sur l'événement n'est donc pas atteint
+  (comme pour modération/rapporteur). Test : `AttestationOrganisationTemplateTest`.
 - **Modération / rapporteur = UNE attestation par PERSONNE et par événement** : le
   bénéficiaire est une personne qui a **modéré** (resp. **rapporté**) **au moins une
   séance**, dédoublonnée. Éligibilité via `DocumentHubController::sessionRoleTargets()`
@@ -3249,21 +3257,22 @@ ajoutée par la vue, elle ne se saisit pas.
   formation.
   - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
     `match` ; les types **`communication`** (`attestationCommunication()`), **`participation`**,
-    **`moderation`** et **`rapporteur`** renvoient le **modèle officiel UK x Université de
-    Parakou**. Chaque modèle PHP (rendu quand aucun modèle n'est enregistré) et son jumeau du
-    **concepteur** (`loadTemplate('communication'|'participation'|'moderation'|'rapporteur')`
-    dans `template-designer.js`, aussi chargés à l'ouverture d'un type sans `editor_state`)
-    décrivent la **MÊME maquette** : toucher à l'un, c'est toucher à l'autre. Gardes :
-    `AttestationCommunicationTemplateTest`, `AttestationParticipationTemplateTest`,
-    `AttestationModerationTemplateTest`, `AttestationRapporteurTemplateTest`.
-    - **Participation / modération / rapporteur = même maquette**, factorisée :
-      `officialAttestation($title, $body)` (PHP) et `officialTpl(title, body)` (JS). Même cadre
-      (image de fond **partagée**), même en-tête (logos, titre Times 28, « Décernée à »,
-      destinataire), même typographie (Times titre + Lato corps), même Thème + formule, même QR
-      bas-gauche et même bloc signataire. **Seuls le titre et le corps varient** : participation
-      (« … PARTICIPATION » / « pour avoir participé au … »), modération (« … MODÉRATION » / « pour
-      avoir modéré une session lors du … ») et rapporteur (« … RAPPORTEUR » / « pour avoir servi
-      en tant que rapporteur lors du … »). La **communication** garde sa propre méthode (elle
+    **`moderation`**, **`rapporteur`** et **`organisation`** renvoient le **modèle officiel UK x
+    Université de Parakou**. Chaque modèle PHP (rendu quand aucun modèle n'est enregistré) et son
+    jumeau du **concepteur** (`loadTemplate('communication'|'participation'|'moderation'|
+    'rapporteur'|'organisation')` dans `template-designer.js`, aussi chargés à l'ouverture d'un
+    type sans `editor_state`) décrivent la **MÊME maquette** : toucher à l'un, c'est toucher à
+    l'autre. Gardes : `AttestationCommunicationTemplateTest`, `AttestationParticipationTemplateTest`,
+    `AttestationModerationTemplateTest`, `AttestationRapporteurTemplateTest`,
+    `AttestationOrganisationTemplateTest`.
+    - **Participation / modération / rapporteur / organisation = même maquette**, factorisée :
+      `officialAttestation($title, $body, $titleSize = 28)` (PHP) et `officialTpl(title, body,
+      titleSize)` (JS). Même cadre (image de fond **partagée**), même en-tête (logos, titre Times,
+      « Décernée à », destinataire), même typographie (Times titre + Lato corps), même Thème +
+      formule, même QR bas-gauche et même bloc signataire. **Seuls le titre et le corps varient**.
+      ⚠️ **Le titre long d'`organisation`** (« ATTESTATION DE PARTICIPATION À L'ORGANISATION »)
+      déborderait à 28 px : il est ramené à **Times 24 px** (mesuré ≈ 642 px, tient dans la boîte
+      de 660 px) via le paramètre `$titleSize`. La **communication** garde sa propre méthode (elle
       ajoute les lignes « Titre / Type de communication »).
   - **Cadre = image de fond ; logos et texte = éléments éditables.** Le cadre décoratif
     (motifs kente, hélice ADN) **seul** est cuit dans
