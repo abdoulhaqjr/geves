@@ -1194,10 +1194,43 @@ paiement (`pay`), inscription à une formation.
     **6 inscrits** pris parmi les auteurs - **4 réglés** (paiement manuel de nature
     `formation`, reçu `REC-FORM-…`) et **2 inscrits non réglés**. Idempotent. De quoi
     exercer l'espace Formations admin/participant et la page publique `#formations`.
+  - **Le cas d'essai du PAIEMENT : accepté, mais pas réglé**
+    (`ColloqueAvenirSeeder::buildCommunicantNonRegle()`). **M. TOURE Abdoul**
+    (`tabdoulhaq@gmail.com`, mot de passe `password`), **étudiant en master**, a une
+    communication **acceptée** (`UK-2025-007`, axe 5) et **aucun paiement** : son tarif
+    se déduit de son grade, soit **100 FCFA**. Les six comptes `commN@test.tg` réglaient
+    tous sauf un, mais au grade « Doctorant » et avec leur communication **programmée** -
+    il manquait ce parcours-là.
+    - ⚠️ **Son profil est COMPLET** (prénom, nom, **téléphone**, affiliation, e-mail
+      vérifié) : sans cela `User::profileComplete()` est faux et la plateforme refuse
+      d'engager le paiement - le cas serait bloqué avant la passerelle.
+    - ⚠️ **Le grade est porté DEUX fois** : `users.grade` (profil) et
+      `participants.title` (inscription). C'est le **second** que lit
+      `Fees::resolveAmount()`.
+    - ⚠️ **Rien n'est au programme** pour lui, et c'est cohérent : son inscription n'est
+      pas confirmée. Sa référence est hors de la série `AVD-` du seeder de volume, dont
+      les gardes vérifient que les 200 acceptées sont toutes planifiées.
+    - ⚠️ **`users.phone` est un identifiant UNIQUE**, et le numéro était saisi À LA MAIN
+      sur le super-administrateur de la base de développement : posé tel quel, le
+      scénario tombait sur la contrainte d'unicité et **aucune** donnée de démonstration
+      ne se semait. Arbitré avec l'équipe : le numéro va à ce compte (il lui faut un
+      numéro joignable), l'autre le perd, et le seeder **le dit** (`command->warn`) -
+      un numéro retiré sans un mot est une surprise, et le super-administrateur peut y
+      tenir sa double authentification par SMS.
+    - Garde : `CompteNonRegleTest` (profil complet, grade des deux côtés, 100 FCFA
+      résolus, communication acceptée et rattachée, aucun paiement, **la page de
+      paiement annonce bien 100**, et la libération du numéro ; 6 sabotages vérifiés).
   - ⚠️ **La grille tarifaire du seed LIE les grades aux catégories** (`fees[].grades`)
     et marque « Autres participants » **par défaut** : sans cela `Fees::resolveAmount()`
     renvoyait `null` et les 200 paiements de participation étaient semés **à 0 F**. Les
-    montants sortent donc par grade (15 000 / 35 000 / 50 000 FCFA).
+    montants sortent donc par grade (**100** / 35 000 / 50 000 FCFA). ⚠️ **Les 100 FCFA
+    des doctorants et étudiants en master sont VOULUS** : c'est le tarif sur lequel on
+    éprouve un vrai règlement mobile money de bout en bout (montant minimal
+    encaissable), et ce n'est pas une faute de frappe pour 100 000. Les deux autres
+    catégories gardent un tarif réaliste - un barème entièrement à 100 F n'éprouverait
+    plus la grille. ⚠️ Les paiements de démonstration de `ColloqueAvenirSeeder`
+    résolvent désormais leur montant par `Fees::resolveAmount()` au lieu d'un 15 000
+    écrit en dur, qui aurait affiché des encaissements sans rapport avec la grille.
   - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
     plénières est respectée dans les données de démo). Les **ateliers** de volume
     occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs après-midi

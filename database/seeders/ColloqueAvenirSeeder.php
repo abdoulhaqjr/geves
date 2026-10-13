@@ -20,6 +20,8 @@ use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Models\User;
+use App\Support\Fees;
+use App\Support\Phone;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -27,7 +29,7 @@ use Illuminate\Support\Str;
 
 /**
  * Colloque de test « Innover pour un avenir durable » (VIIIe colloque conjoint
- * Parakou-Kara). Dates FIXES : du **5 au 9 octobre 2026** (lundi → vendredi).
+ * Parakou-Kara). Dates FIXES : du **12 au 16 octobre 2026** (lundi → vendredi).
  * ⚠️ Seules les deux séances de démonstration du direct (en cours / terminée)
  * sont calées sur l'HORLOGE : une séance « en direct » posée à une date fixe ne
  * serait en direct qu'un jour par an. Crée l'événement, ses 6 ateliers et
@@ -40,6 +42,12 @@ use Illuminate\Support\Str;
  */
 class ColloqueAvenirSeeder extends Seeder
 {
+    /** Compte du cas d'essai du paiement : accepté, mais pas réglé. */
+    private const COMPTE_NON_REGLE = 'tabdoulhaq@gmail.com';
+
+    /** Son téléphone - un IDENTIFIANT UNIQUE (cf. buildCommunicantNonRegle). */
+    private const TEL_NON_REGLE = '+22890015284';
+
     private const ATELIERS = [
         'Atelier 1 - Sciences médicales, sanitaires, sportives et innovations médicinales',
         'Atelier 2 - Sciences naturelles, agronomiques et biologiques',
@@ -104,7 +112,11 @@ class ColloqueAvenirSeeder extends Seeder
                     'fees' => [
                         ['label' => 'Enseignants et chercheurs', 'amount' => 35000,
                             'grades' => ['Professeur', 'Maître de conférences', 'Maître-assistant', 'Enseignant / Chercheur', 'Enseignant']],
-                        ['label' => 'Doctorants et assimilés', 'amount' => 15000,
+                        // ⚠️ **100 FCFA, et c'est voulu** : c'est le tarif sur lequel on
+                        // éprouve un VRAI règlement mobile money de bout en bout (montant
+                        // minimal encaissable). Ce n'est pas une faute de frappe pour
+                        // 100 000 - les deux autres catégories gardent un tarif réaliste.
+                        ['label' => 'Doctorants et assimilés', 'amount' => 100,
                             'grades' => ['Doctorant', 'Étudiant en master']],
                         ['label' => 'Autres participants', 'amount' => 50000,
                             'grades' => ['Autre participant'], 'default' => true],
@@ -322,7 +334,11 @@ class ColloqueAvenirSeeder extends Seeder
             Payment::updateOrCreate(
                 ['event_id' => $event->id, 'participant_id' => $participant->id],
                 [
-                    'amount' => 15000, 'currency' => 'XOF', 'method' => 'cash', 'gateway' => 'manual',
+                    // ⚠️ Le montant sort de la GRILLE, par grade (comme le seeder de
+                    // volume et comme la page de paiement) : écrit en dur, il affichait
+                    // 15 000 F encaissés sur un tarif qui n'en demande plus que 100.
+                    'amount' => Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event),
+                    'currency' => 'XOF', 'method' => 'cash', 'gateway' => 'manual',
                     'status' => 'paid', 'paid_at' => Carbon::now()->subMonths(2),
                     'receipt_no' => sprintf('REC-%d-%03d', $start->year, $i + 1),
                 ]
@@ -490,16 +506,130 @@ class ColloqueAvenirSeeder extends Seeder
         // Module Formations : une formation publiée, deux formateurs, des inscrits.
         $this->buildFormation($event, $start);
 
+        // Un communicant accepté qui n'a PAS réglé : le cas d'essai du paiement.
+        $this->buildCommunicantNonRegle($event);
+
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (événement open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg - moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg - rapporteur2@test.tg');
         $this->command?->info('Secrétariat (back-office) : secretaire@test.tg - mot de passe : password');
         $this->command?->info('Comptabilité (back-office) : comptable@test.tg - mot de passe : password');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg - mot de passe : password');
+        $this->command?->info('Communication acceptée NON réglée : '.self::COMPTE_NON_REGLE.' - mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) - auteur2@test.tg (réponse ouverte) - auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
         }
+    }
+
+    /**
+     * **Le cas d'essai du paiement : accepté, mais pas réglé.**
+     *
+     * M. TOURE Abdoul, étudiant en master, a une communication **acceptée** et
+     * **aucun paiement** : c'est le parcours qu'on vient éprouver de bout en bout
+     * (page « Inscription & paiement », montant résolu depuis son grade, passage
+     * en caisse). Les six comptes `commN@test.tg` règlent tous sauf un, mais ils
+     * sont au grade « Doctorant » et leur communication est **programmée** - ici
+     * rien n'est au programme, l'inscription n'étant pas confirmée.
+     *
+     * ⚠️ **Son grade décide de son tarif**, il ne se choisit pas : « Étudiant en
+     * master » est couvert par la catégorie « Doctorants et assimilés », donc
+     * **100 FCFA** (cf. la grille plus haut). Le grade est porté DEUX fois - sur
+     * le profil (`users.grade`) et sur l'inscription (`participants.title`, qui
+     * est celui que lit `Fees::resolveAmount`) : une personne peut avoir des
+     * grades différents d'un colloque à l'autre.
+     *
+     * ⚠️ **Profil COMPLET** (prénom, nom, téléphone, affiliation, e-mail vérifié) :
+     * sans cela `User::profileComplete()` est faux et la plateforme refuse
+     * d'engager le paiement - le cas d'essai serait bloqué avant la passerelle.
+     *
+     * ⚠️ **Référence hors de la série `AVD-`** du seeder de volume : ses gardes
+     * comptent les 200 communications et vérifient que les acceptées sont toutes
+     * planifiées. Celle-ci ne l'est pas, et n'a pas à l'être.
+     */
+    private function buildCommunicantNonRegle(Event $event): void
+    {
+        $user = $this->user(self::COMPTE_NON_REGLE, 'Abdoul', 'TOURE');
+
+        // ⚠️ **`users.phone` est un identifiant UNIQUE**, et il peut avoir été
+        // saisi À LA MAIN sur un autre compte en base de développement - il l'était
+        // sur le super-administrateur. Posé tel quel, le scénario tombait sur la
+        // contrainte d'unicité, et c'étaient TOUTES les données de démonstration
+        // qui ne se semaient pas. On libère donc le numéro chez l'autre compte -
+        // décidé : ce compte-ci est le cas d'essai du PAIEMENT, et sans numéro
+        // joignable `profileComplete()` est faux, donc la plateforme refuse
+        // d'engager le règlement. ⚠️ On le DIT : un numéro retiré d'un compte sans
+        // un mot est une surprise, et le super-administrateur peut y tenir sa
+        // double authentification par SMS.
+        $numero = Phone::normalize(self::TEL_NON_REGLE);
+        $ailleurs = User::withTrashed()
+            ->where('phone', $numero)
+            ->where('id', '!=', $user->id)
+            ->get();
+        foreach ($ailleurs as $autre) {
+            $autre->forceFill(['phone' => null])->save();
+            $this->command?->warn('Téléphone '.self::TEL_NON_REGLE.' libéré du compte '
+                .$autre->email.' (identifiant unique) au profit de '.self::COMPTE_NON_REGLE.'.');
+        }
+
+        $user->forceFill([
+            'civility' => 'M.',
+            'grade' => 'Étudiant en master',
+            'phone' => self::TEL_NON_REGLE,
+            'country' => 'Togo',
+            'city' => 'Kara',
+        ])->save();
+
+        $participant = $this->participant($event, $user, 'author', 'Étudiant en master');
+
+        $axe = self::ATELIERS[4]; // Sciences économiques, de gestion et entreprenariat
+
+        $submission = Submission::updateOrCreate(
+            ['event_id' => $event->id, 'ref_code' => 'UK-2025-007'],
+            [
+                'participant_id' => $participant->id,
+                'access_token' => Str::random(40),
+                'title' => 'Numérisation des services universitaires et qualité perçue par les étudiants : '
+                    ."le cas de l'Université de Kara",
+                'authors' => [[
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'affiliation' => 'Université de Kara',
+                    'corresponding' => true,
+                ]],
+                'abstract' => 'La dématérialisation des services aux étudiants progresse dans les '
+                    ."universités de la sous-région sans que la qualité perçue soit mesurée. L'étude "
+                    ."interroge un échantillon d'étudiants de master et met en regard les délais "
+                    .'constatés et la satisfaction déclarée.',
+                'keywords' => 'numérisation, services universitaires, qualité perçue',
+                'track' => $axe,
+                'type' => 'oral',
+                'status' => 'accepted',
+                'revision_of' => 0,
+            ]
+        );
+
+        // Auteur correspondant rattaché à son compte : c'est cette ligne que lit
+        // « Mes communications » (status `linked` + `user_id`). ⚠️ Posée
+        // directement, SANS LinkSubmissionAuthors, qui notifierait par e-mail et
+        // par SMS - un seeder pose l'état final.
+        SubmissionAuthor::updateOrCreate(
+            ['submission_id' => $submission->id, 'author_index' => 0],
+            [
+                'event_id' => $event->id,
+                'user_id' => $user->id,
+                'role' => 'corresponding',
+                'name' => $user->name,
+                'email' => $user->email,
+                'affiliation' => 'Université de Kara',
+                'match_type' => 'self',
+                'status' => 'linked',
+                'token' => substr(hash('sha256', 'uk-auteur:'.$submission->id.':0'), 0, 48),
+            ]
+        );
+
+        // ⚠️ **Aucun paiement, et c'est tout l'intérêt du cas.** Ne pas « compléter »
+        // ce compte par un règlement : il n'y aurait plus rien à éprouver.
     }
 
     /**

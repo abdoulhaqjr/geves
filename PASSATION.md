@@ -13,6 +13,53 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Cas d'essai du paiement : accepté mais pas réglé, à 100 FCFA (2026-10-13)
+
+Le jeu de démonstration n'avait pas le parcours qu'on vient le plus souvent
+éprouver : **une communication acceptée, aucun paiement, et un montant qui se
+déduit du grade**. Les six comptes `commN@test.tg` réglaient tous sauf un, mais
+celui-là est au grade « Doctorant » et sa communication est déjà **programmée**.
+
+**M. TOURE Abdoul** (`tabdoulhaq@gmail.com`, mot de passe `password`), **étudiant
+en master**, est semé par `ColloqueAvenirSeeder::buildCommunicantNonRegle()` avec
+une communication **acceptée** (`UK-2025-007`, axe « Sciences économiques, de
+gestion et entreprenariat ») et **zéro paiement**. Le tarif des doctorants et
+étudiants en master passe à **100 FCFA** : c'est le montant sur lequel on éprouve
+un vrai règlement mobile money de bout en bout. Les deux autres catégories gardent
+un tarif réaliste (35 000 / 50 000) - un barème entièrement à 100 F n'éprouverait
+plus la grille.
+
+⚠️ **Les paiements de démonstration du seeder de base résolvaient 15 000 F écrit en
+dur.** Avec un tarif à 100, ils auraient affiché des encaissements sans rapport avec
+la grille. Ils passent par `Fees::resolveAmount()`, comme le seeder de volume et
+comme la page de paiement.
+
+⚠️ **Son profil est COMPLET, et ce n'est pas du zèle** : sans prénom, nom,
+téléphone, affiliation et e-mail vérifié, `User::profileComplete()` est faux et la
+plateforme **refuse d'engager le paiement**. Le cas d'essai serait bloqué avant même
+d'atteindre la passerelle.
+
+⚠️ **Rien n'est au programme pour lui**, et c'est cohérent : son inscription n'est
+pas confirmée. Sa référence est hors de la série `AVD-` du seeder de volume, dont
+les gardes vérifient que les 200 communications acceptées sont toutes planifiées.
+
+⚠️ **`users.phone` est un identifiant UNIQUE, et le numéro était déjà pris.** Il
+était saisi **à la main** sur le super-administrateur de la base de développement
+(`admin@univkara.tg`) : posé tel quel, le scénario tombait sur la contrainte
+d'unicité et **aucune** donnée de démonstration ne se semait - pour un numéro de
+téléphone, exactement le piège déjà documenté pour le seeder de volume. Arbitré
+avec l'équipe : le numéro va au cas d'essai du paiement, qui en a besoin ; l'autre
+compte le perd, et le seeder **le dit** (`command->warn`). Un numéro retiré sans un
+mot est une surprise, et le super-administrateur peut y tenir sa double
+authentification par SMS - celui de la base de développement n'en avait pas.
+
+**Garde** : `CompteNonRegleTest` - profil complet, grade porté sur le profil ET sur
+l'inscription, 100 FCFA résolus (et les autres catégories intactes), communication
+acceptée et rattachée au compte, aucun paiement, **la page « Inscription & paiement »
+annonce bien 100**, et la libération du numéro. **Six sabotages vérifiés** :
+téléphone retiré, tarif remis à 15 000, communication non acceptée, paiement ajouté,
+rattachement de l'auteur rompu, libération du numéro désamorcée.
+
 ### Colloque de démonstration déplacé au 12-16 octobre 2026 (2026-10-13)
 
 Le VIIIe colloque « Innover pour un avenir durable » se tient désormais du **lundi
