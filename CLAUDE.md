@@ -1178,7 +1178,7 @@ paiement (`pay`), inscription à une formation.
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus
   qu'**un** colloque (le VIIIe conjoint Parakou-Kara, `avenir-durable-2025`), au
   volume d'un vrai événement. `DatabaseSeeder` enchaîne `ColloqueAvenirSeeder`
-  (colloque + édition **5 → 9 octobre 2026**, ateliers, staff, relecteurs,
+  (colloque + édition **12 → 16 octobre 2026**, ateliers, staff, relecteurs,
   direct) puis `ColloqueAvenirVolumeSeeder` (**200 communications** réf. `AVD-###`,
   un correspondant **et des co-auteurs** chacune ; statuts variés ; créneaux pour les acceptées ;
   relectures dans tous les états ; **93 % de paiements de participation validés
@@ -1189,7 +1189,7 @@ paiement (`pay`), inscription à une formation.
   DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
   - **Module Formations** semé (`ColloqueAvenirSeeder::buildFormation()`) :
     `settings['formation_enabled'] = true` + **une formation publiée** (« Méthodologie
-    de la recherche… », **payante 10 000 FCFA**, jeu. 08/10 14h-17h, visio `scheduled`),
+    de la recherche… », **payante 10 000 FCFA**, jeu. 15/10 14h-17h, visio `scheduled`),
     **deux formateurs** (`formateur1@test.tg` modérateur, `formateur2@test.tg`) et
     **6 inscrits** pris parmi les auteurs - **4 réglés** (paiement manuel de nature
     `formation`, reçu `REC-FORM-…`) et **2 inscrits non réglés**. Idempotent. De quoi
@@ -1200,14 +1200,15 @@ paiement (`pay`), inscription à une formation.
     montants sortent donc par grade (15 000 / 35 000 / 50 000 FCFA).
   - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
     plénières est respectée dans les données de démo). Les **ateliers** de volume
-    occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs matin **08:30-11:30**
-    et après-midi **14:00-17:00** (`ColloqueAvenirVolumeSeeder::buildSessions()`, **4 blocs**
-    du **lun. 05/10 au jeu. 08/10**, 24 séances de 3 h - un bloc par jour, un jour
-    vide au milieu d'un programme se lisant comme un trou de données). Les **4 sessions
+    occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs après-midi
+    **14:00-17:00** (J+0, **J+1**, J+2) et matin **08:30-11:30** (J+3)
+    (`ColloqueAvenirVolumeSeeder::buildSessions()`, **4 blocs** du **lun. 12/10 au
+    jeu. 15/10**, 24 séances de 3 h - un bloc par jour, un jour vide au milieu d'un
+    programme se lisant comme un trou de données). Les **4 sessions
     plénières** (`ColloqueAvenirSeeder::buildPlenaries()`, salle « Grand amphithéâtre »,
-    `type=plenary`) sont calées **hors** de ces fenêtres : inauguration **lun. 05/10
-    09:00-10:30**, table ronde **mer. 07/10 08:00-10:00**, formation **jeu. 08/10
-    14:00-17:00**, clôture **ven. 09/10 11:00-12:30** - dernier jour de l'édition, d'où
+    `type=plenary`) sont calées **hors** de ces fenêtres : inauguration **lun. 12/10
+    09:00-10:30**, table ronde **mer. 14/10 08:00-10:00**, formation **jeu. 15/10
+    14:00-17:00**, clôture **ven. 16/10 11:00-12:30** - dernier jour de l'édition, d'où
     l'absence de bloc d'ateliers ce matin-là. Les **séances de démo** de la base
     (`Session - {atelier}`, rapports/Q&A) sont à **11:30-12:30** (juste avant la pause
     déjeuner 12:30-14:00, laissé libre par le volume), et les séances **en direct** /
@@ -1215,6 +1216,23 @@ paiement (`pay`), inscription à une formation.
     volume ni ne tombe sur le déjeuner. ⚠️ En touchant à ces horaires, garder ces fenêtres
     disjointes (ateliers, plénières ET pause déjeuner) - sinon la vue Planning affiche des
     conflits dès le seed.
+  - ⚠️ **Le mardi 13/10 (J+1) est un APRÈS-MIDI d'ateliers, et c'est demandé** : il faut
+    des créneaux programmés dans **au moins deux ateliers fonctionnels simultanément**,
+    avec des communications, **entre 14h et 18h** ce jour-là. Les six ateliers y tiennent
+    leur séance 2 de **14:00 à 17:00**, dans six salles distinctes (33 communications) ;
+    la matinée de ce jour ne porte plus que les séances de 11:30-12:30 du seeder de base.
+    ⚠️ **Deux ateliers sur six sont CONFIÉS** - ateliers 1 et 2, modérateur ET rapporteur
+    rattachés **par e-mail** aux comptes de démonstration
+    (`ColloqueAvenirVolumeSeeder::equipesDeSeance()`), ce qui ouvre pour de bon « Séances
+    à modérer », la présence, la validation du passage et le rapport de séance. Deux et
+    pas six : les six ateliers étant **simultanés**, confier plus ferait du même compte le
+    modérateur de trois salles à la même heure. ⚠️ Le **programme synthétique publié**
+    annonce la même heure (`ColloqueAvenirSeeder`) : déplacer le bloc sans le programme
+    ferait annoncer des communications là où aucune salle n'ouvre. Garde :
+    `ColloqueAvenirVolumeSeederTest` (« fait tourner au moins deux ateliers en parallèle
+    le 13/10 de 14h à 18h » - simultanéité, salles distinctes, communications, visio,
+    séances confiées, aucun modérateur ubiquitaire, et accord du programme publié ;
+    5 sabotages vérifiés).
   - ⚠️ **Tout se cale sur `$start`** (`ColloqueAvenirSeeder`, décalages J+0 à J+4) et le
     seeder de volume **relit `date_start`**. Déplacer le colloque = changer `$start`/`$end`,
     jamais des dates en dur ailleurs. Garder une fenêtre de **5 jours** : la clôture est à J+4.
@@ -1224,9 +1242,10 @@ paiement (`pay`), inscription à une formation.
     synthétique** - sinon la clôture tombait deux jours après la fin de l'édition. Deux tests
     de garde : aucune séance **du programme** hors fenêtre, et aucune journée du programme
     publié hors fenêtre.
-  - ⚠️ **Le colloque de démonstration est DANS LE PASSÉ depuis le 10 octobre 2026**, et les
-    deux séances calées sur l'**horloge** (en direct, terminée) tombent le jour du seed :
-    elles sortent donc de la fenêtre **par construction**, et le test de garde les écarte.
+  - ⚠️ **Le colloque de démonstration ne sera DANS LE PASSÉ qu'à partir du 17 octobre
+    2026**, et les deux séances calées sur l'**horloge** (en direct, terminée) tombent le
+    jour du seed : semées hors de la fenêtre, elles en sortent **par construction**, et le
+    test de garde les écarte dans tous les cas.
     C'est le prix assumé de « les trois états de visio se voient sans rien attendre » - les
     y ramener de force donnerait une séance « en direct » qui ne l'est pas. ⚠️ Le cas vérifie
     qu'il n'y en a que **DEUX** : sans ce compte, une vraie séance hors fenêtre se cacherait

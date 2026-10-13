@@ -13,6 +13,61 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Colloque de démonstration déplacé au 12-16 octobre 2026 (2026-10-13)
+
+Le VIIIe colloque « Innover pour un avenir durable » se tient désormais du **lundi
+12 au vendredi 16 octobre 2026** (il était du 5 au 9). Comme le prévoyait le seeder,
+l'opération s'est faite en changeant **les deux lignes `$start`/`$end`** de
+`ColloqueAvenirSeeder` : tout le reste - plénières, programme synthétique publié,
+formation, séances d'atelier du seeder de volume - se cale dessus par décalage en
+jours. La fenêtre reste de **5 jours** (la clôture est à J+4), et l'événement est de
+nouveau **en cours**.
+
+**Demande précise, et c'est elle qui a dicté le reste** : il faut des créneaux
+programmés dans **au moins deux ateliers fonctionnels simultanément, avec des
+communications, le mardi 13/10 entre 14h et 18h**. Le bloc J+1 du seeder de volume
+était une **matinée** (08:30-11:30) : il est porté à **14:00-17:00**. Ce jour-là, les
+**six** ateliers tiennent donc leur séance 2 en parallèle, dans six salles distinctes,
+avec **33 communications** et la visioconférence armée (`scheduled`, donc ouverte
+automatiquement à 13:30). La matinée du 13/10 ne garde que les deux séances de
+11:30-12:30 du seeder de base.
+
+⚠️ **Le programme PUBLIÉ a été déplacé avec le bloc.** Les séances vivent dans
+`event_sessions`, la page du colloque lit `settings.program_synthesis`, et rien
+n'oblige structurellement les deux à rester d'accord : déplacer l'un sans l'autre
+ferait annoncer des communications là où aucune salle n'ouvre. La journée J+1 du
+programme synthétique est donc passée de « Journée d'ateliers, 08:30-11:30 » à
+« Après-midi, 14:00-17:00 ».
+
+⚠️ **« Fonctionnels » demandait plus que « programmés ».** Les 24 séances d'atelier
+n'avaient **ni modérateur ni rapporteur** : sans adresse e-mail rattachée à un compte,
+ni l'espace « Séances à modérer », ni la présence, ni la validation du passage, ni le
+rapport de séance ne s'ouvrent à personne. Les **ateliers 1 et 2** sont désormais
+confiés aux comptes de démonstration (`moderateur1`/`rapporteur1`,
+`moderateur2`/`rapporteur2`) sur leurs **quatre** blocs
+(`ColloqueAvenirVolumeSeeder::equipesDeSeance()`). **Deux et pas six** : les six
+ateliers étant simultanés, en confier plus ferait du même compte le modérateur de
+trois salles à la même heure - exactement le genre de programme faux que le reste du
+jeu de démonstration s'applique à éviter.
+
+**Garde** : `ColloqueAvenirVolumeSeederTest`, cas « fait tourner au moins deux ateliers
+en parallèle le 13/10 de 14h à 18h ». Il éprouve la **simultanéité** (regroupement par
+horaire identique, et non le simple nombre de séances du jour), des **ateliers et des
+salles distinctes**, la présence de **communications**, la **visio**, les **séances
+confiées** (≥ 2, e-mails résolus en comptes existants), l'**absence de modérateur
+ubiquitaire**, et l'**accord du programme publié**. Le cas des dates passe de 5-9 à
+12-16 octobre. **Cinq sabotages vérifiés** : bloc remis le matin, salle unique,
+équipes retirées, même modérateur sur deux salles, programme publié laissé le matin.
+
+⚠️ **Défaut PRÉEXISTANT, repéré au passage et NON corrigé** : les deux séances de
+démonstration calées sur l'**horloge** (une en direct, une terminée) peuvent recouvrir
+les séances de 11:30-12:30 du même jour, qui partagent leur modérateur et leur
+rapporteur (`$moderators[$i % 2]`). Selon l'heure du `db:seed`, `moderateur1` se
+retrouve donc dans deux salles à la fois - c'était le cas ce 13/10 à 11h. Hors de la
+fenêtre 14h-18h demandée, et il n'y a que **deux** comptes de modérateur dans le jeu de
+démonstration : le corriger proprement demande un troisième binôme, ou de décaler les
+séances de 11:30. À arbitrer.
+
 ### Sécurité des formulaires publics (2026-10-12)
 
 L'inscription participant et le contact de la page d'accueil utilisent Cloudflare Turnstile. Configurer la clé du site et la clé secrète dans **Réglages → Sécurité** (secret chiffré en base et non réaffiché), ou via `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, puis enregistrer les domaines du site dans le widget Cloudflare. Le composant Blade `x-turnstile` affiche le défi et `App\Support\Turnstile` vérifie le jeton avec Siteverify côté serveur (succès, action, hostname) avant toute création de compte ou tout e-mail. Sans configuration complète, l'envoi est désactivé dans les vues et rejeté sur les endpoints. Le contact garde son honeypot et sa limitation par IP.

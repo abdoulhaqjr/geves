@@ -63,14 +63,14 @@ it('donne un jeu complet : statuts variés, créneaux et relectures', function (
  * s'y cale par décalage. Un seeder qui glisse d'un jour sort la clôture de
  * l'événement ou laisse un jour vide au milieu du colloque.
  */
-it('tient le colloque du 5 au 9 octobre 2026, sans jour vide', function () {
+it('tient le colloque du 12 au 16 octobre 2026, sans jour vide', function () {
     $this->seed(ColloqueAvenirSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
     $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
 
-    expect($event->date_start->toDateString())->toBe('2026-10-05');
-    expect($event->date_end->toDateString())->toBe('2026-10-09');
+    expect($event->date_start->toDateString())->toBe('2026-10-12');
+    expect($event->date_end->toDateString())->toBe('2026-10-16');
 
     $sessions = EventSession::where('event_id', $event->id)->whereNotNull('session_day')->get();
 
@@ -79,7 +79,7 @@ it('tient le colloque du 5 au 9 octobre 2026, sans jour vide', function () {
     // séance « terminée » posée à une date fixe s'annoncerait terminée avant
     // d'avoir eu lieu. Elles tombent donc le jour du seed, qui n'est dans la
     // fenêtre que tant que le colloque n'est pas passé - il l'est depuis le
-    // 10 octobre 2026. Ce cas porte sur le PROGRAMME ; les écarter n'affaiblit
+    // 17 octobre 2026. Ce cas porte sur le PROGRAMME ; les écarter n'affaiblit
     // rien, c'est le programme qui se cale sur `$start`.
     $surHorloge = fn (EventSession $s) => in_array(
         $s->meetingStatusEnum(), [MeetingStatus::Live, MeetingStatus::Ended], true,
@@ -116,6 +116,96 @@ it('tient le colloque du 5 au 9 octobre 2026, sans jour vide', function () {
         ->values()->all();
 
     expect($jamais)->toBe([]); // les journées du programme hors de l'événement
+});
+
+/**
+ * ⚠️ **Le mardi 13/10, de 14h à 18h, au moins DEUX ateliers doivent tourner en
+ * parallèle, avec des communications.** C'est une demande explicite : c'est le
+ * créneau sur lequel on vérifie que deux salles simultanées fonctionnent
+ * vraiment (visio, modération, passage en salle) sans se marcher dessus.
+ *
+ * Le cas éprouve la SIMULTANÉITÉ, pas le nombre de séances du jour : deux
+ * séances d'ateliers différents à des heures qui ne se recouvrent pas ne
+ * démontreraient rien. Il regroupe donc les séances par horaire identique et
+ * exige qu'un même horaire en porte au moins deux, dans des SALLES distinctes -
+ * deux séances dans la même salle au même moment ne sont pas parallèles, elles
+ * sont en conflit.
+ *
+ * ⚠️ Et il exige que le programme PUBLIÉ annonce la même heure : les séances
+ * vivent dans `event_sessions`, la page du colloque lit
+ * `settings.program_synthesis`, et rien n'oblige structurellement les deux à
+ * rester d'accord. Déplacer le bloc sans déplacer le programme ferait annoncer
+ * des communications là où aucune salle n'ouvre.
+ */
+it('fait tourner au moins deux ateliers en parallèle le 13/10 de 14h à 18h', function () {
+    $this->seed(ColloqueAvenirSeeder::class);
+    $this->seed(ColloqueAvenirVolumeSeeder::class);
+
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $jour = $event->date_start->copy()->addDay();
+
+    expect($jour->toDateString())->toBe('2026-10-13');
+
+    $fenetre = EventSession::where('event_id', $event->id)
+        ->where('type', 'atelier')
+        ->whereDate('session_day', $jour->toDateString())
+        ->get()
+        ->filter(fn (EventSession $s) => $s->starts_at !== null
+            && $s->ends_at !== null
+            && $s->starts_at->format('H:i') >= '14:00'
+            && $s->ends_at->format('H:i') <= '18:00');
+
+    expect($fenetre)->not->toBeEmpty();
+
+    // Des ateliers SIMULTANÉS : un même horaire, plusieurs séances.
+    $parHoraire = $fenetre->groupBy(fn (EventSession $s) => $s->starts_at->format('H:i').'-'.$s->ends_at->format('H:i'));
+    $simultanees = $parHoraire->filter(fn ($groupe) => $groupe->count() >= 2);
+
+    expect($simultanees)->not->toBeEmpty();
+
+    foreach ($simultanees as $horaire => $groupe) {
+        // Des ateliers différents, dans des salles différentes : parallèles, et
+        // non en conflit sur la même salle.
+        expect($groupe->pluck('atelier_id')->filter()->unique()->count())->toBe($groupe->count(), $horaire);
+        expect($groupe->pluck('room')->unique()->count())->toBe($groupe->count(), $horaire);
+
+        foreach ($groupe as $seance) {
+            // Avec des communications, et une salle qui s'ouvre : une séance vide
+            // ou sans visio ne démontre rien de ce qu'on vient voir sur ce créneau.
+            expect(Slot::where('session_id', $seance->id)->where('submission_id', '>', 0)->count())
+                ->toBeGreaterThan(0, $seance->label);
+            expect($seance->hasMeeting())->toBeTrue($seance->label);
+        }
+    }
+
+    // ⚠️ **« Fonctionnels » va plus loin que « programmés »** : au moins deux des
+    // séances de la fenêtre sont CONFIÉES - modérateur ET rapporteur rattachés par
+    // e-mail à un compte existant -, sans quoi ni l'espace « Séances à modérer »,
+    // ni la présence, ni la validation du passage, ni le rapport de séance ne
+    // s'ouvrent à personne.
+    $confiees = $fenetre->filter(fn (EventSession $s) => filled($s->moderator_email)
+        && filled($s->rapporteur_email)
+        && User::where('email', $s->moderator_email)->exists()
+        && User::where('email', $s->rapporteur_email)->exists());
+
+    expect($confiees->count())->toBeGreaterThanOrEqual(2);
+
+    // ⚠️ Et jamais la même personne dans deux salles à la même heure : un
+    // modérateur ubiquitaire rendrait ces séances fausses au lieu de fonctionnelles.
+    foreach ($confiees->groupBy(fn (EventSession $s) => $s->starts_at->format('H:i')) as $heure => $groupe) {
+        expect($groupe->pluck('moderator_email')->unique()->count())->toBe($groupe->count(), (string) $heure);
+        expect($groupe->pluck('rapporteur_email')->unique()->count())->toBe($groupe->count(), (string) $heure);
+    }
+
+    // Le programme publié annonce bien des ateliers sur ce créneau, ce jour-là.
+    $annonce = collect($event->settings['program_synthesis']['days'] ?? [])
+        ->where('date', $jour->toDateString())
+        ->flatMap(fn (array $j) => $j['rows'] ?? [])
+        ->filter(fn (array $r) => ($r['type'] ?? '') === 'atelier'
+            && ($r['start'] ?? '') >= '14:00'
+            && ($r['end'] ?? '') <= '18:00');
+
+    expect($annonce)->not->toBeEmpty();
 });
 
 /**

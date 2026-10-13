@@ -51,7 +51,7 @@ class ColloqueAvenirSeeder extends Seeder
 
     public function run(): void
     {
-        // Dates FIXES de l'événement : le colloque se tient du 5 au 9 octobre 2026
+        // Dates FIXES de l'événement : le colloque se tient du 12 au 16 octobre 2026
         // (lundi → vendredi). Il reste « en cours » tant qu'on est dans cette
         // fenêtre, ce qui alimente la page « déroulement » et les sessions en direct.
         //
@@ -62,9 +62,9 @@ class ColloqueAvenirSeeder extends Seeder
         // tenir la fenêtre à 5 jours, sinon la clôture sortirait de l'événement. En
         // passant de 7 à 5 jours il a fallu REPLIER le programme (table ronde J+3 →
         // J+2, formation J+4 → J+3, clôture J+6 → J+4) : changer les deux lignes
-        // seules aurait posé la clôture au 11 octobre, hors de l'événement.
-        $start = Carbon::create(2026, 10, 5)->startOfDay();
-        $end = Carbon::create(2026, 10, 9)->startOfDay();
+        // seules aurait posé la clôture hors de l'événement.
+        $start = Carbon::create(2026, 10, 12)->startOfDay();
+        $end = Carbon::create(2026, 10, 16)->startOfDay();
         $deadline = Carbon::now()->subMonths(3); // clôture des soumissions (passée)
 
         $series = EventSeries::updateOrCreate(
@@ -131,7 +131,7 @@ class ColloqueAvenirSeeder extends Seeder
                     // page du colloque (onglets jour par jour) et source de génération.
                     'program_synthesis' => [
                         'title' => 'Programme synthétique du colloque',
-                        // ⚠️ **Replié sur 5 jours** (lun. 05 → ven. 09/10). Il DOIT
+                        // ⚠️ **Replié sur 5 jours** (lun. 12 → ven. 16/10). Il DOIT
                         // décrire ce que les séances tiennent vraiment : les blocs
                         // d'ateliers du seeder de volume sont calés aux mêmes heures,
                         // hors des fenêtres de plénière. Un programme publié qui
@@ -147,9 +147,14 @@ class ColloqueAvenirSeeder extends Seeder
                                 ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
                                 ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
-                            ['date' => (clone $start)->addDays(1)->toDateString(), 'heading' => 'Journée d’ateliers', 'rows' => [
-                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            // ⚠️ J+1 est un APRÈS-MIDI d'ateliers, et non une matinée :
+                            // le bloc de volume de ce jour-là se tient de 14:00 à 17:00
+                            // (six ateliers en parallèle). Le programme publié doit
+                            // annoncer la même heure que les séances, sans quoi il
+                            // promet des communications là où aucune salle n'ouvre.
+                            ['date' => (clone $start)->addDays(1)->toDateString(), 'heading' => 'Après-midi', 'rows' => [
                                 ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
+                                ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
                             ['date' => (clone $start)->addDays(2)->toDateString(), 'heading' => 'Matin', 'rows' => [
                                 ['type' => 'plenary', 'start' => '08:00', 'end' => '10:00', 'label' => 'Table ronde (diffusée en ligne)', 'highlight' => true],
@@ -505,7 +510,7 @@ class ColloqueAvenirSeeder extends Seeder
      */
     private function buildFormation(Event $event, Carbon $start): void
     {
-        $day = (clone $start)->addDays(3); // jeu. 08/10, après-midi
+        $day = (clone $start)->addDays(3); // jeu. 15/10, après-midi
 
         $formation = Formation::updateOrCreate(
             ['event_id' => $event->id, 'title' => 'Méthodologie de la recherche et valorisation scientifique'],
@@ -593,10 +598,10 @@ class ColloqueAvenirSeeder extends Seeder
      * Sessions plénières (exclusives) de l'événement, dans le « Grand amphithéâtre ».
      * Placées hors des fenêtres des ateliers (matin 08:30-11:30, après-midi
      * 14:00-17:00) pour que l'exclusivité des plénières soit respectée :
-     *   - inauguration : vendredi 02/10 matin (avant les ateliers de l'après-midi) ;
-     *   - table ronde : lundi 05/10 de 8h à 10h ;
-     *   - formation : mardi 06/10 de 14h à 17h ;
-     *   - clôture : jeudi 08/10 en fin de matinée - DERNIER jour de l'événement,
+     *   - inauguration : lundi 12/10 matin (avant les ateliers de l'après-midi) ;
+     *   - table ronde : mercredi 14/10 de 8h à 10h ;
+     *   - formation : jeudi 15/10 de 14h à 17h ;
+     *   - clôture : vendredi 16/10 en fin de matinée - DERNIER jour de l'événement,
      *     d'où l'absence de bloc d'ateliers ce matin-là (cf. le seeder de volume).
      *
      * ⚠️ Les cérémonies sont diffusées en visio **publique** : c'est le seul
@@ -609,8 +614,8 @@ class ColloqueAvenirSeeder extends Seeder
     {
         // [libellé, décalage en jours, h début, min début, h fin, min fin, animateur, visio, visibilité]
         // ⚠️ Décalages REPLIÉS sur la fenêtre de 5 jours (J+0 → J+4). À 7 jours la
-        // clôture était en J+6 : laissée telle quelle, elle serait tombée le
-        // 11 octobre, deux jours APRÈS la fin de l'événement.
+        // clôture était en J+6 : laissée telle quelle, elle serait tombée deux
+        // jours APRÈS la fin de l'événement.
         $plenaries = [
             ['Séance inaugurale', 0, 9, 0, 10, 30, 'Comité d’organisation', 'scheduled', 'public'],
             ['Table ronde : universités africaines et développement durable', 2, 8, 0, 10, 0, $moderators[0]->name, 'scheduled', 'public'],

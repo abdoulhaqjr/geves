@@ -319,8 +319,8 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * Séances d'accueil des communications : 6 ateliers (une salle chacun, en
      * parallèle) sur une série de blocs matin/après-midi. Les blocs sont calés
      * HORS des fenêtres des plénières (cf. {@see ColloqueAvenirSeeder::buildPlenaries()} :
-     * inauguration lun. 05/10 matin, table ronde mer. 07/10 matin, formation
-     * jeu. 08/10 après-midi, clôture ven. 09/10 matin), afin que l'exclusivité des
+     * inauguration lun. 12/10 matin, table ronde mer. 14/10 matin, formation
+     * jeu. 15/10 après-midi, clôture ven. 16/10 matin), afin que l'exclusivité des
      * plénières soit respectée et qu'aucun conflit de salle n'apparaisse.
      *
      * ⚠️ **Le NOMBRE de blocs se déduit du minimum par séance, pas du calendrier.**
@@ -343,18 +343,30 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         $sessions = collect();
 
         // [décalage en jours, h début, min début, h fin, min fin]
-        // ⚠️ Un bloc par jour : l'événement court du 5 au 9 octobre, et un jour sans
+        // ⚠️ Un bloc par jour : l'événement court du 12 au 16 octobre, et un jour sans
         // rien au milieu du programme se lit comme un trou de données. Le dernier
         // jour (J+4) n'en porte pas : c'est la matinée de clôture, et la plénière
         // l'occupe - aucun jour ne reste vide pour autant.
+        // ⚠️ **J+1 se tient l'APRÈS-MIDI** : il faut des créneaux programmés dans
+        // au moins deux ateliers EN PARALLÈLE le mardi 13/10 entre 14h et 18h. Les
+        // six ateliers y tiennent leur séance 2 de 14:00 à 17:00, dans six salles
+        // distinctes ; la matinée de ce jour-là ne porte plus que les séances de
+        // 11:30-12:30 du seeder de base. ⚠️ Le programme synthétique publié annonce
+        // la même heure (cf. ColloqueAvenirSeeder) : le déplacer ici seul ferait
+        // mentir la page du colloque.
         $blocks = [
-            [0, 14, 0, 17, 0],  // lun. 05/10 : après-midi (matin = séance inaugurale)
-            [1, 8, 30, 11, 30], // mar. 06/10 : matin
-            [2, 14, 0, 17, 0],  // mer. 07/10 : après-midi (matin = table ronde)
-            [3, 8, 30, 11, 30], // jeu. 08/10 : matin (après-midi = formation)
+            [0, 14, 0, 17, 0],  // lun. 12/10 : après-midi (matin = séance inaugurale)
+            [1, 14, 0, 17, 0],  // mar. 13/10 : après-midi (six ateliers en parallèle)
+            [2, 14, 0, 17, 0],  // mer. 14/10 : après-midi (matin = table ronde)
+            [3, 8, 30, 11, 30], // jeu. 15/10 : matin (après-midi = formation)
         ];
 
+        $equipes = $this->equipesDeSeance();
+
         foreach ($ateliers as $a => $atelier) {
+            $mod = $equipes[$a]['mod'] ?? null;
+            $rap = $equipes[$a]['rap'] ?? null;
+
             foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em]) {
                 $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
                 $finish = (clone $start)->addDays($day)->setTime($eh, $em);
@@ -379,6 +391,14 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'meeting_provider' => null,
                         'meeting_status' => 'scheduled',
                         'meeting_visibility' => 'participants',
+                        // ⚠️ **Modérateur et rapporteur se rattachent PAR E-MAIL** :
+                        // c'est l'adresse qui ouvre « Séances à modérer » et « Séances
+                        // à rapporter » dans l'espace de la personne. Un nom seul ne
+                        // lie personne (cf. CLAUDE.md, module Programme).
+                        'moderator_name' => $mod?->name,
+                        'moderator_email' => $mod?->email,
+                        'rapporteur_name' => $rap?->name,
+                        'rapporteur_email' => $rap?->email,
                     ]
                 ));
             }
@@ -402,6 +422,37 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         }
 
         return $sessions;
+    }
+
+    /**
+     * Équipes de séance, confiées aux comptes de démonstration.
+     *
+     * ⚠️ **DEUX ateliers seulement, et c'est une contrainte d'emploi du temps,
+     * pas une économie.** Les six ateliers se tiennent EN PARALLÈLE : confier
+     * leurs séances aux deux mêmes comptes ferait de chacun le modérateur de
+     * trois salles à la même heure - le genre de programme faux que le reste du
+     * jeu de démonstration s'applique à éviter. Les ateliers 1 et 2 sont donc
+     * fonctionnels **de bout en bout** - espace « Séances à modérer », présence,
+     * validation du passage, rapport de séance - sur leurs QUATRE blocs, qui ne
+     * se chevauchent pas entre eux. Les quatre autres montrent la charge
+     * parallèle.
+     *
+     * ⚠️ Ces comptes portent déjà les séances de 11:30-12:30 du seeder de base
+     * (ColloqueAvenirSeeder) : aucun bloc d'atelier ne les recouvre.
+     *
+     * Absents de la base, on ne confie RIEN plutôt que d'écrire une adresse qui
+     * n'ouvre aucun espace.
+     *
+     * @return array<int, array{mod: ?User, rap: ?User}>
+     */
+    private function equipesDeSeance(): array
+    {
+        $compte = fn (string $email): ?User => User::where('email', $email)->first();
+
+        return [
+            0 => ['mod' => $compte('moderateur1@test.tg'), 'rap' => $compte('rapporteur1@test.tg')],
+            1 => ['mod' => $compte('moderateur2@test.tg'), 'rap' => $compte('rapporteur2@test.tg')],
+        ];
     }
 
     /**
