@@ -1720,22 +1720,35 @@
   function loadTemplate(key) {
     clearCanvas();
     var T = {
-      participation: [
-        { type: 'logo', label: 'Logo UK', x: 48, y: 28, w: 170, html: '<div class="mark">UK</div> UNIVERSITÉ DE KARA' },
-        { type: 'logo', label: 'Logo UP', x: 680, y: 28, w: 180, html: 'UNIVERSITÉ DE PARAKOU' },
-        { type: 'text', label: 'Titre', x: 100, y: 100, w: 700, cls: 'heading', text: 'ATTESTATION DE PARTICIPATION' },
-        { type: 'text', label: 'Sous-titre', x: 100, y: 148, w: 700, cls: 'sub', text: 'Décernée à' },
-        { type: 'text', label: 'Destinataire', x: 100, y: 178, w: 700, cls: 'name attr', text: '[recipient.name]' },
-        { type: 'text', label: 'Corps', x: 80, y: 240, w: 740, cls: 'sub', text: 'pour avoir participé au Colloque Scientifique International de l’Université de Kara, en collaboration avec l’Université de Parakou, du 06 au 10 octobre 2025 au palais des congrès de Kara, au Togo.' },
-        { type: 'text', label: 'Thème (libellé)', x: 80, y: 320, w: 160, cls: 'sub', text: 'Thème du colloque :' },
-        { type: 'text', label: 'Thème', x: 240, y: 320, w: 580, cls: 'sub attr', text: '[edition.theme]' },
-        { type: 'text', label: 'Formule', x: 80, y: 390, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
-        { type: 'text', label: 'Fonction', x: 520, y: 490, w: 320, cls: 'sub', text: 'Le Président du comité d’organisation' },
-        { type: 'text', label: 'Signataire', x: 520, y: 540, w: 320, cls: '', text: '[signatory.name]' },
-        { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 64, qrUrl: DEFAULT_QR_URL },
-        { type: 'text', label: 'Identifiant', x: 48, y: 580, w: 500, cls: 'sub', text: 'Identifiant : [certificate.uuid]' }
-      ],
+      // Attestation de PARTICIPATION (modèle officiel UK x Université de Parakou).
+      // ⚠️ Doit rester identique à LayoutSanitizer::attestationParticipation() (PHP) :
+      // même cadre (image de fond), Times pour le titre, Lato pour le corps, logos
+      // en éléments image, jetons de la palette ([espace.cle]).
+      participation: (function () {
+        var SERIF = "'Times New Roman', Times, serif";
+        var SANS = "'Lato', system-ui, sans-serif";
+        var DARK = '#1a2332';
+        var LOGOS = (window.UKC_EDITOR || {}).logos || {};
+        var imgHtml = function (src) {
+          return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        };
+        return [
+          { type: 'logo', label: 'Logo UK', x: 135, y: 26, w: 230, h: 60, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 620, y: 26, w: 260, h: 60, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
+          { type: 'text', label: 'Titre', x: 120, y: 104, w: 660, text: 'ATTESTATION DE PARTICIPATION', font: SERIF, size: 28, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Sous-titre', x: 120, y: 152, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
+          { type: 'text', label: 'Destinataire', x: 120, y: 178, w: 660, text: '[recipient.civility] [recipient.name]', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },
+          { type: 'text', label: 'Corps', x: 125, y: 234, w: 648, text: 'pour avoir participé au [edition.name], [edition.dates], à [edition.location].', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.4 },
+          { type: 'text', label: 'Thème (libellé)', x: 125, y: 316, w: 195, text: 'Thème du colloque :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Thème', x: 330, y: 316, w: 436, text: '[edition.theme]', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.3 },
+          { type: 'text', label: 'Formule', x: 125, y: 408, w: 648, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 14, weight: 500, color: DARK },
+          { type: 'qr', label: 'QR vérification', x: 120, y: 492, w: 76, qrUrl: DEFAULT_QR_URL },
+          { type: 'text', label: 'Lieu / date', x: 490, y: 452, w: 350, text: 'Fait à Kara, le [certificate.issued_on]', font: SANS, size: 14, weight: 500, color: DARK },
+          { type: 'text', label: 'Fonction', x: 490, y: 476, w: 350, text: 'Le [signatory.role]', font: SANS, size: 15, weight: 700, color: DARK },
+          { type: 'text', label: 'Signataire', x: 490, y: 556, w: 350, text: '[signatory.name]', font: SANS, size: 17, weight: 700, color: DARK },
+          { type: 'text', label: 'Identifiant', x: 30, y: 592, w: 430, text: 'Identifiant de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
+        ];
+      })(),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1824,8 +1837,8 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'communication') {
-      // Cadre décoratif officiel (motifs kente, hélice ADN) + logos UK et Parakou.
+    if (key === 'communication' || key === 'participation') {
+      // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par les deux modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
     } else if (key === 'formation-csiuk') {

@@ -3215,12 +3215,20 @@ ajoutée par la vue, elle ne se saisit pas.
   **`{formation}` / `{formation_theme}` / `{formateurs}`** pour une attestation de
   formation.
   - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
-    `match` ; le type **`communication`** renvoie le **modèle officiel UK x Université de
-    Parakou** (`attestationCommunication()`). Ce modèle PHP (rendu quand aucun modèle n'est
-    enregistré) et le modèle du **concepteur** (`loadTemplate('communication')` dans
-    `template-designer.js`, aussi chargé à l'ouverture d'un type sans `editor_state`) décrivent
-    la **MÊME maquette** : toucher à l'un, c'est toucher à l'autre. Garde :
-    `AttestationCommunicationTemplateTest`.
+    `match` ; les types **`communication`** (`attestationCommunication()`) **et
+    `participation`** (`attestationParticipation()`) renvoient le **modèle officiel UK x
+    Université de Parakou**. Chaque modèle PHP (rendu quand aucun modèle n'est
+    enregistré) et son jumeau du **concepteur** (`loadTemplate('communication')` /
+    `loadTemplate('participation')` dans `template-designer.js`, aussi chargés à l'ouverture
+    d'un type sans `editor_state`) décrivent la **MÊME maquette** : toucher à l'un, c'est
+    toucher à l'autre. Gardes : `AttestationCommunicationTemplateTest`,
+    `AttestationParticipationTemplateTest`.
+    - **Participation vs communication** : même cadre (image de fond **partagée**), même
+      en-tête (logos, titre Times 28, « Décernée à », destinataire), même typographie (Times
+      titre + Lato corps), même QR bas-gauche et même bloc signataire. Deux différences
+      seulement : le **titre** (« ATTESTATION DE PARTICIPATION ») et le **corps** (« pour avoir
+      participé au [edition.name], [edition.dates], à [edition.location]. ») ; la participation
+      **n'a pas** les lignes « Titre / Type de communication ».
   - **Cadre = image de fond ; logos et texte = éléments éditables.** Le cadre décoratif
     (motifs kente, hélice ADN) **seul** est cuit dans
     `public/img/attestations/attestation-communication-bg.png` (`bg_image`), reconstruit depuis

@@ -161,6 +161,7 @@ class LayoutSanitizer
 
         return match ($type) {
             'communication' => self::attestationCommunication(),
+            'participation' => self::attestationParticipation(),
             default => self::defaultAttestation(),
         };
     }
@@ -247,6 +248,48 @@ class LayoutSanitizer
                 $t(['x' => 490, 'y' => 514, 'w' => 350, 'h' => 24, 'text' => 'Le [signatory.role]', 'size' => 15, 'weight' => 700]),
                 $t(['x' => 490, 'y' => 560, 'w' => 350, 'h' => 28, 'text' => '[signatory.name]', 'size' => 17, 'weight' => 700]),
                 $t(['x' => 30, 'y' => 588, 'w' => 430, 'h' => 20, 'text' => 'Identifiant de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
+            ],
+        ];
+    }
+
+    /**
+     * Attestation de PARTICIPATION (modèle officiel UK x Université de Parakou).
+     *
+     * Même cadre décoratif et même typographie que l'attestation de communication
+     * (image de fond partagée, Times pour le titre, Lato pour le corps), sans les
+     * lignes « Titre / Type de communication ». Doit rester identique au modèle du
+     * concepteur (`loadTemplate('participation')` dans `template-designer.js`).
+     */
+    protected static function attestationParticipation(): array
+    {
+        $dark = '#1a2332';
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => 14, 'weight' => 500, 'color' => $dark,
+            'align' => 'left', 'font' => 'lato', 'italic' => false, 'leading' => 1.3,
+        ];
+
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
+        return [
+            'width' => 900, 'height' => 636, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            // Cadre identique à l'attestation de communication (même design UK/Parakou).
+            'bg_image' => '/img/attestations/attestation-communication-bg.png',
+            'elements' => [
+                ['type' => 'image', 'x' => 135, 'y' => 26, 'w' => 230, 'h' => 60, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 620, 'y' => 26, 'w' => 260, 'h' => 60, 'src' => '/img/attestations/logo-parakou.png'],
+                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => 'ATTESTATION DE PARTICIPATION', 'size' => 28, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                $t(['x' => 120, 'y' => 152, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
+                $t(['x' => 120, 'y' => 178, 'w' => 660, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 23, 'weight' => 800, 'align' => 'center']),
+                $t(['x' => 125, 'y' => 234, 'w' => 648, 'h' => 58, 'text' => 'pour avoir participé au [edition.name], [edition.dates], à [edition.location].', 'size' => 14, 'leading' => 1.4]),
+                $t(['x' => 125, 'y' => 316, 'w' => 195, 'h' => 22, 'text' => 'Thème du colloque :', 'weight' => 700]),
+                $t(['x' => 330, 'y' => 316, 'w' => 436, 'h' => 44, 'text' => '[edition.theme]', 'weight' => 700]),
+                $t(['x' => 125, 'y' => 408, 'w' => 648, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 14]),
+                ['type' => 'qr', 'x' => 120, 'y' => 492, 'size' => 76, 'value' => '{verify_url}'],
+                $t(['x' => 490, 'y' => 452, 'w' => 350, 'h' => 22, 'text' => 'Fait à Kara, le [certificate.issued_on]']),
+                $t(['x' => 490, 'y' => 476, 'w' => 350, 'h' => 24, 'text' => 'Le [signatory.role]', 'size' => 15, 'weight' => 700]),
+                $t(['x' => 490, 'y' => 556, 'w' => 350, 'h' => 28, 'text' => '[signatory.name]', 'size' => 17, 'weight' => 700]),
+                $t(['x' => 30, 'y' => 592, 'w' => 430, 'h' => 20, 'text' => 'Identifiant de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
             ],
         ];
     }
