@@ -3215,22 +3215,23 @@ ajoutée par la vue, elle ne se saisit pas.
   **`{formation}` / `{formation_theme}` / `{formateurs}`** pour une attestation de
   formation.
   - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
-    `match` ; les types **`communication`** (`attestationCommunication()`), **`participation`**
-    et **`moderation`** (`attestationParticipation()` / `attestationModeration()`) renvoient le
-    **modèle officiel UK x Université de Parakou**. Chaque modèle PHP (rendu quand aucun
-    modèle n'est enregistré) et son jumeau du **concepteur** (`loadTemplate('communication'
-    |'participation'|'moderation')` dans `template-designer.js`, aussi chargés à l'ouverture
-    d'un type sans `editor_state`) décrivent la **MÊME maquette** : toucher à l'un, c'est
-    toucher à l'autre. Gardes : `AttestationCommunicationTemplateTest`,
-    `AttestationParticipationTemplateTest`, `AttestationModerationTemplateTest`.
-    - **Participation / modération = même maquette**, factorisée : `officialAttestation($title,
-      $body)` (PHP) et `officialTpl(title, body)` (JS). Même cadre (image de fond **partagée**),
-      même en-tête (logos, titre Times 28, « Décernée à », destinataire), même typographie
-      (Times titre + Lato corps), même Thème + formule, même QR bas-gauche et même bloc
-      signataire. **Seuls le titre et le corps varient** : participation (« ATTESTATION DE
-      PARTICIPATION » / « pour avoir participé au … ») et modération (« ATTESTATION DE
-      MODÉRATION » / « pour avoir modéré une session lors du … »). La **communication** garde sa
-      propre méthode (elle ajoute les lignes « Titre / Type de communication »).
+    `match` ; les types **`communication`** (`attestationCommunication()`), **`participation`**,
+    **`moderation`** et **`rapporteur`** renvoient le **modèle officiel UK x Université de
+    Parakou**. Chaque modèle PHP (rendu quand aucun modèle n'est enregistré) et son jumeau du
+    **concepteur** (`loadTemplate('communication'|'participation'|'moderation'|'rapporteur')`
+    dans `template-designer.js`, aussi chargés à l'ouverture d'un type sans `editor_state`)
+    décrivent la **MÊME maquette** : toucher à l'un, c'est toucher à l'autre. Gardes :
+    `AttestationCommunicationTemplateTest`, `AttestationParticipationTemplateTest`,
+    `AttestationModerationTemplateTest`, `AttestationRapporteurTemplateTest`.
+    - **Participation / modération / rapporteur = même maquette**, factorisée :
+      `officialAttestation($title, $body)` (PHP) et `officialTpl(title, body)` (JS). Même cadre
+      (image de fond **partagée**), même en-tête (logos, titre Times 28, « Décernée à »,
+      destinataire), même typographie (Times titre + Lato corps), même Thème + formule, même QR
+      bas-gauche et même bloc signataire. **Seuls le titre et le corps varient** : participation
+      (« … PARTICIPATION » / « pour avoir participé au … »), modération (« … MODÉRATION » / « pour
+      avoir modéré une session lors du … ») et rapporteur (« … RAPPORTEUR » / « pour avoir servi
+      en tant que rapporteur lors du … »). La **communication** garde sa propre méthode (elle
+      ajoute les lignes « Titre / Type de communication »).
   - **Cadre = image de fond ; logos et texte = éléments éditables.** Le cadre décoratif
     (motifs kente, hélice ADN) **seul** est cuit dans
     `public/img/attestations/attestation-communication-bg.png` (`bg_image`), reconstruit depuis

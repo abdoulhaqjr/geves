@@ -1752,6 +1752,7 @@
     var T = {
       participation: officialTpl('ATTESTATION DE PARTICIPATION', 'pour avoir participé au [edition.name], [edition.dates], à [edition.location].'),
       moderation: officialTpl('ATTESTATION DE MODÉRATION', 'pour avoir modéré une session lors du [edition.name], [edition.dates], à [edition.location].'),
+      rapporteur: officialTpl('ATTESTATION DE RAPPORTEUR', 'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1824,7 +1825,7 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'communication' || key === 'participation' || key === 'moderation') {
+    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur') {
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
@@ -2113,7 +2114,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', formation: 'formation-csiuk' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', formation: 'formation-csiuk' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {

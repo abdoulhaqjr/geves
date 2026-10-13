@@ -163,6 +163,7 @@ class LayoutSanitizer
             'communication' => self::attestationCommunication(),
             'participation' => self::attestationParticipation(),
             'moderation' => self::attestationModeration(),
+            'rapporteur' => self::attestationRapporteur(),
             default => self::defaultAttestation(),
         };
     }
@@ -275,6 +276,19 @@ class LayoutSanitizer
         return self::officialAttestation(
             'ATTESTATION DE MODÉRATION',
             'pour avoir modéré une session lors du [edition.name], [edition.dates], à [edition.location].'
+        );
+    }
+
+    /**
+     * Attestation de RAPPORTEUR (modèle officiel UK x Université de Parakou).
+     * Même maquette que la participation, titre et corps mis à part. Doit rester
+     * identique au modèle du concepteur (`loadTemplate('rapporteur')`).
+     */
+    protected static function attestationRapporteur(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION DE RAPPORTEUR',
+            'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'
         );
     }
 
