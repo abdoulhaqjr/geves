@@ -214,21 +214,80 @@ it('rend le spécimen avec la géométrie exacte du document imprimé', function
     // que dompdf fait dessiner en blocs faute de savoir rendre un SVG - même
     // emplacement, même taille, autre technique de tracé. Les comparer
     // reviendrait à exiger que deux moteurs dessinent un QR de la même façon.
-    $geometrie = function (string $html): array {
-        preg_match_all('/left:(-?\d+)px;top:(-?\d+)px/', $html, $m, PREG_SET_ORDER);
+    //
+    // ⚠️ Le TYPE de balise est retenu : une image ne se compare pas comme le
+    // reste (voir plus bas).
+    $boites = function (string $html): array {
+        preg_match_all('/<(img|div)\b([^>]*)>/', $html, $m, PREG_SET_ORDER);
 
-        return array_map(fn (array $p) => $p[1].'/'.$p[2], $m);
+        $out = [];
+        foreach ($m as [, $balise, $attrs]) {
+            if (! preg_match('/left:(-?\d+)px/', $attrs, $x) || ! preg_match('/top:(-?\d+)px/', $attrs, $y)) {
+                continue;
+            }
+            preg_match('/width:(-?\d+)px/', $attrs, $w);
+            preg_match('/height:(-?\d+)px/', $attrs, $h);
+
+            $out[] = [
+                'image' => $balise === 'img',
+                'x' => (int) $x[1],
+                'y' => (int) $y[1],
+                'w' => (int) ($w[1] ?? 0),
+                'h' => (int) ($h[1] ?? 0),
+            ];
+        }
+
+        return $out;
     };
 
-    $ecran = LayoutRenderer::render($layout, $vars, pdf: false);
-    $imprime = LayoutRenderer::render($layout, $vars, pdf: true);
+    $ecranHtml = LayoutRenderer::render($layout, $vars, pdf: false);
+    $imprimeHtml = LayoutRenderer::render($layout, $vars, pdf: true);
 
-    expect($geometrie($ecran))->not->toBeEmpty();
-    expect($geometrie($ecran))->toBe($geometrie($imprime));
+    $ecranBoites = $boites($ecranHtml);
+    $imprimeBoites = $boites($imprimeHtml);
+
+    expect($ecranBoites)->not->toBeEmpty();
+    expect(count($ecranBoites))->toBe(count($imprimeBoites));
+
+    foreach ($ecranBoites as $i => $vue) {
+        $papier = $imprimeBoites[$i];
+        expect($papier['image'])->toBe($vue['image'], "élément {$i}");
+
+        if (! $vue['image']) {
+            // Texte, filet, cadre du QR : à la même place, au pixel près.
+            expect([$papier['x'], $papier['y']])->toBe([$vue['x'], $vue['y']], "élément {$i}");
+
+            continue;
+        }
+
+        // ⚠️ **Une IMAGE se compare par son CENTRE, jamais par son coin.** dompdf
+        // n'applique pas `object-fit` : il ÉTIRE l'image aux dimensions de sa
+        // boîte. `renderImage()` calcule donc la boîte lui-même en mode PDF et la
+        // recentre - ce qui déplace le coin haut-gauche de quelques pixels pour
+        // obtenir le MÊME rendu visuel. Exiger le même coin reviendrait à exiger
+        // du PDF qu'il déforme les logos. Mesuré sur le modèle officiel UK x
+        // Parakou : 135+230 à l'écran, 141+219 au PDF - le même centre à un
+        // demi-pixel près.
+        $centre = fn (array $b, string $axe) => $b[$axe] + $b[$axe === 'x' ? 'w' : 'h'] / 2;
+        foreach (['x', 'y'] as $axe) {
+            expect(abs($centre($vue, $axe) - $centre($papier, $axe)))
+                ->toBeLessThanOrEqual(1, "centre {$axe} de l'image {$i}");
+        }
+    }
+
+    $ecran = $ecranHtml;
+    $imprime = $imprimeHtml;
 
     // Mêmes dimensions de page, et le même texte : rien n'est retiré ni ajouté au
     // document - la mention SPÉCIMEN se pose PAR-DESSUS, dans la vue.
-    $texte = fn (string $html): string => trim(preg_replace('/\s+/', ' ', strip_tags($html)));
+    // ⚠️ **Un espace à chaque balise retirée.** `strip_tags()` colle le texte de
+    // deux éléments voisins dès que le balisage ne les sépare pas d'un blanc : le
+    // PDF rendait « ...de droit.Fait à Kara » là où l'écran rendait « ...de droit.
+    // Fait à Kara », pour un contenu identique. On compare ce qui est ÉCRIT, pas la
+    // façon dont le balisage est espacé.
+    $texte = fn (string $html): string => trim((string) preg_replace(
+        '/\s+/', ' ', (string) preg_replace('/<[^>]*>/', ' ', $html)
+    ));
     expect($texte($ecran))->toBe($texte($imprime));
     expect($layout['width'])->toBeGreaterThan(0);
 });

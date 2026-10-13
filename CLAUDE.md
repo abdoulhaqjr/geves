@@ -2265,6 +2265,20 @@ deux raisons distinctes.
      large dans une boîte plus carrée sortait écrasé. En mode PDF,
      `renderImage()` calcule la boîte lui-même (`getimagesize()`) et centre
      l'image à ses proportions.
+     ⚠️ **Conséquence : une image N'A PAS le même coin haut-gauche à l'écran
+     et au PDF**, et c'est voulu - le recentrage est ce qui donne le même
+     rendu visuel. Le cas « le spécimen a la géométrie exacte du document
+     imprimé » (`AttestationPageTest`) compare donc les **centres** pour les
+     images (tolérance 1 px, l'arrondi du recentrage) et le **coin au pixel**
+     pour tout le reste. Il a cassé net quand les modèles officiels ont
+     apporté leurs deux logos : mesuré, 135+230 à l'écran contre 141+219 au
+     PDF, soit le même centre. Exiger le même coin reviendrait à exiger du
+     PDF qu'il déforme les logos.
+     ⚠️ Et le même cas compare le TEXTE en posant **un espace à chaque balise
+     retirée** : `strip_tags()` colle le texte de deux éléments voisins dès
+     que le balisage ne les sépare pas d'un blanc, et le PDF rendait
+     « ...de droit.Fait à Kara » là où l'écran rendait « ...de droit. Fait à
+     Kara » - pour un contenu identique.
    - **`text-transform`** : les capitales se perdaient. En mode PDF, le texte
      est mis en capitales **côté serveur**.
    - **les dégradés CSS** : ⚠️ dompdf **ne trace aucun dégradé** (il ne peint que
