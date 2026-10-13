@@ -162,6 +162,7 @@ class LayoutSanitizer
         return match ($type) {
             'communication' => self::attestationCommunication(),
             'participation' => self::attestationParticipation(),
+            'moderation' => self::attestationModeration(),
             default => self::defaultAttestation(),
         };
     }
@@ -254,13 +255,39 @@ class LayoutSanitizer
 
     /**
      * Attestation de PARTICIPATION (modèle officiel UK x Université de Parakou).
-     *
-     * Même cadre décoratif et même typographie que l'attestation de communication
-     * (image de fond partagée, Times pour le titre, Lato pour le corps), sans les
-     * lignes « Titre / Type de communication ». Doit rester identique au modèle du
-     * concepteur (`loadTemplate('participation')` dans `template-designer.js`).
+     * Doit rester identique au modèle du concepteur (`loadTemplate('participation')`).
      */
     protected static function attestationParticipation(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION DE PARTICIPATION',
+            'pour avoir participé au [edition.name], [edition.dates], à [edition.location].'
+        );
+    }
+
+    /**
+     * Attestation de MODÉRATION (modèle officiel UK x Université de Parakou).
+     * Même maquette que la participation, titre et corps mis à part. Doit rester
+     * identique au modèle du concepteur (`loadTemplate('moderation')`).
+     */
+    protected static function attestationModeration(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION DE MODÉRATION',
+            'pour avoir modéré une session lors du [edition.name], [edition.dates], à [edition.location].'
+        );
+    }
+
+    /**
+     * Maquette officielle UK x Parakou commune (participation, modération…) : même
+     * cadre décoratif (image de fond partagée), mêmes logos en éléments image, même
+     * typographie (Times pour le titre, Lato pour le corps), QR de vérification et
+     * bloc signataire. Seuls le TITRE et le CORPS varient d'un type à l'autre.
+     *
+     * ⚠️ Toute retouche de géométrie doit être reportée dans le modèle jumeau du
+     * concepteur (`officialTemplate()` dans `template-designer.js`).
+     */
+    protected static function officialAttestation(string $title, string $body): array
     {
         $dark = '#1a2332';
 
@@ -278,10 +305,10 @@ class LayoutSanitizer
             'elements' => [
                 ['type' => 'image', 'x' => 135, 'y' => 26, 'w' => 230, 'h' => 60, 'src' => (string) $ukLogo],
                 ['type' => 'image', 'x' => 620, 'y' => 26, 'w' => 260, 'h' => 60, 'src' => '/img/attestations/logo-parakou.png'],
-                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => 'ATTESTATION DE PARTICIPATION', 'size' => 28, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => $title, 'size' => 28, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
                 $t(['x' => 120, 'y' => 152, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
                 $t(['x' => 120, 'y' => 178, 'w' => 660, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 23, 'weight' => 800, 'align' => 'center']),
-                $t(['x' => 125, 'y' => 234, 'w' => 648, 'h' => 58, 'text' => 'pour avoir participé au [edition.name], [edition.dates], à [edition.location].', 'size' => 14, 'leading' => 1.4]),
+                $t(['x' => 125, 'y' => 234, 'w' => 648, 'h' => 58, 'text' => $body, 'size' => 14, 'leading' => 1.4]),
                 $t(['x' => 125, 'y' => 316, 'w' => 195, 'h' => 22, 'text' => 'Thème du colloque :', 'weight' => 700]),
                 $t(['x' => 330, 'y' => 316, 'w' => 436, 'h' => 44, 'text' => '[edition.theme]', 'weight' => 700]),
                 $t(['x' => 125, 'y' => 408, 'w' => 648, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 14]),
