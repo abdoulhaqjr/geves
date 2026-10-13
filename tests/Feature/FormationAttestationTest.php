@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\AttestationVars;
 use App\Documents\DocumentVars;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
@@ -99,7 +100,7 @@ it('fige le thème et les signatures des formateurs sur l’attestation de forma
         'event_id' => $event->id, 'title' => 'Rédaction scientifique',
         'theme' => 'Publier dans une revue indexée', 'fee' => 0, 'published' => true,
     ]);
-    $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.']);
+    $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.', 'specialty' => 'Spécialiste en bibliométrie']);
     $trainer->update(['signature_path' => 'formation-signatures/sign.png']);
 
     $user = verifiedAccount();
@@ -111,7 +112,16 @@ it('fige le thème et les signatures des formateurs sur l’attestation de forma
     expect($attestation->meta['formation_theme'])->toBe('Publier dans une revue indexée');
     expect($attestation->meta['formation_trainers'])->toBe(['Pr. Awa Kodjo']);
     expect($attestation->meta['formation_signatures'][0]['name'])->toBe('Pr. Awa Kodjo');
+    // La fonction / spécialité est figée à côté du nom (affichée sous le nom).
+    expect($attestation->meta['formation_signatures'][0]['role'])->toBe('Spécialiste en bibliométrie');
     expect($attestation->meta['formation_signatures'][0]['src'])->toContain('sign.png');
+
+    // Elle apparaît bien dans le rendu, sous le nom du formateur.
+    $html = LayoutRenderer::render(
+        LayoutSanitizer::default('attestation', 'formation'),
+        DocumentVars::expand(AttestationVars::for($attestation, 'https://example.test/attestation/x'))
+    );
+    expect($html)->toContain('Spécialiste en bibliométrie')->toContain('Pr. Awa Kodjo');
 });
 
 it('plafonne à DEUX les signatures de formateurs sur l’attestation', function () {

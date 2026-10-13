@@ -3350,6 +3350,10 @@ ajoutée par la vue, elle ne se saisit pas.
     DEUX formateurs** via l'élément **`signatures`** (à gauche). Le plafond de 2 est posé à
     l'émission (`IssueAttestation` : `->take(2)` sur `formation_signatures`). Sans signature de
     formateur téléversée, l'élément est vide et seul le responsable signe.
+    - Chaque signature de formateur porte **nom PUIS fonction/spécialité** (sous le nom, en plus
+      petit) : `formation_signatures[]` = `{name, role, src}` où `role` = `formation_trainers.specialty`,
+      rendu par `renderSignatures()`. Corps (« Je soussigné… », « a suivi… », « En foi de quoi… »)
+      en **14 px** ; logos resserrés (UK 178×54, Parakou 128×78).
   - ⚠️ **Le concepteur gère l'élément `signatures`** (ajouté : `createEl` en pose un repère à deux
     emplacements, `serializeLayout` le préserve via `el.dataset.sig`). Sans cela, « Enregistrer »
     dans l'éditeur le reconvertissait en texte et les signatures de formateurs disparaissaient du

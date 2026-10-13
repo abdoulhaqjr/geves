@@ -363,7 +363,7 @@ class LayoutRenderer
      */
     protected static function renderSignatures(array $el, int $x, int $y, array $vars): string
     {
-        /** @var list<array{name?: string, src?: string}> $signatures */
+        /** @var list<array{name?: string, role?: string, src?: string}> $signatures */
         $signatures = array_values(array_filter(
             (array) ($vars['signatures'] ?? []),
             fn ($s) => is_array($s) && filled($s['src'] ?? null),
@@ -376,10 +376,29 @@ class LayoutRenderer
         $w = (int) ($el['w'] ?? 420);
         $h = (int) ($el['h'] ?? 80);
         $showNames = (bool) ($el['names'] ?? true);
+        $size = (int) ($el['size'] ?? 11);
         $cell = (int) floor($w / max(1, count($signatures)));
 
         $cells = '';
         foreach ($signatures as $s) {
+            // Bloc sous la signature : nom (souligné) puis, s'il existe, la
+            // fonction / spécialité du formateur, en plus petit et discret.
+            $label = '';
+            if ($showNames) {
+                $label = sprintf(
+                    '<div style="border-top:1px solid #1a2332;margin:2px 10px 0;padding-top:3px;font-size:%dpx;color:#1a2332;">%s</div>',
+                    $size,
+                    e((string) ($s['name'] ?? ''))
+                );
+                if (filled($s['role'] ?? null)) {
+                    $label .= sprintf(
+                        '<div style="margin:1px 10px 0;font-size:%dpx;color:#5a6577;">%s</div>',
+                        max(9, $size - 1),
+                        e((string) $s['role'])
+                    );
+                }
+            }
+
             $cells .= sprintf(
                 '<div style="display:inline-block;width:%dpx;vertical-align:top;text-align:center;">'
                 .'<img src="%s" alt="" style="max-width:%dpx;max-height:%dpx;object-fit:contain;">'
@@ -387,12 +406,8 @@ class LayoutRenderer
                 $cell,
                 e((string) $s['src']),
                 max(20, $cell - 16),
-                $showNames ? max(20, $h - 22) : $h,
-                $showNames ? sprintf(
-                    '<div style="border-top:1px solid #1a2332;margin:2px 10px 0;padding-top:3px;font-size:%dpx;color:#1a2332;">%s</div>',
-                    (int) ($el['size'] ?? 11),
-                    e((string) ($s['name'] ?? ''))
-                ) : ''
+                $showNames ? max(20, $h - 40) : $h,
+                $label
             );
         }
 

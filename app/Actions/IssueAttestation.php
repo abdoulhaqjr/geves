@@ -60,7 +60,12 @@ class IssueAttestation
             // responsable de l'événement) : le modèle réserve deux emplacements.
             $meta['formation_signatures'] = $trainers
                 ->filter(fn ($t) => $t->signatureUrl() !== null)
-                ->map(fn ($t) => ['name' => $t->displayName(), 'src' => $t->signatureUrl()])
+                ->map(fn ($t) => [
+                    'name' => $t->displayName(),
+                    // Fonction / spécialité du formateur, affichée sous le nom.
+                    'role' => (string) ($t->specialty ?? ''),
+                    'src' => $t->signatureUrl(),
+                ])
                 ->take(2)->values()->all();
         }
 
