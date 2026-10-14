@@ -3109,7 +3109,7 @@ ajoutée par la vue, elle ne se saisit pas.
   `Submission::usedCountFor()`). Illimité en tant que **co-auteur**.
 - **Types d'attestation proposés PAR DÉFAUT** (hub Documents, `DocumentHubController::$typeMeta`) :
   communication, participation, modération, rapporteur, **participation à l'organisation**,
-  **comité d'organisation**, formation, animation de formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS
+  **comité d'organisation**, **instruction de résumés** (relecteurs), formation, animation de formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS
   offerts d'office** - ils restent dans `Attestation::TYPES` (données existantes) mais ne
   sont ni créés (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans
   `$typeMeta` sans demande.
@@ -3275,15 +3275,23 @@ ajoutée par la vue, elle ne se saisit pas.
   formation.
   - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
     `match` ; les types **`communication`** (`attestationCommunication()`), **`participation`**,
-    **`moderation`**, **`rapporteur`**, **`organisation`** et **`comite_organisation`** renvoient
+    **`moderation`**, **`rapporteur`**, **`organisation`**, **`comite_organisation`** et
+    **`instruction_resumes`** renvoient
     le **modèle officiel UK x Université de Parakou**. Chaque modèle PHP (rendu quand aucun modèle
     n'est enregistré) et son jumeau du **concepteur** (`loadTemplate('communication'|'participation'
-    |'moderation'|'rapporteur'|'organisation'|'comite_organisation')` dans `template-designer.js`,
+    |'moderation'|'rapporteur'|'organisation'|'comite_organisation'|'instruction_resumes')` dans
+    `template-designer.js`,
     aussi chargés à l'ouverture d'un type sans `editor_state`) décrivent la **MÊME maquette** :
     toucher à l'un, c'est toucher à l'autre. Gardes : `AttestationCommunicationTemplateTest`,
     `AttestationParticipationTemplateTest`, `AttestationModerationTemplateTest`,
     `AttestationRapporteurTemplateTest`, `AttestationOrganisationTemplateTest`,
-    `AttestationComiteOrganisationTemplateTest`.
+    `AttestationComiteOrganisationTemplateTest`, `AttestationInstructionResumesTemplateTest`.
+    - **`instruction_resumes` = attestation d'INSTRUCTION DE RÉSUMÉS** (relecteurs) : même
+      maquette officielle (via `officialAttestation`), titre « ATTESTATION D'INSTRUCTION DE
+      RÉSUMÉS » (Times 28 px ≈ 618 px), corps « pour avoir contribué à l'évaluation, la sélection
+      et l'annotation des résumés scientifiques soumis au [edition.name]… ». Bénéficiaires =
+      participants ayant **rendu** au moins une relecture (`Review` `completed`),
+      dédoublonnés (`DocumentHubController::reviewerTargets()`, une par relecteur).
     - **Participation / modération / rapporteur / organisation = même maquette**, factorisée :
       `officialAttestation($title, $body, $titleSize = 28)` (PHP) et `officialTpl(title, body,
       titleSize)` (JS). Même cadre (image de fond **partagée**), même en-tête (logos, titre Times,

@@ -166,6 +166,7 @@ class LayoutSanitizer
             'rapporteur' => self::attestationRapporteur(),
             'organisation' => self::attestationOrganisation(),
             'comite_organisation' => self::attestationComiteOrganisation(),
+            'instruction_resumes' => self::attestationInstructionResumes(),
             'formation' => self::attestationFormation(),
             'formation_animation' => self::attestationFormationAnimation(),
             default => self::defaultAttestation(),
@@ -293,6 +294,21 @@ class LayoutSanitizer
         return self::officialAttestation(
             'ATTESTATION DE RAPPORTEUR',
             'pour avoir servi en tant que rapporteur lors du [edition.name], [edition.dates], à [edition.location].'
+        );
+    }
+
+    /**
+     * Attestation d'INSTRUCTION DE RÉSUMÉS (relecteurs / évaluateurs de résumés).
+     * Même maquette officielle que modération / rapporteur, titre et corps mis à part.
+     * Titre « ATTESTATION D'INSTRUCTION DE RÉSUMÉS » : Times 28 px ≈ 618 px, tient dans
+     * la boîte. Doit rester identique au modèle du concepteur
+     * (`loadTemplate('instruction_resumes')`).
+     */
+    protected static function attestationInstructionResumes(): array
+    {
+        return self::officialAttestation(
+            'ATTESTATION D’INSTRUCTION DE RÉSUMÉS',
+            'pour avoir contribué à l’évaluation, la sélection et l’annotation des résumés scientifiques soumis au [edition.name], [edition.dates], à [edition.location].'
         );
     }
 

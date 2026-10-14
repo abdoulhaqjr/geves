@@ -36,6 +36,7 @@ class Attestation extends Model
         'comite_organisation' => 'Comité d’organisation',
         'formation' => 'Formation',
         'formation_animation' => 'Animation de formation',
+        'instruction_resumes' => 'Instruction de résumés',
     ];
 
     public function typeLabel(): string
