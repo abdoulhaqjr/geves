@@ -10,11 +10,8 @@
     {{-- ===== Parcours d'inscription ===== --}}
     <div class="payment-overview">
         <div class="payment-overview__top">
-            <div class="payment-overview__meta">
-                <span class="payment-eyebrow">Votre parcours d’inscription</span>
-                <span class="payment-status payment-status--{{ ['ok' => 'success', 'info' => 'ready', 'muted' => 'muted'][$statusPill] }}"><span class="payment-status__dot" aria-hidden="true"></span>{{ $status }}</span>
-            </div>
             <h2>{{ $event->title ?: $event->year }}</h2>
+            <span class="payment-status payment-status--{{ ['ok' => 'success', 'info' => 'ready', 'muted' => 'muted'][$statusPill] }}"><span class="payment-status__dot" aria-hidden="true"></span>{{ $status }}</span>
         </div>
         <div class="ukc-steps" style="margin-bottom:0;" aria-label="Étapes de l’inscription">
             @foreach ($steps as $index => $label)
@@ -29,8 +26,7 @@
     @if ($participant)
         <section class="payment-mode" id="mode-participation" aria-labelledby="payment-mode-title">
             <div class="payment-mode__intro">
-                <span class="payment-eyebrow">{{ __('Ma participation') }}</span>
-                <h2 id="payment-mode-title">{{ __('Mode de participation au colloque') }}</h2>
+                <h2 id="payment-mode-title"><x-ukc.icon name="users" :size="20" /> {{ __('Mode de participation au colloque') }}</h2>
                 <p>{{ __('Choisissez comment vous assisterez au colloque. Le mode de présentation se choisit séparément pour chaque communication.') }}</p>
             </div>
             <form method="POST" action="{{ route('account.participation.mode.update', $event) }}" class="payment-mode__form">
@@ -142,7 +138,7 @@
     @if (! empty($tiers))
         <details class="payment-tariffs" @if ($participant && ! $paid) open @endif>
             <summary>
-                <span><span class="payment-eyebrow">Tarifs publiés</span><strong>Grille des frais d’inscription</strong></span>
+                <strong><x-ukc.icon name="receipt" :size="20" /> Grille des frais d’inscription</strong>
                 <span class="payment-tariffs__meta">{{ count($tiers) }} catégories <span class="payment-tariffs__chevron" aria-hidden="true"></span></span>
             </summary>
             <div class="payment-tariffs__grid">
