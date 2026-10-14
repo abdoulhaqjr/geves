@@ -662,7 +662,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-doc-group .ukc-doc-list { background: #fff; border-radius: 10px; padding: 4px 12px; border: 1px solid var(--ukc-border); }
 .ukc-doc-section { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--ukc-light); margin: 4px 0 10px; }
 
-.ukc-badge-wrap { margin-bottom: 20px; }
+.ukc-badge-wrap { margin-top: 20px; }
 .ukc-badge-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
 .ukc-badge-card .badge-intro { font-size: 13.5px; color: var(--ukc-muted); margin-bottom: 18px; }
 .ukc-badge-list { display: grid; gap: 24px; }
