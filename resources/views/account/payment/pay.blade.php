@@ -114,8 +114,8 @@
             @else
                 <form method="POST" action="{{ route('account.payment.pay', $event) }}">
                     @csrf
-                    <fieldset style="border:0;padding:0;margin:0;">
-                        <legend style="font-weight:700;font-size:14px;margin-bottom:10px;padding:0;">Choisir un moyen de paiement</legend>
+                    <fieldset class="payment-methods">
+                        <legend>Choisir un moyen de paiement</legend>
                         <div class="ukc-mm-methods">
                             @foreach ($gateways as $gateway)
                                 @php($key = $gateway->key())

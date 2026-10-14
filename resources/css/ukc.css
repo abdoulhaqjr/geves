@@ -735,7 +735,8 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-pay-secure { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ukc-muted); margin-top: 14px; }
 
 /* Inscription et paiement : l'état du dossier précède la grille tarifaire. */
-.account-payment { display: grid; gap: 18px; }
+.account-payment { display: grid; gap: 18px; font-family: var(--ukc-font); }
+.account-payment .ukc-card h2 { color: var(--ukc-muted); }
 .payment-overview, .payment-mode, .payment-state, .payment-checkout, .payment-tariffs {
   background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius-lg);
   box-shadow: var(--ukc-shadow);
@@ -769,7 +770,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-state__icon { display: grid; place-items: center; flex: none; width: 50px; height: 50px; border-radius: 14px; background: #e9efff; color: var(--ukc-blue); }
 .payment-state--success .payment-state__icon { background: #e6f8ed; color: #087c35; }
 .payment-state__body { flex: 1; min-width: 0; }
-.payment-state h2, .payment-state h3, .payment-checkout h3 { margin: 5px 0 10px; font-size: 21px; font-weight: 800; line-height: 1.25; color: var(--ukc-text); }
+.payment-state h2, .payment-state h3, .payment-checkout h3 { margin: 5px 0 10px; font-size: 21px; font-weight: 800; line-height: 1.25; color: var(--ukc-muted); }
 .payment-state p { margin: 0; color: var(--ukc-muted); font-size: 16px; line-height: 1.55; }
 .payment-checkout__heading p { margin: 0; color: var(--ukc-muted); font-size: 14px; line-height: 1.6; }
 .payment-state .ukc-btn { margin-top: 18px; }
@@ -780,13 +781,13 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-checkout__amount span, .payment-checkout__amount small { display: block; color: var(--ukc-muted); font-size: 12px; }
 .payment-checkout__amount strong { display: block; color: var(--ukc-blue); font-size: 22px; line-height: 1.25; }
 .payment-methods { border: 0; padding: 0; margin: 0; min-width: 0; }
-.payment-methods legend { margin-bottom: 11px; color: var(--ukc-text); font-size: 14px; font-weight: 750; }
+.payment-methods legend { margin-bottom: 11px; color: var(--ukc-muted); font-size: 14px; font-weight: 750; }
 .payment-checkout__footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; border-top: 1px solid var(--ukc-border); padding-top: 18px; margin-top: 20px; }
 .payment-checkout__footer p { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--ukc-muted); font-size: 12px; }
 .payment-tariffs { overflow: hidden; }
 .payment-tariffs summary { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 20px 26px; cursor: pointer; list-style: none; }
 .payment-tariffs summary::-webkit-details-marker { display: none; }
-.payment-tariffs summary strong { display: block; margin-top: 2px; color: var(--ukc-text); font-size: 17px; }
+.payment-tariffs summary strong { display: block; margin-top: 2px; color: var(--ukc-muted); font-size: 17px; }
 .payment-tariffs__meta { display: flex; align-items: center; gap: 12px; flex: none; color: var(--ukc-muted); font-size: 12px; font-weight: 650; }
 .payment-tariffs__chevron { display: block; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s; }
 .payment-tariffs[open] .payment-tariffs__chevron { transform: rotate(225deg); }
