@@ -35,12 +35,10 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
 
-    // Deux filets verts (gauche cadre→UK, droite Parakou→cadre ; PAS de segment au
-    // milieu). Éléments de mise en page (pas cuits dans le fond) → ils se redimensionnent
-    // au changement de format. ⚠️ Couleur #00be62 = la MÊME que le cadre (contour).
-    $rects = collect($layout['elements'])->where('type', 'rect');
-    expect($rects)->toHaveCount(2);
-    expect($rects->every(fn ($r) => strtolower((string) $r['color']) === '#00be62'))->toBeTrue();
+    // ⚠️ Les filets verts sont CUITS DANS LE CADRE de l'image de fond (soudés au contour,
+    // sans fente), donc PAS d'élément `rect` dans la mise en page. Ne pas les repasser en
+    // rect : un filet-élément laissait un jour contre le cadre dans le concepteur.
+    expect(collect($layout['elements'])->where('type', 'rect'))->toHaveCount(0);
 });
 
 it('rend le badge par défaut avec les valeurs du participant', function () {

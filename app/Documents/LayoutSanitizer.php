@@ -200,16 +200,13 @@ class LayoutSanitizer
             'elements' => [
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
-                // Deux filets verts au niveau des logos : un à gauche (cadre→UK), un à
-                // droite (Parakou→cadre). ⚠️ PAS de segment entre les deux logos (le trait
-                // du milieu n'est pas voulu). ⚠️ Chaque filet part du bord même du badge
-                // (`x0` / finit à `x397`) pour MORDRE sur le cadre vert cuit dans le fond
-                // (il occupe x0..12 à gauche, x384..397 à droite) et fusionner avec lui -
-                // ils ne flottent pas. Assez épais (`h8`) pour que la jonction avec le cadre
-                // se lise nettement et ne paraisse pas détachée. ⚠️ Couleur #00be62 =
-                // EXACTEMENT celle du cadre (le contour), PAS #009933 (la charte).
-                ['type' => 'rect', 'x' => 0, 'y' => 69, 'w' => 30, 'h' => 8, 'color' => '#00be62'],
-                ['type' => 'rect', 'x' => 367, 'y' => 69, 'w' => 30, 'h' => 8, 'color' => '#00be62'],
+                // ⚠️ Les deux filets verts (gauche cadre→UK, droite Parakou→cadre) sont
+                // désormais CUITS DANS LE CADRE de l'image de fond (badge-default-bg.png),
+                // dans la même matière que le contour : ils y sont donc TOUJOURS soudés, sans
+                // la moindre fente - un filet posé en élément par-dessus laissait un jour à
+                // gauche dans le concepteur. Ils s'étirent avec le cadre au changement de
+                // format (100% 100%), comme le reste du contour. Ne PAS les repasser en
+                // `rect` : c'est précisément ce qui ne « collait » pas.
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h40), côte à
                 // côte et centrées sur le badge, la largeur suivant le format propre de
