@@ -667,7 +667,14 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-badge-card .badge-intro { font-size: 13.5px; color: var(--ukc-muted); margin-bottom: 18px; }
 .ukc-badge-list { display: grid; gap: 24px; }
 .ukc-badge-entry + .ukc-badge-entry { border-top: 1px solid var(--ukc-border); padding-top: 22px; }
-.ukc-badge-entry-title { color: var(--ukc-text); font-size: 14px; font-weight: 800; margin: 0 0 14px; }
+.ukc-badge-entry-title {
+  margin: 0 0 14px;
+  color: var(--ukc-muted);
+  font-family: var(--ukc-font);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
 .ukc-badge-stage { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
 .ukc-badge-preview { width: 280px; max-width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.2); box-shadow: 0 12px 32px rgba(15,26,51,.18); background: linear-gradient(160deg, #1a3080 0%, #223ea4 45%, #009933 100%); color: #fff; position: relative; aspect-ratio: 5 / 7; display: flex; flex-direction: column; }
 .ukc-badge-preview.locked { filter: grayscale(.35); opacity: .85; }
