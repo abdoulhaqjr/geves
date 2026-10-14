@@ -604,7 +604,7 @@
     }
 
     var T = {
-      /* Badge par défaut = comité d'organisation (A6 portrait 397×560).
+      /* Badge participant par défaut (A6 portrait 397×560).
          ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). Le cadre
          vert/bleu + pictogrammes sont l'image de fond (classe bg-co). */
       co: function () {
@@ -637,33 +637,6 @@
         createEl({ type: 'text', label: 'Role', x: 28, y: 318, w: 340, cls: 'role attr', text: '[recipient.role]' });
         createEl({ type: 'text', label: 'Institution', x: 28, y: 348, w: 340, cls: 'sub attr', text: '[recipient.institution]' });
         // Bas - QR + ref
-        createEl({ type: 'qr', label: 'QR Badge', x: 166, y: 400, w: 64, qrUrl: DEFAULT_QR_URL });
-        createEl({ type: 'text', label: 'Ref', x: 28, y: 480, w: 340, cls: 'sub attr', text: '[badge.ref]' });
-      },
-      communicant: function () {
-        var chip = document.querySelector('[data-size="a6-portrait"]');
-        if (chip) chip.classList.add('active');
-        page.classList.add('bg-green');
-        createEl({ type: 'logo', label: 'Logo UK', x: 24, y: 22, w: 130, html: '<div class="mark">UK</div> UNIVERSITE DE KARA' });
-        createEl({ type: 'text', label: 'Edition', x: 24, y: 68, w: 350, cls: 'sub on-blue', text: '[edition.name]' });
-        createEl({ type: 'text', label: 'Dates', x: 24, y: 92, w: 350, cls: 'sub on-blue', text: '[edition.dates]' });
-        createEl({ type: 'photo', label: 'Photo', x: 166, y: 200, w: 64 });
-        createEl({ type: 'text', label: 'Nom', x: 28, y: 285, w: 340, cls: 'name attr', text: '[recipient.name]' });
-        createEl({ type: 'text', label: 'Role', x: 28, y: 318, w: 340, cls: 'role', text: 'COMMUNICATION' });
-        createEl({ type: 'text', label: 'Type', x: 28, y: 348, w: 340, cls: 'sub attr', text: '[communication.type]' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 166, y: 400, w: 64, qrUrl: DEFAULT_QR_URL });
-        createEl({ type: 'text', label: 'Ref', x: 28, y: 480, w: 340, cls: 'sub attr', text: '[badge.ref]' });
-      },
-      staff: function () {
-        var chip = document.querySelector('[data-size="a6-portrait"]');
-        if (chip) chip.classList.add('active');
-        page.classList.add('bg-none');
-        document.getElementById('pageBg').style.background = 'linear-gradient(180deg,#0f172a 0%,#0f172a 32%,#fff 32%)';
-        createEl({ type: 'logo', label: 'Logo', x: 24, y: 22, w: 150, html: '<div class="mark">UK</div> ORGANISATION' });
-        createEl({ type: 'text', label: 'Edition', x: 24, y: 72, w: 350, cls: 'sub on-blue', text: '[edition.name]' });
-        createEl({ type: 'photo', label: 'Photo', x: 166, y: 200, w: 64 });
-        createEl({ type: 'text', label: 'Nom', x: 28, y: 285, w: 340, cls: 'name attr', text: '[recipient.name]' });
-        createEl({ type: 'text', label: 'Role', x: 28, y: 318, w: 340, cls: 'role', text: 'STAFF' });
         createEl({ type: 'qr', label: 'QR Badge', x: 166, y: 400, w: 64, qrUrl: DEFAULT_QR_URL });
         createEl({ type: 'text', label: 'Ref', x: 28, y: 480, w: 340, cls: 'sub attr', text: '[badge.ref]' });
       },
@@ -1180,7 +1153,7 @@
     var btn = document.getElementById('aiRun');
     btn.disabled = true; btn.textContent = 'Analyse…';
     setTimeout(function () {
-      var key = /staff|orga/i.test(prompt) ? 'staff' : /communic/i.test(prompt) ? 'communicant' : /carte|card/i.test(prompt) ? 'card' : 'participant';
+      var key = /carte|card/i.test(prompt) ? 'card' : 'participant';
       loadTemplate(key);
       btn.disabled = false; btn.textContent = 'Generer';
       toast('Badge genere a partir du prompt');

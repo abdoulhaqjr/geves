@@ -96,7 +96,7 @@ class TemplateDesignerController extends Controller
             // Libellé saisi à la création, sinon celui du type.
             'typeLabel' => filled($existing?->title)
                 ? (string) $existing->title
-                : ($kind === 'badge' ? 'Badge' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
+                : ($kind === 'badge' ? 'Badge participant' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
             'template' => $existing,
             'scope' => $kind === 'badge' ? 'Participant' : (self::SCOPES[$type] ?? 'Participant'),
             'deleteCode' => $existing ? self::deleteCode($existing) : null,
@@ -104,7 +104,7 @@ class TemplateDesignerController extends Controller
             'editorState' => $existing?->editor_state,
             // Alias compris : l'aperçu du concepteur résout [recipient.name]
             // comme le fait le document délivré.
-            'vars' => DocumentVars::expand($this->sampleVars($editionId, $type)),
+            'vars' => DocumentVars::expand($this->sampleVars($editionId, $type, $kind)),
             'attestationTypes' => self::ATTESTATION_TYPES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'variables' => self::VARIABLES,
@@ -154,7 +154,7 @@ class TemplateDesignerController extends Controller
         [$kind, $type] = $this->kindType($data['kind'], $data['type']);
 
         $defaultTitle = $kind === 'badge'
-            ? 'Badge'
+            ? 'Badge participant'
             : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type));
 
         $format = $kind === 'badge' && array_key_exists((string) ($data['format'] ?? ''), self::BADGE_FORMATS)
@@ -234,7 +234,7 @@ class TemplateDesignerController extends Controller
 
         return response()->json([
             'layout' => $layout,
-            'vars' => $this->sampleVars((string) $request->input('event_id', ''), $type),
+            'vars' => $this->sampleVars((string) $request->input('event_id', ''), $type, $kind),
         ]);
     }
 
@@ -305,7 +305,7 @@ class TemplateDesignerController extends Controller
     }
 
     /** @return array<string, string|list<array{name?: string, src?: string}>> */
-    private function sampleVars(string $editionId, string $type): array
+    private function sampleVars(string $editionId, string $type, string $kind): array
     {
         $event = $editionId !== '' ? Event::with('series')->find($editionId) : null;
 
@@ -316,7 +316,7 @@ class TemplateDesignerController extends Controller
             'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
             'civility' => 'Mme',
-            'role' => 'Communicant',
+            'role' => $kind === 'badge' ? 'Participant' : 'Communicant',
             'institution' => 'Université de Kara',
             'type' => self::ATTESTATION_TYPES[$type] ?? 'participation',
             // ⚠️ Valeurs que la palette sait nommer ([edition.theme], [edition.dates]) :

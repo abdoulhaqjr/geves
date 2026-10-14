@@ -307,14 +307,11 @@ class DocumentController extends Controller
         return [$key => $selected, $key.'_labels' => $labels];
     }
 
-    /** Planche de badges (A4, 2 colonnes), couleur par rôle. */
-    public function badges(Event $event, Request $request): View
+    /** Planche de badges de participation des inscrits réglés (A4, 2 colonnes). */
+    public function badges(Event $event): View
     {
-        $query = $event->participants();
-
-        if ($request->boolean('paid')) {
-            $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
-        }
+        $query = $event->participants()
+            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
 
         $participants = $query->orderBy('last_name')->get();
 

@@ -3544,6 +3544,13 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   Ne pas y réinjecter `roleLabel()`/grade sans demande (un badge CO distinct serait un
   autre type). Garde : `DocumentsTest` (« génère la planche de badges » → voit
   « Participant », pas « Communicant »).
+- Le tableau **Documents → Badges → Modèles** présente le seul modèle réellement
+  utilisé (`document_templates`, type `default`) : son titre, les dimensions de sa
+  mise en page, la présence effective d'un QR et le nombre de participants dont
+  le **paiement de participation** est réglé. Les anciennes lignes fictives
+  « Communicant », « Staff » et « Carte » ont été retirées. La liste « Badges prêts »
+  et la planche admin sont limitées aux mêmes participants réglés ; le designer
+  propose des variantes de présentation du badge participant, sans modèle de rôle.
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
   boîtes à la **MÊME hauteur** (`h34`, UK w124 / Parakou w134), côte à côte et centrées

@@ -38,8 +38,8 @@ class DocumentTemplate extends Model
         if (! $template->exists || blank($template->layout)) {
             $template->layout = LayoutSanitizer::default($kind, $type);
         }
-        if (blank($template->title)) {
-            $template->title = $title ?: ($kind === 'badge' ? 'Badge' : (Attestation::TYPES[$type] ?? ucfirst($type)));
+        if (blank($template->title) || ($kind === 'badge' && $type === 'default' && trim((string) $template->title) === 'Badge')) {
+            $template->title = $title ?: ($kind === 'badge' ? 'Badge participant' : (Attestation::TYPES[$type] ?? ucfirst($type)));
         }
         $template->save();
 

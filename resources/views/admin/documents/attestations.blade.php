@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active - '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
+    <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, del: null, typed: '' }">
         {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -254,7 +254,7 @@
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'modeles']) }}" @class(['active' => $tab === 'badges' && $stab === 'modeles'])>Modèles</a>
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
-                        Badges prêts @isset($badgeReady)<span class="nav-count">{{ $badgeReady->total() }}</span>@endisset
+                        Badges prêts <span class="nav-count">{{ $badgePaidCount }}</span>
                     </a>
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'options']) }}" @class(['active' => $tab === 'badges' && $stab === 'options'])>Options générales</a>
                 </div>
@@ -265,9 +265,9 @@
 
                 <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif>
                     <div class="ukc-toolbar">
-                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="newBadge = true"><x-ukc.icon name="plus" :size="16" /> Nouveau modèle de badge</button>
+                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><x-ukc.icon name="pen" :size="16" /> Modifier le modèle de badge</a>
                         <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 - QR d’identification</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Un badge participant par inscription réglée, quel que soit le rôle.</span>
                     </div>
 
                     <div class="ukc-table-wrap">
@@ -280,12 +280,12 @@
                                         <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['sub'] }}</div></td>
                                         <td>{{ $b['format'] }}</td>
                                         <td><span class="ukc-stat">{{ $b['count'] }}</span></td>
-                                        <td>Oui</td>
-                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire pour ce format pour l’instant.">Sans destinataire</span>@endif</td>
+                                        <td>{{ $b['qr'] ? 'Oui' : 'Non' }}</td>
+                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucune inscription réglée pour cet événement.">Sans destinataire</span>@endif</td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
-                                                <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $event) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
+                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Télécharger la planche des inscriptions réglées (PDF)" href="{{ route('admin.documents.badges', $event) }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>@endif
+                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
                                                 <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                             </div>
                                         </td>
@@ -325,7 +325,7 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="ukc-check"><input type="checkbox" name="badgeGenerateAfterPayment" value="1" @checked($opts['badgeGenerateAfterPayment'])> Générer après confirmation de paiement</label>
+                                <p class="desc">Les badges de participation sont disponibles après confirmation du paiement.</p>
                                 <label class="ukc-check"><input type="checkbox" name="badgePhotoRequired" value="1" @checked($opts['badgePhotoRequired'])> Photo participant obligatoire sur le badge</label>
                                 <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
                                 <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
@@ -776,36 +776,6 @@
                 </x-slot:footer>
             </x-ukc.slideover>
 
-            <x-ukc.slideover open="newBadge" onClose="newBadge = false" width="480px">
-                <x-slot:header>Nouveau modèle de badge</x-slot:header>
-                <form method="POST" action="{{ route('admin.documents.templates.create') }}" id="newBadgeForm">
-                    @csrf
-                    <input type="hidden" name="event_id" value="{{ $event->id }}">
-                    <input type="hidden" name="kind" value="badge">
-                    <input type="hidden" name="type" value="default">
-                    <div class="ukc-form-row">
-                        <label for="badge-title">Libellé</label>
-                        <input type="text" id="badge-title" name="title" maxlength="150" placeholder="Badge participant">
-                    </div>
-                    <div class="ukc-form-row">
-                        <label for="badge-format">Format <span class="req">*</span></label>
-                        <select id="badge-format" name="format" required>
-                            @foreach (\App\Http\Controllers\Admin\TemplateDesignerController::BADGE_FORMATS as $key => $label)
-                                <option value="{{ $key }}" @selected($key === 'a6')>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="ukc-form-row">
-                        <label>Portée</label>
-                        <input type="text" value="Participant" readonly style="background:var(--ukc-bg);cursor:not-allowed;">
-                    </div>
-                </form>
-                <x-slot:footer>
-                    <span style="flex:1;"></span>
-                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="newBadge = false">Annuler</button>
-                    <button type="submit" form="newBadgeForm" class="ukc-btn ukc-btn--blue">Créer &amp; concevoir</button>
-                </x-slot:footer>
-            </x-ukc.slideover>
         @endif
     </div>
 </x-layouts.admin>

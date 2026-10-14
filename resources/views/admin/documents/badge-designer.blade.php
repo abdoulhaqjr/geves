@@ -61,9 +61,9 @@
       <div class="panel-view" id="panel-ai">
         <div class="ed-panel-head">Assistant IA</div>
         <div class="ed-panel-body">
-          <p class="ly-meta">Decrivez le badge souhaite (role, couleurs, photo, QR…). L IA propose une mise en page editable.</p>
+          <p class="ly-meta">Décrivez le badge participant souhaité (couleurs, photo, QR…). La mise en page sera utilisée pour tous les inscrits réglés.</p>
           <div class="ai-box">
-            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge communicant, bandeau bleu UK, photo ronde, nom en grand, role COMMUNICATION, QR en bas, reference UKC-2026-…"></textarea>
+            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge participant, bandeau bleu UK, photo ronde, nom en grand, QR en bas, référence UKC-2026-…"></textarea>
             <div class="ai-drop" id="aiDrop">Image / PDF de reference<br><span style="font-size:11px;">PNG, JPG, PDF - max 8 Mo</span></div>
             <input type="file" id="aiFile" accept="image/*,.pdf" style="display:none;">
             <div id="aiFileList"></div>
@@ -75,23 +75,15 @@
       <div class="panel-view active" id="panel-templates">
         <div class="ed-panel-head">Modeles de design</div>
         <div class="ed-panel-body">
-          <p class="ly-meta">Bases de badge participant CSIUK. Personnalisez ensuite les elements.</p>
+          <p class="ly-meta">Variantes de présentation du badge participant. Le modèle choisi s’applique à tous les inscrits réglés.</p>
           <div class="ed-panel-section">Formats portrait</div>
           <div class="ed-tpl-card active" data-tpl="co">
-            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">COMITÉ D’ORGANISATION</div>
+            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">PARTICIPANT</div>
             Cadre vert/bleu UK x Parakou (par défaut)
           </div>
           <div class="ed-tpl-card" data-tpl="participant">
             <div class="mini">PARTICIPANT</div>
             Bandeau bleu - photo - nom - QR
-          </div>
-          <div class="ed-tpl-card" data-tpl="communicant">
-            <div class="mini" style="background:linear-gradient(160deg,#009933 0%,#009933 38%,#fff 38%);color:#fff;">COMMUNICANT</div>
-            Bandeau vert - role COMMUNICATION
-          </div>
-          <div class="ed-tpl-card" data-tpl="staff">
-            <div class="mini" style="background:linear-gradient(160deg,#0f172a 0%,#0f172a 38%,#fff 38%);">STAFF / ORGA</div>
-            Badge organisation
           </div>
           <div class="ed-panel-section">Format carte</div>
           <div class="ed-tpl-card" data-tpl="card">

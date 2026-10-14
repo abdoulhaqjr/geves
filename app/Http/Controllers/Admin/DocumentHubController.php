@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
+use App\Documents\LayoutSanitizer;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
@@ -123,6 +124,32 @@ class DocumentHubController extends Controller
             'axes' => count($event->settings['tracks'] ?? []),
         ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0, 'sessions' => 0, 'axes' => 0];
 
+        // Le badge de participation est le seul modèle effectivement rendu pour
+        // cet événement. Son audience est celle de la planche et de l'espace
+        // participant : les inscriptions dont la participation est réglée.
+        $badgeTemplate = $event
+            ? DocumentTemplate::ensureFor((int) $event->id, 'badge', 'default', 'Badge participant')
+            : null;
+        $badgeLayout = $badgeTemplate
+            ? LayoutSanitizer::sanitize((array) $badgeTemplate->layout, 'badge', 'default')
+            : null;
+        $badgePaidCount = $event
+            ? Participant::where('event_id', $event->id)
+                ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
+                ->count()
+            : 0;
+        $badgeDimensions = $badgeLayout
+            ? $badgeLayout['width'].'×'.$badgeLayout['height']
+            : '';
+        $badgeFormat = match ($badgeDimensions) {
+            '397×560' => 'A6 Portrait',
+            '560×397' => 'A6 Paysage',
+            '280×397' => 'A7 Portrait',
+            '340×208' => 'Carte 90 × 55 mm',
+            '324×204' => 'CR80',
+            default => $badgeDimensions !== '' ? $badgeDimensions.' px' : '',
+        };
+
         // Onglet et sous-onglet portés par l'URL (?tab=&stab=) pour que chaque
         // onglet ait son lien. Le jeu de sous-onglets dépend de l'onglet.
         $tab = (string) $request->query('tab', 'attestations');
@@ -144,6 +171,7 @@ class DocumentHubController extends Controller
             'attestations' => $attestations,
             'rows' => $rows,
             'counts' => $counts,
+            'badgePaidCount' => $badgePaidCount,
             'tab' => $tab,
             'stab' => $stab,
             ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event) : []),
@@ -180,7 +208,6 @@ class DocumentHubController extends Controller
                 'badgeFormat' => (string) EventSettings::get($event, 'badges.format', 'A6 Portrait'),
                 'badgePhotoRequired' => (bool) EventSettings::get($event, 'badges.photo_required', true),
                 'badgeQrAccess' => (bool) EventSettings::get($event, 'badges.qr_access', true),
-                'badgeGenerateAfterPayment' => (bool) EventSettings::get($event, 'badges.generate_after_payment', true),
                 'badgeBatchPrint' => (bool) EventSettings::get($event, 'badges.batch_print', false),
                 'forewordTitle' => (string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos'),
                 'forewordText' => (string) EventSettings::get($event, 'livret.foreword_text', ''),
@@ -223,13 +250,14 @@ class DocumentHubController extends Controller
             // Données du livre préparées côté contrôleur (la vue mélange des @php
             // en ligne : y ajouter un bloc @php casse la compilation Blade).
             ...$this->livretViewExtras($event),
-            // Badges : 4 types fidèles au mockup, destinataires réels.
-            'badgeRows' => $event ? [
-                ['type' => 'Participant', 'title' => 'Badge participant', 'sub' => 'Bandeau bleu UK', 'format' => 'A6 Portrait', 'count' => $counts['participants'], 'status' => 'Actif'],
-                ['type' => 'Communicant', 'title' => 'Badge communicant', 'sub' => 'Bandeau vert', 'format' => 'A6 Portrait', 'count' => $counts['accepted'], 'status' => 'Actif'],
-                ['type' => 'Staff', 'title' => 'Badge organisation', 'sub' => 'Staff / orga', 'format' => 'A6 Portrait', 'count' => Participant::where('event_id', $event->id)->whereIn('role', ['committee', 'staff', 'moderator', 'rapporteur'])->count(), 'status' => 'Actif'],
-                ['type' => 'Carte', 'title' => 'Badge carte CR80', 'sub' => '85,6 × 54 mm', 'format' => 'CR80', 'count' => 0, 'status' => 'Sans destinataire'],
-            ] : [],
+            'badgeRows' => $badgeTemplate ? [[
+                'type' => 'Participant',
+                'title' => (string) $badgeTemplate->title,
+                'sub' => 'Inscriptions réglées',
+                'format' => $badgeFormat,
+                'count' => $badgePaidCount,
+                'qr' => collect($badgeLayout['elements'] ?? [])->contains(fn ($element) => ($element['type'] ?? null) === 'qr'),
+            ]] : [],
             'livreState' => [
                 'lastGen' => EventSettings::get($event, 'livret.last_generated_at'),
                 'file' => (string) EventSettings::get($event, 'livret.last_file', ''),
@@ -366,7 +394,6 @@ class DocumentHubController extends Controller
             'badges.format' => (string) $request->input('badgeFormat'),
             'badges.photo_required' => $request->boolean('badgePhotoRequired'),
             'badges.qr_access' => $request->boolean('badgeQrAccess'),
-            'badges.generate_after_payment' => $request->boolean('badgeGenerateAfterPayment'),
             'badges.batch_print' => $request->boolean('badgeBatchPrint'),
         ]);
 
@@ -661,12 +688,7 @@ class DocumentHubController extends Controller
             ? Participant::where('event_id', $event->id)
             : Participant::query()->whereRaw('1 = 0');
 
-        // Par défaut on ne montre que les inscriptions réglées : ce sont elles dont
-        // le badge est réellement à imprimer.
-        $paidOnly = $request->query('paid', '1') !== '0';
-        if ($paidOnly) {
-            $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
-        }
+        $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
 
         $badgeSearch = trim((string) $request->query('bsearch', ''));
         if ($badgeSearch !== '') {
@@ -679,11 +701,7 @@ class DocumentHubController extends Controller
         return [
             'badgeReady' => $query->orderBy('last_name')->orderBy('first_name')
                 ->paginate(20)->withQueryString(),
-            'badgePaidOnly' => $paidOnly,
             'badgeSearch' => $badgeSearch,
-            'badgeTemplate' => $event
-                ? DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->first()
-                : null,
         ];
     }
 

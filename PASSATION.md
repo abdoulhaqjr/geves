@@ -1880,3 +1880,15 @@ monogramme compact de la carte « À propos » par le logo large. Les trois cas 
 MenuParticipantTest » mais n'a touché que le gabarit.
 
 1220 tests / 4343 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+### 2026-10-14 — Tableau des modèles de badges
+
+Le tableau **Documents → Badges → Modèles** ne reprend plus les quatre lignes du
+mockup. Il lit le modèle `badge/default` effectivement rendu, déduit son format
+des dimensions du layout et son QR des éléments du layout. « Destinataires »
+compte uniquement les participants dont un paiement de **participation** est
+réglé. Le badge communicant distinct n'existe pas : un communicant réglé reçoit
+le même badge participant. La liste « Badges prêts » et la planche admin utilisent
+le même filtre, y compris si une ancienne URL porte `paid=0`. Les variantes
+« Communicant » et « Staff » ont été retirées de la palette du designer pour
+éviter de changer le rôle imprimé sur le modèle unique.
