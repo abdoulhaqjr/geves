@@ -50,15 +50,6 @@
 
                                 <div class="ukc-badge-actions">
                                     @if (! $badge['locked'])
-                                        <ul>
-                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Badge disponible pour cet événement') }}</li>
-                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Présentez-le à l’accueil (papier ou mobile)') }}</li>
-                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('QR code pour contrôle d’accès (réf. signée)') }}</li>
-                                        </ul>
-                                        <div class="locked-msg ukc-badge-info">
-                                            {!! __('Badge <strong>non téléchargeable</strong> côté participant : génération et impression réservées à l’administration.') !!}
-                                        </div>
-
                                         <div class="ukc-qr-details">
                                             <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>
                                             <dl>
