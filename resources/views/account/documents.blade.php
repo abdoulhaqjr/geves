@@ -11,71 +11,81 @@
             <p>{{ __('Vos badge, attestations et reçus apparaîtront ici au fil de votre participation.') }}</p>
         </div>
     @else
-        @php
-            $qrPayload = 'verifier?ref='.$badgeRef.'&pid='.$participant->id.'&ed='.$event->id.'&role='.\Illuminate\Support\Str::slug($participant->roleLabel());
-        @endphp
-
-        {{-- ============ Mon badge participant ============ --}}
-        {{-- `id` : cible de la pastille « Mon badge » du tableau de bord. --}}
+        {{-- Ancre de la pastille du tableau de bord. --}}
         <div class="ukc-badge-wrap" id="mon-badge">
             <div class="ukc-card ukc-badge-card">
-                <h3><x-ukc.icon name="shield" :size="20" /> {{ __('Mon badge participant') }}</h3>
+                <h3><x-ukc.icon name="shield" :size="20" /> {{ $badges->count() === 1 ? __('Mon badge') : __('Mes badges') }}</h3>
                 <p class="badge-intro">
-                    @if ($paid)
+                    @if ($badges->count() > 1)
+                        {{ __('Vos badges correspondent à vos fonctions pour cet événement.') }}
+                        @unless ($paid)
+                            {{ __('Le badge participant nécessite le règlement des frais d’inscription.') }}
+                        @endunless
+                    @elseif ($paid)
                         {{ __('Votre badge est généré. Présentez-le à l’accueil (papier ou mobile) ; le QR code sert au contrôle d’accès.') }}
                     @else
                         {{ __('L’aperçu de votre badge sera disponible dès confirmation du paiement d’inscription.') }}
                     @endif
                 </p>
-                @php($badgeScale = $badgeW > 0 ? 280 / $badgeW : 1)
-                <div class="ukc-badge-stage">
-                    {{-- Aperçu = MODÈLE de badge conçu dans l'admin, peuplé des données réelles, mis à l'échelle. --}}
-                    <div class="ukc-badge-canvas {{ $paid ? '' : 'locked' }}"
-                         style="width:280px;max-width:100%;height:{{ round($badgeH * $badgeScale) }}px;">
-                        <div class="scaler" style="width:{{ $badgeW }}px;height:{{ $badgeH }}px;transform:scale({{ $badgeScale }});">
-                            {!! $badgeCanvas !!}
-                        </div>
-                        <div class="badge-lock-overlay">
-                            <x-ukc.icon name="lock" :size="28" />
-                            {{ __('Disponible après paiement') }}
-                        </div>
-                    </div>
+                <div class="ukc-badge-list">
+                    @foreach ($badges as $badge)
+                        @php
+                            $badgeScale = $badge['w'] > 0 ? 280 / $badge['w'] : 1;
+                            $qrPayload = 'verifier?ref='.urlencode($badge['ref']).'&pid='.$participant->id.'&ed='.$event->id.'&role='.\Illuminate\Support\Str::slug($badge['role']);
+                        @endphp
+                        <section class="ukc-badge-entry" aria-label="{{ __($badge['title']) }}">
+                            <h4 class="ukc-badge-entry-title">{{ __($badge['title']) }}</h4>
+                            <div class="ukc-badge-stage">
+                                {{-- Modèle propre à ce type, avec les données du destinataire. --}}
+                                <div class="ukc-badge-canvas {{ $badge['locked'] ? 'locked' : '' }}"
+                                     style="width:280px;max-width:100%;height:{{ round($badge['h'] * $badgeScale) }}px;">
+                                    <div class="scaler" style="width:{{ $badge['w'] }}px;height:{{ $badge['h'] }}px;transform:scale({{ $badgeScale }});">
+                                        {!! $badge['html'] !!}
+                                    </div>
+                                    <div class="badge-lock-overlay">
+                                        <x-ukc.icon name="lock" :size="28" />
+                                        {{ __('Disponible après paiement') }}
+                                    </div>
+                                </div>
 
-                    <div class="ukc-badge-actions">
-                        @if ($paid)
-                            <ul>
-                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Paiement confirmé - badge généré') }}</li>
-                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Présentez-le à l’accueil (papier ou mobile)') }}</li>
-                                <li><x-ukc.icon name="check" :size="16" /> {{ __('QR code pour contrôle d’accès (réf. signée)') }}</li>
-                            </ul>
-                            <div class="locked-msg" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3;">
-                                {!! __('Badge <strong>non téléchargeable</strong> côté participant : génération et impression réservées à l’administration.') !!}
-                            </div>
+                                <div class="ukc-badge-actions">
+                                    @if (! $badge['locked'])
+                                        <ul>
+                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Badge disponible pour cet événement') }}</li>
+                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Présentez-le à l’accueil (papier ou mobile)') }}</li>
+                                            <li><x-ukc.icon name="check" :size="16" /> {{ __('QR code pour contrôle d’accès (réf. signée)') }}</li>
+                                        </ul>
+                                        <div class="locked-msg ukc-badge-info">
+                                            {!! __('Badge <strong>non téléchargeable</strong> côté participant : génération et impression réservées à l’administration.') !!}
+                                        </div>
 
-                            <div class="ukc-qr-details">
-                                <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>
-                                <dl>
-                                    <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badgeRef }}</strong></dd>
-                                    <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} - {{ __('ID compte') }} #{{ $participant->id }}</dd>
-                                    <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
-                                    <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
-                                    <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} - {{ __('Sessions plénières + ateliers') }}</dd>
-                                    <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} - {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
-                                    <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
-                                </dl>
-                                <p class="note">
-                                    {!! __('Le QR pointe vers la page de contrôle d’accès. La vérification s’appuie sur une <strong>référence signée</strong> et, en production, sur le modèle <strong>W3C DIDs / Verifiable Credentials</strong>. Ne le partagez pas publiquement.') !!}
-                                </p>
+                                        <div class="ukc-qr-details">
+                                            <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>
+                                            <dl>
+                                                <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badge['ref'] }}</strong></dd>
+                                                <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} - {{ __('ID compte') }} #{{ $participant->id }}</dd>
+                                                <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
+                                                <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
+                                                <dt>{{ __('Type d’accès') }}</dt><dd>{{ __($badge['role']) }} - {{ __('Sessions plénières + ateliers') }}</dd>
+                                                <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} - {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
+                                                <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
+                                            </dl>
+                                            <p class="note">
+                                                {!! __('Le QR pointe vers la page de contrôle d’accès. La vérification s’appuie sur une <strong>référence signée</strong> et, en production, sur le modèle <strong>W3C DIDs / Verifiable Credentials</strong>. Ne le partagez pas publiquement.') !!}
+                                            </p>
+                                        </div>
+                                    @else
+                                        <div class="locked-msg">
+                                            {!! __('Finalisez votre <strong>inscription et paiement</strong> pour débloquer l’aperçu de votre badge et le QR code d’accès (impression gérée par l’organisation).') !!}
+                                        </div>
+                                        <a href="{{ route('account.payment', $event) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
+                                            <x-ukc.icon name="card" :size="16" /> {{ __('Payer mes frais') }}
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
-                        @else
-                            <div class="locked-msg">
-                                {!! __('Finalisez votre <strong>inscription et paiement</strong> pour débloquer l’aperçu de votre badge et le QR code d’accès (impression gérée par l’organisation).') !!}
-                            </div>
-                            <a href="{{ route('account.payment', $event) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
-                                <x-ukc.icon name="card" :size="16" /> {{ __('Payer mes frais') }}
-                            </a>
-                        @endif
-                    </div>
+                        </section>
+                    @endforeach
                 </div>
             </div>
         </div>

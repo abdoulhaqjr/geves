@@ -200,17 +200,16 @@ class LayoutSanitizer
             'elements' => [
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
-                // UN seul trait vert au niveau des logos, INTERROMPU par les logos
-                // (transparents) : trois segments (cadre→UK, entre les logos, Parakou→cadre),
-                // gaps serrés (~4 px) pour qu'il se lise comme une ligne traversant la rangée.
-                // ⚠️ Couleur #00be62 = EXACTEMENT celle du cadre (le contour) cuit dans le
-                // fond, PAS #009933 (la charte). Les deux bouts extrêmes MORDENT sur le cadre
-                // (il occupe x0..12 à gauche, x384..397 à droite) et fusionnent avec lui.
-                // ⚠️ Logos TRANSPARENTS : aucun segment ne passe derrière eux (sinon le vert
-                // les traverse) - d'où l'interruption, pas un trait continu.
-                ['type' => 'rect', 'x' => 0, 'y' => 71, 'w' => 30, 'h' => 4, 'color' => '#00be62'],
-                ['type' => 'rect', 'x' => 184, 'y' => 71, 'w' => 16, 'h' => 4, 'color' => '#00be62'],
-                ['type' => 'rect', 'x' => 366, 'y' => 71, 'w' => 31, 'h' => 4, 'color' => '#00be62'],
+                // Deux filets verts au niveau des logos : un à gauche (cadre→UK), un à
+                // droite (Parakou→cadre). ⚠️ PAS de segment entre les deux logos (le trait
+                // du milieu n'est pas voulu). ⚠️ Chaque filet part du bord même du badge
+                // (`x0` / finit à `x397`) pour MORDRE sur le cadre vert cuit dans le fond
+                // (il occupe x0..12 à gauche, x384..397 à droite) et fusionner avec lui -
+                // ils ne flottent pas. Assez épais (`h8`) pour que la jonction avec le cadre
+                // se lise nettement et ne paraisse pas détachée. ⚠️ Couleur #00be62 =
+                // EXACTEMENT celle du cadre (le contour), PAS #009933 (la charte).
+                ['type' => 'rect', 'x' => 0, 'y' => 69, 'w' => 30, 'h' => 8, 'color' => '#00be62'],
+                ['type' => 'rect', 'x' => 367, 'y' => 69, 'w' => 30, 'h' => 8, 'color' => '#00be62'],
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h40), côte à
                 // côte et centrées sur le badge, la largeur suivant le format propre de

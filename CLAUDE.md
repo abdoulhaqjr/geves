@@ -3545,8 +3545,9 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
 
 - ⚠️ **Un communicant est d'abord un PARTICIPANT** : le badge de type `default`
   revient à tout inscrit ayant réglé sa participation, communicant ou non, avec
-  le rôle imprimé « Participant ». L'espace participant utilise toujours ce
-  modèle ; aucun badge communicant distinct n'existe.
+  le rôle imprimé « Participant ». L'espace participant montre son aperçu
+  verrouillé avant paiement et le débloque après règlement ; aucun badge
+  communicant distinct n'existe.
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique
@@ -3555,6 +3556,12 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   planche d'impression `admin.documents.badges?type=...`. Le tableau Modèles,
   le designer, l'aperçu et Badges prêts utilisent le même type ; ne jamais
   afficher une ligne de rôle sans raccorder aussi ses destinataires et son rendu.
+- **Un compte peut cumuler des badges sur le même événement** :
+  `BadgeCatalog::forAccount()` conserve le badge participant et ajoute chaque
+  fonction dont l'adresse e-mail correspond au compte ou à sa fiche participant.
+  La page `account.documents` affiche le modèle et la référence propres à chaque
+  type ; son titre et la pastille du tableau de bord passent de « Mon badge » à
+  « Mes badges » dès qu'il y en a plusieurs. Une fonction ne dépend pas du paiement.
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
   boîtes à la **MÊME hauteur** (`h40`, UK w146 x34 / Parakou w158 x204, `y53`), côte à côte

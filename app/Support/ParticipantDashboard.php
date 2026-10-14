@@ -492,12 +492,18 @@ class ParticipantDashboard
                 'icone' => 'receipt',
                 'format' => 'PDF',
             ];
-            // ⚠️ Le badge n'est PAS un fichier : il est dessiné sur « Mes
-            // documents » et s'imprime depuis là. La pastille annonçait « PDF »
-            // et ouvrait une page - on promettait un téléchargement. Elle dit
-            // « Voir » et mène à l'ancre du badge, pas au haut de la page.
+        }
+
+        // Une personne peut porter plusieurs fonctions et donc plusieurs badges.
+        // La pastille pointe vers leur aperçu, y compris avant paiement lorsque
+        // les badges de fonction sont déjà disponibles.
+        $participant = $this->event
+            ? Participant::whereIn('id', $this->participantIds())->first()
+            : null;
+        if ($participant && $this->event) {
+            $badgeCount = BadgeCatalog::forAccount($this->event, $this->account, $participant)->count();
             $out[] = [
-                'libelle' => __('Mon badge'),
+                'libelle' => $badgeCount === 1 ? __('Mon badge') : __('Mes badges'),
                 'detail' => __('À présenter à l’accueil'),
                 'url' => route('account.documents').'#mon-badge',
                 'icone' => 'card',

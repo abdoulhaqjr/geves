@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Event;
 use App\Models\Participant;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 /** Types de badges et destinataires réels d'un événement. */
@@ -29,6 +30,47 @@ class BadgeCatalog
     public static function label(string $type): string
     {
         return self::TYPES[$type]['label'] ?? self::TYPES['default']['label'];
+    }
+
+    /**
+     * Badges d'un compte sur un événement. La participation figure même avant
+     * paiement pour pouvoir afficher son aperçu verrouillé ; les fonctions sont
+     * cumulables et correspondent aux mêmes destinataires que la planche admin.
+     * Une fonction sans adresse ne peut pas être rattachée sûrement au compte.
+     *
+     * @return Collection<int, array{type: string, recipient: array{name: string, email: string, institution: string, ref: string}}>
+     */
+    public static function forAccount(Event $event, User $account, Participant $participant): Collection
+    {
+        $badges = collect([[
+            'type' => 'default',
+            'recipient' => [
+                'name' => $participant->full_name,
+                'email' => (string) $participant->email,
+                'institution' => (string) $participant->institution,
+                'ref' => $event->id.'-'.$participant->id,
+            ],
+        ]]);
+
+        $emails = collect([$account->email, $participant->email])
+            ->map(fn ($email) => mb_strtolower(trim((string) $email)))
+            ->filter()->unique();
+
+        foreach (array_keys(self::TYPES) as $type) {
+            if ($type === 'default') {
+                continue;
+            }
+
+            $recipient = self::recipients($event, $type)->first(
+                fn (array $person) => $emails->contains(mb_strtolower(trim($person['email'])))
+                    && trim($person['email']) !== ''
+            );
+            if ($recipient !== null) {
+                $badges->push(['type' => $type, 'recipient' => $recipient]);
+            }
+        }
+
+        return $badges;
     }
 
     /**

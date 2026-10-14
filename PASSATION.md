@@ -1907,6 +1907,15 @@ liens de conception et d'aperçu portent `type`, tout comme la planche admin.
 contrôleur du designer conserve désormais le type demandé au lieu de forcer
 `default`, afin que chaque mise en page soit sauvegardée séparément.
 
+La page participant « Mes documents » affiche maintenant tous les badges d'un
+même compte pour l'événement, avec le titre « Mon badge » ou « Mes badges » selon
+leur nombre. `BadgeCatalog::forAccount()` retrouve les fonctions dans les mêmes
+sources que les planches administrateur, par correspondance d'adresse e-mail
+avec le compte ou sa fiche participant. Chaque aperçu utilise le modèle et la
+référence de son type ; le badge participant reste verrouillé jusqu'au paiement,
+les badges de fonction sont disponibles indépendamment de celui-ci. La pastille
+du tableau de bord suit le même décompte.
+
 ### 2026-10-14 — Modalités de dépôt d'une communication
 
 Le champ `type` des soumissions reste **oral/poster**, présenté comme « Type de communication ». Un nouveau champ `participation_mode` (**online/onsite**) représente « Mode de participation » et s'enregistre séparément. Le formulaire public limite ses options selon `Event.settings.format` ; la requête les valide côté serveur. Le formulaire administrateur expose les deux champs, et `SubmissionFormConfig` remplace à la lecture l'ancien libellé « Mode de présentation » des événements déjà configurés. La migration reprend les valeurs Présentiel/Distantiel des métadonnées importées du colloque Eau au Togo ; les autres soumissions historiques restent sans mode tant qu'il n'est pas connu. Le seeder alimente désormais la nouvelle colonne à la création et lors d'une relance pour ses lignes existantes.

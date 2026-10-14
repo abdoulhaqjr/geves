@@ -12,14 +12,15 @@ use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\AttestationPolicy;
+use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -94,18 +95,27 @@ class DocumentController extends Controller
         // Média « appel à communications » de l'événement (le plus pertinent) + tous les médias.
         $event->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
 
-        // Référence de badge + rôle (débloqué après paiement).
-        $prefix = (string) EventSettings::get($event, 'badges.prefix', 'UKC-'.$event->year.'-');
-        $badgeRef = $prefix.Str::upper($account->initials).'-'.str_pad((string) $participant->id, 4, '0', STR_PAD_LEFT);
-        // Badge de PARTICIPATION : un communicant est d'abord un participant. Tout
-        // inscrit qui a réglé sa participation porte le même rôle « Participant »,
-        // qu'il communique ou non (pas de rôle de fonction ni de grade sur le badge).
-        $badgeRole = 'Participant';
         $didIssuer = (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
 
-        // Aperçu du badge rendu à partir du MODÈLE conçu dans l'admin (même mise en
-        // page que l'éditeur), peuplé des données réelles du participant.
-        $badge = $this->renderBadge($event, $account, $participant, $badgeRef, $badgeRole);
+        // Le participant peut cumuler plusieurs fonctions. Chaque badge reprend
+        // le type, le destinataire et la référence de la planche administrateur.
+        $badges = BadgeCatalog::forAccount($event, $account, $participant)
+            ->map(function (array $entry) use ($event, $account, $participant, $paid) {
+                $type = $entry['type'];
+                $recipient = $entry['recipient'];
+                $rendered = $this->renderBadge($event, $account, $participant, $type, $recipient);
+
+                return [
+                    'type' => $type,
+                    'title' => BadgeCatalog::TYPES[$type]['title'],
+                    'role' => BadgeCatalog::label($type),
+                    'ref' => $recipient['ref'],
+                    'locked' => $type === 'default' && ! $paid,
+                    'html' => $rendered['html'],
+                    'w' => $rendered['w'],
+                    'h' => $rendered['h'],
+                ];
+            });
 
         return view('account.documents', [
             'account' => $account,
@@ -122,12 +132,8 @@ class DocumentController extends Controller
             'papier' => AttestationPolicy::isPaper($event),
             'hasBooklet' => $hasBooklet,
             'media' => $event->media,
-            'badgeRef' => $badgeRef,
-            'badgeRole' => $badgeRole,
+            'badges' => $badges,
             'didIssuer' => $didIssuer,
-            'badgeCanvas' => $badge['html'],
-            'badgeW' => $badge['w'],
-            'badgeH' => $badge['h'],
         ]);
     }
 
@@ -138,13 +144,13 @@ class DocumentController extends Controller
      *
      * @return array{html: string, w: int, h: int}
      */
-    private function renderBadge(Event $event, $account, Participant $participant, string $badgeRef, string $badgeRole): array
+    private function renderBadge(Event $event, User $account, Participant $participant, string $type, array $recipient): array
     {
-        // Modèle enregistré (créé au besoin) : le badge du participant et la planche
-        // admin rendent ainsi strictement la même mise en page.
-        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge');
+        $badgeRef = $recipient['ref'];
+        $badgeRole = BadgeCatalog::label($type);
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
-        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', 'default');
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
 
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
         $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$event->id);
@@ -172,11 +178,12 @@ class DocumentController extends Controller
         $dates = $event->date_start
             ? $event->date_start->translatedFormat('d/m/Y').($event->date_end ? ' - '.$event->date_end->translatedFormat('d/m/Y') : '')
             : '';
-        $institution = $account->affiliation ?: (string) $participant->institution;
+        $name = $recipient['name'] ?: $account->full_name;
+        $institution = $recipient['institution'];
 
         $vars = [
             // Schéma de l'éditeur de badges (crochets).
-            'recipient.name' => $account->full_name,
+            'recipient.name' => $name,
             'recipient.role' => $badgeRole,
             'recipient.institution' => $institution,
             'recipient.photo' => $photoSrc,
@@ -186,7 +193,7 @@ class DocumentController extends Controller
             'edition.theme' => (string) $event->theme,
             'edition.location' => (string) $event->location,
             // Schéma attestation (accolades) pour compatibilité.
-            'name' => $account->full_name,
+            'name' => $name,
             'role' => $badgeRole,
             'org' => (string) $event->series?->name,
             'event' => (string) $event->title,
