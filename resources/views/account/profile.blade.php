@@ -1,6 +1,31 @@
 <x-layouts.participant :title="__('Mon compte')" :subtitle="__('Profil, préférences, notifications & sécurité')">
     @include('partials.account-nav')
 
+    @if ($participation && $participationEvent)
+        <div class="ukc-card" style="margin-bottom:20px;">
+            <h3>{{ __('Ma participation à cet événement') }}</h3>
+            <p class="ukc-muted" style="margin:6px 0 18px;">{{ $participationEvent->title }}</p>
+            <form method="POST" action="{{ route('account.participation.mode.update', $participationEvent) }}">
+                @csrf
+                @method('PUT')
+                <div class="ukc-field" style="max-width:420px;">
+                    <label for="participation_mode">{{ __('Mode de participation') }}</label>
+                    <select id="participation_mode" name="participation_mode" required>
+                        @if (count($participationModes) > 1 && ! $participation->participation_mode)
+                            <option value="">{{ __('Choisir un mode') }}</option>
+                        @endif
+                        @foreach ($participationModes as $value => $label)
+                            <option value="{{ $value }}" @selected(old('participation_mode', $participation->participation_mode) === $value)>{{ __($label) }}</option>
+                        @endforeach
+                    </select>
+                    @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <p class="hint" style="margin:12px 0 18px;">{{ __('Ce choix s’applique à toutes vos communications pour cet événement, y compris celles déjà déposées.') }}</p>
+                <button type="submit" class="ukc-btn ukc-btn--blue">{{ __('Enregistrer le mode de participation') }}</button>
+            </form>
+        </div>
+    @endif
+
     <div class="ukc-card">
         <h3>{{ __('Mon profil') }}</h3>
 
@@ -164,4 +189,5 @@
             </div>
         </form>
     </div>
+
 </x-layouts.participant>

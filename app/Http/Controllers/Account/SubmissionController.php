@@ -97,6 +97,8 @@ class SubmissionController extends Controller
             'gradeOptions' => ParticipantTypes::all(),
             'maxCommunications' => (int) ($event->settings['max_communications'] ?? 3),
             'remaining' => Submission::remainingFor($event, $account),
+            'participantMode' => Participant::query()->where('event_id', $event->id)
+                ->where('user_id', $account->id)->value('participation_mode'),
             'successRef' => session('success_ref'),
         ]);
     }
@@ -326,7 +328,6 @@ class SubmissionController extends Controller
             'keywords' => $submission->keywords,
             'track' => $submission->track,
             'type' => $submission->type,
-            'participation_mode' => $submission->participation_mode,
             'status' => 'superseded',
             'file_url' => $submission->file_url,
             'revision_of' => $submission->id,

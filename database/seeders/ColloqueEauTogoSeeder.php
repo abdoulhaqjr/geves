@@ -28893,6 +28893,7 @@ ARCHIVE;
             'country' => trim((string) $source['country']),
             'title' => trim((string) $source['grade']),
             'role' => 'author',
+            'participation_mode' => $source['presentation_mode'] === 'Distantiel' ? 'online' : 'onsite',
             'meta' => [
                 'import_source' => self::SOURCE,
                 'source_row' => $source['row'],
@@ -28984,9 +28985,6 @@ ARCHIVE;
                 || (int) ($existing->meta['source_row'] ?? 0) !== (int) $response['row']) {
                 throw new RuntimeException("La référence {$reference} appartient à une autre soumission.");
             }
-            if ($existing->participation_mode === null) {
-                $existing->update(['participation_mode' => $response['presentation_mode'] === 'Distantiel' ? 'online' : 'onsite']);
-            }
         }
 
         $email = filter_var($participant->email, FILTER_VALIDATE_EMAIL) ? $participant->email : null;
@@ -29000,7 +28998,6 @@ ARCHIVE;
             'keywords' => trim((string) $source['keywords']),
             'track' => trim((string) $source['track']),
             'type' => $response['communication'] === 'Poster' ? 'poster' : 'oral',
-            'participation_mode' => $response['presentation_mode'] === 'Distantiel' ? 'online' : 'onsite',
             'status' => 'submitted',
             'revision_of' => 0,
             'version' => 1,

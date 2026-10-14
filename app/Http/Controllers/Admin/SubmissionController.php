@@ -94,7 +94,7 @@ class SubmissionController extends Controller
             ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
-            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.participation_mode', $participationMode))
+            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($unlinked, fn ($q) => $q->whereHas('authorLinks', $unlinkedScope))
             ->when($search !== '', function ($q) use ($search) {
@@ -182,7 +182,7 @@ class SubmissionController extends Controller
             ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
-            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.participation_mode', $participationMode))
+            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";

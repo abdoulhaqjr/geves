@@ -112,7 +112,7 @@
                                 </td>
                                 <td>
                                     @if ($s->participationModeLabel())
-                                        <span class="ukc-pill ukc-pill--{{ $s->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $s->participationModeLabel() }}</span>
+                                        <span class="ukc-pill ukc-pill--{{ $s->participant?->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $s->participationModeLabel() }}</span>
                                     @else
                                         <span style="color:var(--ukc-light);">-</span>
                                     @endif

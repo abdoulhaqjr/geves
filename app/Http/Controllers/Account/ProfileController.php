@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\Event;
+use App\Models\Participant;
 use App\Support\Civilities;
+use App\Support\CurrentEvent;
 use App\Support\HalClient;
 use App\Support\Orcid;
 use App\Support\OrcidClient;
 use App\Support\ParticipantTypes;
 use App\Support\Phone;
+use App\Support\SubmissionFormConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,13 +31,37 @@ class ProfileController extends Controller
 {
     public function edit(): View
     {
+        $account = Auth::guard('account')->user();
+        $event = CurrentEvent::current($account);
+
         return view('account.profile', [
-            'account' => Auth::guard('account')->user(),
+            'account' => $account,
+            'participationEvent' => $event,
+            'participation' => $event ? Participant::query()->where('event_id', $event->id)
+                ->where('user_id', $account->id)->first() : null,
+            'participationModes' => $event ? (new SubmissionFormConfig($event))->participationModes() : [],
             'civilities' => Civilities::all(),
             'participantTypes' => ParticipantTypes::all(),
             'halEnabled' => HalClient::enabled(),
             'orcidConnect' => app(OrcidClient::class)->isConfigured(),
         ]);
+    }
+
+    /** Modifie le choix de présence de cette personne pour un seul événement. */
+    public function updateParticipationMode(Request $request, Event $event): RedirectResponse
+    {
+        $account = Auth::guard('account')->user();
+        $participant = Participant::query()->where('event_id', $event->id)
+            ->where('user_id', $account->id)->firstOrFail();
+        $modes = (new SubmissionFormConfig($event))->participationModes();
+        $data = $request->validate([
+            'participation_mode' => ['required', Rule::in(array_keys($modes))],
+        ]);
+
+        $participant->update(['participation_mode' => $data['participation_mode']]);
+
+        return redirect()->route('account.profile')
+            ->with('ukc_status', 'Mode de participation enregistré pour cet événement. Vos communications utilisent désormais ce mode.');
     }
 
     public function update(Request $request): RedirectResponse

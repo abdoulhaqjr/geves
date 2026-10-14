@@ -76,6 +76,16 @@ class Participant extends Model
         return self::ROLES[$this->role] ?? ucfirst((string) $this->role);
     }
 
+    /** Modalité de présence commune à toutes les communications de cet événement. */
+    public function participationModeLabel(): ?string
+    {
+        return match ($this->participation_mode) {
+            'online' => 'En ligne',
+            'onsite' => 'En présentiel',
+            default => null,
+        };
+    }
+
     public function isInvited(): bool
     {
         return filled($this->meta['invited_at'] ?? null);

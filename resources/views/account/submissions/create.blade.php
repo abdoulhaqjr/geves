@@ -6,9 +6,9 @@
         $gradeChoices[] = $account->grade;
     }
     $participationModes = $config->participationModes();
-    $initialMode = old('participation_mode', count($participationModes) === 1 ? array_key_first($participationModes) : '');
+    $initialMode = old('participation_mode', $participantMode ?? (count($participationModes) === 1 ? array_key_first($participationModes) : ''));
     if (! array_key_exists($initialMode, $participationModes)) {
-        $initialMode = '';
+        $initialMode = count($participationModes) === 1 ? array_key_first($participationModes) : '';
     }
     $coreFieldCount = (count($tracks) > 0 ? 1 : 0) + ($config->enabled('type') ? 1 : 0) + 1;
     $wizardInit = [
@@ -215,6 +215,11 @@
                                             <option value="{{ $value }}">{{ __($label) }}</option>
                                         @endforeach
                                     </select>
+                                    @if ($participantMode)
+                                        <span class="hint">{{ __('Ce choix s’applique à toutes vos communications pour cet événement. Si vous le modifiez, vos communications précédentes utiliseront le nouveau mode.') }}</span>
+                                    @else
+                                        <span class="hint">{{ __('Ce mode sera commun à toutes vos communications pour cet événement.') }}</span>
+                                    @endif
                                     @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
                                     @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
                                 </div>

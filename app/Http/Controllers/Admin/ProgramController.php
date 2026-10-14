@@ -310,7 +310,7 @@ class ProgramController extends Controller
         // pastille VISIO de l'onglet Sessions est à jour sans attendre la commande
         // planifiée. L'écriture n'a lieu que si une bascule est due (sinon no-op).
         $sessions->each(fn (EventSession $s) => $s->syncMeetingStatus());
-        $slots = $event ? $event->slots()->with(['submission', 'session.atelier'])->orderBy('starts_at')->get() : collect();
+        $slots = $event ? $event->slots()->with(['submission.participant', 'session.atelier'])->orderBy('starts_at')->get() : collect();
         $accepted = $event ? $event->submissions()->where('revision_of', 0)->where('status', 'accepted')
             ->with('participant.payments')->get() : collect();
 
@@ -482,7 +482,7 @@ class ProgramController extends Controller
                 && ($f['room'] === '' || $s->room === $f['room'])
                 && ($f['status'] === '' || $status === $f['status'])
                 && ($f['type'] === '' || $type === $f['type'])
-                && ($f['participation_mode'] === '' || $s->submission?->participation_mode === $f['participation_mode'])
+                && ($f['participation_mode'] === '' || $s->submission?->participant?->participation_mode === $f['participation_mode'])
                 && ($q === '' || str_contains($text, $q));
         })->values();
 

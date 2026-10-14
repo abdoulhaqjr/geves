@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type oral/poster,
- * mode de participation en ligne/présentiel, statut du
- * workflow de relecture, versionnage (resoumission). Statuts : {@see SubmissionStatus}.
+ * statut du workflow de relecture et versionnage (resoumission).
+ * Statuts : {@see SubmissionStatus}.
  *
  * @property array<int, array<string, mixed>>|null $authors
  * @property array<string, mixed>|null $meta
@@ -42,14 +42,10 @@ class Submission extends Model
         return SubmissionStatus::options();
     }
 
-    /** Modalité choisie par le communicant lors du dépôt. */
+    /** Modalité du participant pour cet événement, commune à ses dépôts. */
     public function participationModeLabel(): ?string
     {
-        return match ($this->participation_mode) {
-            'online' => 'En ligne',
-            'onsite' => 'En présentiel',
-            default => null,
-        };
+        return $this->participant?->participationModeLabel();
     }
 
     /**

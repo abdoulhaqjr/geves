@@ -102,6 +102,11 @@ class CreateSubmission
         // Création atomique : le participant (upsert) et la communication ensemble.
         $submission = DB::transaction(function () use ($account, $event, $data, $authors, $fileUrl, $customMeta, $editionGrade, $editionAffiliation): Submission {
             $participant = $this->upsert->handle($event, $account, 'author', $editionGrade, $editionAffiliation);
+            // Un seul mode par personne et par événement : un nouveau choix
+            // remplace immédiatement celui de tous ses dépôts précédents.
+            if ($participant->participation_mode !== $data['participation_mode']) {
+                $participant->update(['participation_mode' => $data['participation_mode']]);
+            }
 
             // ref_code + access_token sont générés par SubmissionObserver.
             return Submission::create([
@@ -113,7 +118,6 @@ class CreateSubmission
                 'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($event))->keywordSeparator()),
                 'track' => ($data['track'] ?? null) ?: null,
                 'type' => $data['type'] ?? 'oral',
-                'participation_mode' => $data['participation_mode'],
                 'status' => 'submitted',
                 'file_url' => $fileUrl,
                 'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,

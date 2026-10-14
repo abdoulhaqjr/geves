@@ -943,7 +943,7 @@
                                         <td>
                                             @if ($slot->submission)<span class="ukc-pill ukc-pill--{{ $slot->submission->type === 'poster' ? 'poster' : 'oral' }}">{{ $slot->submission->type === 'poster' ? 'Poster' : 'Orale' }}</span>
                                                 @if ($slot->submission->participationModeLabel())
-                                                    <div style="margin-top:5px;"><span class="ukc-pill ukc-pill--{{ $slot->submission->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $slot->submission->participationModeLabel() }}</span></div>
+                                                    <div style="margin-top:5px;"><span class="ukc-pill ukc-pill--{{ $slot->submission->participant?->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $slot->submission->participationModeLabel() }}</span></div>
                                                 @endif
                                             @else<span class="ukc-pill ukc-pill--muted">Libre</span>@endif
                                         </td>
