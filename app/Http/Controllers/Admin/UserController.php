@@ -43,6 +43,8 @@ class UserController extends Controller
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
                 $q->where(fn ($u) => $u->where('name', 'like', $term)
+                    ->orWhere('first_name', 'like', $term)
+                    ->orWhere('last_name', 'like', $term)
                     ->orWhere('email', 'like', $term)
                     ->orWhere('last_login_ip', 'like', $term));
             })

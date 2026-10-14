@@ -73,12 +73,16 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      */
     protected string $guard_name = 'web';
 
-    /** Renseigne `name` depuis prénom/nom quand il est vide (identité unifiée). */
+    /** Maintient le nom affiché en phase avec l'identité du profil. */
     protected static function booted(): void
     {
         static::saving(function (self $user) {
-            if (blank($user->name)) {
-                $user->name = trim(((string) $user->first_name).' '.((string) $user->last_name)) ?: (string) $user->email;
+            $profileName = trim(((string) $user->first_name).' '.((string) $user->last_name));
+
+            if ($profileName !== '' && $user->isDirty(['first_name', 'last_name'])) {
+                $user->name = mb_substr($profileName, 0, 255);
+            } elseif (blank($user->name)) {
+                $user->name = $profileName !== '' ? mb_substr($profileName, 0, 255) : (string) $user->email;
             }
         });
     }
