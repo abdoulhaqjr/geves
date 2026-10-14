@@ -1595,30 +1595,56 @@
 
     function confirmLeave() {
       if (document.getElementById('ukcLeaveModal')) return;
+      var previousFocus = document.activeElement;
       var ov = document.createElement('div');
       ov.id = 'ukcLeaveModal';
-      ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:24px;';
+      ov.className = 'ed-leave-overlay';
       var box = document.createElement('div');
-      box.style.cssText = 'background:#fff;border-radius:14px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:Jost,system-ui,sans-serif;';
+      box.className = 'ed-leave-dialog';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', 'edLeaveTitle');
+      box.setAttribute('aria-describedby', 'edLeaveDescription');
+      var content = document.createElement('div');
+      content.className = 'ed-leave-content';
+      var icon = document.createElement('span');
+      icon.className = 'ed-leave-icon';
+      icon.textContent = '!';
+      icon.setAttribute('aria-hidden', 'true');
       var h = document.createElement('h3');
+      h.id = 'edLeaveTitle';
       h.textContent = 'Modifications non enregistrées';
-      h.style.cssText = 'margin:0 0 8px;font-size:18px;font-weight:800;color:#1a2332;';
       var p = document.createElement('p');
-      p.textContent = 'Vous avez des modifications non enregistrées. Voulez-vous quitter sans enregistrer ?';
-      p.style.cssText = 'margin:0 0 20px;font-size:14px;color:#475569;line-height:1.5;';
+      p.id = 'edLeaveDescription';
+      p.textContent = 'Vos modifications seront perdues si vous quittez sans enregistrer.';
       var row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;';
+      row.className = 'ed-leave-actions';
       function mkBtn(label, kind) {
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = label;
-        var base = 'border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;';
-        if (kind === 'primary') b.style.cssText = base + 'background:#223ea4;color:#fff;';
-        else if (kind === 'danger') b.style.cssText = base + 'background:#fee2e2;color:#b91c1c;';
-        else b.style.cssText = base + 'background:#e2e8f0;color:#334155;';
+        b.className = 'ed-leave-button ed-leave-button--' + kind;
         return b;
       }
-      function close() { ov.remove(); }
+      function close() {
+        ov.remove();
+        document.removeEventListener('keydown', onKeydown);
+        if (previousFocus && previousFocus.focus) previousFocus.focus();
+      }
+      function onKeydown(e) {
+        if (e.key === 'Escape') close();
+        if (e.key === 'Tab') {
+          var buttons = [bCancel, bLeave, bSave];
+          var index = buttons.indexOf(document.activeElement);
+          if (e.shiftKey && index <= 0) {
+            e.preventDefault();
+            bSave.focus();
+          } else if (!e.shiftKey && index === buttons.length - 1) {
+            e.preventDefault();
+            bCancel.focus();
+          }
+        }
+      }
       var bCancel = mkBtn('Annuler', 'ghost');
       var bLeave = mkBtn('Quitter sans enregistrer', 'danger');
       var bSave = mkBtn('Enregistrer et quitter', 'primary');
@@ -1626,13 +1652,13 @@
       bLeave.addEventListener('click', function () { dirty = false; go(); });
       bSave.addEventListener('click', function () { performSave(function () { go(); }); });
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-      document.addEventListener('keydown', function esc(e) {
-        if (e.key === 'Escape' && document.getElementById('ukcLeaveModal')) { close(); document.removeEventListener('keydown', esc); }
-      });
+      document.addEventListener('keydown', onKeydown);
       row.appendChild(bCancel); row.appendChild(bLeave); row.appendChild(bSave);
-      box.appendChild(h); box.appendChild(p); box.appendChild(row);
+      content.appendChild(icon); content.appendChild(h); content.appendChild(p);
+      box.appendChild(content); box.appendChild(row);
       ov.appendChild(box);
       document.body.appendChild(ov);
+      bCancel.focus();
     }
 
     var backBtn = document.querySelector('.ed-top .back');
