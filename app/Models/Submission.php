@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type, statut du
+ * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type oral/poster,
+ * mode de participation en ligne/présentiel, statut du
  * workflow de relecture, versionnage (resoumission). Statuts : {@see SubmissionStatus}.
  *
  * @property array<int, array<string, mixed>>|null $authors

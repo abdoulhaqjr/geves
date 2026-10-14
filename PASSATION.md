@@ -1906,3 +1906,7 @@ liens de conception et d'aperçu portent `type`, tout comme la planche admin.
 « Badges prêts » filtre la catégorie et liste ses destinataires réels. Le
 contrôleur du designer conserve désormais le type demandé au lieu de forcer
 `default`, afin que chaque mise en page soit sauvegardée séparément.
+
+### 2026-10-14 — Modalités de dépôt d'une communication
+
+Le champ `type` des soumissions reste **oral/poster**, présenté comme « Type de communication ». Un nouveau champ `participation_mode` (**online/onsite**) représente « Mode de participation » et s'enregistre séparément. Le formulaire public limite ses options selon `Event.settings.format` ; la requête les valide côté serveur. Le formulaire administrateur expose les deux champs, et `SubmissionFormConfig` remplace à la lecture l'ancien libellé « Mode de présentation » des événements déjà configurés. La migration reprend les valeurs Présentiel/Distantiel des métadonnées importées du colloque Eau au Togo ; les autres soumissions historiques restent sans mode tant qu'il n'est pas connu. Le seeder alimente désormais la nouvelle colonne à la création et lors d'une relance pour ses lignes existantes.

@@ -62,6 +62,10 @@ class StoreSubmissionRequest extends FormRequest
         if ($c->enabled('type') && ! $this->filled('type')) {
             $merge['type'] = 'oral';
         }
+        $modes = $c->participationModes();
+        if (count($modes) === 1 && ! $this->filled('participation_mode')) {
+            $merge['participation_mode'] = array_key_first($modes);
+        }
         if (count($tracks) && ! $this->filled('track')) {
             $merge['track'] = $tracks[0];
         }
@@ -134,6 +138,8 @@ class StoreSubmissionRequest extends FormRequest
             $rules['type'] = ['required', 'in:oral,poster'];
         }
 
+        $rules['participation_mode'] = ['required', Rule::in(array_keys($c->participationModes()))];
+
         if ($c->enabled('keywords')) {
             $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500',
                 function (string $attr, string $value, \Closure $fail) use ($c): void {
@@ -179,7 +185,10 @@ class StoreSubmissionRequest extends FormRequest
     /** @return array<string, string> */
     public function attributes(): array
     {
-        $attrs = [];
+        $attrs = [
+            'type' => 'type de communication',
+            'participation_mode' => 'mode de participation',
+        ];
         foreach ($this->config()->customFields() as $field) {
             $attrs['customAnswers.'.$field['key']] = mb_strtolower($field['label']);
         }

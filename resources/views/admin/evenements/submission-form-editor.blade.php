@@ -6,11 +6,12 @@
     </x-slot:actions>
 
     @php
-        $systemKeys = ['title', 'abstract', 'track'];
+        $systemKeys = ['title', 'abstract', 'track', 'participation_mode'];
         $fieldMeta = [
             'title' => 'Texte court - obligatoire',
             'track' => 'Liste - axes de l’événement',
-            'type' => 'Liste - Orale / Poster',
+            'type' => 'Liste - Oral / Poster',
+            'participation_mode' => 'Liste - selon le format de l’événement (en ligne / en présentiel)',
             'keywords' => 'Texte - '.$rules['keywords_min'].' à '.$rules['keywords_max'].' mots-clés',
             'abstract' => 'Zone de texte - '.$rules['word_min'].' à '.$rules['word_limit'].' mots - obligatoire',
             'file' => 'Upload - '.$rules['file_formats'].' - max '.$rules['file_max_mb'].' Mo',
@@ -28,8 +29,8 @@
                 'required' => (bool) $conf['required'],
                 'system' => in_array($key, $systemKeys, true),
                 'canEnabled' => in_array($key, ['type', 'keywords', 'file'], true),
-                'canRequired' => ! in_array($key, ['title', 'abstract'], true),
-                'labelRequired' => in_array($key, ['title', 'abstract'], true),
+                'canRequired' => ! in_array($key, ['title', 'abstract', 'participation_mode'], true),
+                'labelRequired' => in_array($key, ['title', 'abstract', 'participation_mode'], true),
                 'isAbstract' => $key === 'abstract',
                 'meta' => $fieldMeta[$key] ?? '',
             ];

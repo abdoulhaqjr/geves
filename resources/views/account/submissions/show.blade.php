@@ -179,7 +179,8 @@
                     <h2>{{ __('Informations') }}</h2>
                     <dl class="kv">
                         <dt>{{ __('Référence') }}</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
-                        <dt>{{ __('Type') }}</dt><dd>{{ $s->type === 'poster' ? __('Poster') : __('Communication orale') }}</dd>
+                        <dt>{{ __('Type de communication') }}</dt><dd>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</dd>
+                        <dt>{{ __('Mode de participation') }}</dt><dd>{{ match ($s->participation_mode) { 'online' => __('En ligne'), 'onsite' => __('En présentiel'), default => '-' } }}</dd>
                         <dt>{{ __('Atelier / axe') }}</dt><dd>{{ $s->track ?: '-' }}</dd>
                         <dt>{{ __('Langue') }}</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
                         <dt>{{ __('Mots (résumé)') }}</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>

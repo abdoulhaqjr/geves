@@ -31,6 +31,11 @@ Larastan **niveau 5**.
 - L'inscription participant (`/inscription`) et le formulaire de contact de l'accueil utilisent Cloudflare Turnstile. Renseigner les deux clés dans **Réglages → Sécurité** (secret chiffré en base) ou dans `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, avec les domaines autorisés dans Cloudflare. Sans les deux clés, les boutons d'envoi restent désactivés ; le serveur refuse aussi les requêtes directes.
 - `<x-turnstile action="registration|contact" />` affiche le widget. `App\Support\Turnstile::validate()` appelle Siteverify côté serveur avant la création du compte ou l'envoi de l'e-mail, puis contrôle le succès, l'action et le domaine. Garder la clé secrète uniquement côté serveur ; ne pas contourner ce contrôle pour les POST directs. Le contact conserve aussi son honeypot et sa limite par IP.
 
+### Soumission : type de communication et mode de participation
+
+- `submissions.type` conserve **oral/poster** et s'affiche « Type de communication ». `submissions.participation_mode` conserve **online/onsite** (« Mode de participation »). Le formulaire propose seulement les modes autorisés par `Event.settings.format` : Présentiel, En ligne ou Présentiel & hybride. Le serveur valide ce choix indépendamment du navigateur.
+- `SubmissionFormConfig` corrige à la lecture l'ancien libellé enregistré « Mode de présentation ». La migration reprend les modes connus de l'import Eau au Togo ; les anciens dépôts sans information restent à `null`.
+
 ### Page participant Inscription & paiement
 
 - `resources/views/account/payment/pay.blade.php` affiche d’abord l’état réel de la participation et la prochaine action ; la grille tarifaire est un `<details>` secondaire. Si le paiement est ouvert, le montant et les moyens disponibles passent en premier. Le choix de passerelle est transmis par le radio `name="gateway"` ; conserver le `x-model="gw"` utilisé par le sélecteur d’opérateur. Les tarifs sont fournis par `Fees`, et un libellé de catégorie ne doit être présenté comme personnel que si `Fees::resolveAmount()` a trouvé une correspondance explicite.

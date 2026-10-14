@@ -79,13 +79,13 @@ class SubmissionFormController extends Controller
         foreach (array_keys(SubmissionFormConfig::STANDARD_DEFAULTS) as $key) {
             $conf = (array) ($input[$key] ?? []);
             $enabledToggle = in_array($key, ['type', 'keywords', 'file'], true);
-            $requiredToggle = ! in_array($key, ['title', 'abstract'], true);
+            $requiredToggle = ! in_array($key, ['title', 'abstract', 'participation_mode'], true);
 
             $entry = [
                 'label' => trim((string) ($conf['label'] ?? '')),
                 'help' => trim((string) ($conf['help'] ?? '')),
                 'enabled' => $enabledToggle ? $request->boolean("fields.$key.enabled") : true,
-                'required' => $requiredToggle ? $request->boolean("fields.$key.required") : false,
+                'required' => $requiredToggle ? $request->boolean("fields.$key.required") : true,
             ];
             if ($key === 'keywords') {
                 $currentSeparator = (new SubmissionFormConfig($event))->keywordSeparator();

@@ -5,10 +5,16 @@
     if (filled($account->grade) && ! in_array($account->grade, $gradeChoices, true)) {
         $gradeChoices[] = $account->grade;
     }
+    $participationModes = $config->participationModes();
+    $initialMode = old('participation_mode', count($participationModes) === 1 ? array_key_first($participationModes) : '');
+    if (! array_key_exists($initialMode, $participationModes)) {
+        $initialMode = '';
+    }
     $wizardInit = [
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
         'type' => old('type', 'oral'),
+        'participationMode' => $initialMode,
         'keywords' => \App\Support\SubmissionKeywords::parse(old('keywords', ''), $config->keywordSeparator()),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
@@ -186,15 +192,29 @@
 
                             @if ($config->enabled('type'))
                                 <div class="ukc-field">
-                                    <label for="type">{{ $config->label('type') }} <span class="req">*</span></label>
+                                    <label for="type">{{ __($config->label('type')) }} <span class="req">*</span></label>
                                     <select id="type" name="type" x-model="type">
-                                        <option value="oral">{{ __('Communication orale') }}</option>
+                                        <option value="oral">{{ __('Orale') }}</option>
                                         <option value="poster">{{ __('Poster') }}</option>
                                     </select>
                                     @if ($config->help('type'))<span class="hint">{{ $config->help('type') }}</span>@endif
                                     @error('type') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                             @endif
+
+                            <div class="ukc-field">
+                                <label for="participation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
+                                <select id="participation_mode" name="participation_mode" x-model="participationMode" required>
+                                    @if (count($participationModes) > 1)
+                                        <option value="">{{ __('Choisir un mode') }}</option>
+                                    @endif
+                                    @foreach ($participationModes as $value => $label)
+                                        <option value="{{ $value }}">{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                                @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
+                                @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
+                            </div>
 
                         </div>
                     </div>
@@ -398,8 +418,9 @@
                                         <span class="recap-chip" x-show="track" x-cloak x-text="track"></span>
                                     @endif
                                     @if ($config->enabled('type'))
-                                        <span class="recap-chip recap-chip--type" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Communication orale') }}'"></span>
+                                        <span class="recap-chip recap-chip--type" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Orale') }}'"></span>
                                     @endif
+                                    <span class="recap-chip" x-show="participationMode" x-cloak x-text="participationMode === 'online' ? '{{ __('En ligne') }}' : '{{ __('En présentiel') }}'"></span>
                                 </div>
                             </div>
 

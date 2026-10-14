@@ -19,7 +19,8 @@ class SubmissionFormConfig
     public const STANDARD_DEFAULTS = [
         'title' => ['label' => 'Titre', 'help' => '', 'required' => true],
         'track' => ['label' => 'Axe thématique', 'help' => '', 'required' => true],
-        'type' => ['label' => 'Mode de présentation', 'help' => '', 'enabled' => true, 'required' => true],
+        'type' => ['label' => 'Type de communication', 'help' => '', 'enabled' => true, 'required' => true],
+        'participation_mode' => ['label' => 'Mode de participation', 'help' => '', 'required' => true],
         'keywords' => ['label' => 'Mots-clés', 'help' => 'Séparés par des virgules', 'enabled' => true, 'required' => false, 'separator' => 'comma'],
         'abstract' => ['label' => 'Résumé', 'help' => '', 'required' => true, 'min' => 50, 'max' => 8000],
         'file' => ['label' => 'Fichier joint', 'help' => 'PDF/DOC/DOCX, max 8 Mo', 'enabled' => true, 'required' => false],
@@ -89,7 +90,22 @@ class SubmissionFormConfig
     {
         $v = $this->fieldConf($key)['label'] ?? null;
 
+        // Les formulaires déjà enregistrés portent encore cet ancien libellé.
+        if ($key === 'type' && $v === 'Mode de présentation') {
+            return 'Type de communication';
+        }
+
         return filled($v) ? (string) $v : (string) (self::STANDARD_DEFAULTS[$key]['label'] ?? $key);
+    }
+
+    /** @return array<string, string> Choix permis par le format de l'événement. */
+    public function participationModes(): array
+    {
+        return match ($this->event->settings['format'] ?? null) {
+            'Présentiel' => ['onsite' => 'En présentiel'],
+            'En ligne' => ['online' => 'En ligne'],
+            default => ['onsite' => 'En présentiel', 'online' => 'En ligne'],
+        };
     }
 
     public function help(string $key): string

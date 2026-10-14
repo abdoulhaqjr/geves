@@ -113,6 +113,7 @@ class CreateSubmission
                 'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($event))->keywordSeparator()),
                 'track' => ($data['track'] ?? null) ?: null,
                 'type' => $data['type'] ?? 'oral',
+                'participation_mode' => $data['participation_mode'],
                 'status' => 'submitted',
                 'file_url' => $fileUrl,
                 'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,

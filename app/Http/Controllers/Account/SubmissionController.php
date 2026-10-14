@@ -326,6 +326,7 @@ class SubmissionController extends Controller
             'keywords' => $submission->keywords,
             'track' => $submission->track,
             'type' => $submission->type,
+            'participation_mode' => $submission->participation_mode,
             'status' => 'superseded',
             'file_url' => $submission->file_url,
             'revision_of' => $submission->id,

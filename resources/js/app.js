@@ -1615,6 +1615,7 @@ document.addEventListener('alpine:init', () => {
         title: initial.title || '',
         track: initial.track || '',
         type: initial.type || 'oral',
+        participationMode: initial.participationMode || '',
         coauthors: (Array.isArray(initial.coauthors) ? initial.coauthors : [])
             .map((c) => Object.assign({ last_name: '', first_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' }, c)),
         abstractHtml: '',
@@ -1833,6 +1834,7 @@ document.addEventListener('alpine:init', () => {
                     return this._fail(`Le titre doit contenir au moins ${r.titleMin} caractères.`);
                 }
                 if (r.trackRequired && !this.track) return this._fail('Veuillez sélectionner un axe.');
+                if (!this.participationMode) return this._fail('Veuillez sélectionner un mode de participation.');
                 return this._ok();
             }
             if (n === 2) {
