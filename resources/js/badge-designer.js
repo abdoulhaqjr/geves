@@ -597,10 +597,11 @@
       return e;
     }
     // Filet vert = élément de mise en page (rect), pas un décor cuit dans le fond.
+    // ⚠️ Couleur #00be62 = la MÊME que le cadre (contour) de l'image de fond.
     function barEl(o) {
       var e = createEl({ type: 'shape', shape: 'line-h', label: o.label, x: o.x, y: o.y, w: o.w });
-      e.style.height = (o.h || 3) + 'px';
-      e.style.background = o.color || '#009933';
+      e.style.height = (o.h || 4) + 'px';
+      e.style.background = o.color || '#00be62';
       return e;
     }
 
@@ -612,8 +613,8 @@
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co');
-        barEl({ label: 'Filet gauche', x: 22, y: 72, w: 28 });
-        barEl({ label: 'Filet droit', x: 347, y: 72, w: 28 });
+        barEl({ label: 'Filet gauche', x: 14, y: 71, w: 40 });
+        barEl({ label: 'Filet droit', x: 343, y: 71, w: 40 });
         imgEl({ label: 'Logo UK', x: 62, y: 56, w: 124, h: 34, src: '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 201, y: 56, w: 134, h: 34, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });

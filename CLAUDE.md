@@ -3565,12 +3565,14 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   l'image de fond (`badge-default-bg.png` a été **nettoyé** de sa bande d'en-tête). Deux
   raisons : ils sont éditables, et surtout ils **se repositionnent/redimensionnent avec le
   reste quand on change de format** (un filet cuit dans le fond se déformerait avec lui).
-  Deux segments courts (`x22 w28` et `x347 w28`, `h3`, `#009933`) flanquant les logos à leur
-  **centre vertical** (`y72`). ⚠️ Les logos sont TRANSPARENTS : le filet **ne doit JAMAIS
-  passer derrière eux** - il s'arrête à ~12 px de chaque logo (sinon le vert traverse le
-  logo). PHP : éléments `rect` dans `defaultBadge()` ; concepteur : `barEl()` (shape
-  `line-h` + fond vert, sérialisé en `rect`). Garde : `BadgeDefaultTemplateTest` (2 rects
-  verts).
+  Deux segments (`x14 w40` et `x343 w40`, `h4`) **partant du cadre** et courant jusqu'au logo,
+  à leur **centre vertical** (`y71`). ⚠️ **Couleur `#00be62` = EXACTEMENT celle du cadre (le
+  contour) cuit dans le fond, PAS `#009933`** (la charte) : les deux verts juraient côte à
+  côte, le filet paraissait d'un autre vert que le cadre. Toujours reprendre la couleur du
+  contour. ⚠️ Les logos sont TRANSPARENTS : le filet **ne doit JAMAIS passer derrière eux** -
+  il s'arrête à ~8 px de chaque logo (sinon le vert traverse le logo). PHP : éléments `rect`
+  dans `defaultBadge()` ; concepteur : `barEl()` (shape `line-h` + fond `#00be62`, sérialisé
+  en `rect`). Garde : `BadgeDefaultTemplateTest` (2 rects `#00be62`).
 - ⚠️ **Changer de format RÉAJUSTE la maquette** (`badge-designer.js`, `scaleEls(rx, ry)`
   dans le gestionnaire des chips `[data-size]`) : à chaque changement de format, position
   et taille de **chaque élément** sont mises à l'échelle du changement de dimensions (x et

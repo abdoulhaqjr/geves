@@ -200,11 +200,13 @@ class LayoutSanitizer
             'elements' => [
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
-                // format. Deux segments courts flanquant les logos, à leur centre vertical
-                // (y≈73). ⚠️ Les logos sont TRANSPARENTS : le filet ne doit JAMAIS passer
-                // derrière eux - il s'arrête à ~12 px de chaque logo.
-                ['type' => 'rect', 'x' => 22, 'y' => 72, 'w' => 28, 'h' => 3, 'color' => '#009933'],
-                ['type' => 'rect', 'x' => 347, 'y' => 72, 'w' => 28, 'h' => 3, 'color' => '#009933'],
+                // format. ⚠️ Couleur #00be62, la MÊME que le cadre (le contour) cuit dans
+                // le fond - PAS #009933, qui jurait avec lui. Chaque filet part du cadre et
+                // court jusqu'au logo, à leur centre vertical (comme la capture). ⚠️ Les
+                // logos sont TRANSPARENTS : le filet ne doit JAMAIS passer derrière eux -
+                // il s'arrête à ~8 px de chaque logo.
+                ['type' => 'rect', 'x' => 14, 'y' => 71, 'w' => 40, 'h' => 4, 'color' => '#00be62'],
+                ['type' => 'rect', 'x' => 343, 'y' => 71, 'w' => 40, 'h' => 4, 'color' => '#00be62'],
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur, côte à côte
                 // et centrées sur le badge, la largeur suivant le format propre de chaque

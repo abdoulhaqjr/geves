@@ -37,9 +37,10 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
 
     // Les deux filets verts sont des ÉLÉMENTS de mise en page (rect), pas cuits dans
     // le fond : ils se redimensionnent avec le reste quand on change de format.
+    // ⚠️ Couleur #00be62 = la MÊME que le cadre (contour) cuit dans le fond.
     $rects = collect($layout['elements'])->where('type', 'rect');
     expect($rects)->toHaveCount(2);
-    expect($rects->every(fn ($r) => strtolower((string) $r['color']) === '#009933'))->toBeTrue();
+    expect($rects->every(fn ($r) => strtolower((string) $r['color']) === '#00be62'))->toBeTrue();
 });
 
 it('rend le badge par défaut avec les valeurs du participant', function () {
