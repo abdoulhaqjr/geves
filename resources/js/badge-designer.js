@@ -613,10 +613,11 @@
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co');
-        barEl({ label: 'Filet gauche', x: 0, y: 71, w: 22 });
-        barEl({ label: 'Filet droit', x: 374, y: 71, w: 23 });
-        imgEl({ label: 'Logo UK', x: 30, y: 52, w: 154, h: 42, src: '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 200, y: 52, w: 166, h: 42, src: '/img/attestations/logo-parakou.png' });
+        barEl({ label: 'Filet gauche', x: 0, y: 71, w: 30 });
+        barEl({ label: 'Filet milieu', x: 184, y: 71, w: 16 });
+        barEl({ label: 'Filet droit', x: 366, y: 71, w: 31 });
+        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '{role}', size: 15, weight: 700, color: '#2e3440' });
@@ -703,6 +704,27 @@
   // des largeurs, y/hauteur par celui des hauteurs). Sans ça, les éléments restaient à
   // leurs coordonnées A6 et débordaient sur un format plus petit. Les carrés (QR, photo)
   // et les corps de texte suivent le plus petit rapport, pour ne pas se déformer.
+  // Réduit la police d'un texte tant qu'il déborde de sa boîte (en largeur), avec
+  // un plancher : un format plus étroit ne doit jamais faire sortir le texte de son
+  // cadre. Ne fait que RÉDUIRE (jamais grossir) : c'est un filet de sécurité par-dessus
+  // la mise à l'échelle proportionnelle, pas une seconde règle de taille.
+  function fitText(el) {
+    if (!el.classList.contains('text')) return;
+    var fs = parseFloat(el.style.fontSize) || 0;
+    if (!fs) return;
+    var guard = 0;
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 6 && guard < 60) {
+      fs = Math.max(6, fs - 0.5);
+      el.style.fontSize = fs + 'px';
+      guard++;
+    }
+  }
+
+  // Réajustement au changement de format : position et taille de chaque élément sont
+  // mises à l'échelle du changement de dimensions (x/largeur par le rapport des largeurs,
+  // y/hauteur par celui des hauteurs ; QR, photo et police par le plus petit rapport pour
+  // ne pas se déformer), puis un passage fitText garantit que chaque texte tient dans sa
+  // boîte au nouveau format.
   function scaleEls(rx, ry) {
     if (!(rx > 0) || !(ry > 0) || (rx === 1 && ry === 1)) return;
     var rf = Math.min(rx, ry);
@@ -715,6 +737,7 @@
       if (el.style.height) el.style.height = Math.max(3, Math.round((parseFloat(el.style.height) || 0) * sh)) + 'px';
       if (el.style.fontSize) el.style.fontSize = Math.max(6, Math.round((parseFloat(el.style.fontSize) || 0) * rf)) + 'px';
     });
+    page.querySelectorAll('.ed-el.text').forEach(fitText);
   }
 
   document.querySelectorAll('[data-size]').forEach(function (btn) {

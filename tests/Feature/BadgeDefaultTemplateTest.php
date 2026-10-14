@@ -35,11 +35,12 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
 
-    // Les deux filets verts sont des ÉLÉMENTS de mise en page (rect), pas cuits dans
-    // le fond : ils se redimensionnent avec le reste quand on change de format.
+    // Le filet vert = UN trait au niveau des logos, interrompu par eux : trois
+    // segments rect (cadre→UK, entre les logos, Parakou→cadre). Éléments de mise en
+    // page (pas cuits dans le fond) → ils se redimensionnent au changement de format.
     // ⚠️ Couleur #00be62 = la MÊME que le cadre (contour) cuit dans le fond.
     $rects = collect($layout['elements'])->where('type', 'rect');
-    expect($rects)->toHaveCount(2);
+    expect($rects)->toHaveCount(3);
     expect($rects->every(fn ($r) => strtolower((string) $r['color']) === '#00be62'))->toBeTrue();
 });
 

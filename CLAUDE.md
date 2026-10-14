@@ -3557,35 +3557,35 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   afficher une ligne de rôle sans raccorder aussi ses destinataires et son rendu.
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
-  boîtes à la **MÊME hauteur** (`h42`, UK w154 x30 / Parakou w166 x200, `y52`), côte à côte
-  et centrées **sur le badge**, **agrandies** pour bien remplir l'en-tête. ⚠️
+  boîtes à la **MÊME hauteur** (`h40`, UK w146 x34 / Parakou w158 x204, `y53`), côte à côte
+  et centrées **sur le badge**, **agrandies** pour bien remplir l'en-tête (espacement
+  resserré pour laisser de la longueur aux filets). ⚠️
   L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser
   l'asset officiel partagé, pas une image propre au badge.
-- ⚠️ **Les deux filets verts sont des ÉLÉMENTS `rect` de la mise en page**, PLUS cuits dans
-  l'image de fond (`badge-default-bg.png` a été **nettoyé** de sa bande d'en-tête). Deux
-  raisons : ils sont éditables, et surtout ils **se repositionnent/redimensionnent avec le
-  reste quand on change de format** (un filet cuit dans le fond se déformerait avec lui).
-  Deux segments (`x0 w22` et `x374 w23`, `h4`, `y71`) à **leur centre vertical**. ⚠️ **Le
-  filet DOIT INTERSECTER le contour** : au niveau `y71` le cadre vert cuit occupe `x0..12`
-  à gauche et `x384..397` à droite - le filet gauche part donc de `x0`, le droit finit à
-  `x397`, tous deux **mordent sur le cadre** (même vert, ils fusionnent en T) puis courent
-  vers le logo. Un filet qui s'arrête avant le cadre (ancien `x14`/`x383`) laissait une
-  fente blanche et paraissait détaché. ⚠️ **Couleur `#00be62` = EXACTEMENT celle du cadre
-  (le contour) cuit dans le fond, PAS `#009933`** (la charte) : les deux verts juraient côte
-  à côte. Toujours reprendre la couleur du contour. ⚠️ Les logos sont TRANSPARENTS : le
-  filet **ne doit JAMAIS passer derrière eux** - il s'arrête à ~8 px de chaque logo (sinon
-  le vert traverse le logo). PHP : éléments `rect` dans `defaultBadge()` ; concepteur :
-  `barEl()` (shape `line-h` + fond `#00be62`, sérialisé en `rect`). Garde :
-  `BadgeDefaultTemplateTest` (2 rects `#00be62`).
+- ⚠️ **Le filet vert = UN trait au niveau des logos, INTERROMPU par eux** : trois segments
+  `rect` (`x0 w30` cadre→UK, `x184 w16` entre les logos, `x366 w31` Parakou→cadre ; `h4`,
+  `y71`). Idée : une ligne qui traverse toute la rangée des logos, mais comme les logos sont
+  **TRANSPARENTS**, aucun segment ne passe derrière eux (le vert les traverserait) - d'où
+  l'interruption, pas un trait continu. Gaps serrés (~4 px) pour que ça se lise comme une
+  seule ligne. Les deux bouts extrêmes **MORDENT sur le cadre** (`x0..12` / `x384..397`,
+  même vert, fusion). Ce sont des **ÉLÉMENTS de mise en page** (pas cuits dans le fond, qui
+  a été nettoyé) → ils se redimensionnent au changement de format. ⚠️ **Couleur `#00be62`
+  = EXACTEMENT celle du cadre (le contour), PAS `#009933`** (la charte) : les deux verts
+  juraient. PHP : 3 `rect` dans `defaultBadge()` ; concepteur : trois `barEl()` (shape
+  `line-h` + fond `#00be62`, sérialisés en `rect`). Garde : `BadgeDefaultTemplateTest`
+  (3 rects `#00be62`).
 - ⚠️ **Changer de format RÉAJUSTE la maquette** (`badge-designer.js`, `scaleEls(rx, ry)`
   dans le gestionnaire des chips `[data-size]`) : à chaque changement de format, position
   et taille de **chaque élément** sont mises à l'échelle du changement de dimensions (x et
   largeur par le rapport des largeurs, y et hauteur par celui des hauteurs ; **QR, photo et
-  corps de texte** suivent le plus petit rapport pour ne pas se déformer). Sans ça les
-  éléments restaient à leurs coordonnées A6 et débordaient d'un format plus petit. Formats
-  dans `badge-designer.css` (A6 portrait 397×560 défaut, A6 paysage, A7 portrait, carte,
-  CR80). ⚠️ L'image de fond, elle, s'étire en `100% 100%` (cadre baké) - c'est pourquoi le
-  filet, lui, est un élément.
+  corps de texte** suivent le plus petit rapport pour ne pas se déformer), **puis un passage
+  `fitText()` garantit que chaque texte tient dans sa boîte** au nouveau format (il REDUIT la
+  police tant que le texte déborde en largeur, plancher 6 px ; filet de sécurité par-dessus
+  l'échelle proportionnelle, jamais pour grossir). Sans l'échelle, les éléments restaient à
+  leurs coordonnées A6 et débordaient d'un format plus petit. Formats dans
+  `badge-designer.css` (A6 portrait 397×560 défaut, A6 paysage, A7 portrait, carte, CR80).
+  ⚠️ L'image de fond, elle, s'étire en `100% 100%` (cadre baké) - c'est pourquoi le filet,
+  lui, est un élément.
 - ⚠️ **Jetons PLATS** (`{event}`/`{name}`/`{role}`/`{theme}`/`{location}`/`{dates}`/`{ref}`) :
   les deux chemins de rendu de badge fournissent des clés plates (pas la palette
   `[espace.cle]`). `theme`/`dates`/`location` sont dans les deux cartes de variables

@@ -200,21 +200,23 @@ class LayoutSanitizer
             'elements' => [
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
-                // format. ⚠️ Couleur #00be62, la MÊME que le cadre (le contour) cuit dans
-                // le fond - PAS #009933, qui jurait avec lui. ⚠️ Chaque filet DOIT
-                // INTERSECTER le contour : au centre vertical des logos (y71), le cadre vert
-                // occupe x0..12 à gauche et x384..397 à droite, donc le filet gauche part de
-                // x0 et le droit finit à x397 - ils MORDENT sur le cadre (même vert, ils
-                // fusionnent) puis courent vers le logo. ⚠️ Logos TRANSPARENTS : le filet
-                // s'arrête à ~8 px de chaque logo (sinon le vert les traverse).
-                ['type' => 'rect', 'x' => 0, 'y' => 71, 'w' => 22, 'h' => 4, 'color' => '#00be62'],
-                ['type' => 'rect', 'x' => 374, 'y' => 71, 'w' => 23, 'h' => 4, 'color' => '#00be62'],
+                // UN seul trait vert au niveau des logos, INTERROMPU par les logos
+                // (transparents) : trois segments (cadre→UK, entre les logos, Parakou→cadre),
+                // gaps serrés (~4 px) pour qu'il se lise comme une ligne traversant la rangée.
+                // ⚠️ Couleur #00be62 = EXACTEMENT celle du cadre (le contour) cuit dans le
+                // fond, PAS #009933 (la charte). Les deux bouts extrêmes MORDENT sur le cadre
+                // (il occupe x0..12 à gauche, x384..397 à droite) et fusionnent avec lui.
+                // ⚠️ Logos TRANSPARENTS : aucun segment ne passe derrière eux (sinon le vert
+                // les traverse) - d'où l'interruption, pas un trait continu.
+                ['type' => 'rect', 'x' => 0, 'y' => 71, 'w' => 30, 'h' => 4, 'color' => '#00be62'],
+                ['type' => 'rect', 'x' => 184, 'y' => 71, 'w' => 16, 'h' => 4, 'color' => '#00be62'],
+                ['type' => 'rect', 'x' => 366, 'y' => 71, 'w' => 31, 'h' => 4, 'color' => '#00be62'],
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
-                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h42), côte à
+                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h40), côte à
                 // côte et centrées sur le badge, la largeur suivant le format propre de
-                // chaque logo, encore agrandies pour bien remplir l'en-tête.
-                ['type' => 'image', 'x' => 30, 'y' => 52, 'w' => 154, 'h' => 42, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 200, 'y' => 52, 'w' => 166, 'h' => 42, 'src' => '/img/attestations/logo-parakou.png'],
+                // chaque logo ; espacement resserré pour donner de la longueur aux filets.
+                ['type' => 'image', 'x' => 34, 'y' => 53, 'w' => 146, 'h' => 40, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 204, 'y' => 53, 'w' => 158, 'h' => 40, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
                 $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
