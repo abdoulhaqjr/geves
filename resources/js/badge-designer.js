@@ -574,11 +574,46 @@
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     selected = null;
     hideFloatBar();
-    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none');
+    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
     page.style.width = ''; page.style.height = '';
     document.querySelectorAll('[data-size]').forEach(function (b) { b.classList.remove('active'); });
 
+    // Styles en ligne sur un élément texte (capturés par le snapshot) - pour les
+    // modèles qui veulent une typographie propre, hors classes .name/.role/.sub.
+    function styled(o) {
+      var e = createEl({ type: 'text', label: o.label, x: o.x, y: o.y, w: o.w, text: o.text });
+      e.style.fontSize = o.size + 'px';
+      e.style.fontWeight = String(o.weight || 600);
+      e.style.color = o.color || '#2e3440';
+      e.style.textAlign = o.align || 'center';
+      if (o.lh) e.style.lineHeight = String(o.lh);
+      if (o.upper) e.style.textTransform = 'uppercase';
+      return e;
+    }
+    function imgEl(o) {
+      var e = createEl({ type: 'logo', label: o.label, x: o.x, y: o.y, w: o.w, html: '<img src="' + o.src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">' });
+      e.style.height = o.h + 'px';
+      return e;
+    }
+
     var T = {
+      /* Badge par défaut = comité d'organisation (A6 portrait 397×560).
+         ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). Le cadre
+         vert/bleu + pictogrammes sont l'image de fond (classe bg-co). */
+      co: function () {
+        var chip = document.querySelector('[data-size="a6-portrait"]');
+        if (chip) chip.classList.add('active');
+        page.classList.add('bg-co');
+        imgEl({ label: 'Logo UK', x: 84, y: 64, w: 128, h: 36, src: '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 232, y: 58, w: 48, h: 48, src: '/img/badges/parakou-seal.png' });
+        styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
+        styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '{role}', size: 15, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '{theme}', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        styled({ label: 'Lieu', x: 110, y: 434, w: 180, text: '{location}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 110, y: 472, w: 180, text: '{dates}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 306, y: 430, w: 66, qrUrl: '{ref}' });
+      },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
@@ -638,7 +673,7 @@
       }
     };
 
-    (T[key] || T.participant)();
+    (T[key] || T.co)();
     refreshLayers();
     pushHistory();
     selectEl(null);
@@ -830,7 +865,11 @@
         align: (align === 'center' || align === 'right') ? align : 'left'
       };
     }).filter(function (e) { return e && !(e.type === 'text' && !e.text); });
-    return { width: W, height: H, bg: '#ffffff', accent: '#223ea4', elements: elements };
+    var out = { width: W, height: H, bg: '#ffffff', accent: '#223ea4', elements: elements };
+    // Cadre officiel (image de fond) : sans ça, enregistrer un badge depuis le
+    // concepteur perdait le cadre vert/bleu (serializeLayout ne l'émettait pas).
+    if (page.classList.contains('bg-co')) out.bg_image = '/img/badges/badge-default-bg.png';
+    return out;
   }
   function performSave(onSuccess) {
     var cfg = window.UKC_EDITOR || {};
@@ -1142,7 +1181,7 @@
   });
 
   /* Init */
-  loadTemplate('participant');
+  loadTemplate('co');
 
   /* ---------- Hydratation depuis le badge enregistré ---------- */
   (function () {

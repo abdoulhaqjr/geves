@@ -173,18 +173,43 @@ class LayoutSanitizer
         };
     }
 
+    /**
+     * Badge par défaut, calqué sur le badge officiel du comité d'organisation
+     * (UK x Université de Parakou) : A6 portrait (397×560), cadre décoratif
+     * vert/bleu en image de fond (coins diagonaux, filet d'en-tête, séparateur,
+     * pictogrammes lieu + dates cuits dans le fond), logos UK + Parakou en
+     * éléments, puis nom, rôle, thème, lieu et dates. Le concepteur de badges
+     * (badge-designer.js, modèle `co`) décrit la MÊME maquette.
+     */
     protected static function defaultBadge(): array
     {
+        $dark = '#2e3440';
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => 12, 'weight' => 600, 'color' => $dark,
+            'align' => 'left', 'font' => 'jost', 'italic' => false, 'leading' => 1.25, 'upper' => false,
+        ];
+
+        // Logo UK large (suit le réglage des Réglages) ; chemin relatif pour le PDF.
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
         return [
-            'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'bg_image' => '/img/badges/badge-default-bg.png',
             'elements' => [
-                ['type' => 'rect', 'x' => 0, 'y' => 0, 'w' => 320, 'h' => 12, 'color' => '#223ea4'],
-                ['type' => 'text', 'x' => 20, 'y' => 34, 'w' => 280, 'h' => 20, 'text' => '{org}', 'size' => 12, 'weight' => 700, 'color' => '#5a6577', 'align' => 'center'],
-                ['type' => 'text', 'x' => 20, 'y' => 58, 'w' => 280, 'h' => 40, 'text' => '{event}', 'size' => 14, 'weight' => 800, 'color' => '#223ea4', 'align' => 'center'],
-                ['type' => 'text', 'x' => 20, 'y' => 210, 'w' => 280, 'h' => 40, 'text' => '{name}', 'size' => 22, 'weight' => 800, 'color' => '#1a2332', 'align' => 'center'],
-                ['type' => 'text', 'x' => 20, 'y' => 252, 'w' => 280, 'h' => 24, 'text' => '{role}', 'size' => 13, 'weight' => 600, 'color' => '#5a6577', 'align' => 'center'],
-                ['type' => 'qr', 'x' => 128, 'y' => 320, 'size' => 64, 'value' => '{ref}'],
-                ['type' => 'text', 'x' => 20, 'y' => 392, 'w' => 280, 'h' => 20, 'text' => '{ref}', 'size' => 11, 'weight' => 700, 'color' => '#8b95a8', 'align' => 'center'],
+                ['type' => 'image', 'x' => 84, 'y' => 64, 'w' => 128, 'h' => 36, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 232, 'y' => 58, 'w' => 48, 'h' => 48, 'src' => '/img/badges/parakou-seal.png'],
+                // Nom de l'événement (série + édition).
+                $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
+                $t(['x' => 20, 'y' => 232, 'w' => 357, 'h' => 40, 'text' => '{name}', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => 20, 'y' => 276, 'w' => 357, 'h' => 24, 'text' => '{role}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                // Thème du colloque, en capitales.
+                $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '{theme}', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                // Lieu et dates (les pictogrammes sont dans l'image de fond).
+                $t(['x' => 110, 'y' => 434, 'w' => 180, 'h' => 22, 'text' => '{location}', 'size' => 12]),
+                $t(['x' => 110, 'y' => 472, 'w' => 180, 'h' => 22, 'text' => '{dates}', 'size' => 12]),
+                ['type' => 'qr', 'x' => 306, 'y' => 430, 'size' => 66, 'value' => '{ref}'],
             ],
         ];
     }

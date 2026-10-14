@@ -77,7 +77,11 @@
         <div class="ed-panel-body">
           <p class="ly-meta">Bases de badge participant CSIUK. Personnalisez ensuite les elements.</p>
           <div class="ed-panel-section">Formats portrait</div>
-          <div class="ed-tpl-card active" data-tpl="participant">
+          <div class="ed-tpl-card active" data-tpl="co">
+            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">COMITÉ D’ORGANISATION</div>
+            Cadre vert/bleu UK x Parakou (par défaut)
+          </div>
+          <div class="ed-tpl-card" data-tpl="participant">
             <div class="mini">PARTICIPANT</div>
             Bandeau bleu - photo - nom - QR
           </div>

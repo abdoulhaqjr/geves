@@ -3526,7 +3526,30 @@ ajoutée par la vue, elle ne se saisit pas.
   ([home.blade.php](resources/views/home.blade.php), `HomeController`) n'affiche que les
   `approved` + `featured` (triés `position`, `impact_score`) ; section masquée si vide.
 
-### Programme - onglet Planning = board « salles × temps »
+### Badge par défaut = calqué sur le comité d'organisation (UK x Parakou)
+
+**`LayoutSanitizer::defaultBadge()`** rend le badge officiel du comité d'organisation
+(docx d'origine `Badges/CO/conception_initiale.docx`), adapté en badge **par
+personne** : **A6 portrait (397×560)**, cadre décoratif **vert/bleu** (coins diagonaux,
+filet d'en-tête, séparateur, pictogrammes **lieu** + **dates**) **cuit dans l'image de
+fond** `public/img/badges/badge-default-bg.png` ; logos **UK large** (`Branding::wide()`,
+chemin relatif) + **sceau de Parakou** (`/img/badges/parakou-seal.png`, le sceau rond,
+≠ le logo large de Parakou des attestations) en éléments ; puis **nom** (grand, bleu
+`#253c98`), **rôle**, **thème** (capitales), **lieu**, **dates**, et un **QR** (`{ref}`).
+
+- ⚠️ **Jetons PLATS** (`{event}`/`{name}`/`{role}`/`{theme}`/`{location}`/`{dates}`/`{ref}`) :
+  les deux chemins de rendu de badge fournissent des clés plates (pas la palette
+  `[espace.cle]`). **J'ai ajouté `theme`/`dates`/`location`** aux deux cartes de variables
+  (`Admin\DocumentController::badges()` **et** `Account\DocumentController::renderBadge()`) -
+  sans elles, thème/lieu/dates sortaient vides sur le badge.
+- ⚠️ **Le concepteur de badges doit décrire la MÊME maquette** : `badge-designer.js`,
+  modèle **`co`** (init par défaut), cadre via la classe CSS **`bg-co`**
+  (`badge-designer.css`, référence l'image de fond). ⚠️ `serializeLayout()` **émet
+  `bg_image`** quand la page porte `bg-co` - sinon enregistrer un badge depuis le
+  concepteur **perdait le cadre** (il n'émettait jamais de fond, contrairement au
+  concepteur d'attestations). ⚠️ Le concepteur de badges reste une base plus pauvre que
+  celui des attestations (pas d'`upper`/`leading`/interlettrage dans le snapshot) : à
+  aligner si on y revient. Gardes : `BadgeDefaultTemplateTest`.
 
 L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
 salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les
