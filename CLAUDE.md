@@ -3353,7 +3353,9 @@ ajoutée par la vue, elle ne se saisit pas.
     - Chaque signature de formateur porte **nom PUIS fonction/spécialité** (sous le nom, en plus
       petit) : `formation_signatures[]` = `{name, role, src}` où `role` = `formation_trainers.specialty`,
       rendu par `renderSignatures()`. Corps (« Je soussigné… », « a suivi… », « En foi de quoi… »)
-      en **14 px** ; logos resserrés (UK 178×54, Parakou 128×78).
+      en **14 px**. ⚠️ **Les deux logos d'en-tête sont à la MÊME hauteur** (comme la maquette
+      officielle : la largeur suit le format de chaque logo, pas l'inverse) - UK `178×48`, Parakou
+      `202×48` ; une hauteur de boîte différente faisait paraître l'un plus grand que l'autre.
   - ⚠️ **Le concepteur gère l'élément `signatures`** (ajouté : `createEl` en pose un repère à deux
     emplacements, `serializeLayout` le préserve via `el.dataset.sig`). Sans cela, « Enregistrer »
     dans l'éditeur le reconvertissait en texte et les signatures de formateurs disparaissaient du

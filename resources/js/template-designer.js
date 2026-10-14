@@ -1786,19 +1786,19 @@
           return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
         };
         return [
-          { type: 'logo', label: 'Logo UK', x: 56, y: 44, w: 178, h: 54, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
-          { type: 'logo', label: 'Logo Parakou', x: 726, y: 44, w: 128, h: 78, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
+          { type: 'logo', label: 'Logo UK', x: 56, y: 44, w: 178, h: 48, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 642, y: 44, w: 202, h: 48, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
           { type: 'text', label: 'Titre', x: 80, y: 118, w: 740, text: 'ATTESTATION DE FORMATION', font: SERIF, size: 38, weight: 700, color: DARK, align: 'center' },
           { type: 'text', label: 'Je soussigné', x: 70, y: 186, w: 760, text: 'Je soussigné, [signatory.name], [signatory.role], atteste que', font: SANS, size: 14, weight: 500, color: DARK },
           { type: 'text', label: 'Destinataire', x: 70, y: 220, w: 760, text: '[recipient.civility] [recipient.name]', font: SANS, size: 22, weight: 800, color: DARK, align: 'center' },
           { type: 'text', label: 'Corps', x: 70, y: 272, w: 765, text: 'a suivi avec diligence la formation sur [formation.title], tenue en marge des travaux du [edition.name], qui s’est tenu [edition.dates] à [edition.location], sur le thème : « [edition.theme] ».', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.45 },
-          { type: 'text', label: 'Formule', x: 70, y: 398, w: 760, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 14, weight: 500, color: DARK },
+          { type: 'text', label: 'Formule', x: 70, y: 378, w: 760, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 14, weight: 500, color: DARK },
           { type: 'signatures', label: 'Signatures formateurs', x: 70, y: 470, w: 350, h: 92, size: 11, names: true },
           { type: 'qr', label: 'QR vérification', x: 436, y: 486, w: 66, qrUrl: DEFAULT_QR_URL },
           { type: 'text', label: 'Lieu / date', x: 500, y: 438, w: 360, text: 'Fait à Kara, le [certificate.issued_on]', font: SANS, size: 13, weight: 500, color: DARK },
           { type: 'text', label: 'Fonction', x: 500, y: 470, w: 360, text: 'Le [signatory.role],', font: SANS, size: 14, weight: 700, color: DARK },
           { type: 'text', label: 'Responsable', x: 500, y: 558, w: 360, text: '[signatory.name]', font: SANS, size: 16, weight: 700, color: DARK },
-          { type: 'text', label: 'Référence', x: 40, y: 600, w: 520, text: 'Référence de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
+          { type: 'text', label: 'Référence', x: 40, y: 572, w: 520, text: 'Référence de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
         ];
       })(),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
