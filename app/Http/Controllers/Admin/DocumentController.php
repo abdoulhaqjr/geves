@@ -331,7 +331,10 @@ class DocumentController extends Controller
             'dates' => $event->dateRangeLabel() ?? '',
             'location' => (string) ($event->location ?? ''),
             'name' => $p->full_name,
-            'role' => $p->roleLabel(),
+            // Badge de PARTICIPATION : un communicant est d'abord un participant.
+            // Tout inscrit qui a payé pour participer porte le même rôle « Participant »,
+            // qu'il communique ou non.
+            'role' => 'Participant',
             'institution' => (string) $p->institution,
             'ref' => $event->id.'-'.$p->id,
         ]));

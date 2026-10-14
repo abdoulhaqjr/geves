@@ -215,10 +215,13 @@ it('génère la planche de badges', function () {
     $event = openEdition();
     $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
+    // Badge de PARTICIPATION : un communicant est d'abord un participant. Quel que
+    // soit son rôle de fonction, le badge porte « Participant ».
     $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
         ->assertOk()
         ->assertSee('Awa Kodjo')
-        ->assertSee('Communicant');
+        ->assertSee('Participant')
+        ->assertDontSee('Communicant');
 });
 
 it('la planche de badges utilise le modèle enregistré', function () {

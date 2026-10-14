@@ -3526,20 +3526,32 @@ ajoutée par la vue, elle ne se saisit pas.
   ([home.blade.php](resources/views/home.blade.php), `HomeController`) n'affiche que les
   `approved` + `featured` (triés `position`, `impact_score`) ; section masquée si vide.
 
-### Badge par défaut = calqué sur le comité d'organisation (UK x Parakou)
+### Badge par défaut = badge de PARTICIPATION (calqué sur le comité d'organisation, UK x Parakou)
 
-**`LayoutSanitizer::defaultBadge()`** rend le badge officiel du comité d'organisation
-(docx d'origine `Badges/CO/conception_initiale.docx`), adapté en badge **par
-personne** : **A6 portrait (397×560)**, cadre décoratif **vert/bleu** (coins diagonaux,
-filet d'en-tête, séparateur, pictogrammes **lieu** + **dates**) **cuit dans l'image de
-fond** `public/img/badges/badge-default-bg.png` ; logos **UK large** (`Branding::wide()`,
-chemin relatif) + **sceau de Parakou** (`/img/badges/parakou-seal.png`, le sceau rond,
-≠ le logo large de Parakou des attestations) en éléments ; puis **nom** (grand, bleu
-`#253c98`), **rôle**, **thème** (capitales), **lieu**, **dates**, et un **QR** (`{ref}`).
+**`LayoutSanitizer::defaultBadge()`** rend un badge **de participation**, calqué sur la
+maquette du badge du comité d'organisation (docx d'origine
+`Badges/CO/conception_initiale.docx`), adapté en badge **par personne** : **A6 portrait
+(397×560)**, cadre décoratif **vert/bleu** (coins diagonaux, filet d'en-tête, séparateur,
+pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
+`public/img/badges/badge-default-bg.png` ; puis **nom** (grand, bleu `#253c98`), **rôle**,
+**thème** (capitales), **lieu**, **dates**, et un **QR** (`{ref}`).
 
+- ⚠️ **Un communicant est d'abord un PARTICIPANT** : le badge est délivré à **tout inscrit
+  qui a réglé sa participation**, communicant ou non, et son rôle est **toujours
+  « Participant »** - jamais le rôle de fonction (`roleLabel()`) ni le grade. Les deux
+  chemins de rendu posent la constante `'role' => 'Participant'`
+  (`Admin\DocumentController::badges()` et `Account\DocumentController::renderBadge()`).
+  Ne pas y réinjecter `roleLabel()`/grade sans demande (un badge CO distinct serait un
+  autre type). Garde : `DocumentsTest` (« génère la planche de badges » → voit
+  « Participant », pas « Communicant »).
+- ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
+  chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
+  boîtes à la **MÊME hauteur**, côte à côte et centrées sous le filet (comme l'en-tête des
+  attestations). ⚠️ L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été
+  **retiré** : utiliser l'asset officiel partagé, pas une image propre au badge.
 - ⚠️ **Jetons PLATS** (`{event}`/`{name}`/`{role}`/`{theme}`/`{location}`/`{dates}`/`{ref}`) :
   les deux chemins de rendu de badge fournissent des clés plates (pas la palette
-  `[espace.cle]`). **J'ai ajouté `theme`/`dates`/`location`** aux deux cartes de variables
+  `[espace.cle]`). `theme`/`dates`/`location` sont dans les deux cartes de variables
   (`Admin\DocumentController::badges()` **et** `Account\DocumentController::renderBadge()`) -
   sans elles, thème/lieu/dates sortaient vides sur le badge.
 - ⚠️ **Le concepteur de badges doit décrire la MÊME maquette** : `badge-designer.js`,

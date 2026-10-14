@@ -177,9 +177,10 @@ class LayoutSanitizer
      * Badge par défaut, calqué sur le badge officiel du comité d'organisation
      * (UK x Université de Parakou) : A6 portrait (397×560), cadre décoratif
      * vert/bleu en image de fond (coins diagonaux, filet d'en-tête, séparateur,
-     * pictogrammes lieu + dates cuits dans le fond), logos UK + Parakou en
-     * éléments, puis nom, rôle, thème, lieu et dates. Le concepteur de badges
-     * (badge-designer.js, modèle `co`) décrit la MÊME maquette.
+     * pictogrammes lieu + dates cuits dans le fond), logos OFFICIELS UK + Parakou
+     * (les mêmes assets que les attestations) en éléments, puis nom, rôle, thème,
+     * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
+     * décrit la MÊME maquette.
      */
     protected static function defaultBadge(): array
     {
@@ -197,8 +198,11 @@ class LayoutSanitizer
             'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
             'elements' => [
-                ['type' => 'image', 'x' => 84, 'y' => 64, 'w' => 128, 'h' => 36, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 232, 'y' => 58, 'w' => 48, 'h' => 48, 'src' => '/img/badges/parakou-seal.png'],
+                // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
+                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur, côte à côte
+                // et centrées, la largeur suivant le format propre de chaque logo.
+                ['type' => 'image', 'x' => 70, 'y' => 58, 'w' => 117, 'h' => 32, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 199, 'y' => 58, 'w' => 127, 'h' => 32, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
                 $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.

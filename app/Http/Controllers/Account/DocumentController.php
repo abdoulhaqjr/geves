@@ -97,9 +97,10 @@ class DocumentController extends Controller
         // Référence de badge + rôle (débloqué après paiement).
         $prefix = (string) EventSettings::get($event, 'badges.prefix', 'UKC-'.$event->year.'-');
         $badgeRef = $prefix.Str::upper($account->initials).'-'.str_pad((string) $participant->id, 4, '0', STR_PAD_LEFT);
-        $grade = $participant->title ?: (string) $account->grade;
-        $role = trim(($grade !== '' ? $grade.' - ' : '').$participant->roleLabel());
-        $badgeRole = $role ?: 'Participant';
+        // Badge de PARTICIPATION : un communicant est d'abord un participant. Tout
+        // inscrit qui a réglé sa participation porte le même rôle « Participant »,
+        // qu'il communique ou non (pas de rôle de fonction ni de grade sur le badge).
+        $badgeRole = 'Participant';
         $didIssuer = (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
 
         // Aperçu du badge rendu à partir du MODÈLE conçu dans l'admin (même mise en

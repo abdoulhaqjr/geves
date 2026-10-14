@@ -28,10 +28,10 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
         ->toContain('{location}')
         ->toContain('{dates}');
 
-    // Deux logos (UK large + sceau de Parakou) et un QR.
+    // Deux logos OFFICIELS (les mêmes que les attestations : UK large + Parakou large) et un QR.
     $images = collect($layout['elements'])->where('type', 'image')->pluck('src');
     expect($images)->toHaveCount(2);
-    expect($images->contains('/img/badges/parakou-seal.png'))->toBeTrue();
+    expect($images->contains('/img/attestations/logo-parakou.png'))->toBeTrue();
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
 });
@@ -41,7 +41,7 @@ it('rend le badge par défaut avec les valeurs du participant', function () {
     $html = LayoutRenderer::render($layout, [
         'event' => '6e Colloque Scientifique International',
         'name' => 'M. Assogba Gervais',
-        'role' => 'Comité d’organisation',
+        'role' => 'Participant',
         'theme' => 'Les métiers d’aujourd’hui et de demain',
         'location' => 'Palais des congrès de Kara',
         'dates' => 'Du 06 au 10 octobre 2025',
@@ -50,7 +50,7 @@ it('rend le badge par défaut avec les valeurs du participant', function () {
 
     expect($html)
         ->toContain('M. Assogba Gervais')
-        ->toContain('Comité d’organisation')
+        ->toContain('Participant')
         ->toContain('Palais des congrès de Kara')
         ->toContain('Du 06 au 10 octobre 2025')
         ->toContain('/img/badges/badge-default-bg.png');
