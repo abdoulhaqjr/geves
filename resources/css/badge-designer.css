@@ -203,18 +203,24 @@
       font-weight: 800; font-size: 10px; color: #fff; text-align: center; padding: 8px;
     }
 
-    .ed-work { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+    .ed-work { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; container-type: inline-size; }
     .ed-toolbar {
       background: #fff; border-bottom: 1px solid var(--ukc-border);
-      padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+      padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; flex-shrink: 0;
     }
-    .ed-toolbar .label { font-size: 12px; font-weight: 700; color: var(--ukc-muted); }
+    .ed-toolbar .label { font-size: 12px; font-weight: 700; color: var(--ukc-muted); white-space: nowrap; }
+    .ed-format-chips { display: flex; align-items: center; gap: 10px; }
+    .ed-format-select {
+      display: none; min-width: 128px; max-width: 168px; padding: 6px 8px;
+      border: 1px solid var(--ukc-border); border-radius: 8px;
+      background: #fff; color: var(--ukc-text); font-size: 12.5px; font-weight: 700;
+    }
     .ed-toolbar .chip {
       padding: 5px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
       border: 1px solid var(--ukc-border); background: #fff; color: var(--ukc-text);
     }
     .ed-toolbar .chip.active { background: #eef2ff; border-color: var(--ukc-blue); color: var(--ukc-blue); }
-    .ed-toolbar .spacer { flex: 1; }
+    .ed-toolbar .spacer { flex: 1 1 auto; min-width: 0; }
     .ed-toolbar .btn-preview {
       padding: 6px 12px; border: 1px solid var(--ukc-border); border-radius: 8px;
       font-size: 12.5px; font-weight: 700; color: var(--ukc-text);
@@ -239,6 +245,18 @@
     }
     .ed-zoom-bar button:hover { background: #f1f5f9; }
     .ed-zoom-bar span { font-size: 12px; font-weight: 700; min-width: 42px; text-align: center; }
+
+    /* Cinq formats de badge ne tiennent pas dans la barre à largeur courante.
+       Le sélecteur reprend la place des cinq boutons et garde l'aperçu visible. */
+    @container (max-width: 1200px) {
+      .ed-format-chips { display: none; }
+      .ed-format-select { display: block; }
+    }
+    @container (max-width: 700px) {
+      .ed-toolbar { flex-wrap: wrap; }
+      .ed-toolbar .spacer { flex-basis: 100%; height: 0; }
+      .ed-toolbar .ed-zoom-bar { margin-left: auto; }
+    }
 
     .ed-stylebar {
       background: #fff; border-bottom: 1px solid var(--ukc-border);

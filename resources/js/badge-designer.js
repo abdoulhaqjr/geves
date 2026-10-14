@@ -160,6 +160,7 @@
     historyLock = true;
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     page.className = snap.bg || 'ed-page';
+    syncFormatControls();
     (snap.els || []).forEach(function (s) {
       var el = document.createElement('div');
       el.id = s.id; el.className = s.className;
@@ -656,6 +657,7 @@
     };
 
     (T[key] || T.co)();
+    syncFormatControls();
     refreshLayers();
     pushHistory();
     selectEl(null);
@@ -682,6 +684,18 @@
   });
 
   var SIZE_CLASSES = ['size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80'];
+
+  function syncFormatControls() {
+    var size = 'a6-portrait';
+    if (page.classList.contains('size-a6-landscape')) size = 'a6-landscape';
+    else if (page.classList.contains('size-a7-portrait')) size = 'a7-portrait';
+    else if (page.classList.contains('size-card-landscape')) size = 'card-landscape';
+    else if (page.classList.contains('size-cr80')) size = 'cr80';
+    document.querySelectorAll('[data-size]').forEach(function (button) {
+      button.classList.toggle('active', button.dataset.size === size);
+    });
+    document.getElementById('badgeFormatSelect').value = size;
+  }
 
   // ⚠️ Changer de format RÉAJUSTE la maquette : chaque élément voit sa position et
   // sa taille mises à l'échelle du changement de dimensions (x/largeur par le rapport
@@ -716,11 +730,17 @@
       else if (s === 'card-landscape') page.classList.add('size-card-landscape');
       else if (s === 'cr80') page.classList.add('size-cr80');
       // a6-portrait = default (no extra class)
+      syncFormatControls();
       var nw = page.offsetWidth, nh = page.offsetHeight;
       if (ow && oh && (nw !== ow || nh !== oh)) { scaleEls(nw / ow, nh / oh); pushHistory(); }
       if (selected) updateFloatBar();
       toast('Format : ' + btn.textContent.trim());
     });
+  });
+
+  document.getElementById('badgeFormatSelect').addEventListener('change', function () {
+    var button = document.querySelector('[data-size="' + this.value + '"]');
+    if (button) button.click();
   });
 
   document.querySelectorAll('[data-add]').forEach(function (btn) {

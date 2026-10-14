@@ -18,7 +18,7 @@
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
     <div class="crumb">{{ $typeLabel }} - {{ $scope ?? 'Participant' }}</div>
     <input class="name-input" id="tplName" value="{{ $typeLabel }}" title="Nom du modèle, repris dans la liste des documents">
-    <button type="button" class="btn-save" id="btnSave">Save</button>
+    <button type="button" class="btn-save" id="btnSave">Enregistrer</button>
   </header>
 
   <div class="ed-shell">
@@ -186,27 +186,36 @@
         <button type="button" class="sbtn-tool" id="btnUndo" title="Annuler (Ctrl+Z)" disabled>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
         </button>
-        <button type="button" class="sbtn-tool" id="btnRedo" title="Retablir" disabled>
+        <button type="button" class="sbtn-tool" id="btnRedo" title="Rétablir (Ctrl+Maj+Z)" disabled>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
         </button>
         <span class="sep" style="width:1px;height:22px;background:var(--ukc-border);"></span>
-        <button type="button" class="chip" id="btnBg">Background</button>
-        <span class="label">Format:</span>
-        <button type="button" class="chip active" data-size="a6-portrait" title="105 × 148 mm">A6 Portrait</button>
-        <button type="button" class="chip" data-size="a6-landscape" title="148 × 105 mm">A6 Paysage</button>
-        <button type="button" class="chip" data-size="a7-portrait" title="74 × 105 mm">A7 Portrait</button>
-        <button type="button" class="chip" data-size="card-landscape" title="90 × 55 mm">Carte 90×55</button>
-        <button type="button" class="chip" data-size="cr80" title="85,6 × 54 mm">CR80</button>
+        <button type="button" class="chip" id="btnBg">Image de fond</button>
+        <span class="label">Format :</span>
+        <div class="ed-format-chips" role="group" aria-label="Format du badge">
+          <button type="button" class="chip active" data-size="a6-portrait" title="105 × 148 mm">A6 Portrait</button>
+          <button type="button" class="chip" data-size="a6-landscape" title="148 × 105 mm">A6 Paysage</button>
+          <button type="button" class="chip" data-size="a7-portrait" title="74 × 105 mm">A7 Portrait</button>
+          <button type="button" class="chip" data-size="card-landscape" title="90 × 55 mm">Carte 90×55</button>
+          <button type="button" class="chip" data-size="cr80" title="85,6 × 54 mm">CR80</button>
+        </div>
+        <select class="ed-format-select" id="badgeFormatSelect" aria-label="Format du badge">
+          <option value="a6-portrait">A6 Portrait</option>
+          <option value="a6-landscape">A6 Paysage</option>
+          <option value="a7-portrait">A7 Portrait</option>
+          <option value="card-landscape">Carte 90×55</option>
+          <option value="cr80">CR80</option>
+        </select>
         <span class="spacer"></span>
         <div class="ed-zoom-bar">
-          <button type="button" id="zoomOut">−</button>
+          <button type="button" id="zoomOut" title="Zoom -">−</button>
           <span id="zoomLabel">100%</span>
-          <button type="button" id="zoomIn">+</button>
-          <button type="button" id="zoomReset" title="Ajuster">
+          <button type="button" id="zoomIn" title="Zoom +">+</button>
+          <button type="button" id="zoomReset" title="Ajuster à la vue">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H4v4M16 3h4v4M8 21H4v-4M16 21h4v-4"/></svg>
           </button>
         </div>
-        <button type="button" class="btn-preview" id="btnPreview">Preview</button>
+        <button type="button" class="btn-preview" id="btnPreview">Aperçu</button>
       </div>
       <div class="ed-stylebar disabled" id="styleBar">
         <select id="fontFamily">
@@ -217,11 +226,11 @@
           <option value="Lato, sans-serif">Lato</option>
         </select>
         <select id="fontWeight">
-          <option value="400">Regular</option>
-          <option value="500">Medium</option>
-          <option value="600">SemiBold</option>
-          <option value="700">Bold</option>
-          <option value="800">ExtraBold</option>
+          <option value="400">Normal</option>
+          <option value="500">Moyen</option>
+          <option value="600">Demi-gras</option>
+          <option value="700">Gras</option>
+          <option value="800">Extra-gras</option>
         </select>
         <button type="button" class="sbtn" id="fontSizeMinus" title="Taille -">−</button>
         <input type="number" id="fontSize" value="14" min="8" max="72" style="width:48px;">
