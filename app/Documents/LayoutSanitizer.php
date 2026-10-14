@@ -326,8 +326,8 @@ class LayoutSanitizer
                 // Deux logos à la MÊME hauteur (comme la maquette officielle) : la
                 // largeur suit le format propre de chaque logo, pas l'inverse - sinon
                 // l'un paraît plus grand que l'autre.
-                ['type' => 'image', 'x' => 56, 'y' => 44, 'w' => 178, 'h' => 48, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 642, 'y' => 44, 'w' => 202, 'h' => 48, 'src' => '/img/attestations/logo-parakou.png'],
+                ['type' => 'image', 'x' => 56, 'y' => 44, 'w' => 204, 'h' => 56, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 616, 'y' => 44, 'w' => 228, 'h' => 56, 'src' => '/img/attestations/logo-parakou.png'],
                 // Titre plus grand que les autres modèles (mesuré ≈ 576 px à Times 38 px).
                 $t(['x' => 80, 'y' => 118, 'w' => 740, 'h' => 52, 'text' => 'ATTESTATION DE FORMATION', 'size' => 38, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
                 $t(['x' => 70, 'y' => 186, 'w' => 760, 'h' => 28, 'text' => 'Je soussigné, [signatory.name], [signatory.role], atteste que', 'size' => 14]),
@@ -336,12 +336,15 @@ class LayoutSanitizer
                 $t(['x' => 70, 'y' => 378, 'w' => 760, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 14]),
                 // Signatures des formateurs (jusqu'à deux) - à gauche, en vis-à-vis du responsable.
                 ['type' => 'signatures', 'x' => 70, 'y' => 470, 'w' => 350, 'h' => 92, 'size' => 11, 'names' => true],
-                ['type' => 'qr', 'x' => 436, 'y' => 486, 'size' => 66, 'value' => '{verify_url}'],
-                // Responsable de l'événement - à droite (texte, comme la maquette).
+                // QR de vérification dans le coin bas-droit (comme les autres modèles le
+                // posent dans un coin), hors du bloc signataire du milieu.
+                ['type' => 'qr', 'x' => 782, 'y' => 548, 'size' => 76, 'value' => '{verify_url}'],
+                // Responsable de l'événement - à droite (texte, comme la maquette). L'écart
+                // fonction -> nom suit la maquette officielle (~80 px).
                 $t(['x' => 500, 'y' => 438, 'w' => 360, 'h' => 22, 'text' => 'Fait à Kara, le [certificate.issued_on]', 'size' => 13]),
                 $t(['x' => 500, 'y' => 470, 'w' => 360, 'h' => 24, 'text' => 'Le [signatory.role],', 'size' => 14, 'weight' => 700]),
-                $t(['x' => 500, 'y' => 558, 'w' => 360, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
-                $t(['x' => 40, 'y' => 572, 'w' => 520, 'h' => 20, 'text' => 'Référence de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
+                $t(['x' => 500, 'y' => 550, 'w' => 360, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
+                $t(['x' => 40, 'y' => 582, 'w' => 520, 'h' => 20, 'text' => 'Référence de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
             ],
         ];
     }

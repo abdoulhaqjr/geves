@@ -3354,8 +3354,10 @@ ajoutée par la vue, elle ne se saisit pas.
       petit) : `formation_signatures[]` = `{name, role, src}` où `role` = `formation_trainers.specialty`,
       rendu par `renderSignatures()`. Corps (« Je soussigné… », « a suivi… », « En foi de quoi… »)
       en **14 px**. ⚠️ **Les deux logos d'en-tête sont à la MÊME hauteur** (comme la maquette
-      officielle : la largeur suit le format de chaque logo, pas l'inverse) - UK `178×48`, Parakou
-      `202×48` ; une hauteur de boîte différente faisait paraître l'un plus grand que l'autre.
+      officielle : la largeur suit le format de chaque logo, pas l'inverse) - UK `204×56`, Parakou
+      `228×56` ; une hauteur de boîte différente faisait paraître l'un plus grand que l'autre.
+      Le **QR est dans le coin bas-droit** (hors du bloc signataire du milieu), et l'écart
+      fonction -> nom du signataire suit la maquette officielle (~80 px).
   - ⚠️ **Le concepteur gère l'élément `signatures`** (ajouté : `createEl` en pose un repère à deux
     emplacements, `serializeLayout` le préserve via `el.dataset.sig`). Sans cela, « Enregistrer »
     dans l'éditeur le reconvertissait en texte et les signatures de formateurs disparaissaient du
