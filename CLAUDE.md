@@ -3546,17 +3546,29 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   « Participant », pas « Communicant »).
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
-  boîtes à la **MÊME hauteur**, côte à côte et centrées **sur le badge**. ⚠️ L'ancien
-  **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser l'asset
-  officiel partagé, pas une image propre au badge.
-- ⚠️ **Les logos sont TRANSPARENTS → le filet vert ne doit JAMAIS passer derrière eux.**
-  Les deux barres vertes de l'en-tête sont **cuites dans l'image de fond** mais ne courent
-  QUE de part et d'autre des logos (badge x≈22..82 et x≈314..375), à leur **centre vertical**
-  (badge y≈73) ; les logos (y61, h26, centre 74) s'alignent dessus. Au départ les barres
-  étaient asymétriques (58 px à gauche, 89 px à droite) et traversaient le bas des logos
-  (transparents) : refaites **symétriques** et abaissées au centre des logos dans
-  `badge-default-bg.png`. Pour les retoucher, rééditer l'image de fond (effacer la bande
-  puis redessiner), pas déplacer un filet inexistant dans la mise en page.
+  boîtes à la **MÊME hauteur** (`h34`, UK w124 / Parakou w134), côte à côte et centrées
+  **sur le badge**, **agrandies** pour bien remplir l'en-tête entre les deux filets. ⚠️
+  L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser
+  l'asset officiel partagé, pas une image propre au badge.
+- ⚠️ **Les deux filets verts sont des ÉLÉMENTS `rect` de la mise en page**, PLUS cuits dans
+  l'image de fond (`badge-default-bg.png` a été **nettoyé** de sa bande d'en-tête). Deux
+  raisons : ils sont éditables, et surtout ils **se repositionnent/redimensionnent avec le
+  reste quand on change de format** (un filet cuit dans le fond se déformerait avec lui).
+  Deux segments courts (`x22 w28` et `x347 w28`, `h3`, `#009933`) flanquant les logos à leur
+  **centre vertical** (`y72`). ⚠️ Les logos sont TRANSPARENTS : le filet **ne doit JAMAIS
+  passer derrière eux** - il s'arrête à ~12 px de chaque logo (sinon le vert traverse le
+  logo). PHP : éléments `rect` dans `defaultBadge()` ; concepteur : `barEl()` (shape
+  `line-h` + fond vert, sérialisé en `rect`). Garde : `BadgeDefaultTemplateTest` (2 rects
+  verts).
+- ⚠️ **Changer de format RÉAJUSTE la maquette** (`badge-designer.js`, `scaleEls(rx, ry)`
+  dans le gestionnaire des chips `[data-size]`) : à chaque changement de format, position
+  et taille de **chaque élément** sont mises à l'échelle du changement de dimensions (x et
+  largeur par le rapport des largeurs, y et hauteur par celui des hauteurs ; **QR, photo et
+  corps de texte** suivent le plus petit rapport pour ne pas se déformer). Sans ça les
+  éléments restaient à leurs coordonnées A6 et débordaient d'un format plus petit. Formats
+  dans `badge-designer.css` (A6 portrait 397×560 défaut, A6 paysage, A7 portrait, carte,
+  CR80). ⚠️ L'image de fond, elle, s'étire en `100% 100%` (cadre baké) - c'est pourquoi le
+  filet, lui, est un élément.
 - ⚠️ **Jetons PLATS** (`{event}`/`{name}`/`{role}`/`{theme}`/`{location}`/`{dates}`/`{ref}`) :
   les deux chemins de rendu de badge fournissent des clés plates (pas la palette
   `[espace.cle]`). `theme`/`dates`/`location` sont dans les deux cartes de variables

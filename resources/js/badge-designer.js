@@ -595,6 +595,13 @@
       e.style.height = o.h + 'px';
       return e;
     }
+    // Filet vert = élément de mise en page (rect), pas un décor cuit dans le fond.
+    function barEl(o) {
+      var e = createEl({ type: 'shape', shape: 'line-h', label: o.label, x: o.x, y: o.y, w: o.w });
+      e.style.height = (o.h || 3) + 'px';
+      e.style.background = o.color || '#009933';
+      return e;
+    }
 
     var T = {
       /* Badge par défaut = comité d'organisation (A6 portrait 397×560).
@@ -604,8 +611,10 @@
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co');
-        imgEl({ label: 'Logo UK', x: 92, y: 61, w: 95, h: 26, src: '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 201, y: 61, w: 103, h: 26, src: '/img/attestations/logo-parakou.png' });
+        barEl({ label: 'Filet gauche', x: 22, y: 72, w: 28 });
+        barEl({ label: 'Filet droit', x: 347, y: 72, w: 28 });
+        imgEl({ label: 'Logo UK', x: 62, y: 56, w: 124, h: 34, src: '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 201, y: 56, w: 134, h: 34, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '{role}', size: 15, weight: 700, color: '#2e3440' });
@@ -700,8 +709,29 @@
   });
 
   var SIZE_CLASSES = ['size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80'];
+
+  // ⚠️ Changer de format RÉAJUSTE la maquette : chaque élément voit sa position et
+  // sa taille mises à l'échelle du changement de dimensions (x/largeur par le rapport
+  // des largeurs, y/hauteur par celui des hauteurs). Sans ça, les éléments restaient à
+  // leurs coordonnées A6 et débordaient sur un format plus petit. Les carrés (QR, photo)
+  // et les corps de texte suivent le plus petit rapport, pour ne pas se déformer.
+  function scaleEls(rx, ry) {
+    if (!(rx > 0) || !(ry > 0) || (rx === 1 && ry === 1)) return;
+    var rf = Math.min(rx, ry);
+    page.querySelectorAll('.ed-el').forEach(function (el) {
+      el.style.left = Math.round((parseFloat(el.style.left) || 0) * rx) + 'px';
+      el.style.top = Math.round((parseFloat(el.style.top) || 0) * ry) + 'px';
+      var square = el.classList.contains('qr') || el.classList.contains('photo');
+      var sw = square ? rf : rx, sh = square ? rf : ry;
+      if (el.style.width) el.style.width = Math.max(4, Math.round((parseFloat(el.style.width) || 0) * sw)) + 'px';
+      if (el.style.height) el.style.height = Math.max(3, Math.round((parseFloat(el.style.height) || 0) * sh)) + 'px';
+      if (el.style.fontSize) el.style.fontSize = Math.max(6, Math.round((parseFloat(el.style.fontSize) || 0) * rf)) + 'px';
+    });
+  }
+
   document.querySelectorAll('[data-size]').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      var ow = page.offsetWidth, oh = page.offsetHeight;
       document.querySelectorAll('[data-size]').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
@@ -713,6 +743,8 @@
       else if (s === 'card-landscape') page.classList.add('size-card-landscape');
       else if (s === 'cr80') page.classList.add('size-cr80');
       // a6-portrait = default (no extra class)
+      var nw = page.offsetWidth, nh = page.offsetHeight;
+      if (ow && oh && (nw !== ow || nh !== oh)) { scaleEls(nw / ow, nh / oh); pushHistory(); }
       if (selected) updateFloatBar();
       toast('Format : ' + btn.textContent.trim());
     });

@@ -198,15 +198,19 @@ class LayoutSanitizer
             'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
             'elements' => [
+                // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
+                // ils se déplacent et se redimensionnent avec le reste quand on change de
+                // format. Deux segments courts flanquant les logos, à leur centre vertical
+                // (y≈73). ⚠️ Les logos sont TRANSPARENTS : le filet ne doit JAMAIS passer
+                // derrière eux - il s'arrête à ~12 px de chaque logo.
+                ['type' => 'rect', 'x' => 22, 'y' => 72, 'w' => 28, 'h' => 3, 'color' => '#009933'],
+                ['type' => 'rect', 'x' => 347, 'y' => 72, 'w' => 28, 'h' => 3, 'color' => '#009933'],
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur, côte à côte
                 // et centrées sur le badge, la largeur suivant le format propre de chaque
-                // logo. ⚠️ Les logos sont TRANSPARENTS : leur centre vertical est aligné
-                // sur les deux barres vertes de l'image de fond (badge y≈73), qui ne
-                // courent QUE de part et d'autre d'eux (x22..82 et x314..375) - jamais
-                // derrière, sinon le filet vert traverserait le logo.
-                ['type' => 'image', 'x' => 92, 'y' => 61, 'w' => 95, 'h' => 26, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 201, 'y' => 61, 'w' => 103, 'h' => 26, 'src' => '/img/attestations/logo-parakou.png'],
+                // logo, agrandies pour bien remplir l'en-tête entre les deux filets.
+                ['type' => 'image', 'x' => 62, 'y' => 56, 'w' => 124, 'h' => 34, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 201, 'y' => 56, 'w' => 134, 'h' => 34, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
                 $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.

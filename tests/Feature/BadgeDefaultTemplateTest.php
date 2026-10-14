@@ -34,6 +34,12 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     expect($images->contains('/img/attestations/logo-parakou.png'))->toBeTrue();
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
+
+    // Les deux filets verts sont des ÉLÉMENTS de mise en page (rect), pas cuits dans
+    // le fond : ils se redimensionnent avec le reste quand on change de format.
+    $rects = collect($layout['elements'])->where('type', 'rect');
+    expect($rects)->toHaveCount(2);
+    expect($rects->every(fn ($r) => strtolower((string) $r['color']) === '#009933'))->toBeTrue();
 });
 
 it('rend le badge par défaut avec les valeurs du participant', function () {
