@@ -10,6 +10,7 @@ use App\Payments\GatewayRegistry;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
 use App\Support\Fees;
+use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +52,7 @@ class PaymentController extends Controller
             'event' => $event,
             'frozen' => EventLock::frozen($event),
             'participant' => $participant,
+            'participationModes' => (new SubmissionFormConfig($event))->participationModes(),
             'amount' => $amount,
             'tiers' => Fees::grid($event),
             'applicableLabel' => $applicableLabel,

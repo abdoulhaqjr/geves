@@ -216,7 +216,7 @@
                                         @endforeach
                                     </select>
                                     @if ($participantMode)
-                                        <span class="hint">{{ __('Ce choix s’applique à toutes vos communications pour cet événement. Si vous le modifiez, vos communications précédentes utiliseront le nouveau mode.') }}</span>
+                                        <span class="hint">{{ __('Ce mode est commun à toutes vos communications.') }} <a href="{{ route('account.payment', $event) }}#mode-participation">{{ __('Gérer ma participation') }}</a></span>
                                     @else
                                         <span class="hint">{{ __('Ce mode sera commun à toutes vos communications pour cet événement.') }}</span>
                                     @endif

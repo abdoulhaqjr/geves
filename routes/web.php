@@ -12,6 +12,7 @@ use App\Http\Controllers\Account\ModerationController;
 use App\Http\Controllers\Account\OnboardingController as AccountOnboardingController;
 use App\Http\Controllers\Account\OrcidController;
 use App\Http\Controllers\Account\PasswordResetController;
+use App\Http\Controllers\Account\ParticipationModeController;
 use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
 use App\Http\Controllers\Account\PreferencesController;
 use App\Http\Controllers\Account\ProfileController;
@@ -215,7 +216,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/compte/colloque', [EventContextController::class, 'switch'])->name('account.colloque.switch');
     Route::get('/compte/profil', [ProfileController::class, 'edit'])->name('account.profile');
     Route::put('/compte/profil', [ProfileController::class, 'update'])->name('account.profile.update');
-    Route::put('/compte/participation/{event}/mode', [ProfileController::class, 'updateParticipationMode'])->name('account.participation.mode.update');
+    Route::put('/compte/participation/{event}/mode', ParticipationModeController::class)->name('account.participation.mode.update');
     Route::get('/compte/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');

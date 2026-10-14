@@ -26,6 +26,35 @@
         </div>
     </div>
 
+    @if ($participant)
+        <section class="payment-mode" id="mode-participation" aria-labelledby="payment-mode-title">
+            <div class="payment-mode__intro">
+                <span class="payment-eyebrow">{{ __('Ma participation') }}</span>
+                <h2 id="payment-mode-title">{{ __('Mode de participation') }}</h2>
+                <p>{{ __('Choisissez comment vous assisterez à cet événement. Ce choix vaut pour toutes vos communications, y compris celles déjà déposées.') }}</p>
+            </div>
+            <form method="POST" action="{{ route('account.participation.mode.update', $event) }}" class="payment-mode__form">
+                @csrf
+                @method('PUT')
+                <div class="ukc-field">
+                    <label for="participation_mode">{{ __('Mon mode de participation') }}</label>
+                    <div class="payment-mode__controls">
+                        <select id="participation_mode" name="participation_mode" required>
+                            @if (count($participationModes) > 1 && ! $participant->participation_mode)
+                                <option value="">{{ __('Choisir un mode') }}</option>
+                            @endif
+                            @foreach ($participationModes as $value => $label)
+                                <option value="{{ $value }}" @selected(old('participation_mode', $participant->participation_mode) === $value)>{{ __($label) }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="ukc-btn ukc-btn--blue">{{ __('Enregistrer') }}</button>
+                    </div>
+                    @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </form>
+        </section>
+    @endif
+
     {{-- ===== Étape courante ===== --}}
     @if (! $participant && ! $frozen)
         <div class="payment-state">

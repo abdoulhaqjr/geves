@@ -725,7 +725,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 
 /* Inscription et paiement : l'état du dossier précède la grille tarifaire. */
 .account-payment { display: grid; gap: 18px; }
-.payment-overview, .payment-state, .payment-checkout, .payment-tariffs {
+.payment-overview, .payment-mode, .payment-state, .payment-checkout, .payment-tariffs {
   background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius-lg);
   box-shadow: var(--ukc-shadow);
 }
@@ -734,6 +734,13 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-overview__top { margin-bottom: 20px; }
 .payment-overview__meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .payment-overview h2 { margin: 0; font-size: clamp(19px, 1.8vw, 23px); font-weight: 800; line-height: 1.3; color: var(--ukc-text); }
+.payment-mode { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); align-items: center; gap: 24px; padding: 22px 30px; scroll-margin-top: 24px; }
+.payment-mode h2 { margin: 4px 0 7px; color: var(--ukc-text); font-size: 19px; line-height: 1.3; }
+.payment-mode__intro p { margin: 0; color: var(--ukc-muted); font-size: 14px; line-height: 1.5; }
+.payment-mode__form .ukc-field { margin: 0; }
+.payment-mode__controls { display: flex; align-items: stretch; gap: 10px; margin-top: 7px; }
+.payment-mode__controls select { min-width: 0; flex: 1; }
+.payment-mode__controls .ukc-btn { flex: none; }
 .payment-status { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 8px 12px; border-radius: 100px; font-size: 12px; font-weight: 750; }
 .payment-status__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .payment-status--muted { background: #f1f5f9; color: #475569; }
@@ -780,13 +787,15 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .payment-tariff__tag { color: var(--ukc-blue); font-size: 11px; font-weight: 800; }
 .payment-tariffs__hint { margin: 0; padding: 0 26px 20px; color: var(--ukc-muted); font-size: 12px; }
 @media (max-width: 800px) {
+  .payment-mode { grid-template-columns: 1fr; gap: 16px; }
   .payment-checkout__heading { flex-direction: column; }
   .payment-progress__step { gap: 7px; padding: 10px 8px; font-size: 12px; }
   .payment-tariffs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   .account-payment { gap: 14px; }
-  .payment-overview, .payment-state, .payment-checkout { padding: 20px; }
+  .payment-overview, .payment-mode, .payment-state, .payment-checkout { padding: 20px; }
+  .payment-mode__controls { flex-direction: column; }
   .payment-progress { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payment-state { gap: 12px; }
   .payment-state__icon { width: 40px; height: 40px; }
