@@ -42,6 +42,16 @@ class Submission extends Model
         return SubmissionStatus::options();
     }
 
+    /** Modalité choisie par le communicant lors du dépôt. */
+    public function participationModeLabel(): ?string
+    {
+        return match ($this->participation_mode) {
+            'online' => 'En ligne',
+            'onsite' => 'En présentiel',
+            default => null,
+        };
+    }
+
     /**
      * Version définitive (camera-ready) déposée par l'auteur, ou null.
      *

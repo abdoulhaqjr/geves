@@ -466,6 +466,7 @@ class ProgramController extends Controller
             'room' => (string) $request->query('c_room', ''),
             'status' => (string) $request->query('c_status', ''),
             'type' => (string) $request->query('c_type', ''),
+            'participation_mode' => (string) $request->query('c_participation_mode', ''),
             'q' => trim((string) $request->query('c_q', '')),
         ];
         $q = mb_strtolower($f['q']);
@@ -481,6 +482,7 @@ class ProgramController extends Controller
                 && ($f['room'] === '' || $s->room === $f['room'])
                 && ($f['status'] === '' || $status === $f['status'])
                 && ($f['type'] === '' || $type === $f['type'])
+                && ($f['participation_mode'] === '' || $s->submission?->participation_mode === $f['participation_mode'])
                 && ($q === '' || str_contains($text, $q));
         })->values();
 

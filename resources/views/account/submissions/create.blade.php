@@ -10,6 +10,7 @@
     if (! array_key_exists($initialMode, $participationModes)) {
         $initialMode = '';
     }
+    $coreFieldCount = (count($tracks) > 0 ? 1 : 0) + ($config->enabled('type') ? 1 : 0) + 1;
     $wizardInit = [
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
@@ -177,45 +178,46 @@
                                 @error('title') <span class="error">{{ $message }}</span> @enderror
                             </div>
 
-                            @if (count($tracks))
+                            <div class="submission-core-fields" style="--submission-field-count: {{ $coreFieldCount }};">
+                                @if (count($tracks))
+                                    <div class="ukc-field">
+                                        <label for="track">{{ $config->label('track') }} @if ($config->required('track'))<span class="req">*</span>@endif</label>
+                                        <select id="track" name="track" x-model="track">
+                                            @foreach ($tracks as $t)
+                                                <option value="{{ $t }}">{{ $t }}</option>
+                                            @endforeach
+                                        </select>
+                                        @if ($config->help('track'))<span class="hint">{{ $config->help('track') }}</span>@endif
+                                        @error('track') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                @endif
+
+                                @if ($config->enabled('type'))
+                                    <div class="ukc-field">
+                                        <label for="type">{{ __($config->label('type')) }} <span class="req">*</span></label>
+                                        <select id="type" name="type" x-model="type">
+                                            <option value="oral">{{ __('Orale') }}</option>
+                                            <option value="poster">{{ __('Poster') }}</option>
+                                        </select>
+                                        @if ($config->help('type'))<span class="hint">{{ $config->help('type') }}</span>@endif
+                                        @error('type') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                @endif
+
                                 <div class="ukc-field">
-                                    <label for="track">{{ $config->label('track') }} @if ($config->required('track'))<span class="req">*</span>@endif</label>
-                                    <select id="track" name="track" x-model="track">
-                                        @foreach ($tracks as $t)
-                                            <option value="{{ $t }}">{{ $t }}</option>
+                                    <label for="participation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
+                                    <select id="participation_mode" name="participation_mode" x-model="participationMode" required>
+                                        @if (count($participationModes) > 1)
+                                            <option value="">{{ __('Choisir un mode') }}</option>
+                                        @endif
+                                        @foreach ($participationModes as $value => $label)
+                                            <option value="{{ $value }}">{{ __($label) }}</option>
                                         @endforeach
                                     </select>
-                                    @if ($config->help('track'))<span class="hint">{{ $config->help('track') }}</span>@endif
-                                    @error('track') <span class="error">{{ $message }}</span> @enderror
+                                    @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
+                                    @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
                                 </div>
-                            @endif
-
-                            @if ($config->enabled('type'))
-                                <div class="ukc-field">
-                                    <label for="type">{{ __($config->label('type')) }} <span class="req">*</span></label>
-                                    <select id="type" name="type" x-model="type">
-                                        <option value="oral">{{ __('Orale') }}</option>
-                                        <option value="poster">{{ __('Poster') }}</option>
-                                    </select>
-                                    @if ($config->help('type'))<span class="hint">{{ $config->help('type') }}</span>@endif
-                                    @error('type') <span class="error">{{ $message }}</span> @enderror
-                                </div>
-                            @endif
-
-                            <div class="ukc-field">
-                                <label for="participation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
-                                <select id="participation_mode" name="participation_mode" x-model="participationMode" required>
-                                    @if (count($participationModes) > 1)
-                                        <option value="">{{ __('Choisir un mode') }}</option>
-                                    @endif
-                                    @foreach ($participationModes as $value => $label)
-                                        <option value="{{ $value }}">{{ __($label) }}</option>
-                                    @endforeach
-                                </select>
-                                @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
-                                @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
                             </div>
-
                         </div>
                     </div>
 

@@ -448,6 +448,11 @@
 .author-hint--muted { color: var(--ukc-muted); font-weight: 500; }
 .author-hint--err { color: #b91c1c; }
 
+/* Les trois choix du dépôt restent alignés sur grand écran. */
+.submission-core-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--submission-field-count), minmax(0, 1fr)); gap: 16px; }
+.submission-core-fields > .ukc-field { min-width: 0; }
+@media (max-width: 900px) { .submission-core-fields { grid-template-columns: 1fr; } }
+
 /* Co-auteur sur une seule ligne : nom / prénom / e-mail / téléphone / affiliation / grade / retirer. */
 .coauthor-row { display: grid; grid-template-columns: 1.15fr 1.15fr 1.3fr 1fr 1.05fr 1fr auto; gap: 8px; align-items: center; }
 .coauthor-row > input, .coauthor-row > select { border: 1.5px solid var(--ukc-border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; background: #fff; min-width: 0; width: 100%; }

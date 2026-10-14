@@ -888,6 +888,11 @@
                             <option value="oral" @selected($slotFilters['type'] === 'oral')>Orale</option>
                             <option value="poster" @selected($slotFilters['type'] === 'poster')>Poster</option>
                         </select>
+                        <select name="c_participation_mode" aria-label="Filtrer par mode de participation">
+                            <option value="">Tous les modes</option>
+                            <option value="online" @selected($slotFilters['participation_mode'] === 'online')>En ligne</option>
+                            <option value="onsite" @selected($slotFilters['participation_mode'] === 'onsite')>En présentiel</option>
+                        </select>
                         <input type="search" name="c_q" value="{{ $slotFilters['q'] }}" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;">
                         {{-- Le lien dépend des filtres : sa propre région échangée. --}}
                         <span data-filter-part="prog-creneaux-reset">
@@ -937,6 +942,9 @@
                                         <td>@if ($slot->submission)<strong style="font-weight:600;">{{ Str::limit($slot->submission->title, 45) }}</strong>@else<span style="color:var(--ukc-light);">-</span>@endif</td>
                                         <td>
                                             @if ($slot->submission)<span class="ukc-pill ukc-pill--{{ $slot->submission->type === 'poster' ? 'poster' : 'oral' }}">{{ $slot->submission->type === 'poster' ? 'Poster' : 'Orale' }}</span>
+                                                @if ($slot->submission->participationModeLabel())
+                                                    <div style="margin-top:5px;"><span class="ukc-pill ukc-pill--{{ $slot->submission->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $slot->submission->participationModeLabel() }}</span></div>
+                                                @endif
                                             @else<span class="ukc-pill ukc-pill--muted">Libre</span>@endif
                                         </td>
                                         <td>{{ $slot->submission?->ref_code ?: '-' }}</td>

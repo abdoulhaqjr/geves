@@ -35,6 +35,7 @@ Larastan **niveau 5**.
 
 - `submissions.type` conserve **oral/poster** et s'affiche « Type de communication ». `submissions.participation_mode` conserve **online/onsite** (« Mode de participation »). Le formulaire propose seulement les modes autorisés par `Event.settings.format` : Présentiel, En ligne ou Présentiel & hybride. Le serveur valide ce choix indépendamment du navigateur.
 - `SubmissionFormConfig` corrige à la lecture l'ancien libellé enregistré « Mode de présentation ». La migration reprend les modes connus de l'import Eau au Togo ; les anciens dépôts sans information restent à `null`.
+- Les trois choix (axe, type, mode) occupent une ligne sur grand écran dans `account/submissions/create.blade.php`. Le mode est visible et filtrable dans les soumissions du back-office et les créneaux du programme ; le CSV de soumissions l'exporte également.
 
 ### Page participant Inscription & paiement
 
