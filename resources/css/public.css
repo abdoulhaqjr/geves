@@ -449,7 +449,7 @@
 .author-hint--err { color: #b91c1c; }
 
 /* Les trois choix du dépôt restent alignés sur grand écran. */
-.submission-core-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--submission-field-count), minmax(0, 1fr)); gap: 16px; }
+.submission-core-fields { display: grid; grid-template-columns: repeat(var(--submission-field-count), minmax(0, 1fr)); gap: 16px; margin-top: 16px; width: 100%; }
 .submission-core-fields > .ukc-field { min-width: 0; }
 @media (max-width: 900px) { .submission-core-fields { grid-template-columns: 1fr; } }
 

@@ -178,7 +178,8 @@
                                 @error('title') <span class="error">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="submission-core-fields" style="--submission-field-count: {{ $coreFieldCount }};">
+                        </div>
+                        <div class="submission-core-fields" style="--submission-field-count: {{ $coreFieldCount }};">
                                 @if (count($tracks))
                                     <div class="ukc-field">
                                         <label for="track">{{ $config->label('track') }} @if ($config->required('track'))<span class="req">*</span>@endif</label>
@@ -217,7 +218,6 @@
                                     @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
                                     @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
                                 </div>
-                            </div>
                         </div>
                     </div>
 
