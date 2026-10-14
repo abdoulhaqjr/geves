@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Event;
+use App\Support\BadgeCatalog;
 use App\Support\EventArtwork;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -96,9 +97,9 @@ class TemplateDesignerController extends Controller
             // Libellé saisi à la création, sinon celui du type.
             'typeLabel' => filled($existing?->title)
                 ? (string) $existing->title
-                : ($kind === 'badge' ? 'Badge participant' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
+                : ($kind === 'badge' ? BadgeCatalog::TYPES[$type]['title'] : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
             'template' => $existing,
-            'scope' => $kind === 'badge' ? 'Participant' : (self::SCOPES[$type] ?? 'Participant'),
+            'scope' => $kind === 'badge' ? BadgeCatalog::label($type) : (self::SCOPES[$type] ?? 'Participant'),
             'deleteCode' => $existing ? self::deleteCode($existing) : null,
             'layout' => $layout,
             'editorState' => $existing?->editor_state,
@@ -154,7 +155,7 @@ class TemplateDesignerController extends Controller
         [$kind, $type] = $this->kindType($data['kind'], $data['type']);
 
         $defaultTitle = $kind === 'badge'
-            ? 'Badge participant'
+            ? BadgeCatalog::TYPES[$type]['title']
             : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type));
 
         $format = $kind === 'badge' && array_key_exists((string) ($data['format'] ?? ''), self::BADGE_FORMATS)
@@ -298,7 +299,7 @@ class TemplateDesignerController extends Controller
     {
         $kind = in_array($kind, ['attestation', 'badge'], true) ? $kind : 'attestation';
         if ($kind === 'badge') {
-            return [$kind, 'default'];
+            return [$kind, BadgeCatalog::valid((string) $type) ? (string) $type : 'default'];
         }
 
         return [$kind, isset(self::ATTESTATION_TYPES[$type]) ? $type : 'participation'];
@@ -316,7 +317,7 @@ class TemplateDesignerController extends Controller
             'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
             'civility' => 'Mme',
-            'role' => $kind === 'badge' ? 'Participant' : 'Communicant',
+            'role' => $kind === 'badge' ? BadgeCatalog::label($type) : 'Communicant',
             'institution' => 'Université de Kara',
             'type' => self::ATTESTATION_TYPES[$type] ?? 'participation',
             // ⚠️ Valeurs que la palette sait nommer ([edition.theme], [edition.dates]) :

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\Event;
 use App\Models\Submission;
+use App\Support\BadgeCatalog;
 use App\Support\EventSettings;
 use App\Support\SessionDocLayout;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -307,38 +308,35 @@ class DocumentController extends Controller
         return [$key => $selected, $key.'_labels' => $labels];
     }
 
-    /** Planche de badges de participation des inscrits réglés (A4, 2 colonnes). */
-    public function badges(Event $event): View
+    /** Planche A4 du type de badge demandé, depuis ses destinataires réels. */
+    public function badges(Request $request, Event $event): View
     {
-        $query = $event->participants()
-            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
-
-        $participants = $query->orderBy('last_name')->get();
+        $type = (string) $request->query('type', 'default');
+        abort_unless(BadgeCatalog::valid($type), 404);
+        $people = BadgeCatalog::recipients($event, $type);
 
         // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
         // que l'admin ne pouvait ni voir ni modifier.
-        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge');
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
-        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge');
-        $badges = $participants->map(fn ($p) => LayoutRenderer::render($layout, [
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
+        $badges = $people->map(fn (array $person) => LayoutRenderer::render($layout, [
             'org' => $event->series?->name ?? '',
             'event' => $event->title ?? '',
             'year' => (string) ($event->year ?: ''),
             'theme' => (string) ($event->theme ?? ''),
             'dates' => $event->dateRangeLabel() ?? '',
             'location' => (string) ($event->location ?? ''),
-            'name' => $p->full_name,
-            // Badge de PARTICIPATION : un communicant est d'abord un participant.
-            // Tout inscrit qui a payé pour participer porte le même rôle « Participant »,
-            // qu'il communique ou non.
-            'role' => 'Participant',
-            'institution' => (string) $p->institution,
-            'ref' => $event->id.'-'.$p->id,
+            'name' => $person['name'],
+            'role' => BadgeCatalog::label($type),
+            'institution' => $person['institution'],
+            'ref' => $person['ref'],
         ]));
 
         return view('documents.badges-template', [
             'event' => $event,
             'badges' => $badges,
+            'badgeType' => BadgeCatalog::label($type),
             'width' => $layout['width'],
             'height' => $layout['height'],
         ]);

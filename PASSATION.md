@@ -1892,3 +1892,17 @@ le même badge participant. La liste « Badges prêts » et la planche admin uti
 le même filtre, y compris si une ancienne URL porte `paid=0`. Les variantes
 « Communicant » et « Staff » ont été retirées de la palette du designer pour
 éviter de changer le rôle imprimé sur le modèle unique.
+
+### 2026-10-14 — Badges de fonction par catégorie
+
+Le modèle participant `badge/default` reste réservé aux inscriptions dont le
+paiement de participation est réglé ; il n'existe toujours pas de badge
+communicant. `App\Support\BadgeCatalog` ajoute des modèles indépendants pour les
+modérateurs, rapporteurs, l'appui à l'organisation, l'accueil et les comités de
+supervision, d'organisation et scientifique. Leurs destinataires sont déduits
+des séances, des affectations `event_user` et des membres de comité, sans
+condition de paiement. Le tableau Modèles affiche le décompte par type ; les
+liens de conception et d'aperçu portent `type`, tout comme la planche admin.
+« Badges prêts » filtre la catégorie et liste ses destinataires réels. Le
+contrôleur du designer conserve désormais le type demandé au lieu de forcer
+`default`, afin que chaque mise en page soit sauvegardée séparément.

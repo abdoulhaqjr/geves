@@ -3536,21 +3536,18 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
 `public/img/badges/badge-default-bg.png` ; puis **nom** (grand, bleu `#253c98`), **rôle**,
 **thème** (capitales), **lieu**, **dates**, et un **QR** (`{ref}`).
 
-- ⚠️ **Un communicant est d'abord un PARTICIPANT** : le badge est délivré à **tout inscrit
-  qui a réglé sa participation**, communicant ou non, et son rôle est **toujours
-  « Participant »** - jamais le rôle de fonction (`roleLabel()`) ni le grade. Les deux
-  chemins de rendu posent la constante `'role' => 'Participant'`
-  (`Admin\DocumentController::badges()` et `Account\DocumentController::renderBadge()`).
-  Ne pas y réinjecter `roleLabel()`/grade sans demande (un badge CO distinct serait un
-  autre type). Garde : `DocumentsTest` (« génère la planche de badges » → voit
-  « Participant », pas « Communicant »).
-- Le tableau **Documents → Badges → Modèles** présente le seul modèle réellement
-  utilisé (`document_templates`, type `default`) : son titre, les dimensions de sa
-  mise en page, la présence effective d'un QR et le nombre de participants dont
-  le **paiement de participation** est réglé. Les anciennes lignes fictives
-  « Communicant », « Staff » et « Carte » ont été retirées. La liste « Badges prêts »
-  et la planche admin sont limitées aux mêmes participants réglés ; le designer
-  propose des variantes de présentation du badge participant, sans modèle de rôle.
+- ⚠️ **Un communicant est d'abord un PARTICIPANT** : le badge de type `default`
+  revient à tout inscrit ayant réglé sa participation, communicant ou non, avec
+  le rôle imprimé « Participant ». L'espace participant utilise toujours ce
+  modèle ; aucun badge communicant distinct n'existe.
+- **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
+  destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
+  accueil via `event_user` ; comités de supervision, d'organisation et scientifique
+  via `event_user` et `committee_members`). Aucun paiement de participation n'est
+  requis pour ces fonctions. Chaque type a son propre `document_templates` et sa
+  planche d'impression `admin.documents.badges?type=...`. Le tableau Modèles,
+  le designer, l'aperçu et Badges prêts utilisent le même type ; ne jamais
+  afficher une ligne de rôle sans raccorder aussi ses destinataires et son rendu.
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
   boîtes à la **MÊME hauteur** (`h34`, UK w124 / Parakou w134), côte à côte et centrées

@@ -61,9 +61,9 @@
       <div class="panel-view" id="panel-ai">
         <div class="ed-panel-head">Assistant IA</div>
         <div class="ed-panel-body">
-          <p class="ly-meta">Décrivez le badge participant souhaité (couleurs, photo, QR…). La mise en page sera utilisée pour tous les inscrits réglés.</p>
+          <p class="ly-meta">Décrivez le badge « {{ $scope }} » souhaité (couleurs, photo, QR…). Ce modèle sera utilisé pour les destinataires de cette catégorie.</p>
           <div class="ai-box">
-            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge participant, bandeau bleu UK, photo ronde, nom en grand, QR en bas, référence UKC-2026-…"></textarea>
+            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge {{ $scope }}, bandeau bleu UK, photo ronde, nom en grand, QR en bas, référence UKC-2026-…"></textarea>
             <div class="ai-drop" id="aiDrop">Image / PDF de reference<br><span style="font-size:11px;">PNG, JPG, PDF - max 8 Mo</span></div>
             <input type="file" id="aiFile" accept="image/*,.pdf" style="display:none;">
             <div id="aiFileList"></div>
@@ -75,7 +75,7 @@
       <div class="panel-view active" id="panel-templates">
         <div class="ed-panel-head">Modeles de design</div>
         <div class="ed-panel-body">
-          <p class="ly-meta">Variantes de présentation du badge participant. Le modèle choisi s’applique à tous les inscrits réglés.</p>
+          <p class="ly-meta">Variantes de présentation du badge « {{ $scope }} ». Le modèle choisi s’applique aux destinataires de cette catégorie.</p>
           <div class="ed-panel-section">Formats portrait</div>
           <div class="ed-tpl-card active" data-tpl="co">
             <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">PARTICIPANT</div>

@@ -1,7 +1,5 @@
-{{-- Sous-onglet « Badges prêts » (?tab=badges&stab=prets). Un badge n'est pas
-     stocké : il est rendu à la demande depuis le modèle pour les participants
-     dont l'inscription à l'événement est réglée. --}}
-@php($bAll = ['event_id' => $event_id, 'tab' => 'badges', 'stab' => 'prets'])
+{{-- Les badges sont rendus à la demande, par catégorie et modèle. --}}
+@php($bAll = ['event_id' => $event_id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $badgeType])
 
 {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche s'applique à
      la frappe, sans valider ni recharger la page. --}}
@@ -9,8 +7,13 @@
     <input type="hidden" name="event_id" value="{{ $event_id }}">
     <input type="hidden" name="tab" value="badges">
     <input type="hidden" name="stab" value="prets">
-    <span>Inscriptions réglées</span>
-    <input type="search" name="bsearch" value="{{ $badgeSearch }}" placeholder="Nom ou e-mail du participant…" style="min-width:230px;">
+    <label for="badge-type-filter">Catégorie</label>
+    <select id="badge-type-filter" name="btype">
+        @foreach (\App\Support\BadgeCatalog::TYPES as $key => $meta)
+            <option value="{{ $key }}" @selected($badgeType === $key)>{{ $meta['label'] }}</option>
+        @endforeach
+    </select>
+    <input type="search" name="bsearch" value="{{ $badgeSearch }}" placeholder="Nom ou e-mail…" style="min-width:230px;">
     {{-- Le lien dépend des filtres : sa propre région échangée. --}}
     <span data-filter-part="badges-reset">
         @if ($badgeSearch !== '')
@@ -18,7 +21,7 @@
         @endif
     </span>
     <span style="flex:1;"></span>
-    <a href="{{ route('admin.documents.badges', ['event' => $event_id]) }}"
+    <a href="{{ route('admin.documents.badges', ['event' => $event_id, 'type' => $badgeType]) }}"
        target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue ukc-btn--sm">
         <x-ukc.icon name="download" :size="16" /> Planche à imprimer
     </a>
@@ -28,26 +31,20 @@
     <div class="ukc-table-wrap">
         <table class="ukc-table">
             <thead>
-                <tr><th>Participant</th><th>E-mail</th><th>Rôle</th><th>Institution</th><th>Paiement</th></tr>
+                <tr><th>Destinataire</th><th>E-mail</th><th>Badge</th><th>Institution</th><th>Source</th></tr>
             </thead>
             <tbody>
-                @forelse ($badgeReady as $p)
+                @forelse ($badgeReady as $person)
                     <tr>
-                        <td class="title">{{ $p->full_name }}</td>
-                        <td class="meta">{{ $p->email ?: '-' }}</td>
-                        <td>{{ $p->roleLabel() }}</td>
-                        <td class="meta">{{ $p->institution ?: '-' }}</td>
-                        <td>
-                            @if ($p->participationPayments()->where('status', 'paid')->exists())
-                                <span class="ukc-pill ukc-pill--ok">Réglé</span>
-                            @else
-                                <span class="ukc-pill ukc-pill--warn">En attente</span>
-                            @endif
-                        </td>
+                        <td class="title">{{ $person['name'] }}</td>
+                        <td class="meta">{{ $person['email'] ?: '-' }}</td>
+                        <td>{{ \App\Support\BadgeCatalog::label($badgeType) }}</td>
+                        <td class="meta">{{ $person['institution'] ?: '-' }}</td>
+                        <td class="meta">{{ \App\Support\BadgeCatalog::TYPES[$badgeType]['source'] }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" style="padding:28px;text-align:center;color:var(--ukc-muted);">
-                        Aucun participant pour ce filtre.
+                        Aucun destinataire pour cette catégorie.
                     </td></tr>
                 @endforelse
             </tbody>

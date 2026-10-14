@@ -254,7 +254,7 @@
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'modeles']) }}" @class(['active' => $tab === 'badges' && $stab === 'modeles'])>Modèles</a>
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
-                        Badges prêts <span class="nav-count">{{ $badgePaidCount }}</span>
+                        Badges prêts <span class="nav-count">{{ $badgeReadyCount }}</span>
                     </a>
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'options']) }}" @class(['active' => $tab === 'badges' && $stab === 'options'])>Options générales</a>
                 </div>
@@ -265,9 +265,7 @@
 
                 <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif>
                     <div class="ukc-toolbar">
-                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><x-ukc.icon name="pen" :size="16" /> Modifier le modèle de badge</a>
-                        <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Un badge participant par inscription réglée, quel que soit le rôle.</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Un modèle par catégorie : participant après paiement ; badges de fonction selon les affectations de l’événement. Un communicant réglé utilise le badge participant.</span>
                     </div>
 
                     <div class="ukc-table-wrap">
@@ -279,14 +277,14 @@
                                         <td><span class="ukc-pill ukc-pill--info">{{ $b['type'] }}</span></td>
                                         <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['sub'] }}</div></td>
                                         <td>{{ $b['format'] }}</td>
-                                        <td><span class="ukc-stat">{{ $b['count'] }}</span></td>
+                                        <td><a class="ukc-stat" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}" title="Voir les destinataires">{{ $b['count'] }}</a></td>
                                         <td>{{ $b['qr'] ? 'Oui' : 'Non' }}</td>
-                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucune inscription réglée pour cet événement.">Sans destinataire</span>@endif</td>
+                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire dans cette catégorie pour cet événement.">Sans destinataire</span>@endif</td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
-                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Télécharger la planche des inscriptions réglées (PDF)" href="{{ route('admin.documents.badges', $event) }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>@endif
-                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Imprimer les badges {{ mb_strtolower($b['type']) }}" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>@endif
+                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                             </div>
                                         </td>
                                     </tr>
