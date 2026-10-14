@@ -3546,9 +3546,17 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   « Participant », pas « Communicant »).
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
-  boîtes à la **MÊME hauteur**, côte à côte et centrées sous le filet (comme l'en-tête des
-  attestations). ⚠️ L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été
-  **retiré** : utiliser l'asset officiel partagé, pas une image propre au badge.
+  boîtes à la **MÊME hauteur**, côte à côte et centrées **sur le badge**. ⚠️ L'ancien
+  **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser l'asset
+  officiel partagé, pas une image propre au badge.
+- ⚠️ **Les logos sont TRANSPARENTS → le filet vert ne doit JAMAIS passer derrière eux.**
+  Les deux barres vertes de l'en-tête sont **cuites dans l'image de fond** mais ne courent
+  QUE de part et d'autre des logos (badge x≈22..82 et x≈314..375), à leur **centre vertical**
+  (badge y≈73) ; les logos (y61, h26, centre 74) s'alignent dessus. Au départ les barres
+  étaient asymétriques (58 px à gauche, 89 px à droite) et traversaient le bas des logos
+  (transparents) : refaites **symétriques** et abaissées au centre des logos dans
+  `badge-default-bg.png`. Pour les retoucher, rééditer l'image de fond (effacer la bande
+  puis redessiner), pas déplacer un filet inexistant dans la mise en page.
 - ⚠️ **Jetons PLATS** (`{event}`/`{name}`/`{role}`/`{theme}`/`{location}`/`{dates}`/`{ref}`) :
   les deux chemins de rendu de badge fournissent des clés plates (pas la palette
   `[espace.cle]`). `theme`/`dates`/`location` sont dans les deux cartes de variables
@@ -3562,6 +3570,17 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   concepteur d'attestations). ⚠️ Le concepteur de badges reste une base plus pauvre que
   celui des attestations (pas d'`upper`/`leading`/interlettrage dans le snapshot) : à
   aligner si on y revient. Gardes : `BadgeDefaultTemplateTest`.
+- ⚠️ **Impression = tuilage A4 (comme l'ancien `template.docx`)** :
+  `documents/badges-template.blade.php` imprime **autant de badges DE LA DIMENSION CHOISIE**
+  que l'A4 portrait en contient. Les px CSS valent 1/96 pouce à l'impression ; la vue calcule
+  `cols`/`rows` = `floor(pageA4 * 1,012 / dimension)` (la tolérance de 1,2 % rattrape l'A6
+  2-up : 397 px ≈ 105,03 mm, soit 2×210,06 mm, à peine au-delà de l'A4), puis un `scale`
+  (= ajustement × 0,995 de sécurité anti-rognage) appliqué en `transform` sur chaque
+  `.ukc-doc-canvas`, dans des cellules fixes `cellW×cellH`. **A6 → 2×2 = 4 par page.**
+  `@media print` seulement (l'écran garde la galerie souple) ; `@page { size:A4; margin:0 }`,
+  repères de découpe (`outline` pointillé). ⚠️ Le badge n'est **pas déformé** : on ne réduit
+  que d'une fraction (sécurité), jamais pour cramer plus de badges. Le contrôleur passe
+  `width` **et** `height`. Garde : `DocumentsTest` (voit « par page A4 »).
 
 L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
 salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les

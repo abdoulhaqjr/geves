@@ -604,8 +604,8 @@
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co');
-        imgEl({ label: 'Logo UK', x: 70, y: 58, w: 117, h: 32, src: '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 199, y: 58, w: 127, h: 32, src: '/img/attestations/logo-parakou.png' });
+        imgEl({ label: 'Logo UK', x: 92, y: 61, w: 95, h: 26, src: '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 201, y: 61, w: 103, h: 26, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '{role}', size: 15, weight: 700, color: '#2e3440' });

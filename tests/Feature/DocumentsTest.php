@@ -221,7 +221,9 @@ it('génère la planche de badges', function () {
         ->assertOk()
         ->assertSee('Awa Kodjo')
         ->assertSee('Participant')
-        ->assertDontSee('Communicant');
+        ->assertDontSee('Communicant')
+        // Tuilage A4 : autant de badges que la feuille en contient (A6 = 4 par page).
+        ->assertSee('par page A4');
 });
 
 it('la planche de badges utilise le modèle enregistré', function () {

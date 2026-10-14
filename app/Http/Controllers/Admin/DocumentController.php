@@ -343,6 +343,7 @@ class DocumentController extends Controller
             'event' => $event,
             'badges' => $badges,
             'width' => $layout['width'],
+            'height' => $layout['height'],
         ]);
     }
 }

@@ -200,9 +200,13 @@ class LayoutSanitizer
             'elements' => [
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur, côte à côte
-                // et centrées, la largeur suivant le format propre de chaque logo.
-                ['type' => 'image', 'x' => 70, 'y' => 58, 'w' => 117, 'h' => 32, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 199, 'y' => 58, 'w' => 127, 'h' => 32, 'src' => '/img/attestations/logo-parakou.png'],
+                // et centrées sur le badge, la largeur suivant le format propre de chaque
+                // logo. ⚠️ Les logos sont TRANSPARENTS : leur centre vertical est aligné
+                // sur les deux barres vertes de l'image de fond (badge y≈73), qui ne
+                // courent QUE de part et d'autre d'eux (x22..82 et x314..375) - jamais
+                // derrière, sinon le filet vert traverserait le logo.
+                ['type' => 'image', 'x' => 92, 'y' => 61, 'w' => 95, 'h' => 26, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 201, 'y' => 61, 'w' => 103, 'h' => 26, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
                 $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
