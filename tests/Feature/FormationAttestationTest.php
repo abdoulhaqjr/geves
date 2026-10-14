@@ -76,6 +76,38 @@ it('expose le type d’attestation d’animation de formation', function () {
     expect(Attestation::TYPES)->toHaveKey('formation_animation');
 });
 
+it('rend l’attestation d’animation de formation (cadre de formation, « Décernée à », sans signatures de formateur)', function () {
+    $layout = LayoutSanitizer::default('attestation', 'formation_animation');
+
+    expect($layout['bg_image'])->toBe('/img/attestations/attestation-formation-bg.png');
+    $texts = collect($layout['elements'])->pluck('text')->filter()->implode(' | ');
+    expect($texts)
+        ->toContain('ATTESTATION D’ANIMATION DE FORMATION')
+        ->toContain('Décernée à')
+        ->toContain('pour avoir animé une formation')
+        ->toContain('Thème de la formation :')
+        ->toContain('[formation.title]')
+        ->toContain('Référence de l’attestation');
+    // Le formateur EST le bénéficiaire : pas de bloc de signatures de formateur, mais un QR.
+    expect(collect($layout['elements'])->firstWhere('type', 'signatures'))->toBeNull();
+    expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
+
+    $html = LayoutRenderer::render($layout, DocumentVars::expand([
+        'name' => 'Jean Test', 'civility' => 'M.', 'formation' => 'la rédaction scientifique',
+        'event' => 'UK 2026', 'dates' => 'du 06 au 10 octobre 2026', 'location' => 'Kara',
+        'theme' => 'Thème X', 'signatory' => 'Prof. Padabô KADOUZA',
+        'signatory_role' => "Président du Comité d'Organisation",
+        'date' => '14 octobre 2026', 'ref' => 'uuid-x',
+        'verify_url' => 'https://example.test/attestation/uuid-x',
+    ]));
+
+    expect($html)
+        ->toContain('ATTESTATION D’ANIMATION DE FORMATION')
+        ->toContain('Jean Test')
+        ->toContain('la rédaction scientifique')
+        ->toContain('Prof. Padabô KADOUZA');
+});
+
 it('téléverse la signature d’un formateur', function () {
     Storage::fake('public');
     $event = openEdition(['formation_enabled' => true]);

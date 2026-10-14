@@ -167,6 +167,7 @@ class LayoutSanitizer
             'organisation' => self::attestationOrganisation(),
             'comite_organisation' => self::attestationComiteOrganisation(),
             'formation' => self::attestationFormation(),
+            'formation_animation' => self::attestationFormationAnimation(),
             default => self::defaultAttestation(),
         };
     }
@@ -345,6 +346,50 @@ class LayoutSanitizer
                 $t(['x' => 500, 'y' => 470, 'w' => 360, 'h' => 24, 'text' => 'Le [signatory.role],', 'size' => 14, 'weight' => 700]),
                 $t(['x' => 500, 'y' => 550, 'w' => 360, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
                 $t(['x' => 40, 'y' => 582, 'w' => 520, 'h' => 20, 'text' => 'Référence de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
+            ],
+        ];
+    }
+
+    /**
+     * Attestation d'ANIMATION DE FORMATION (délivrée au FORMATEUR). Même cadre que
+     * l'attestation de formation (coins colorés, carte grise) mais rédaction
+     * « Décernée à … » comme la maquette officielle : pas de signatures de formateur
+     * (le formateur EST le bénéficiaire ; seul le responsable signe). Doit rester
+     * identique au modèle du concepteur (`loadTemplate('formation_animation')`).
+     */
+    protected static function attestationFormationAnimation(): array
+    {
+        $dark = '#1a2332';
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => 14, 'weight' => 500, 'color' => $dark,
+            'align' => 'left', 'font' => 'lato', 'italic' => false, 'leading' => 1.3,
+        ];
+
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
+        return [
+            'width' => 900, 'height' => 636, 'bg' => '#f0f0f0', 'accent' => '#223ea4',
+            'bg_image' => '/img/attestations/attestation-formation-bg.png',
+            'elements' => [
+                ['type' => 'image', 'x' => 56, 'y' => 44, 'w' => 204, 'h' => 56, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 616, 'y' => 44, 'w' => 228, 'h' => 56, 'src' => '/img/attestations/logo-parakou.png'],
+                // Titre long (« … D'ANIMATION DE FORMATION ») : Times 30 px ≈ 673 px, tient
+                // sur une ligne dans la boîte de 820 px.
+                $t(['x' => 40, 'y' => 112, 'w' => 820, 'h' => 40, 'text' => 'ATTESTATION D’ANIMATION DE FORMATION', 'size' => 30, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                $t(['x' => 120, 'y' => 160, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
+                $t(['x' => 120, 'y' => 186, 'w' => 660, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 22, 'weight' => 800, 'align' => 'center']),
+                $t(['x' => 80, 'y' => 232, 'w' => 740, 'h' => 120, 'text' => 'pour avoir animé une formation en marge des travaux du [edition.name], qui s’est tenu [edition.dates] à [edition.location], sur le thème : « [edition.theme] ».', 'size' => 14, 'leading' => 1.45]),
+                $t(['x' => 80, 'y' => 358, 'w' => 230, 'h' => 22, 'text' => 'Thème de la formation :', 'weight' => 700]),
+                $t(['x' => 318, 'y' => 358, 'w' => 500, 'h' => 44, 'text' => '[formation.title]', 'weight' => 700]),
+                $t(['x' => 80, 'y' => 414, 'w' => 740, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 14]),
+                ['type' => 'qr', 'x' => 80, 'y' => 486, 'size' => 76, 'value' => '{verify_url}'],
+                // Responsable de l'événement (seul signataire) - à droite. Écart fonction
+                // -> nom ~80 px, comme les autres modèles.
+                $t(['x' => 500, 'y' => 452, 'w' => 360, 'h' => 22, 'text' => 'Fait à Kara, le [certificate.issued_on]', 'size' => 13]),
+                $t(['x' => 500, 'y' => 484, 'w' => 360, 'h' => 24, 'text' => 'Le [signatory.role],', 'size' => 14, 'weight' => 700]),
+                $t(['x' => 500, 'y' => 564, 'w' => 360, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
+                $t(['x' => 40, 'y' => 596, 'w' => 520, 'h' => 20, 'text' => 'Référence de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
             ],
         ];
     }

@@ -1801,6 +1801,35 @@
           { type: 'text', label: 'Référence', x: 40, y: 582, w: 520, text: 'Référence de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
         ];
       })(),
+      // Attestation d'ANIMATION DE FORMATION (délivrée au formateur).
+      // ⚠️ Doit rester identique à LayoutSanitizer::attestationFormationAnimation() (PHP).
+      // Même cadre que la formation, rédaction « Décernée à … », aucune signature de
+      // formateur (le formateur est le bénéficiaire ; seul le responsable signe).
+      formation_animation: (function () {
+        var SERIF = "'Times New Roman', Times, serif";
+        var SANS = "'Lato', system-ui, sans-serif";
+        var DARK = '#1a2332';
+        var LOGOS = (window.UKC_EDITOR || {}).logos || {};
+        var imgHtml = function (src) {
+          return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        };
+        return [
+          { type: 'logo', label: 'Logo UK', x: 56, y: 44, w: 204, h: 56, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 616, y: 44, w: 228, h: 56, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
+          { type: 'text', label: 'Titre', x: 40, y: 112, w: 820, text: 'ATTESTATION D’ANIMATION DE FORMATION', font: SERIF, size: 30, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Sous-titre', x: 120, y: 160, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
+          { type: 'text', label: 'Destinataire', x: 120, y: 186, w: 660, text: '[recipient.civility] [recipient.name]', font: SANS, size: 22, weight: 800, color: DARK, align: 'center' },
+          { type: 'text', label: 'Corps', x: 80, y: 232, w: 740, text: 'pour avoir animé une formation en marge des travaux du [edition.name], qui s’est tenu [edition.dates] à [edition.location], sur le thème : « [edition.theme] ».', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.45 },
+          { type: 'text', label: 'Thème (libellé)', x: 80, y: 358, w: 230, text: 'Thème de la formation :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Thème formation', x: 318, y: 358, w: 500, text: '[formation.title]', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.3 },
+          { type: 'text', label: 'Formule', x: 80, y: 414, w: 740, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 14, weight: 500, color: DARK },
+          { type: 'qr', label: 'QR vérification', x: 80, y: 486, w: 76, qrUrl: DEFAULT_QR_URL },
+          { type: 'text', label: 'Lieu / date', x: 500, y: 452, w: 360, text: 'Fait à Kara, le [certificate.issued_on]', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'text', label: 'Fonction', x: 500, y: 484, w: 360, text: 'Le [signatory.role],', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Responsable', x: 500, y: 564, w: 360, text: '[signatory.name]', font: SANS, size: 16, weight: 700, color: DARK },
+          { type: 'text', label: 'Référence', x: 40, y: 596, w: 520, text: 'Référence de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
+        ];
+      })(),
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
       // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
@@ -1877,8 +1906,9 @@
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
-    } else if (key === 'formation') {
-      // Cadre officiel de l'attestation de formation (coins colorés, carte grise).
+    } else if (key === 'formation' || key === 'formation_animation') {
+      // Cadre officiel de l'attestation de formation (coins colorés, carte grise),
+      // partagé par la formation et l'animation de formation.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-formation-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
     } else if (key === 'formation-csiuk') {
@@ -2166,7 +2196,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', formation: 'formation' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', formation: 'formation', formation_animation: 'formation_animation' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {

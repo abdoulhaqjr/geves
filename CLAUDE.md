@@ -3367,6 +3367,16 @@ ajoutée par la vue, elle ne se saisit pas.
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page
   de la formation (`formation_trainers.signature_path`) et est **figée dans
   `attestations.meta` à l'émission** : l'attestation ne change pas si l'équipe évolue.
+  - **Attestation d'ANIMATION DE FORMATION = modèle à part** (`attestationFormationAnimation()`
+    / `loadTemplate('formation_animation')`), **délivrée au FORMATEUR** : **même cadre que la
+    formation** (coins colorés, carte grise, `attestation-formation-bg.png`, mêmes logos
+    204×56/228×56) mais rédaction « Décernée à … » comme la maquette officielle (titre Times
+    **30 px** car long, « pour avoir animé une formation en marge des travaux du [edition.name]…
+    sur le thème : « [edition.theme] » », ligne **« Thème de la formation : [formation.title] »**,
+    « En foi de quoi… », signataire à droite, référence bas-gauche, QR bas-gauche). ⚠️ **Aucune
+    signature de formateur** (le formateur EST le bénéficiaire ; seul le responsable signe) -
+    donc pas d'élément `signatures`, contrairement à l'attestation de formation. Gardes :
+    `FormationAttestationTest`.
   - **Aperçu attestation/badge = le CONCEPTEUR en mode APERÇU VERROUILLÉ** (pour voir
     EXACTEMENT le design du modèle, polices/logos/mise en forme compris) : le bouton « Aperçu »
     ouvre `admin.documents.templates.preview` (`TemplateDesignerController::preview` →
