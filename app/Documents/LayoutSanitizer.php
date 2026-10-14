@@ -201,18 +201,20 @@ class LayoutSanitizer
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
                 // format. ⚠️ Couleur #00be62, la MÊME que le cadre (le contour) cuit dans
-                // le fond - PAS #009933, qui jurait avec lui. Chaque filet part du cadre et
-                // court jusqu'au logo, à leur centre vertical (comme la capture). ⚠️ Les
-                // logos sont TRANSPARENTS : le filet ne doit JAMAIS passer derrière eux -
-                // il s'arrête à ~8 px de chaque logo.
-                ['type' => 'rect', 'x' => 14, 'y' => 71, 'w' => 40, 'h' => 4, 'color' => '#00be62'],
-                ['type' => 'rect', 'x' => 343, 'y' => 71, 'w' => 40, 'h' => 4, 'color' => '#00be62'],
+                // le fond - PAS #009933, qui jurait avec lui. ⚠️ Chaque filet DOIT
+                // INTERSECTER le contour : au centre vertical des logos (y71), le cadre vert
+                // occupe x0..12 à gauche et x384..397 à droite, donc le filet gauche part de
+                // x0 et le droit finit à x397 - ils MORDENT sur le cadre (même vert, ils
+                // fusionnent) puis courent vers le logo. ⚠️ Logos TRANSPARENTS : le filet
+                // s'arrête à ~8 px de chaque logo (sinon le vert les traverse).
+                ['type' => 'rect', 'x' => 0, 'y' => 71, 'w' => 22, 'h' => 4, 'color' => '#00be62'],
+                ['type' => 'rect', 'x' => 374, 'y' => 71, 'w' => 23, 'h' => 4, 'color' => '#00be62'],
                 // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
-                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur, côte à côte
-                // et centrées sur le badge, la largeur suivant le format propre de chaque
-                // logo, agrandies pour bien remplir l'en-tête entre les deux filets.
-                ['type' => 'image', 'x' => 62, 'y' => 56, 'w' => 124, 'h' => 34, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 201, 'y' => 56, 'w' => 134, 'h' => 34, 'src' => '/img/attestations/logo-parakou.png'],
+                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h42), côte à
+                // côte et centrées sur le badge, la largeur suivant le format propre de
+                // chaque logo, encore agrandies pour bien remplir l'en-tête.
+                ['type' => 'image', 'x' => 30, 'y' => 52, 'w' => 154, 'h' => 42, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 200, 'y' => 52, 'w' => 166, 'h' => 42, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
                 $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.

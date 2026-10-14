@@ -3557,22 +3557,26 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   afficher une ligne de rôle sans raccorder aussi ses destinataires et son rendu.
 - ⚠️ **Logos OFFICIELS = les mêmes que les attestations** : UK large (`Branding::wide()`,
   chemin relatif) + **logo large de Parakou** (`/img/attestations/logo-parakou.png`). Deux
-  boîtes à la **MÊME hauteur** (`h34`, UK w124 / Parakou w134), côte à côte et centrées
-  **sur le badge**, **agrandies** pour bien remplir l'en-tête entre les deux filets. ⚠️
+  boîtes à la **MÊME hauteur** (`h42`, UK w154 x30 / Parakou w166 x200, `y52`), côte à côte
+  et centrées **sur le badge**, **agrandies** pour bien remplir l'en-tête. ⚠️
   L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser
   l'asset officiel partagé, pas une image propre au badge.
 - ⚠️ **Les deux filets verts sont des ÉLÉMENTS `rect` de la mise en page**, PLUS cuits dans
   l'image de fond (`badge-default-bg.png` a été **nettoyé** de sa bande d'en-tête). Deux
   raisons : ils sont éditables, et surtout ils **se repositionnent/redimensionnent avec le
   reste quand on change de format** (un filet cuit dans le fond se déformerait avec lui).
-  Deux segments (`x14 w40` et `x343 w40`, `h4`) **partant du cadre** et courant jusqu'au logo,
-  à leur **centre vertical** (`y71`). ⚠️ **Couleur `#00be62` = EXACTEMENT celle du cadre (le
-  contour) cuit dans le fond, PAS `#009933`** (la charte) : les deux verts juraient côte à
-  côte, le filet paraissait d'un autre vert que le cadre. Toujours reprendre la couleur du
-  contour. ⚠️ Les logos sont TRANSPARENTS : le filet **ne doit JAMAIS passer derrière eux** -
-  il s'arrête à ~8 px de chaque logo (sinon le vert traverse le logo). PHP : éléments `rect`
-  dans `defaultBadge()` ; concepteur : `barEl()` (shape `line-h` + fond `#00be62`, sérialisé
-  en `rect`). Garde : `BadgeDefaultTemplateTest` (2 rects `#00be62`).
+  Deux segments (`x0 w22` et `x374 w23`, `h4`, `y71`) à **leur centre vertical**. ⚠️ **Le
+  filet DOIT INTERSECTER le contour** : au niveau `y71` le cadre vert cuit occupe `x0..12`
+  à gauche et `x384..397` à droite - le filet gauche part donc de `x0`, le droit finit à
+  `x397`, tous deux **mordent sur le cadre** (même vert, ils fusionnent en T) puis courent
+  vers le logo. Un filet qui s'arrête avant le cadre (ancien `x14`/`x383`) laissait une
+  fente blanche et paraissait détaché. ⚠️ **Couleur `#00be62` = EXACTEMENT celle du cadre
+  (le contour) cuit dans le fond, PAS `#009933`** (la charte) : les deux verts juraient côte
+  à côte. Toujours reprendre la couleur du contour. ⚠️ Les logos sont TRANSPARENTS : le
+  filet **ne doit JAMAIS passer derrière eux** - il s'arrête à ~8 px de chaque logo (sinon
+  le vert traverse le logo). PHP : éléments `rect` dans `defaultBadge()` ; concepteur :
+  `barEl()` (shape `line-h` + fond `#00be62`, sérialisé en `rect`). Garde :
+  `BadgeDefaultTemplateTest` (2 rects `#00be62`).
 - ⚠️ **Changer de format RÉAJUSTE la maquette** (`badge-designer.js`, `scaleEls(rx, ry)`
   dans le gestionnaire des chips `[data-size]`) : à chaque changement de format, position
   et taille de **chaque élément** sont mises à l'échelle du changement de dimensions (x et
