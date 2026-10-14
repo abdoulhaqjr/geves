@@ -2,7 +2,7 @@
     <x-slot:actions>
         <span data-filter-part="submissions-export">
             <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-               href="{{ route('admin.submissions.export', request()->only('event_id', 'status', 'type', 'participation_mode', 'track', 'search')) }}">
+               href="{{ route('admin.submissions.export', request()->only('event_id', 'status', 'type', 'presentation_mode', 'participation_mode', 'track', 'search')) }}">
                 <x-ukc.icon name="download" :size="14" /> CSV
             </a>
         </span>
@@ -57,8 +57,13 @@
                 <option value="oral" @selected($type === 'oral')>Orale</option>
                 <option value="poster" @selected($type === 'poster')>Poster</option>
             </select>
-            <select name="participation_mode" aria-label="Filtrer par mode de participation">
-                <option value="">Tous les modes</option>
+            <select name="presentation_mode" aria-label="Filtrer par mode de présentation">
+                <option value="">Toutes les présentations</option>
+                <option value="online" @selected($presentationMode === 'online')>En ligne</option>
+                <option value="onsite" @selected($presentationMode === 'onsite')>En présentiel</option>
+            </select>
+            <select name="participation_mode" aria-label="Filtrer par participation au colloque">
+                <option value="">Toutes les participations</option>
                 <option value="online" @selected($participationMode === 'online')>En ligne</option>
                 <option value="onsite" @selected($participationMode === 'onsite')>En présentiel</option>
             </select>
@@ -72,7 +77,7 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
             </label>
-            @if ($search !== '' || $status !== '' || $type !== '' || $participationMode !== '' || $track !== '' || $unlinked)
+            @if ($search !== '' || $status !== '' || $type !== '' || $presentationMode !== '' || $participationMode !== '' || $track !== '' || $unlinked)
                 <a href="{{ route('admin.submissions.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
@@ -85,7 +90,8 @@
                             <x-ukc.th sort="ref_code" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
                             <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
                             <x-ukc.th sort="author" :current="$sort" :dir="$dir">Auteur(s)</x-ukc.th>
-                            <th>Participation</th>
+                            <th>Présentation</th>
+                            <th>Au colloque</th>
                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
                             <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>
                             <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
@@ -111,12 +117,13 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($s->participationModeLabel())
-                                        <span class="ukc-pill ukc-pill--{{ $s->participant?->participation_mode === 'online' ? 'info' : 'ok' }}">{{ $s->participationModeLabel() }}</span>
+                                    @if ($s->presentationModeLabel())
+                                        <span class="ukc-pill ukc-pill--{{ $s->presentation_mode === 'online' ? 'info' : 'ok' }}">{{ $s->presentationModeLabel() }}</span>
                                     @else
                                         <span style="color:var(--ukc-light);">-</span>
                                     @endif
                                 </td>
+                                <td>{{ $s->participant?->participationModeLabel() ?? '-' }}</td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
@@ -140,7 +147,8 @@
                                             'ref' => $s->ref_code,
                                             'author' => $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-'),
                                             'type' => $s->type === 'poster' ? 'Poster' : 'Orale',
-                                            'participationMode' => $s->participationModeLabel() ?? '-',
+                                            'presentationMode' => $s->presentationModeLabel() ?? '-',
+                                            'participationMode' => $s->participant?->participationModeLabel() ?? '-',
                                             'axis' => $s->track ?: '-',
                                             'status' => $statuses[$s->status] ?? $s->status,
                                             'statusPill' => $statusPills[$s->status] ?? 'muted',
@@ -160,7 +168,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
+                            <tr><td colspan="10" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -176,7 +184,8 @@
                 <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
                 <div class="k">Auteur principal</div><div class="v" x-text="pv?.author"></div>
                 <div class="k">Type de communication</div><div class="v" x-text="pv?.type"></div>
-                <div class="k">Mode de participation</div><div class="v" x-text="pv?.participationMode"></div>
+                <div class="k">Mode de présentation</div><div class="v" x-text="pv?.presentationMode"></div>
+                <div class="k">Participation au colloque</div><div class="v" x-text="pv?.participationMode"></div>
                 <div class="k">Axe</div><div class="v" x-text="pv?.axis"></div>
                 <div class="k">Statut</div><div class="v"><span class="ukc-pill" :class="'ukc-pill--' + (pv?.statusPill)" x-text="pv?.status"></span></div>
                 <div class="k">Déposée le</div><div class="v" x-text="pv?.date"></div>

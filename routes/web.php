@@ -246,6 +246,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
     Route::get('/communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
     Route::post('/communications/{submission}/modifier', [SubmissionController::class, 'updateContent'])->name('account.submissions.update');
+    Route::put('/communications/{submission}/mode-presentation', [SubmissionController::class, 'updatePresentationMode'])->name('account.submissions.presentation-mode.update');
     Route::post('/communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
     Route::post('/communications/{submission}/version-definitive', [SubmissionController::class, 'cameraReady'])->name('account.submissions.camera-ready');
     Route::post('/communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');

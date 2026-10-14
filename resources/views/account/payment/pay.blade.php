@@ -30,8 +30,8 @@
         <section class="payment-mode" id="mode-participation" aria-labelledby="payment-mode-title">
             <div class="payment-mode__intro">
                 <span class="payment-eyebrow">{{ __('Ma participation') }}</span>
-                <h2 id="payment-mode-title">{{ __('Mode de participation') }}</h2>
-                <p>{{ __('Choisissez comment vous assisterez à cet événement. Ce choix vaut pour toutes vos communications, y compris celles déjà déposées.') }}</p>
+                <h2 id="payment-mode-title">{{ __('Mode de participation au colloque') }}</h2>
+                <p>{{ __('Choisissez comment vous assisterez au colloque. Le mode de présentation se choisit séparément pour chaque communication.') }}</p>
             </div>
             <form method="POST" action="{{ route('account.participation.mode.update', $event) }}" class="payment-mode__form">
                 @csrf

@@ -27,6 +27,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -97,8 +98,6 @@ class SubmissionController extends Controller
             'gradeOptions' => ParticipantTypes::all(),
             'maxCommunications' => (int) ($event->settings['max_communications'] ?? 3),
             'remaining' => Submission::remainingFor($event, $account),
-            'participantMode' => Participant::query()->where('event_id', $event->id)
-                ->where('user_id', $account->id)->value('participation_mode'),
             'successRef' => session('success_ref'),
         ]);
     }
@@ -309,6 +308,21 @@ class SubmissionController extends Controller
             ->with('ukc_status', 'Votre résumé a été mis à jour.');
     }
 
+    /** Change la présentation de cette seule communication. */
+    public function updatePresentationMode(Request $request, Submission $submission): RedirectResponse
+    {
+        $this->authorizeOwnership($submission);
+        $modes = (new SubmissionFormConfig($submission->event))->participationModes();
+        $data = $request->validate([
+            'presentation_mode' => ['required', Rule::in(array_keys($modes))],
+        ]);
+
+        $submission->update(['presentation_mode' => $data['presentation_mode']]);
+
+        return redirect()->route('account.submissions.show', $submission)
+            ->with('ukc_status', 'Mode de présentation enregistré pour cette communication.');
+    }
+
     public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse
     {
         $this->authorizeOwnership($submission);
@@ -328,6 +342,7 @@ class SubmissionController extends Controller
             'keywords' => $submission->keywords,
             'track' => $submission->track,
             'type' => $submission->type,
+            'presentation_mode' => $submission->presentation_mode,
             'status' => 'superseded',
             'file_url' => $submission->file_url,
             'revision_of' => $submission->id,

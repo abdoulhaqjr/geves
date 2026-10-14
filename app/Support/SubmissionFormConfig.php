@@ -20,7 +20,9 @@ class SubmissionFormConfig
         'title' => ['label' => 'Titre', 'help' => '', 'required' => true],
         'track' => ['label' => 'Axe thématique', 'help' => '', 'required' => true],
         'type' => ['label' => 'Type de communication', 'help' => '', 'enabled' => true, 'required' => true],
-        'participation_mode' => ['label' => 'Mode de participation', 'help' => '', 'required' => true],
+        // Clé de configuration historique conservée pour les formulaires déjà
+        // enregistrés ; le dépôt persiste désormais submissions.presentation_mode.
+        'participation_mode' => ['label' => 'Mode de présentation', 'help' => '', 'required' => true],
         'keywords' => ['label' => 'Mots-clés', 'help' => 'Séparés par des virgules', 'enabled' => true, 'required' => false, 'separator' => 'comma'],
         'abstract' => ['label' => 'Résumé', 'help' => '', 'required' => true, 'min' => 50, 'max' => 8000],
         'file' => ['label' => 'Fichier joint', 'help' => 'PDF/DOC/DOCX, max 8 Mo', 'enabled' => true, 'required' => false],
@@ -93,6 +95,9 @@ class SubmissionFormConfig
         // Les formulaires déjà enregistrés portent encore cet ancien libellé.
         if ($key === 'type' && $v === 'Mode de présentation') {
             return 'Type de communication';
+        }
+        if ($key === 'participation_mode' && $v === 'Mode de participation') {
+            return 'Mode de présentation';
         }
 
         return filled($v) ? (string) $v : (string) (self::STANDARD_DEFAULTS[$key]['label'] ?? $key);

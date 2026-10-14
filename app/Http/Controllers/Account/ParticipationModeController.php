@@ -27,6 +27,6 @@ class ParticipationModeController extends Controller
         $participant->update(['participation_mode' => $data['participation_mode']]);
 
         return redirect()->to(route('account.payment', $event).'#mode-participation')
-            ->with('ukc_status', 'Mode de participation enregistré pour cet événement. Vos communications utilisent désormais ce mode.');
+            ->with('ukc_status', 'Mode de participation au colloque enregistré. Le mode de présentation de vos communications reste inchangé.');
     }
 }

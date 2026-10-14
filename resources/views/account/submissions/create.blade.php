@@ -5,17 +5,17 @@
     if (filled($account->grade) && ! in_array($account->grade, $gradeChoices, true)) {
         $gradeChoices[] = $account->grade;
     }
-    $participationModes = $config->participationModes();
-    $initialMode = old('participation_mode', $participantMode ?? (count($participationModes) === 1 ? array_key_first($participationModes) : ''));
-    if (! array_key_exists($initialMode, $participationModes)) {
-        $initialMode = count($participationModes) === 1 ? array_key_first($participationModes) : '';
+    $presentationModes = $config->participationModes();
+    $initialMode = old('presentation_mode', count($presentationModes) === 1 ? array_key_first($presentationModes) : '');
+    if (! array_key_exists($initialMode, $presentationModes)) {
+        $initialMode = count($presentationModes) === 1 ? array_key_first($presentationModes) : '';
     }
     $coreFieldCount = (count($tracks) > 0 ? 1 : 0) + ($config->enabled('type') ? 1 : 0) + 1;
     $wizardInit = [
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
         'type' => old('type', 'oral'),
-        'participationMode' => $initialMode,
+        'presentationMode' => $initialMode,
         'keywords' => \App\Support\SubmissionKeywords::parse(old('keywords', ''), $config->keywordSeparator()),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
@@ -206,22 +206,18 @@
                                 @endif
 
                                 <div class="ukc-field">
-                                    <label for="participation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
-                                    <select id="participation_mode" name="participation_mode" x-model="participationMode" required>
-                                        @if (count($participationModes) > 1)
+                                    <label for="presentation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
+                                    <select id="presentation_mode" name="presentation_mode" x-model="presentationMode" required>
+                                        @if (count($presentationModes) > 1)
                                             <option value="">{{ __('Choisir un mode') }}</option>
                                         @endif
-                                        @foreach ($participationModes as $value => $label)
+                                        @foreach ($presentationModes as $value => $label)
                                             <option value="{{ $value }}">{{ __($label) }}</option>
                                         @endforeach
                                     </select>
-                                    @if ($participantMode)
-                                        <span class="hint">{{ __('Ce mode est commun à toutes vos communications.') }} <a href="{{ route('account.payment', $event) }}#mode-participation">{{ __('Gérer ma participation') }}</a></span>
-                                    @else
-                                        <span class="hint">{{ __('Ce mode sera commun à toutes vos communications pour cet événement.') }}</span>
-                                    @endif
+                                    <span class="hint">{{ __('Ce choix concerne uniquement cette communication.') }} <a href="{{ route('account.payment', $event) }}#mode-participation">{{ __('Gérer ma participation au colloque') }}</a></span>
                                     @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
-                                    @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
+                                    @error('presentation_mode') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                         </div>
                     </div>
@@ -427,7 +423,7 @@
                                     @if ($config->enabled('type'))
                                         <span class="recap-chip recap-chip--type" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Orale') }}'"></span>
                                     @endif
-                                    <span class="recap-chip" x-show="participationMode" x-cloak x-text="participationMode === 'online' ? '{{ __('En ligne') }}' : '{{ __('En présentiel') }}'"></span>
+                                    <span class="recap-chip" x-show="presentationMode" x-cloak x-text="presentationMode === 'online' ? '{{ __('En ligne') }}' : '{{ __('En présentiel') }}'"></span>
                                 </div>
                             </div>
 

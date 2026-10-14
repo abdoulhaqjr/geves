@@ -10,6 +10,7 @@
         $keywordSeparator = (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator();
         $kw = collect(\App\Support\SubmissionKeywords::parse($s->keywords, $keywordSeparator));
         $keywordHelp = match ($keywordSeparator) { 'semicolon' => 'Entrée ou point-virgule pour ajouter', 'both' => 'Entrée, virgule ou point-virgule pour ajouter', default => 'Entrée ou virgule pour ajouter' };
+        $presentationModes = (new \App\Support\SubmissionFormConfig($s->event))->participationModes();
     @endphp
 
     <div class="account-submission-detail" x-data="{ slotModal: false }" @keydown.escape.window="slotModal = false">
@@ -180,7 +181,8 @@
                     <dl class="kv">
                         <dt>{{ __('Référence') }}</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
                         <dt>{{ __('Type de communication') }}</dt><dd>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</dd>
-                        <dt>{{ __('Mode de participation') }}</dt><dd>{{ $s->participationModeLabel() ? __($s->participationModeLabel()) : '-' }}</dd>
+                        <dt>{{ __('Mode de présentation') }}</dt><dd>{{ $s->presentationModeLabel() ? __($s->presentationModeLabel()) : '-' }}</dd>
+                        <dt>{{ __('Participation au colloque') }}</dt><dd>{{ $s->participant?->participationModeLabel() ? __($s->participant->participationModeLabel()) : '-' }}@if ($isOwner) <a href="{{ route('account.payment', $s->event) }}#mode-participation">{{ __('Modifier') }}</a>@endif</dd>
                         <dt>{{ __('Atelier / axe') }}</dt><dd>{{ $s->track ?: '-' }}</dd>
                         <dt>{{ __('Langue') }}</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
                         <dt>{{ __('Mots (résumé)') }}</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>
@@ -189,6 +191,24 @@
                             <dt>{{ __('Co-auteurs') }}</dt><dd>{{ $coauthors->map($fmtAuthor)->filter()->implode(', ') }}</dd>
                         @endif
                     </dl>
+
+                    @if ($isOwner && ! \App\Support\EventLock::frozen($s->event))
+                        <form method="POST" action="{{ route('account.submissions.presentation-mode.update', $s) }}" class="ukc-field" style="margin-top:16px;max-width:520px;">
+                            @csrf
+                            @method('PUT')
+                            <label for="presentation_mode">{{ __('Modifier le mode de présentation de cette communication') }}</label>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <select id="presentation_mode" name="presentation_mode" required style="flex:1;min-width:180px;">
+                                    @if (! $s->presentation_mode && count($presentationModes) > 1)<option value="">{{ __('Choisir un mode') }}</option>@endif
+                                    @foreach ($presentationModes as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('presentation_mode', $s->presentation_mode) === $value)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                                <button class="ukc-btn ukc-btn--blue" type="submit">{{ __('Enregistrer') }}</button>
+                            </div>
+                            @error('presentation_mode') <span class="error">{{ $message }}</span> @enderror
+                        </form>
+                    @endif
 
                     <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">{{ __('Résumé') }}</h3>
                     @if (filled($s->abstract))

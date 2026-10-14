@@ -36,7 +36,8 @@
                     <div class="paper-title">{{ $s->title }}</div>
                     <div class="meta-row">
                         <span><strong>Type de communication :</strong> {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</span>
-                        <span><strong>Mode de participation :</strong> {{ $s->participationModeLabel() ?? '-' }}</span>
+                        <span><strong>Mode de présentation :</strong> {{ $s->presentationModeLabel() ?? '-' }}</span>
+                        <span><strong>Participation au colloque :</strong> {{ $s->participant?->participationModeLabel() ?? '-' }}</span>
                         @if ($s->track)<span><strong>Axe :</strong> {{ $s->track }}</span>@endif
                         <span><strong>Déposée :</strong> {{ $s->created_at?->format('d/m/Y') }}</span>
                         <span><strong>Événement :</strong> {{ $s->event?->title }}</span>

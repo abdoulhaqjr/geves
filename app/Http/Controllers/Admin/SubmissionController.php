@@ -62,6 +62,7 @@ class SubmissionController extends Controller
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
+        $presentationMode = (string) $request->query('presentation_mode', '');
         $participationMode = (string) $request->query('participation_mode', '');
         $track = (string) $request->query('track', '');
         $unlinked = $request->boolean('unlinked');
@@ -94,6 +95,7 @@ class SubmissionController extends Controller
             ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
+            ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
             ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($unlinked, fn ($q) => $q->whereHas('authorLinks', $unlinkedScope))
@@ -142,6 +144,7 @@ class SubmissionController extends Controller
             'status' => $status,
             'event_id' => $editionId,
             'type' => $type,
+            'presentationMode' => $presentationMode,
             'participationMode' => $participationMode,
             'track' => $track,
             'unlinked' => $unlinked,
@@ -169,6 +172,7 @@ class SubmissionController extends Controller
         $status = (string) $request->query('status', '');
         $editionId = (string) $request->query('event_id', '');
         $type = (string) $request->query('type', '');
+        $presentationMode = (string) $request->query('presentation_mode', '');
         $participationMode = (string) $request->query('participation_mode', '');
         $track = (string) $request->query('track', '');
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
@@ -182,6 +186,7 @@ class SubmissionController extends Controller
             ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
+            ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
             ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($search !== '', function ($q) use ($search) {
@@ -201,14 +206,15 @@ class SubmissionController extends Controller
         return response()->streamDownload(function () use ($rows, $statuses) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF"); // BOM UTF-8 pour Excel
-            fputcsv($out, ['Référence', 'Titre', 'Auteur correspondant', 'Type de communication', 'Mode de participation', 'Axe', 'Statut', 'Déposée le', 'Événement']);
+            fputcsv($out, ['Référence', 'Titre', 'Auteur correspondant', 'Type de communication', 'Mode de présentation', 'Participation au colloque', 'Axe', 'Statut', 'Déposée le', 'Événement']);
             foreach ($rows as $s) {
                 fputcsv($out, [
                     $s->ref_code,
                     $s->title,
                     $s->participant?->full_name ?? ($s->authors[0]['name'] ?? ''),
                     $s->type === 'poster' ? 'Poster' : 'Orale',
-                    $s->participationModeLabel() ?? '',
+                    $s->presentationModeLabel() ?? '',
+                    $s->participant?->participationModeLabel() ?? '',
                     (string) $s->track,
                     $statuses[$s->status] ?? $s->status,
                     $s->created_at?->format('d/m/Y H:i'),

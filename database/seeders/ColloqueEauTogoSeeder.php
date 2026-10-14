@@ -28998,6 +28998,7 @@ ARCHIVE;
             'keywords' => trim((string) $source['keywords']),
             'track' => trim((string) $source['track']),
             'type' => $response['communication'] === 'Poster' ? 'poster' : 'oral',
+            'presentation_mode' => $response['presentation_mode'] === 'Distantiel' ? 'online' : 'onsite',
             'status' => 'submitted',
             'revision_of' => 0,
             'version' => 1,
@@ -29022,6 +29023,10 @@ ARCHIVE;
             ],
             'created_at' => $response['timestamp'],
         ]);
+
+        if ($existing !== null && ! in_array($existing->presentation_mode, ['online', 'onsite'], true)) {
+            $existing->update(['presentation_mode' => $response['presentation_mode'] === 'Distantiel' ? 'online' : 'onsite']);
+        }
 
         $authorLink = SubmissionAuthor::firstOrCreate([
             'submission_id' => $submission->id,
