@@ -10,7 +10,10 @@
     {{-- ===== Parcours d'inscription ===== --}}
     <div class="payment-overview">
         <div class="payment-overview__top">
-            <h2>{{ $event->title ?: $event->year }}</h2>
+            <div class="payment-overview__heading">
+                <span class="payment-overview__eyebrow">Votre parcours d’inscription</span>
+                <h2>{{ $event->title ?: $event->year }}</h2>
+            </div>
             <span class="payment-status payment-status--{{ ['ok' => 'success', 'info' => 'ready', 'muted' => 'muted'][$statusPill] }}"><span class="payment-status__dot" aria-hidden="true"></span>{{ $status }}</span>
         </div>
         <div class="ukc-steps" style="margin-bottom:0;" aria-label="Étapes de l’inscription">
