@@ -3567,6 +3567,17 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     (modérateur, comités…), pas seulement au participant. Le modèle JS `co-photo`
     décrit la MÊME maquette que `LayoutSanitizer::defaultBadge(true)`. Garde :
     `DocumentDesignerTest` (« propose la variante de design avec photo »).
+  - ⚠️ **Les cartes « Modèles de design » montrent l'APERÇU RÉEL du modèle**
+    (`badge-designer.js`, `buildVariantThumbs`) : chaque `.mini` est un **clone de la
+    page** construit depuis `T[tpl]` et rempli des valeurs d'exemple (`fillBadgeTokens`),
+    mis à l'échelle - même rendu que « Mes badges », une seule source de vérité (pas de
+    vignette dessinée à la main dans le blade). ⚠️ Construit **une seule fois à l'init**
+    (page vierge) : `loadTemplate` mute la page, le refaire après écraserait le travail en
+    cours. Chaque aperçu est rendu au **format natif** du modèle (`thumbNativeFormat`) pour
+    ne pas le déformer. `fitThumb`/`fitThumbs` (re)calcule l'échelle quand le panneau
+    « Modèles » s'ouvre (la largeur d'un `.mini` masqué vaut 0). La carte active est
+    **remise en évidence après l'init** (le filtrage par format pendant la construction la
+    retirait).
   - ⚠️ **Repère de l'élément photo dans le concepteur = une ICÔNE d'avatar**
     (silhouette SVG dans `.photo-inner`), pas le mot « Photo ». À l'**aperçu**, la
     photo d'exemple est un avatar de la galerie des assistantes

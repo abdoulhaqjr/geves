@@ -77,23 +77,22 @@
         <div class="ed-panel-body">
           <p class="ly-meta">Variantes de présentation du badge « {{ $scope }} ». Le modèle choisi s’applique aux destinataires de cette catégorie.</p>
           <div class="ed-panel-section" id="badgeDesignFormat">A6 Portrait</div>
+          {{-- L'aperçu (.mini) est rendu par le JS depuis le modèle réel (T[tpl]),
+               rempli des valeurs d'exemple - même rendu que « Mes badges ». --}}
           <div class="ed-tpl-card active" data-tpl="co" data-formats="a6-portrait a7-portrait">
-            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
+            <div class="mini"></div>
             Cadre vert/bleu UK x Parakou
           </div>
           <div class="ed-tpl-card" data-tpl="co-photo" data-formats="a6-portrait a7-portrait">
-            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;position:relative;">
-              <span style="position:absolute;top:7px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid rgba(255,255,255,.75);"></span>
-              {{ mb_strtoupper($scope ?? 'Participant') }}
-            </div>
+            <div class="mini"></div>
             Cadre vert/bleu avec photo UK x Parakou
           </div>
           <div class="ed-tpl-card" data-tpl="participant" data-formats="a6-portrait a6-landscape a7-portrait card-landscape cr80">
-            <div class="mini">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
+            <div class="mini"></div>
             Bandeau bleu - photo - nom - QR
           </div>
           <div class="ed-tpl-card" data-tpl="card" data-formats="a6-landscape card-landscape cr80">
-            <div class="mini" style="height:56px;background:linear-gradient(90deg,#223ea4 40%,#009933 40%);">CARTE</div>
+            <div class="mini"></div>
             Badge paysage type carte
           </div>
           <button type="button" class="ed-tool-btn" id="btnBlank">+ Design vierge</button>

@@ -233,7 +233,7 @@ class LayoutSanitizer
                 $t(['x' => 24, 'y' => $eventY, 'w' => 349, 'h' => 54, 'text' => '[edition.name]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
             ], $photo, [
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
-                $t(['x' => 20, 'y' => $nameY, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => 20, 'y' => $nameY, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 22, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
                 $t(['x' => 20, 'y' => $roleY, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),

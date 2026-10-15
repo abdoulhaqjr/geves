@@ -776,7 +776,7 @@
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
-        styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
@@ -797,7 +797,7 @@
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 108, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         createEl({ type: 'photo', label: 'Photo', x: 149, y: 156, w: 100 });
-        styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
@@ -853,6 +853,8 @@
       document.querySelectorAll('.panel-view').forEach(function (p) { p.classList.remove('active'); });
       document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
       if (btn.dataset.panel === 'layers') refreshLayers();
+      // Les aperçus (.mini) ne sont mesurables qu'une fois le panneau visible.
+      if (btn.dataset.panel === 'templates') requestAnimationFrame(fitThumbs);
     });
   });
 
@@ -1648,6 +1650,68 @@
     }
   });
 
+  /* ---------- Aperçus réels des variantes de design ----------
+     Chaque carte « Modèles de design » montre le modèle RÉEL (rendu depuis T[tpl],
+     rempli des valeurs d'exemple), comme l'aperçu de « Mes badges ». Le rendu réutilise
+     la même machinerie que l'aperçu (clone de la page + fillBadgeTokens), d'où une seule
+     source de vérité. ⚠️ On ne construit qu'à l'INIT (page vierge) : loadTemplate mute la
+     page, et le faire plus tard écraserait le travail en cours. */
+  var THUMB_W_FALLBACK = 252;
+  function thumbNativeFormat(formats) {
+    // Format dans lequel le modèle est dessiné (évite une mise à l'échelle qui déforme).
+    if (formats.indexOf('a6-portrait') !== -1) return 'a6-portrait';
+    if (formats.indexOf('card-landscape') !== -1) return 'card-landscape';
+    return formats[0] || 'a6-portrait';
+  }
+  function renderVariantClone(key, nativeFmt) {
+    SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
+    if (nativeFmt && nativeFmt !== 'a6-portrait') page.classList.add('size-' + nativeFmt);
+    loadTemplate(key);
+    var pw = page.offsetWidth || 397, ph = page.offsetHeight || 560;
+    var clone = page.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+    clone.querySelectorAll('.resize, .ed-guide, .ed-guide-label').forEach(function (n) { n.remove(); });
+    clone.style.margin = '0'; clone.style.boxShadow = 'none'; clone.style.transform = 'none';
+    fillBadgeTokens(clone);
+    clone.querySelectorAll('.ed-el').forEach(function (n) {
+      n.style.outline = 'none'; n.style.boxShadow = 'none'; n.classList.remove('selected');
+      if (!n.classList.contains('shape-box') && !n.classList.contains('qr')) n.style.border = 'none';
+      if (n.classList.contains('qr')) {
+        var qi = n.querySelector('img');
+        if (qi) qi.src = qrImageUrl(n.dataset.qrUrl || DEFAULT_QR_URL, 120);
+      }
+    });
+    return { clone: clone, w: pw, h: ph };
+  }
+  function fitThumb(mini) {
+    var nw = parseFloat(mini.dataset.nw || '0'), nh = parseFloat(mini.dataset.nh || '0');
+    var wrap = mini.firstElementChild;
+    if (!nw || !nh || !wrap) return;
+    var sc = (mini.clientWidth || THUMB_W_FALLBACK) / nw;
+    wrap.style.transform = 'scale(' + sc + ')';
+    mini.style.height = Math.round(nh * sc) + 'px';
+  }
+  function fitThumbs() { document.querySelectorAll('.ed-tpl-card .mini').forEach(fitThumb); }
+  function buildVariantThumbs() {
+    document.querySelectorAll('.ed-tpl-card[data-tpl]').forEach(function (card) {
+      var mini = card.querySelector('.mini');
+      if (!mini) return;
+      var formats = (card.dataset.formats || '').split(' ').filter(Boolean);
+      var r = renderVariantClone(card.dataset.tpl, thumbNativeFormat(formats));
+      mini.dataset.nw = r.w; mini.dataset.nh = r.h;
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;top:0;left:0;width:' + r.w + 'px;height:' + r.h + 'px;transform-origin:top left;';
+      wrap.appendChild(r.clone);
+      mini.innerHTML = '';
+      mini.appendChild(wrap);
+      fitThumb(mini);
+    });
+    // Repartir de l'A6 portrait pour la construction réelle qui suit.
+    SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
+  }
+  buildVariantThumbs();
+  history = []; historyIndex = -1;
+
   /* Init : le type `participant_photo` charge la maquette avec photo (`co-photo`). */
   loadTemplate((window.UKC_EDITOR || {}).type === 'participant_photo' ? 'co-photo' : 'co');
 
@@ -1667,6 +1731,17 @@
 
   // La construction initiale a marqué le document « modifié » : on repart propre.
   dirty = false;
+
+  // La construction des aperçus a pu retirer la carte active (filtrage par format) :
+  // on remet en évidence la variante initiale, sauf si un badge personnalisé a été chargé.
+  (function () {
+    var ed = window.UKC_EDITOR || {};
+    var hydrated = ed.editorState && ed.editorState.els && ed.editorState.els.length;
+    var k = ed.type === 'participant_photo' ? 'co-photo' : 'co';
+    document.querySelectorAll('.ed-tpl-card').forEach(function (c) {
+      c.classList.toggle('active', !hydrated && c.dataset.tpl === k);
+    });
+  })();
 
   /* ---------- Mode APERÇU verrouillé : ouvre l'aperçu exact du badge ---------- */
   (function () {
