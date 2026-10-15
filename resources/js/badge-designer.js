@@ -161,6 +161,7 @@
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     page.className = snap.bg || 'ed-page';
     syncFormatControls();
+    document.querySelectorAll('.ed-tpl-card').forEach(function (card) { card.classList.remove('active'); });
     (snap.els || []).forEach(function (s) {
       var el = document.createElement('div');
       el.id = s.id; el.className = s.className;
@@ -572,6 +573,7 @@
   }
 
   function loadTemplate(key) {
+    var targetFormat = getCurrentFormat();
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     selected = null;
     hideFloatBar();
@@ -659,7 +661,7 @@
     };
 
     (T[key] || T.co)();
-    syncFormatControls();
+    applyFormat(targetFormat, false);
     refreshLayers();
     pushHistory();
     selectEl(null);
@@ -679,24 +681,41 @@
   document.querySelectorAll('.ed-tpl-card').forEach(function (card) {
     card.addEventListener('click', function () {
       document.querySelectorAll('.ed-tpl-card').forEach(function (c) { c.classList.remove('active'); });
-      card.classList.add('active');
       loadTemplate(card.dataset.tpl);
+      card.classList.add('active');
       toast('Design « ' + card.dataset.tpl + ' » charge');
     });
   });
 
   var SIZE_CLASSES = ['size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80'];
+  var FORMAT_DIMENSIONS = {
+    'a6-portrait': [397, 560], 'a6-landscape': [560, 397],
+    'a7-portrait': [280, 397], 'card-landscape': [340, 208], 'cr80': [324, 204]
+  };
+  var FORMAT_LABELS = {
+    'a6-portrait': 'A6 Portrait', 'a6-landscape': 'A6 Paysage',
+    'a7-portrait': 'A7 Portrait', 'card-landscape': 'Carte 90×55', 'cr80': 'CR80'
+  };
 
-  function syncFormatControls() {
+  function getCurrentFormat() {
     var size = 'a6-portrait';
     if (page.classList.contains('size-a6-landscape')) size = 'a6-landscape';
     else if (page.classList.contains('size-a7-portrait')) size = 'a7-portrait';
     else if (page.classList.contains('size-card-landscape')) size = 'card-landscape';
     else if (page.classList.contains('size-cr80')) size = 'cr80';
+    return size;
+  }
+  function syncFormatControls() {
+    var size = getCurrentFormat();
     document.querySelectorAll('[data-size]').forEach(function (button) {
       button.classList.toggle('active', button.dataset.size === size);
     });
     document.getElementById('badgeFormatSelect').value = size;
+    document.getElementById('badgeDesignFormat').textContent = 'Designs pour ' + FORMAT_LABELS[size];
+    document.querySelectorAll('.ed-tpl-card').forEach(function (card) {
+      card.hidden = !card.dataset.formats.split(' ').includes(size);
+      if (card.hidden) card.classList.remove('active');
+    });
   }
 
   // ⚠️ Changer de format RÉAJUSTE la maquette : chaque élément voit sa position et
@@ -740,24 +759,24 @@
     page.querySelectorAll('.ed-el.text').forEach(fitText);
   }
 
+  function applyFormat(size, recordHistory) {
+    if (!FORMAT_DIMENSIONS[size]) return;
+    var previous = getCurrentFormat();
+    SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
+    page.style.width = '';
+    page.style.height = '';
+    if (size !== 'a6-portrait') page.classList.add('size-' + size);
+    syncFormatControls();
+    if (size !== previous) {
+      scaleEls(FORMAT_DIMENSIONS[size][0] / FORMAT_DIMENSIONS[previous][0], FORMAT_DIMENSIONS[size][1] / FORMAT_DIMENSIONS[previous][1]);
+      if (recordHistory) pushHistory();
+    }
+    if (selected) updateFloatBar();
+  }
+
   document.querySelectorAll('[data-size]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var ow = page.offsetWidth, oh = page.offsetHeight;
-      document.querySelectorAll('[data-size]').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
-      page.style.width = '';
-      page.style.height = '';
-      var s = btn.dataset.size;
-      if (s === 'a6-landscape') page.classList.add('size-a6-landscape');
-      else if (s === 'a7-portrait') page.classList.add('size-a7-portrait');
-      else if (s === 'card-landscape') page.classList.add('size-card-landscape');
-      else if (s === 'cr80') page.classList.add('size-cr80');
-      // a6-portrait = default (no extra class)
-      syncFormatControls();
-      var nw = page.offsetWidth, nh = page.offsetHeight;
-      if (ow && oh && (nw !== ow || nh !== oh)) { scaleEls(nw / ow, nh / oh); pushHistory(); }
-      if (selected) updateFloatBar();
+      applyFormat(btn.dataset.size, true);
       toast('Format : ' + btn.textContent.trim());
     });
   });

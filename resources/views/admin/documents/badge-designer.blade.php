@@ -76,17 +76,16 @@
         <div class="ed-panel-head">Modeles de design</div>
         <div class="ed-panel-body">
           <p class="ly-meta">Variantes de présentation du badge « {{ $scope }} ». Le modèle choisi s’applique aux destinataires de cette catégorie.</p>
-          <div class="ed-panel-section">Formats portrait</div>
-          <div class="ed-tpl-card active" data-tpl="co">
-            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">PARTICIPANT</div>
-            Cadre vert/bleu UK x Parakou (par défaut)
+          <div class="ed-panel-section" id="badgeDesignFormat">A6 Portrait</div>
+          <div class="ed-tpl-card active" data-tpl="co" data-formats="a6-portrait a7-portrait">
+            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
+            Cadre vert/bleu UK x Parakou
           </div>
-          <div class="ed-tpl-card" data-tpl="participant">
-            <div class="mini">PARTICIPANT</div>
+          <div class="ed-tpl-card" data-tpl="participant" data-formats="a6-portrait a6-landscape a7-portrait card-landscape cr80">
+            <div class="mini">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
             Bandeau bleu - photo - nom - QR
           </div>
-          <div class="ed-panel-section">Format carte</div>
-          <div class="ed-tpl-card" data-tpl="card">
+          <div class="ed-tpl-card" data-tpl="card" data-formats="a6-landscape card-landscape cr80">
             <div class="mini" style="height:56px;background:linear-gradient(90deg,#223ea4 40%,#009933 40%);">CARTE</div>
             Badge paysage type carte
           </div>

@@ -193,6 +193,7 @@
       padding: 8px; margin-bottom: 8px; cursor: pointer; background: #fff;
       font-size: 11px; color: var(--ukc-muted);
     }
+    .ed-tpl-card[hidden] { display: none; }
     .ed-tpl-card:hover, .ed-tpl-card.active {
       border-color: var(--ukc-blue); box-shadow: 0 0 0 2px rgba(34,62,164,.15);
     }
