@@ -155,8 +155,8 @@ class DocumentController extends Controller
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
         $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$event->id);
 
-        // Le modèle range la photo comme un texte « Photo »/[recipient.photo] et le
-        // QR avec une URL générique : on les remplace par les données réelles.
+        // Compatibilité avec les anciens modèles : photo enregistrée comme texte,
+        // QR contenant seulement {ref} ou une ancienne URL générique.
         $layout['elements'] = array_map(function (array $el) use ($photoSrc, $verifyUrl) {
             if (($el['type'] ?? '') === 'text') {
                 $t = trim((string) ($el['text'] ?? ''));
@@ -167,7 +167,7 @@ class DocumentController extends Controller
             }
             if (($el['type'] ?? '') === 'qr') {
                 $v = (string) ($el['value'] ?? '');
-                if ($v === '' || str_contains($v, 'univkara.tg/colloque/badge')) {
+                if ($v === '' || $v === '{ref}' || str_contains($v, 'univkara.tg/colloque/badge')) {
                     $el['value'] = $verifyUrl;
                 }
             }

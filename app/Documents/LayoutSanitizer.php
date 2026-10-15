@@ -222,9 +222,9 @@ class LayoutSanitizer
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
                 // Lieu et dates (les pictogrammes sont dans l'image de fond).
-                $t(['x' => 110, 'y' => 434, 'w' => 180, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
-                $t(['x' => 110, 'y' => 472, 'w' => 180, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
-                ['type' => 'qr', 'x' => 306, 'y' => 430, 'size' => 66, 'value' => '{verify_url}'],
+                $t(['x' => 98, 'y' => 434, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
+                $t(['x' => 98, 'y' => 472, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
+                ['type' => 'qr', 'x' => 295, 'y' => 438, 'size' => 78, 'value' => '{verify_url}'],
             ],
         ];
     }

@@ -778,9 +778,9 @@
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        styled({ label: 'Lieu', x: 110, y: 434, w: 180, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 110, y: 472, w: 180, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 306, y: 430, w: 66, qrUrl: DEFAULT_QR_URL });
+        styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
       },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
