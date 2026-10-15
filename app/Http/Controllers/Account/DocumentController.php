@@ -202,7 +202,9 @@ class DocumentController extends Controller
         $dates = $event->date_start
             ? $event->date_start->translatedFormat('d/m/Y').($event->date_end ? ' - '.$event->date_end->translatedFormat('d/m/Y') : '')
             : '';
-        $name = $recipient['name'] ?: $account->full_name;
+        // Le profil du compte est la source actuelle du nom sur tous ses badges ;
+        // les fiches de séance et d'inscription conservent parfois l'ancien nom.
+        $name = BadgeCatalog::accountName($account);
         $institution = $recipient['institution'];
 
         $vars = [

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /** Types de badges et destinataires réels d'un événement. */
@@ -81,7 +82,7 @@ class BadgeCatalog
         $badges = collect([[
             'type' => $participationType,
             'recipient' => [
-                'name' => $participant->full_name,
+                'name' => self::accountName($account),
                 'email' => (string) $participant->email,
                 'institution' => (string) $participant->institution,
                 'ref' => $event->id.'-'.$participant->id,
@@ -105,6 +106,7 @@ class BadgeCatalog
                     && trim($person['email']) !== ''
             );
             if ($recipient !== null) {
+                $recipient['name'] = self::accountName($account);
                 $badges->push(['type' => $type, 'recipient' => $recipient]);
             }
         }
@@ -133,24 +135,24 @@ class BadgeCatalog
                 ->with('user')
                 ->orderBy('last_name')->orderBy('first_name')->get()
                 ->map(fn (Participant $person) => [
-                    'name' => $person->full_name,
+                    'name' => $person->user ? self::accountName($person->user) : $person->full_name,
                     'email' => (string) $person->email,
                     'institution' => (string) $person->institution,
                     'ref' => $event->id.'-'.$person->id,
                     // Photo de profil (pour le badge avec photo) ; vide = initiales.
                     'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
-                ]);
+                ])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
         }
 
         if (in_array($type, ['moderation', 'rapporteur'], true)) {
             $prefix = $type === 'moderation' ? 'moderator' : 'rapporteur';
 
-            return self::unique($event->sessions()->get()->map(fn ($session) => [
+            return self::unique(self::withCurrentAccountNames($event->sessions()->get()->map(fn ($session) => [
                 'name' => trim((string) $session->{$prefix.'_name'}),
                 'email' => trim((string) $session->{$prefix.'_email'}),
                 'institution' => '',
                 'ref' => $event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) ($session->{$prefix.'_email'} ?: $session->{$prefix.'_name'})))),
-            ]));
+            ])));
         }
 
         $teamRoles = match ($type) {
@@ -185,7 +187,37 @@ class BadgeCatalog
                 ]));
         }
 
-        return self::unique($people);
+        return self::unique(self::withCurrentAccountNames($people));
+    }
+
+    /** Une affectation garde son nom historique ; le badge lit l'identité actuelle du compte lié. */
+    private static function withCurrentAccountNames(Collection $people): Collection
+    {
+        $emails = $people->pluck('email')
+            ->map(fn ($email) => mb_strtolower(trim((string) $email)))
+            ->filter()->unique()->values();
+
+        if ($emails->isEmpty()) {
+            return $people;
+        }
+
+        $accounts = User::query()->whereIn(DB::raw('LOWER(email)'), $emails->all())
+            ->get()->keyBy(fn (User $user) => mb_strtolower(trim((string) $user->email)));
+
+        return $people->map(function (array $person) use ($accounts) {
+            $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
+            if ($account) {
+                $person['name'] = self::accountName($account);
+            }
+
+            return $person;
+        });
+    }
+
+    public static function accountName(User $account): string
+    {
+        return trim(trim((string) $account->first_name).' '.trim((string) $account->last_name))
+            ?: (trim((string) $account->name) ?: (string) $account->email);
     }
 
     /** @param Collection<int, array{name: string, email: string, institution: string, ref: string}> $people */
