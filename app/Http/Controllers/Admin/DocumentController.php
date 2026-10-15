@@ -328,9 +328,11 @@ class DocumentController extends Controller
             'dates' => $event->dateRangeLabel() ?? '',
             'location' => (string) ($event->location ?? ''),
             'name' => $person['name'],
-            'role' => BadgeCatalog::label($type),
+            'role' => BadgeCatalog::role($type),
             'institution' => $person['institution'],
             'ref' => $person['ref'],
+            // Photo de profil pour le modèle « Participant avec photo » (élément photo).
+            'recipient.photo' => $person['photo'] ?? '',
         ]));
 
         return view('documents.badges-template', [

@@ -147,7 +147,7 @@ class DocumentController extends Controller
     private function renderBadge(Event $event, User $account, Participant $participant, string $type, array $recipient): array
     {
         $badgeRef = $recipient['ref'];
-        $badgeRole = BadgeCatalog::label($type);
+        $badgeRole = BadgeCatalog::role($type);
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);

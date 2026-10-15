@@ -783,6 +783,27 @@
         styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
       },
+      /* Badge participant AVEC PHOTO (type `participant_photo`).
+         ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge(true) (PHP) : même
+         maquette que `co`, mais l'événement remonte (y108), une photo ronde s'intercale
+         (y156), et nom/rôle/thème descendent pour lui faire la place. */
+      'co-photo': function () {
+        var chip = document.querySelector('[data-size="a6-portrait"]');
+        if (chip) chip.classList.add('active');
+        page.classList.add('bg-co', 'bg-co-icons');
+        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
+        styled({ label: 'Événement', x: 24, y: 108, w: 349, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
+        createEl({ type: 'photo', label: 'Photo', x: 149, y: 156, w: 100 });
+        styled({ label: 'Nom', x: 20, y: 272, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 20, y: 316, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 40, y: 350, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
+        imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
+        styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
+      },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
@@ -1625,8 +1646,8 @@
     }
   });
 
-  /* Init */
-  loadTemplate('co');
+  /* Init : le type `participant_photo` charge la maquette avec photo (`co-photo`). */
+  loadTemplate((window.UKC_EDITOR || {}).type === 'participant_photo' ? 'co-photo' : 'co');
 
   /* ---------- Hydratation depuis le badge enregistré ---------- */
   (function () {

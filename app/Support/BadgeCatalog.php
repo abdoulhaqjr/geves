@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 /** Types de badges et destinataires réels d'un événement. */
 class BadgeCatalog
@@ -13,6 +14,7 @@ class BadgeCatalog
     /** @var array<string, array{label: string, title: string, source: string}> */
     public const TYPES = [
         'default' => ['label' => 'Participant', 'title' => 'Badge participant', 'source' => 'Inscriptions réglées'],
+        'participant_photo' => ['label' => 'Participant avec photo', 'title' => 'Badge participant (avec photo)', 'source' => 'Inscriptions réglées'],
         'moderation' => ['label' => 'Modérateur', 'title' => 'Badge modérateur', 'source' => 'Modérateurs de séance'],
         'rapporteur' => ['label' => 'Rapporteur', 'title' => 'Badge rapporteur', 'source' => 'Rapporteurs de séance'],
         'appui_organisation' => ['label' => 'Appui au comité d’organisation', 'title' => 'Badge d’appui à l’organisation', 'source' => 'Équipe d’appui'],
@@ -30,6 +32,16 @@ class BadgeCatalog
     public static function label(string $type): string
     {
         return self::TYPES[$type]['label'] ?? self::TYPES['default']['label'];
+    }
+
+    /**
+     * Rôle IMPRIMÉ sur le badge (≠ libellé de menu) : le modèle « Participant avec
+     * photo » reste un badge de PARTICIPANT, on imprime donc « Participant », pas le
+     * nom du modèle. Les autres types impriment leur libellé.
+     */
+    public static function role(string $type): string
+    {
+        return $type === 'participant_photo' ? self::TYPES['default']['label'] : self::label($type);
     }
 
     /**
@@ -57,7 +69,10 @@ class BadgeCatalog
             ->filter()->unique();
 
         foreach (array_keys(self::TYPES) as $type) {
-            if ($type === 'default') {
+            // 'participant_photo' est un MODÈLE d'impression côté admin (mêmes
+            // destinataires que la participation) : on ne double pas le badge
+            // participant dans l'espace de la personne.
+            if ($type === 'default' || $type === 'participant_photo') {
                 continue;
             }
 
@@ -78,7 +93,7 @@ class BadgeCatalog
      * les badges de fonction. Les comités mêlent la liste publique et l'équipe
      * affectée au back-office ; les séances portent leurs propres désignations.
      *
-     * @return Collection<int, array{name: string, email: string, institution: string, ref: string}>
+     * @return Collection<int, array{name: string, email: string, institution: string, ref: string, photo?: string}>
      */
     public static function recipients(Event $event, string $type): Collection
     {
@@ -86,15 +101,20 @@ class BadgeCatalog
             return collect();
         }
 
-        if ($type === 'default') {
+        // Le modèle « Participant avec photo » vise les MÊMES destinataires que le
+        // badge participant (inscriptions réglées) ; seule la maquette diffère.
+        if ($type === 'default' || $type === 'participant_photo') {
             return Participant::where('event_id', $event->id)
                 ->whereHas('participationPayments', fn ($query) => $query->where('status', 'paid'))
+                ->with('user')
                 ->orderBy('last_name')->orderBy('first_name')->get()
                 ->map(fn (Participant $person) => [
                     'name' => $person->full_name,
                     'email' => (string) $person->email,
                     'institution' => (string) $person->institution,
                     'ref' => $event->id.'-'.$person->id,
+                    // Photo de profil (pour le badge avec photo) ; vide = initiales.
+                    'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
                 ]);
         }
 

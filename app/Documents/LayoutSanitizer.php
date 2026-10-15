@@ -157,7 +157,7 @@ class LayoutSanitizer
     public static function default(string $kind, string $type = 'default'): array
     {
         if ($kind === 'badge') {
-            return self::defaultBadge();
+            return self::defaultBadge($type === 'participant_photo');
         }
 
         return match ($type) {
@@ -183,7 +183,7 @@ class LayoutSanitizer
      * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
      * décrit la MÊME maquette.
      */
-    protected static function defaultBadge(): array
+    protected static function defaultBadge(bool $withPhoto = false): array
     {
         $dark = '#2e3440';
 
@@ -195,10 +195,25 @@ class LayoutSanitizer
         // Logo UK large (suit le réglage des Réglages) ; chemin relatif pour le PDF.
         $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
 
+        // ⚠️ Variante AVEC PHOTO (type `participant_photo`, modèle « Participant avec
+        // photo ») : même maquette, mais le nom de l'événement REMONTE, une photo ronde
+        // s'intercale entre l'événement et le nom, et nom/rôle/thème DESCENDENT pour lui
+        // faire la place. La photo (élément `photo`) se remplit avec `recipient.photo`
+        // (profil), sinon les initiales. Le concepteur (`co-photo`) décrit la MÊME maquette.
+        $eventY = $withPhoto ? 108 : 150;
+        $nameY = $withPhoto ? 272 : 232;
+        $roleY = $withPhoto ? 316 : 276;
+        $themeY = $withPhoto ? 350 : 322;
+        $themeH = $withPhoto ? 70 : 80;
+
+        $photo = $withPhoto
+            ? [['type' => 'photo', 'x' => 149, 'y' => 156, 'w' => 100, 'h' => 100]]
+            : [];
+
         return [
             'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
-            'elements' => [
+            'elements' => array_merge([
                 // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
                 // ils se déplacent et se redimensionnent avec le reste quand on change de
                 // ⚠️ Les deux filets verts (gauche cadre→UK, droite Parakou→cadre) sont
@@ -215,12 +230,13 @@ class LayoutSanitizer
                 ['type' => 'image', 'x' => 34, 'y' => 53, 'w' => 146, 'h' => 40, 'src' => (string) $ukLogo],
                 ['type' => 'image', 'x' => 204, 'y' => 53, 'w' => 158, 'h' => 40, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
-                $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '[edition.name]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 24, 'y' => $eventY, 'w' => 349, 'h' => 54, 'text' => '[edition.name]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+            ], $photo, [
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
-                $t(['x' => 20, 'y' => 232, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
-                $t(['x' => 20, 'y' => 276, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 20, 'y' => $nameY, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => 20, 'y' => $roleY, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
-                $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
                 ['type' => 'image', 'x' => 68, 'y' => 432, 'w' => 28, 'h' => 30, 'src' => '/img/badges/icon-location.png'],
                 ['type' => 'image', 'x' => 69, 'y' => 470, 'w' => 25, 'h' => 25, 'src' => '/img/badges/icon-calendar.png'],
@@ -228,7 +244,7 @@ class LayoutSanitizer
                 $t(['x' => 98, 'y' => 434, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
                 $t(['x' => 98, 'y' => 472, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
                 ['type' => 'qr', 'x' => 295, 'y' => 438, 'size' => 78, 'value' => '{verify_url}'],
-            ],
+            ]),
         ];
     }
 

@@ -38,7 +38,7 @@
                     <tr>
                         <td class="title">{{ $person['name'] }}</td>
                         <td class="meta">{{ $person['email'] ?: '-' }}</td>
-                        <td>{{ \App\Support\BadgeCatalog::label($badgeType) }}</td>
+                        <td>{{ \App\Support\BadgeCatalog::role($badgeType) }}</td>
                         <td class="meta">{{ $person['institution'] ?: '-' }}</td>
                         <td class="meta">{{ \App\Support\BadgeCatalog::TYPES[$badgeType]['source'] }}</td>
                     </tr>

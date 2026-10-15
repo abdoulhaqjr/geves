@@ -19,18 +19,19 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     expect($layout['height'])->toBe(560);
     expect($layout['bg_image'])->toBe('/img/badges/badge-default-bg.png');
 
+    // Jetons de la palette du concepteur ([espace.cle]), pas la forme plate.
     $texts = collect($layout['elements'])->where('type', 'text')->pluck('text')->implode(' | ');
     expect($texts)
-        ->toContain('{event}')
-        ->toContain('{name}')
-        ->toContain('{role}')
-        ->toContain('{theme}')
-        ->toContain('{location}')
-        ->toContain('{dates}');
+        ->toContain('[edition.name]')
+        ->toContain('[recipient.name]')
+        ->toContain('[recipient.role]')
+        ->toContain('[edition.theme]')
+        ->toContain('[edition.location]')
+        ->toContain('[edition.dates]');
 
-    // Deux logos OFFICIELS (les mêmes que les attestations : UK large + Parakou large) et un QR.
+    // Les deux logos OFFICIELS (UK large + Parakou large) sont présents, parmi les
+    // images (les pictogrammes lieu/dates en sont aussi) ; plus un QR.
     $images = collect($layout['elements'])->where('type', 'image')->pluck('src');
-    expect($images)->toHaveCount(2);
     expect($images->contains('/img/attestations/logo-parakou.png'))->toBeTrue();
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
@@ -39,6 +40,45 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     // sans fente), donc PAS d'élément `rect` dans la mise en page. Ne pas les repasser en
     // rect : un filet-élément laissait un jour contre le cadre dans le concepteur.
     expect(collect($layout['elements'])->where('type', 'rect'))->toHaveCount(0);
+});
+
+it('a un modèle « Participant avec photo » : même maquette + une photo entre l’événement et le nom', function () {
+    $base = LayoutSanitizer::default('badge');
+    $photo = LayoutSanitizer::default('badge', 'participant_photo');
+
+    // Même cadre, même taille que le badge participant.
+    expect($photo['width'])->toBe(397);
+    expect($photo['height'])->toBe(560);
+    expect($photo['bg_image'])->toBe($base['bg_image']);
+
+    // Un (et un seul) élément photo, rond, rempli par recipient.photo au rendu.
+    $photos = collect($photo['elements'])->where('type', 'photo');
+    expect($photos)->toHaveCount(1);
+    expect(collect($base['elements'])->where('type', 'photo'))->toHaveCount(0);
+
+    $yOf = fn (array $layout, string $token) => collect($layout['elements'])
+        ->firstWhere('text', $token)['y'] ?? null;
+
+    // L'événement REMONTE, le nom DESCEND, et la photo s'intercale entre les deux.
+    expect($yOf($photo, '[edition.name]'))->toBeLessThan($yOf($base, '[edition.name]'));
+    expect($yOf($photo, '[recipient.name]'))->toBeGreaterThan($yOf($base, '[recipient.name]'));
+    $photoY = $photos->first()['y'];
+    expect($photoY)->toBeGreaterThan($yOf($photo, '[edition.name]'));
+    expect($photoY)->toBeLessThan($yOf($photo, '[recipient.name]'));
+});
+
+it('rend le badge avec photo en utilisant recipient.photo', function () {
+    $layout = LayoutSanitizer::default('badge', 'participant_photo');
+    $html = LayoutRenderer::render($layout, [
+        'recipient.name' => 'Awa Kodjo',
+        'recipient.role' => 'Participant',
+        'recipient.photo' => '/img/badges/icon-location.png',
+    ]);
+
+    expect($html)
+        ->toContain('Awa Kodjo')
+        ->toContain('Participant')
+        ->toContain('/img/badges/icon-location.png'); // la photo est bien insérée
 });
 
 it('rend le badge par défaut avec les valeurs du participant', function () {
