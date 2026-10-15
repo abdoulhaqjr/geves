@@ -259,7 +259,8 @@
       el.innerHTML = '';
       var inner = document.createElement('div');
       inner.className = 'photo-inner';
-      inner.textContent = 'Photo';
+      // Icône d'avatar (silhouette) comme repère de la photo, au lieu du mot « Photo ».
+      inner.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6Z"/></svg>';
       el.appendChild(inner);
     } else if (cfg.type === 'shape') {
       el.classList.add('shape-box');

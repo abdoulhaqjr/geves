@@ -387,5 +387,7 @@ it('propose la variante de design « avec photo » (co-photo) pour un badge', fu
         ->get(route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => 'moderation']))
         ->assertOk()
         ->assertSee('data-tpl="co-photo"', false)
-        ->assertSee('Cadre vert/bleu avec photo');
+        ->assertSee('Cadre vert/bleu avec photo')
+        // L'aperçu d'un badge à photo utilise une photo d'exemple (galerie des assistantes).
+        ->assertSee('awa-3.webp');
 });

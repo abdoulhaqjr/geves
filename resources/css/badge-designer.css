@@ -414,6 +414,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .ed-el.photo img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; }
+    .ed-el.photo .photo-inner svg { width: 60%; height: 60%; color: #94a3b8; }
     .ed-el .resize {
       display: none; position: absolute;
       width: 12px; height: 12px; background: var(--ukc-blue);

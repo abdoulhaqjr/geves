@@ -3567,6 +3567,12 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     (modérateur, comités…), pas seulement au participant. Le modèle JS `co-photo`
     décrit la MÊME maquette que `LayoutSanitizer::defaultBadge(true)`. Garde :
     `DocumentDesignerTest` (« propose la variante de design avec photo »).
+  - ⚠️ **Repère de l'élément photo dans le concepteur = une ICÔNE d'avatar**
+    (silhouette SVG dans `.photo-inner`), pas le mot « Photo ». À l'**aperçu**, la
+    photo d'exemple est un avatar de la galerie des assistantes
+    (`sampleVars` → `recipient.photo` = `img/agents/awa-3.webp`, seulement pour un
+    badge). Le badge délivré, lui, prend la vraie photo de profil (`recipient.photo`),
+    repli sur les initiales quand il n'y en a pas.
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique

@@ -317,6 +317,8 @@ class TemplateDesignerController extends Controller
             'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
             'initials' => 'AK',
+            // Photo d'exemple pour l'aperçu d'un badge à photo (galerie des assistantes).
+            'recipient.photo' => $kind === 'badge' ? asset('img/agents/awa-3.webp') : '',
             'civility' => 'Mme',
             'role' => $kind === 'badge' ? BadgeCatalog::label($type) : 'Communicant',
             'institution' => 'Université de Kara',
