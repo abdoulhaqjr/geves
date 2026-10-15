@@ -1607,10 +1607,6 @@
       box.setAttribute('aria-describedby', 'edLeaveDescription');
       var content = document.createElement('div');
       content.className = 'ed-leave-content';
-      var icon = document.createElement('span');
-      icon.className = 'ed-leave-icon';
-      icon.textContent = '!';
-      icon.setAttribute('aria-hidden', 'true');
       var h = document.createElement('h3');
       h.id = 'edLeaveTitle';
       h.textContent = 'Modifications non enregistrées';
@@ -1654,7 +1650,7 @@
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       document.addEventListener('keydown', onKeydown);
       row.appendChild(bCancel); row.appendChild(bLeave); row.appendChild(bSave);
-      content.appendChild(icon); content.appendChild(h); content.appendChild(p);
+      content.appendChild(h); content.appendChild(p);
       box.appendChild(content); box.appendChild(row);
       ov.appendChild(box);
       document.body.appendChild(ov);

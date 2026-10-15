@@ -66,6 +66,85 @@ body .ed-stylebar select:focus {
 
 /* Modales de l'éditeur : coins Tailwise. */
 body .ed-modal-bg .box { border-radius: 0.8rem; }
+
+/* Même grammaire que la confirmation du projet, avec trois actions d'éditeur. */
+.ed-leave-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, .55);
+}
+.ed-leave-dialog {
+    width: 100%;
+    max-width: 560px;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .3);
+    font-family: var(--ukc-font);
+}
+.ed-leave-content h3 {
+    margin: 0;
+    padding: 16px 20px 4px;
+    color: var(--ukc-text);
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.4;
+}
+.ed-leave-content p {
+    margin: 0;
+    padding: 4px 20px 18px;
+    color: var(--ukc-muted);
+    font-size: 14px;
+    line-height: 1.55;
+}
+.ed-leave-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--ukc-border);
+    background: #fafbfc;
+}
+.ed-leave-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .65rem 1rem;
+    border: 1.5px solid transparent;
+    border-radius: 50px;
+    font: 700 .82rem var(--ukc-font);
+    text-align: center;
+    cursor: pointer;
+    transition: background .2s, border-color .2s, color .2s;
+}
+.ed-leave-button:focus-visible {
+    outline: 3px solid rgba(34, 62, 164, .35);
+    outline-offset: 2px;
+}
+.ed-leave-button--ghost {
+    margin-right: auto;
+    border-color: var(--ukc-border);
+    background: transparent;
+    color: var(--ukc-muted);
+}
+.ed-leave-button--ghost:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.ed-leave-button--danger { background: #fee2e2; color: #991b1b; }
+.ed-leave-button--danger:hover { background: #fecaca; }
+.ed-leave-button--primary { background: var(--ukc-blue); color: #fff; }
+.ed-leave-button--primary:hover { background: var(--ukc-blue-dark); }
+@media (max-width: 580px) {
+    .ed-leave-actions { flex-direction: column; }
+    .ed-leave-button { width: 100%; }
+    .ed-leave-button--ghost { margin-right: 0; }
+}
+
 body .ed-tpl-card.active {
     border-color: var(--ukc-blue);
     box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);

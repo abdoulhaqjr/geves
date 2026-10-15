@@ -2385,7 +2385,9 @@ deux raisons distinctes.
    ⚠️ L'enregistrement réussi **et** la fin de l'hydratation initiale remettent
    `dirty = false` (la construction du canevas marque sinon le document « modifié »).
    Quitter avec des modifications : le bouton **« ← Documents »** ouvre un **modal
-   maison** (Annuler / Quitter sans enregistrer / Enregistrer et quitter) ; un
+   maison** (Annuler / Quitter sans enregistrer / Enregistrer et quitter), dont le
+   style compact est partagé par les deux concepteurs dans `designer-tailwise.css`
+   et reprend la confirmation commune de `ukc.css` ; un
    **rechargement / fermeture d'onglet / retour navigateur** déclenche l'avertissement
    **natif** `beforeunload` (seul moyen pour ces cas - un navigateur n'autorise pas de
    modal maison là). ⚠️ En **mode aperçu verrouillé** (`cfg.preview`), la garde est

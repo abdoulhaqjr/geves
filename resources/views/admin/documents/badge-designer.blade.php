@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Éditeur de badges - {{ config('app.name') }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('img/favicon-16.png') }}">
+  <link rel="apple-touch-icon" href="{{ \App\Support\Branding::mark() }}">
   @php($ukcEditorCfg = ['editionId' => (string) $event_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Badge', 'backUrl' => route('admin.documents.attestations', ['event_id' => $event_id, 'tab' => 'badges']), 'saveUrl' => route('admin.documents.templates.save'), 'generateUrl' => route('admin.documents.templates.generate'), 'uploadUrl' => route('admin.documents.templates.upload'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null, 'vars' => $vars ?? [], 'preview' => $preview ?? false, 'logos' => ['uk' => (parse_url(\App\Support\Branding::wide(), PHP_URL_PATH) ?: \App\Support\Branding::wide()), 'parakou' => '/img/attestations/logo-parakou.png']])
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
