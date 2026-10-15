@@ -774,12 +774,12 @@
         // barEl ici (un filet-élément laissait un jour contre le cadre dans le concepteur).
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
-        styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '{role}', size: 15, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '{theme}', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        styled({ label: 'Lieu', x: 110, y: 434, w: 180, text: '{location}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 110, y: 472, w: 180, text: '{dates}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
+        styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        styled({ label: 'Lieu', x: 110, y: 434, w: 180, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 110, y: 472, w: 180, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 306, y: 430, w: 66, qrUrl: DEFAULT_QR_URL });
       },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
@@ -977,7 +977,11 @@
 
   document.querySelectorAll('.ed-attr').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      selectEl(createEl({ type: 'text', label: btn.dataset.attr, cls: 'attr', text: btn.dataset.attr, x: 60, y: 200, w: 200 }));
+      var token = btn.dataset.attr;
+      var config = token === '[recipient.photo]'
+        ? { type: 'photo', label: 'Photo', x: 60, y: 200, w: 80, h: 80 }
+        : { type: 'text', label: token, cls: 'attr', text: token, x: 60, y: 200, w: 200 };
+      selectEl(createEl(config));
       pushHistory();
     });
   });
@@ -1080,6 +1084,9 @@
       var cls = el.className || '';
       var img = el.querySelector('img');
       var text = (el.innerText || '').trim();
+      if (el.classList.contains('photo')) {
+        return { type: 'photo', x: x, y: y, w: w, h: h };
+      }
       if (el.dataset.qrUrl || /\bqr\b/i.test(cls) || (img && /qrserver|qrcode/i.test(img.src))) {
         return { type: 'qr', x: x, y: y, size: Math.max(w, h) || 96, value: el.dataset.qrUrl || '{ref}' };
       }
@@ -1238,8 +1245,25 @@
         function (whole, bracket, brace) {
           var key = bracket || brace;
           var v = vars[key];
-          return (typeof v === 'string' || typeof v === 'number') && String(v) !== '' ? String(v) : whole;
+          if (typeof v !== 'string' && typeof v !== 'number') return '';
+          var value = String(v);
+          return bracket && bracket === bracket.toUpperCase() ? value.toUpperCase() : value;
         });
+    });
+    root.querySelectorAll('.ed-el.photo').forEach(function (el) {
+      var photo = vars['recipient.photo'];
+      var inner = el.querySelector('.photo-inner');
+      if (!inner) return;
+      inner.textContent = '';
+      if (typeof photo === 'string' && photo) {
+        var image = document.createElement('img');
+        image.src = photo;
+        image.alt = '';
+        image.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        inner.appendChild(image);
+      } else {
+        inner.textContent = vars.initials || 'AK';
+      }
     });
   }
   document.getElementById('btnPreview').addEventListener('click', function () {
@@ -1496,6 +1520,8 @@
         image.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
         el.appendChild(image); appendResizeHandles(el);
         el.style.height = base.h + 'px';
+      } else if (item.type === 'photo') {
+        createEl(Object.assign(base, { type: 'photo', label: 'Photo' }));
       } else if (item.type === 'qr') {
         createEl(Object.assign(base, { type: 'qr', label: 'QR Badge', qrUrl: item.value || DEFAULT_QR_URL }));
       }

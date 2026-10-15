@@ -316,6 +316,7 @@ class TemplateDesignerController extends Controller
             'year' => (string) ($event?->year ?: date('Y')),
             'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
+            'initials' => 'AK',
             'civility' => 'Mme',
             'role' => $kind === 'badge' ? BadgeCatalog::label($type) : 'Communicant',
             'institution' => 'Université de Kara',

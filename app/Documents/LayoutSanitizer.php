@@ -15,7 +15,7 @@ class LayoutSanitizer
     public const KINDS = ['badge', 'attestation'];
 
     /** `signatures` = bloc des signatures des formateurs (attestations de formation). */
-    public const ELEMENT_TYPES = ['text', 'image', 'qr', 'rect', 'signatures'];
+    public const ELEMENT_TYPES = ['text', 'image', 'photo', 'qr', 'rect', 'signatures'];
 
     /**
      * Polices proposées par le concepteur, avec leur pile CSS. ⚠️ Liste blanche :
@@ -215,15 +215,15 @@ class LayoutSanitizer
                 ['type' => 'image', 'x' => 34, 'y' => 53, 'w' => 146, 'h' => 40, 'src' => (string) $ukLogo],
                 ['type' => 'image', 'x' => 204, 'y' => 53, 'w' => 158, 'h' => 40, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
-                $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '{event}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 24, 'y' => 150, 'w' => 349, 'h' => 54, 'text' => '[edition.name]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
-                $t(['x' => 20, 'y' => 232, 'w' => 357, 'h' => 40, 'text' => '{name}', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
-                $t(['x' => 20, 'y' => 276, 'w' => 357, 'h' => 24, 'text' => '{role}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 20, 'y' => 232, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 24, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => 20, 'y' => 276, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
-                $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '{theme}', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
                 // Lieu et dates (les pictogrammes sont dans l'image de fond).
-                $t(['x' => 110, 'y' => 434, 'w' => 180, 'h' => 22, 'text' => '{location}', 'size' => 12]),
-                $t(['x' => 110, 'y' => 472, 'w' => 180, 'h' => 22, 'text' => '{dates}', 'size' => 12]),
+                $t(['x' => 110, 'y' => 434, 'w' => 180, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
+                $t(['x' => 110, 'y' => 472, 'w' => 180, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
                 ['type' => 'qr', 'x' => 306, 'y' => 430, 'size' => 66, 'value' => '{verify_url}'],
             ],
         ];
