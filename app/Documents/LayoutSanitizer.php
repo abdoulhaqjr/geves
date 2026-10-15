@@ -177,8 +177,8 @@ class LayoutSanitizer
     /**
      * Badge par défaut, calqué sur le badge officiel du comité d'organisation
      * (UK x Université de Parakou) : A6 portrait (397×560), cadre décoratif
-     * vert/bleu en image de fond (coins diagonaux, filet d'en-tête, séparateur,
-     * pictogrammes lieu + dates cuits dans le fond), logos OFFICIELS UK + Parakou
+     * vert/bleu en image de fond (coins diagonaux, filet d'en-tête, séparateur),
+     * pictogrammes lieu + dates et logos OFFICIELS UK + Parakou
      * (les mêmes assets que les attestations) en éléments, puis nom, rôle, thème,
      * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
      * décrit la MÊME maquette.
@@ -221,7 +221,10 @@ class LayoutSanitizer
                 $t(['x' => 20, 'y' => 276, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => 322, 'w' => 317, 'h' => 80, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
-                // Lieu et dates (les pictogrammes sont dans l'image de fond).
+                // Les pictogrammes sont des éléments indépendants, comme les logos.
+                ['type' => 'image', 'x' => 68, 'y' => 432, 'w' => 28, 'h' => 30, 'src' => '/img/badges/icon-location.png'],
+                ['type' => 'image', 'x' => 69, 'y' => 470, 'w' => 25, 'h' => 25, 'src' => '/img/badges/icon-calendar.png'],
+                // Lieu et dates.
                 $t(['x' => 98, 'y' => 434, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
                 $t(['x' => 98, 'y' => 472, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
                 ['type' => 'qr', 'x' => 295, 'y' => 438, 'size' => 78, 'value' => '{verify_url}'],

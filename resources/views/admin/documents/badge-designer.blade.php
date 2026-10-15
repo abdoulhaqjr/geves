@@ -111,6 +111,11 @@
         <div class="ed-panel-head">Éléments</div>
         <div class="ed-panel-body">
           <button type="button" class="ed-tool-btn" data-add="photo">+ Photo participant</button>
+          <div class="ed-panel-section">Pictogrammes</div>
+          <div class="ed-grid-2">
+            <button type="button" class="ed-tool-btn" data-add="icon-location">+ Localisation</button>
+            <button type="button" class="ed-tool-btn" data-add="icon-calendar">+ Calendrier</button>
+          </div>
           <div class="ed-panel-section">Lignes</div>
           <div class="ed-grid-2">
             <button type="button" class="ed-shape" data-add="line-h" title="Ligne horizontale"><div class="ln-h"></div></button>

@@ -337,9 +337,13 @@
       background: linear-gradient(160deg, #223ea4 0%, #223ea4 40%, #009933 40%, #009933 100%);
     }
     .ed-page.bg-none .ed-page-bg { background: #fff; }
-    /* Cadre officiel du badge comité d'organisation (vert/bleu, coins diagonaux,
-       filet d'en-tête, séparateur, pictogrammes lieu+dates cuits dans l'image). */
+    /* Cadre officiel. Les anciennes icônes intégrées au PNG sont couvertes
+       uniquement sur les modèles qui disposent des deux calques indépendants. */
     .ed-page.bg-co .ed-page-bg { background: #fff url('/img/badges/badge-default-bg.png') center / 100% 100% no-repeat; }
+    .ed-page.bg-co-icons .ed-page-bg::after {
+      content: ''; position: absolute; left: 16.37%; top: 76.43%;
+      width: 9.07%; height: 13.04%; background: #fff;
+    }
     .ed-page.bg-soft .ed-page-bg {
       background: linear-gradient(180deg, #eef2ff 0%, #fff 40%);
     }

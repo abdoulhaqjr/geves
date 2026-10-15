@@ -729,7 +729,7 @@
     groups = {};
     selected = null;
     hideFloatBar();
-    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
+    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
     document.getElementById('pageBg').style.backgroundImage = '';
     document.getElementById('pageBg').style.background = '';
     page.style.width = ''; page.style.height = '';
@@ -763,12 +763,11 @@
 
     var T = {
       /* Badge participant par défaut (A6 portrait 397×560).
-         ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). Le cadre
-         vert/bleu + pictogrammes sont l'image de fond (classe bg-co). */
+         ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). */
       co: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
-        page.classList.add('bg-co');
+        page.classList.add('bg-co', 'bg-co-icons');
         // ⚠️ Les filets verts sont CUITS DANS LE CADRE de l'image de fond (bg-co), pas
         // posés en éléments : soudés au contour, sans fente à gauche. Ne pas ajouter de
         // barEl ici (un filet-élément laissait un jour contre le cadre dans le concepteur).
@@ -778,6 +777,8 @@
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
+        imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
         styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
@@ -951,6 +952,14 @@
       else if (kind === 'role') Object.assign(cfg, { type: 'text', label: 'Role', cls: 'role attr', text: '[recipient.role]', w: 180 });
       else if (kind === 'textbox') Object.assign(cfg, { type: 'text', label: 'Texte', cls: 'sub', text: 'Nouveau texte', w: 160 });
       else if (kind === 'photo') Object.assign(cfg, { type: 'photo', label: 'Photo', w: 64 });
+      else if (kind === 'icon-location' || kind === 'icon-calendar') {
+        var locationIcon = kind === 'icon-location';
+        Object.assign(cfg, {
+          type: 'logo', label: locationIcon ? 'Icône localisation' : 'Icône calendrier',
+          w: locationIcon ? 28 : 25,
+          html: '<img src="/img/badges/icon-' + (locationIcon ? 'location' : 'calendar') + '.png" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
+        });
+      }
       else if (kind === 'qr' || kind === 'qr-verify') Object.assign(cfg, { type: 'qr', label: 'QR Badge', w: 72, qrUrl: DEFAULT_QR_URL });
       else if (kind === 'qr-custom') {
         openInputModal({
@@ -970,7 +979,9 @@
       else if (kind === 'circle-o') Object.assign(cfg, { type: 'shape', shape: 'circle', outline: true, label: 'Cercle contour', w: 40, h: 40 });
       else if (kind === 'line-h') Object.assign(cfg, { type: 'shape', shape: 'line-h', label: 'Ligne', w: 120 });
       else if (kind === 'line-v') Object.assign(cfg, { type: 'shape', shape: 'line-v', label: 'Ligne verticale', h: 80 });
-      selectEl(createEl(cfg));
+      var added = createEl(cfg);
+      if (kind === 'icon-location' || kind === 'icon-calendar') added.style.height = (kind === 'icon-location' ? 30 : 25) + 'px';
+      selectEl(added);
       pushHistory();
     });
   });
@@ -1332,7 +1343,7 @@
     opt.addEventListener('click', function () {
       document.querySelectorAll('#bgModal .bg-opt').forEach(function (o) { o.classList.remove('active'); });
       opt.classList.add('active');
-      page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none');
+      page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
       document.getElementById('pageBg').style.background = '';
       document.getElementById('pageBg').style.backgroundImage = '';
       var k = opt.dataset.bg;
@@ -1365,6 +1376,7 @@
     var file = e.target.files && e.target.files[0];
     if (!file) return;
     uploadImage(file).then(function (url) {
+      page.classList.remove('bg-co', 'bg-co-icons');
       page.classList.add('bg-none');
       var bg = document.getElementById('pageBg');
       bg.style.backgroundImage = 'url("' + url + '")';
@@ -1483,10 +1495,15 @@
     var sy = dims[1] / (Number(layout.height) || dims[1]);
     page.querySelectorAll('.ed-el').forEach(function (el) { el.remove(); });
     groups = {}; selected = null; hideFloatBar();
-    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
+    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
     var bg = document.getElementById('pageBg');
     bg.style.background = layout.bg || '#ffffff';
     if (layout.bg_image) bg.style.backgroundImage = 'url("' + layout.bg_image + '")';
+    if (layout.bg_image === '/img/badges/badge-default-bg.png'
+      && (layout.elements || []).some(function (item) { return item.src === '/img/badges/icon-location.png'; })
+      && (layout.elements || []).some(function (item) { return item.src === '/img/badges/icon-calendar.png'; })) {
+      page.classList.add('bg-co-icons');
+    }
     (layout.elements || []).forEach(function (item, index) {
       var base = { x: Math.round((item.x || 0) * sx), y: Math.round((item.y || 0) * sy), w: Math.max(4, Math.round((item.w || item.size || 50) * sx)), h: Math.max(4, Math.round((item.h || item.size || 30) * sy)) };
       var el;

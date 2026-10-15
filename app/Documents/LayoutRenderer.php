@@ -46,6 +46,20 @@ class LayoutRenderer
             );
         }
 
+        // Le fond historique contient encore les deux anciens pictogrammes.
+        // Les couvrir uniquement si le modèle utilise les deux nouveaux calques.
+        if (($layout['bg_image'] ?? '') === '/img/badges/badge-default-bg.png') {
+            $iconSources = array_column((array) ($layout['elements'] ?? []), 'src');
+            if (in_array('/img/badges/icon-location.png', $iconSources, true)
+                && in_array('/img/badges/icon-calendar.png', $iconSources, true)) {
+                $html .= sprintf(
+                    '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:#fff;"></div>',
+                    (int) round($w * 65 / 397), (int) round($h * 428 / 560),
+                    (int) round($w * 36 / 397), (int) round($h * 73 / 560)
+                );
+            }
+        }
+
         foreach ((array) ($layout['elements'] ?? []) as $el) {
             $x = (int) ($el['x'] ?? 0);
             $y = (int) ($el['y'] ?? 0);
