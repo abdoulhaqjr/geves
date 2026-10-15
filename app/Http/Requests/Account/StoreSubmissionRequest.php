@@ -53,7 +53,7 @@ class StoreSubmissionRequest extends FormRequest
         return $this->event()->settings['tracks'] ?? [];
     }
 
-    /** Valeurs par défaut envoyées par le wizard : type « oral » et premier axe. */
+    /** Valeurs par défaut du wizard : oral, présentiel si permis, premier axe. */
     protected function prepareForValidation(): void
     {
         $c = $this->config();
@@ -63,8 +63,8 @@ class StoreSubmissionRequest extends FormRequest
             $merge['type'] = 'oral';
         }
         $modes = $c->participationModes();
-        if (count($modes) === 1 && ! $this->filled('presentation_mode')) {
-            $merge['presentation_mode'] = array_key_first($modes);
+        if (! $this->filled('presentation_mode')) {
+            $merge['presentation_mode'] = array_key_exists('onsite', $modes) ? 'onsite' : array_key_first($modes);
         }
         if (count($tracks) && ! $this->filled('track')) {
             $merge['track'] = $tracks[0];

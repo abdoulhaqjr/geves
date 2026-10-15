@@ -6,9 +6,10 @@
         $gradeChoices[] = $account->grade;
     }
     $presentationModes = $config->participationModes();
-    $initialMode = old('presentation_mode', count($presentationModes) === 1 ? array_key_first($presentationModes) : '');
+    $defaultMode = array_key_exists('onsite', $presentationModes) ? 'onsite' : array_key_first($presentationModes);
+    $initialMode = old('presentation_mode', $defaultMode);
     if (! array_key_exists($initialMode, $presentationModes)) {
-        $initialMode = count($presentationModes) === 1 ? array_key_first($presentationModes) : '';
+        $initialMode = $defaultMode;
     }
     $coreFieldCount = (count($tracks) > 0 ? 1 : 0) + ($config->enabled('type') ? 1 : 0) + 1;
     $wizardInit = [
@@ -208,15 +209,10 @@
                                 <div class="ukc-field">
                                     <label for="presentation_mode">{{ __($config->label('participation_mode')) }} <span class="req">*</span></label>
                                     <select id="presentation_mode" name="presentation_mode" x-model="presentationMode" required>
-                                        @if (count($presentationModes) > 1)
-                                            <option value="">{{ __('Choisir un mode') }}</option>
-                                        @endif
                                         @foreach ($presentationModes as $value => $label)
                                             <option value="{{ $value }}">{{ __($label) }}</option>
                                         @endforeach
                                     </select>
-                                    <span class="hint">{{ __('Ce choix concerne uniquement cette communication.') }} <a href="{{ route('account.payment', $event) }}#mode-participation">{{ __('Gérer ma participation au colloque') }}</a></span>
-                                    @if ($config->help('participation_mode'))<span class="hint">{{ $config->help('participation_mode') }}</span>@endif
                                     @error('presentation_mode') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                         </div>
