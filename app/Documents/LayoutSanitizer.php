@@ -90,6 +90,9 @@ class LayoutSanitizer
                 $e['border_color'] = self::color($el['border_color'] ?? null, $accent);
             } elseif ($t === 'image') {
                 $e['src'] = self::src($el['src'] ?? '');
+                if (in_array($e['src'], ['/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)) {
+                    $e['color'] = self::color($el['color'] ?? null, '#2e3440');
+                }
             } elseif ($t === 'signatures') {
                 $e['size'] = self::clampInt($el['size'] ?? 11, 6, 40, 11);
                 $e['names'] = (bool) ($el['names'] ?? true);
@@ -107,6 +110,9 @@ class LayoutSanitizer
         return [
             'width' => $w, 'height' => $h, 'bg' => $bg, 'accent' => $accent,
             'bg_image' => self::src($raw['bg_image'] ?? ''),
+            'erase_default_rule' => $kind === 'badge'
+                && self::src($raw['bg_image'] ?? '') === '/img/badges/badge-default-bg.png'
+                && (bool) ($raw['erase_default_rule'] ?? false),
             'elements' => $elements,
         ];
     }
@@ -177,8 +183,8 @@ class LayoutSanitizer
     /**
      * Badge par défaut, calqué sur le badge officiel du comité d'organisation
      * (UK x Université de Parakou) : A6 portrait (397×560), cadre décoratif
-     * vert/bleu en image de fond (coins diagonaux, filet d'en-tête, séparateur),
-     * pictogrammes lieu + dates et logos OFFICIELS UK + Parakou
+     * vert/bleu en image de fond (coins diagonaux et filets d'en-tête),
+     * séparateur, pictogrammes lieu + dates et logos OFFICIELS UK + Parakou
      * (les mêmes assets que les attestations) en éléments, puis nom, rôle, thème,
      * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
      * décrit la MÊME maquette.
@@ -212,9 +218,8 @@ class LayoutSanitizer
         return [
             'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
+            'erase_default_rule' => true,
             'elements' => array_merge([
-                // Filets verts = ÉLÉMENTS de mise en page (rect), PLUS cuits dans le fond :
-                // ils se déplacent et se redimensionnent avec le reste quand on change de
                 // ⚠️ Les deux filets verts (gauche cadre→UK, droite Parakou→cadre) sont
                 // désormais CUITS DANS LE CADRE de l'image de fond (badge-default-bg.png),
                 // dans la même matière que le contour : ils y sont donc TOUJOURS soudés, sans
@@ -236,9 +241,10 @@ class LayoutSanitizer
                 $t(['x' => 20, 'y' => $roleY, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                ['type' => 'rect', 'x' => 108, 'y' => 417, 'w' => 181, 'h' => 4, 'color' => $dark, 'radius' => 2],
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
-                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.png'],
-                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.png'],
+                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.png', 'color' => $dark],
+                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.png', 'color' => $dark],
                 // Lieu et dates.
                 $t(['x' => 98, 'y' => 438, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
                 $t(['x' => 98, 'y' => 476, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),

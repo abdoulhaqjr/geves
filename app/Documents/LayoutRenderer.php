@@ -47,6 +47,17 @@ class LayoutRenderer
             );
         }
 
+        // Le séparateur historique est imprimé dans le PNG du cadre. Les nouveaux
+        // modèles le remplacent par un calque déplaçable et colorable.
+        if (($layout['bg_image'] ?? '') === '/img/badges/badge-default-bg.png'
+            && ! empty($layout['erase_default_rule'])) {
+            $html .= sprintf(
+                '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:#fff;"></div>',
+                (int) round($w * 106 / 397), (int) round($h * 415 / 560),
+                (int) round($w * 185 / 397), (int) round($h * 9 / 560)
+            );
+        }
+
         // Le fond historique contient encore les deux anciens pictogrammes.
         // Les couvrir uniquement si le modèle utilise les deux nouveaux calques.
         if (($layout['bg_image'] ?? '') === '/img/badges/badge-default-bg.png') {
@@ -146,9 +157,14 @@ class LayoutRenderer
         $w = (int) ($el['w'] ?? 100);
         $h = (int) ($el['h'] ?? 30);
         $resolved = self::imageSrc($src, $pdf);
+        $sizeSource = $resolved;
+        if (in_array($src, ['/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)
+            && isset($el['color'])) {
+            $resolved = self::coloredBadgeIcon($src, (string) $el['color']) ?? $resolved;
+        }
 
         if ($pdf) {
-            $size = @getimagesize($resolved);
+            $size = @getimagesize($sizeSource);
             if ($size && $size[0] > 0 && $size[1] > 0) {
                 $scale = min($w / $size[0], $h / $size[1]);
                 $fitW = (int) round($size[0] * $scale);
@@ -170,6 +186,46 @@ class LayoutRenderer
             '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;object-fit:contain;">',
             e($resolved), $x, $y, $w, $h
         );
+    }
+
+    /** Recolore les PNG des pictogrammes en conservant leur transparence, y compris pour le PDF. */
+    protected static function coloredBadgeIcon(string $src, string $color): ?string
+    {
+        static $cache = [];
+        $key = $src.'|'.$color;
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+        if (! function_exists('imagecreatefrompng') || ! preg_match('/^#[0-9a-f]{6}$/i', $color)) {
+            return null;
+        }
+        $source = @imagecreatefrompng(public_path(ltrim($src, '/')));
+        if ($source === false) {
+            return null;
+        }
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $target = imagecreatetruecolor($width, $height);
+        imagealphablending($target, false);
+        imagesavealpha($target, true);
+        $red = hexdec(substr($color, 1, 2));
+        $green = hexdec(substr($color, 3, 2));
+        $blue = hexdec(substr($color, 5, 2));
+        $palette = [];
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                $alpha = (imagecolorat($source, $x, $y) >> 24) & 0x7F;
+                $palette[$alpha] ??= imagecolorallocatealpha($target, $red, $green, $blue, $alpha);
+                imagesetpixel($target, $x, $y, $palette[$alpha]);
+            }
+        }
+        ob_start();
+        imagepng($target);
+        $png = ob_get_clean();
+        imagedestroy($source);
+        imagedestroy($target);
+
+        return $cache[$key] = is_string($png) ? 'data:image/png;base64,'.base64_encode($png) : null;
     }
 
     /**

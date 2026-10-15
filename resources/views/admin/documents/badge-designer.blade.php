@@ -122,8 +122,8 @@
           <button type="button" class="ed-tool-btn" data-add="photo">+ Photo participant</button>
           <div class="ed-panel-section">Pictogrammes</div>
           <div class="ed-grid-2">
-            <button type="button" class="ed-tool-btn" data-add="icon-location">+ Localisation</button>
-            <button type="button" class="ed-tool-btn" data-add="icon-calendar">+ Calendrier</button>
+            <button type="button" class="ed-shape" data-add="icon-location" title="Ajouter la localisation" aria-label="Ajouter le pictogramme de localisation"><span class="ed-shape-icon ed-shape-icon--location" aria-hidden="true"></span></button>
+            <button type="button" class="ed-shape" data-add="icon-calendar" title="Ajouter le calendrier" aria-label="Ajouter le pictogramme de calendrier"><span class="ed-shape-icon ed-shape-icon--calendar" aria-hidden="true"></span></button>
           </div>
           <div class="ed-panel-section">Lignes</div>
           <div class="ed-grid-2">

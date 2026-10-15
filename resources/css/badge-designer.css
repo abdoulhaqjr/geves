@@ -118,6 +118,9 @@
     .ed-shape .ci-o { width: 22px; height: 22px; border: 2px solid #111; border-radius: 50%; }
     .ed-shape .ln-h { width: 28px; height: 2px; background: #111; }
     .ed-shape .ln-v { width: 2px; height: 28px; background: #111; }
+    .ed-shape-icon { width: 32px; height: 32px; display: block; background: #2e3440; mask: center / contain no-repeat; -webkit-mask: center / contain no-repeat; }
+    .ed-shape-icon--location { mask-image: url('/img/badges/icon-location.png'); -webkit-mask-image: url('/img/badges/icon-location.png'); }
+    .ed-shape-icon--calendar { mask-image: url('/img/badges/icon-calendar.png'); -webkit-mask-image: url('/img/badges/icon-calendar.png'); }
 
     .ly-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
     .ly-toolbar button {
@@ -342,6 +345,10 @@
     /* Cadre officiel. Les anciennes icônes intégrées au PNG sont couvertes
        uniquement sur les modèles qui disposent des deux calques indépendants. */
     .ed-page.bg-co .ed-page-bg { background: #fff url('/img/badges/badge-default-bg.png') center / 100% 100% no-repeat; }
+    .ed-page.bg-co-line .ed-page-bg::before {
+      content: ''; position: absolute; left: 26.7%; top: 74.1%;
+      width: 46.6%; height: 1.7%; background: #fff;
+    }
     .ed-page.bg-co-icons .ed-page-bg::after {
       content: ''; position: absolute; left: 16.37%; top: 76.43%;
       width: 9.07%; height: 13.04%; background: #fff;
@@ -399,6 +406,11 @@
       width: 28px; height: 28px; border-radius: 6px;
       background: linear-gradient(135deg, #fff, #e0e7ff);
       color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-size: 10px;
+    }
+    .ed-el.logo .ed-icon-paint {
+      width: 100%; height: 100%; display: block; flex: none;
+      background: currentColor; mask: center / contain no-repeat;
+      -webkit-mask: center / contain no-repeat; pointer-events: none;
     }
     .ed-el.photo {
       min-width: 28px; min-height: 28px;

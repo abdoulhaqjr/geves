@@ -1974,3 +1974,8 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - Les modèles A6 par défaut alignent désormais chaque pictogramme de lieu ou de calendrier avec son texte. La migration `2026_10_15_000300_align_default_badge_footer` ajuste seulement les modèles enregistrés dont les coordonnées correspondent exactement à l'ancien pied standard.
 - Les badges affichés dans « Mes documents » reprennent `Event::dateRangeLabel()`, comme l'aperçu du designer : pour l'édition du 11 au 13 novembre 2026, la date devient « 11 - 13 novembre 2026 ».
+
+### Séparateur et couleur des pictogrammes du badge (15 octobre 2026)
+
+- Le trait sombre du pied du badge officiel est maintenant un calque `rect` horizontal indépendant. Le trait encore présent dans le PNG de cadre est masqué lorsque le modèle active `erase_default_rule`. Le designer et le rendu HTML/PDF appliquent cette même règle. La migration `2026_10_15_000600_make_badge_footer_rule_editable` ajoute le calque et adapte l'instantané de l'éditeur uniquement aux modèles dont le pied est encore à ses coordonnées standard.
+- Les pictogrammes de localisation et de calendrier disposent d'un aperçu dans la palette et acceptent la couleur de la barre d'outils. Leur teinte est conservée dans le modèle (`image.color`) et le moteur de rendu recolore les PNG en conservant la transparence, y compris dans les PDF.

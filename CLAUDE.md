@@ -4314,3 +4314,11 @@ garder les mêmes coordonnées pour les icônes de lieu et de calendrier, et les
 textes voisins. Les modèles standard déjà enregistrés sont ajustés par la migration
 `2026_10_15_000300_align_default_badge_footer`. Le badge délivré utilise
 `Event::dateRangeLabel()` pour les dates, comme l'aperçu du concepteur.
+
+Le trait sombre du pied est désormais un calque `rect` horizontal : conserver
+`erase_default_rule` avec les modèles fondés sur `badge-default-bg.png` pour
+masquer le trait historique intégré au PNG. La migration
+`2026_10_15_000600_make_badge_footer_rule_editable` met à jour les modèles
+standards sauvegardés et leur `editor_state`. Les pictogrammes du pied sont des
+images à `color` optionnel ; le designer affiche une teinte par masque et
+`LayoutRenderer` produit un PNG recoloré pour le HTML et le PDF.

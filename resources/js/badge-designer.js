@@ -204,6 +204,7 @@
         var rz = document.createElement('div'); rz.className = 'resize'; el.appendChild(rz);
       }
       page.appendChild(el);
+      paintBadgeIcon(el);
       bindEl(el);
     });
     selected = null;
@@ -228,6 +229,30 @@
       rz.dataset.corner = corner;
       el.appendChild(rz);
     });
+  }
+
+  function badgeIconSrc(el) {
+    var img = el && el.querySelector('img[src]');
+    if (!img) return '';
+    var src = img.getAttribute('src') || '';
+    return /^\/img\/badges\/icon-(location|calendar)\.png$/.test(src) ? src : '';
+  }
+  function paintBadgeIcon(el, color) {
+    var src = badgeIconSrc(el);
+    if (!src) return false;
+    var img = el.querySelector('img[src]');
+    var paint = el.querySelector('.ed-icon-paint');
+    if (!paint) {
+      paint = document.createElement('span');
+      paint.className = 'ed-icon-paint';
+      paint.setAttribute('aria-hidden', 'true');
+      img.insertAdjacentElement('afterend', paint);
+    }
+    img.style.display = 'none';
+    paint.style.maskImage = 'url("' + src + '")';
+    paint.style.webkitMaskImage = 'url("' + src + '")';
+    el.style.color = color || el.style.color || '#2e3440';
+    return true;
   }
 
   function createEl(cfg) {
@@ -389,7 +414,11 @@
       wSel.value = String(opts.reduce(function (a, b) { return Math.abs(b - wn) < Math.abs(a - wn) ? b : a; }));
     }
     var colorInp = document.getElementById('fontColor');
-    if (colorInp) { var hex = rgbToHex(cs.color); if (hex) colorInp.value = hex; }
+    if (colorInp) {
+      var sample = el.classList.contains('shape-box') && el.dataset.outline !== '1' ? cs.backgroundColor
+        : el.classList.contains('shape-box') ? cs.borderTopColor : cs.color;
+      var hex = rgbToHex(sample); if (hex) colorInp.value = hex;
+    }
     var align = cs.textAlign; if (align === 'start') align = 'left'; if (align === 'end') align = 'right';
     document.querySelectorAll('[data-align]').forEach(function (b) { b.classList.toggle('active', b.dataset.align === align); });
     var weightOn = cs.fontWeight === '700' || cs.fontWeight === '800' || cs.fontWeight === 'bold';
@@ -730,7 +759,7 @@
     groups = {};
     selected = null;
     hideFloatBar();
-    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
+    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons', 'bg-co-line');
     document.getElementById('pageBg').style.backgroundImage = '';
     document.getElementById('pageBg').style.background = '';
     page.style.width = ''; page.style.height = '';
@@ -752,6 +781,7 @@
     function imgEl(o) {
       var e = createEl({ type: 'logo', label: o.label, x: o.x, y: o.y, w: o.w, html: '<img src="' + o.src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">' });
       e.style.height = o.h + 'px';
+      paintBadgeIcon(e);
       return e;
     }
     // Filet vert = élément de mise en page (rect), pas un décor cuit dans le fond.
@@ -760,6 +790,7 @@
       var e = createEl({ type: 'shape', shape: 'line-h', label: o.label, x: o.x, y: o.y, w: o.w });
       e.style.height = (o.h || 4) + 'px';
       e.style.background = o.color || '#00be62';
+      e.style.borderRadius = '2px';
       return e;
     }
 
@@ -769,16 +800,16 @@
       co: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
-        page.classList.add('bg-co', 'bg-co-icons');
-        // ⚠️ Les filets verts sont CUITS DANS LE CADRE de l'image de fond (bg-co), pas
-        // posés en éléments : soudés au contour, sans fente à gauche. Ne pas ajouter de
-        // barEl ici (un filet-élément laissait un jour contre le cadre dans le concepteur).
+        page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
+        // Les filets verts restent dans le cadre, tandis que le séparateur sombre
+        // du pied est un calque horizontal indépendant.
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
         imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
         imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
         styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
@@ -790,7 +821,7 @@
       'co-photo': function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
-        page.classList.add('bg-co', 'bg-co-icons');
+        page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 108, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
@@ -798,6 +829,7 @@
         styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
         imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
         imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
         styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
@@ -979,7 +1011,7 @@
         var locationIcon = kind === 'icon-location';
         Object.assign(cfg, {
           type: 'logo', label: locationIcon ? 'Icône localisation' : 'Icône calendrier',
-          w: locationIcon ? 28 : 25,
+          w: 24,
           html: '<img src="/img/badges/icon-' + (locationIcon ? 'location' : 'calendar') + '.png" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
         });
       }
@@ -1003,7 +1035,7 @@
       else if (kind === 'line-h') Object.assign(cfg, { type: 'shape', shape: 'line-h', label: 'Ligne', w: 120 });
       else if (kind === 'line-v') Object.assign(cfg, { type: 'shape', shape: 'line-v', label: 'Ligne verticale', h: 80 });
       var added = createEl(cfg);
-      if (kind === 'icon-location' || kind === 'icon-calendar') added.style.height = (kind === 'icon-location' ? 30 : 25) + 'px';
+      if (kind === 'icon-location' || kind === 'icon-calendar') { added.style.height = '24px'; paintBadgeIcon(added, '#2e3440'); }
       selectEl(added);
       pushHistory();
     });
@@ -1072,7 +1104,15 @@
     if (selected && !isLocked(selected)) { selected.style.fontWeight = this.value; pushHistory(); }
   });
   document.getElementById('fontColor').addEventListener('input', function () {
-    if (selected && !isLocked(selected)) { selected.style.color = this.value; markDirty(); }
+    if (!selected || isLocked(selected)) return;
+    if (selected.classList.contains('shape-box')) {
+      if (selected.dataset.outline === '1') selected.style.borderColor = this.value;
+      else selected.style.backgroundColor = this.value;
+    } else {
+      selected.style.color = this.value;
+      paintBadgeIcon(selected, this.value);
+    }
+    markDirty();
   });
   document.getElementById('fontColor').addEventListener('change', function () {
     if (selected && !isLocked(selected)) pushHistory();
@@ -1125,7 +1165,10 @@
         return { type: 'qr', x: x, y: y, size: Math.max(w, h) || 96, value: el.dataset.qrUrl || '{ref}' };
       }
       if (img && /^(https?:|\/)/i.test(img.getAttribute('src') || img.src)) {
-        return { type: 'image', x: x, y: y, w: w, h: h, src: img.getAttribute('src') || img.src };
+        var source = img.getAttribute('src') || img.src;
+        var image = { type: 'image', x: x, y: y, w: w, h: h, src: source };
+        if (badgeIconSrc(el)) image.color = rgbToHex(cs.color) || '#2e3440';
+        return image;
       }
       if (!text && (/\b(shape|rect|line|ln-|sq|band)\b/i.test(cls) || el.style.background || cs.backgroundColor !== 'rgba(0, 0, 0, 0)')) {
         var outline = el.dataset.outline === '1';
@@ -1160,6 +1203,7 @@
     // Cadre officiel (image de fond) : sans ça, enregistrer un badge depuis le
     // concepteur perdait le cadre vert/bleu (serializeLayout ne l'émettait pas).
     if (page.classList.contains('bg-co')) out.bg_image = '/img/badges/badge-default-bg.png';
+    if (page.classList.contains('bg-co-line')) out.erase_default_rule = true;
     var customBg = bgEl.style.backgroundImage.match(/url\((['"]?)(.*?)\1\)/);
     if (customBg) out.bg_image = customBg[2];
     return out;
@@ -1362,7 +1406,7 @@
     opt.addEventListener('click', function () {
       document.querySelectorAll('#bgModal .bg-opt').forEach(function (o) { o.classList.remove('active'); });
       opt.classList.add('active');
-      page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
+      page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons', 'bg-co-line');
       document.getElementById('pageBg').style.background = '';
       document.getElementById('pageBg').style.backgroundImage = '';
       var k = opt.dataset.bg;
@@ -1395,7 +1439,7 @@
     var file = e.target.files && e.target.files[0];
     if (!file) return;
     uploadImage(file).then(function (url) {
-      page.classList.remove('bg-co', 'bg-co-icons');
+      page.classList.remove('bg-co', 'bg-co-icons', 'bg-co-line');
       page.classList.add('bg-none');
       var bg = document.getElementById('pageBg');
       bg.style.backgroundImage = 'url("' + url + '")';
@@ -1514,7 +1558,8 @@
     var sy = dims[1] / (Number(layout.height) || dims[1]);
     page.querySelectorAll('.ed-el').forEach(function (el) { el.remove(); });
     groups = {}; selected = null; hideFloatBar();
-    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons');
+    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons', 'bg-co-line');
+    if (layout.erase_default_rule) page.classList.add('bg-co-line');
     var bg = document.getElementById('pageBg');
     bg.style.background = layout.bg || '#ffffff';
     if (layout.bg_image) bg.style.backgroundImage = 'url("' + layout.bg_image + '")';
@@ -1556,6 +1601,7 @@
         image.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
         el.appendChild(image); appendResizeHandles(el);
         el.style.height = base.h + 'px';
+        paintBadgeIcon(el, item.color || '#2e3440');
       } else if (item.type === 'photo') {
         createEl(Object.assign(base, { type: 'photo', label: 'Photo' }));
       } else if (item.type === 'qr') {
