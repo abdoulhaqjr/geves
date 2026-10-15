@@ -81,6 +81,13 @@
             <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
             Cadre vert/bleu UK x Parakou
           </div>
+          <div class="ed-tpl-card" data-tpl="co-photo" data-formats="a6-portrait a7-portrait">
+            <div class="mini" style="background:linear-gradient(150deg,#00be62 0%,#00be62 46%,#253c98 60%,#253c98 100%);color:#fff;position:relative;">
+              <span style="position:absolute;top:7px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid rgba(255,255,255,.75);"></span>
+              {{ mb_strtoupper($scope ?? 'Participant') }}
+            </div>
+            Cadre vert/bleu avec photo UK x Parakou
+          </div>
           <div class="ed-tpl-card" data-tpl="participant" data-formats="a6-portrait a6-landscape a7-portrait card-landscape cr80">
             <div class="mini">{{ mb_strtoupper($scope ?? 'Participant') }}</div>
             Bandeau bleu - photo - nom - QR

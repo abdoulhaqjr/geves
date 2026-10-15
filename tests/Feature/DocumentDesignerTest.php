@@ -376,3 +376,16 @@ it('dessine le QR dans le PDF, que dompdf ne saurait pas rendre en SVG', functio
         // Des modules, pas une image : dompdf sait tracer des rectangles.
         ->and(substr_count($pdf, 'background:#000'))->toBeGreaterThan(50);
 });
+
+it('propose la variante de design « avec photo » (co-photo) pour un badge', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+
+    // Le concepteur de badges offre le modèle AVEC photo comme variante de design,
+    // pour n'importe quel type de badge (ici la catégorie « Modérateur »).
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => 'moderation']))
+        ->assertOk()
+        ->assertSee('data-tpl="co-photo"', false)
+        ->assertSee('Cadre vert/bleu avec photo');
+});

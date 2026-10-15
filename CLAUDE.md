@@ -3561,6 +3561,12 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   que `default` (inscriptions réglées) - c'est la seule maquette qui change. Ne
   pas le doubler dans `forAccount()` (le `continue` sur `default`/`participant_photo`
   est volontaire). Garde : `BadgePhotoModelTest`.
+  - ⚠️ **La maquette à photo est AUSSI une variante de design du concepteur**
+    (`badge-designer.blade.php`, carte `data-tpl="co-photo"` « Cadre vert/bleu avec
+    photo ») : un gestionnaire peut l'appliquer à **n'importe quel type** de badge
+    (modérateur, comités…), pas seulement au participant. Le modèle JS `co-photo`
+    décrit la MÊME maquette que `LayoutSanitizer::defaultBadge(true)`. Garde :
+    `DocumentDesignerTest` (« propose la variante de design avec photo »).
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique
