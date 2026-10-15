@@ -49,8 +49,7 @@ class CurrentEvent
         $participatedIds = self::events($account)->pluck('id')->all();
 
         return Event::query()
-            ->where('status', 'open')
-            ->where('submission_open', true)
+            ->acceptingSubmissions()
             ->whereNotIn('id', $participatedIds)
             ->with('series')
             ->get()

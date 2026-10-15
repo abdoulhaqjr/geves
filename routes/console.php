@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Event;
 use App\Models\TutorialVideoRequest;
 use App\Services\TutorialVideoAgent;
 use App\Services\TutorialVideoWorkerLauncher;
@@ -22,6 +23,18 @@ Schedule::command('payments:reconcile')->everyTenMinutes()->withoutOverlapping()
 // direct » à l'approche de son horaire, et une séance passée (+ marge) passe
 // « terminée » (ce qui coupe l'accès à la salle) - sans intervention manuelle.
 Schedule::command('meetings:sync')->everyFiveMinutes()->withoutOverlapping();
+
+// La date limite ferme réellement l'option, même sans nouvelle modification admin.
+Artisan::command('events:close-submissions', function (): void {
+    $closed = Event::query()
+        ->where('submission_open', true)
+        ->whereNotNull('submission_deadline')
+        ->where('submission_deadline', '<=', now())
+        ->update(['submission_open' => false]);
+
+    $this->info("{$closed} appel(s) à communications fermé(s).");
+})->purpose('Fermer les soumissions dont la date limite est atteinte');
+Schedule::command('events:close-submissions')->everyMinute()->withoutOverlapping();
 
 // Sauvegardes automatiques (BDD + fichiers) via spatie/laravel-backup.
 Schedule::command('backup:clean')->daily()->at('01:00');

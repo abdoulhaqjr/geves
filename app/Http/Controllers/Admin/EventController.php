@@ -80,7 +80,7 @@ class EventController extends Controller
             'location' => $event->location,
             'status' => $event->status,
             'slug' => $event->slug,
-            'submission_open' => (bool) $event->submission_open,
+            'submission_open' => $event->submissionsAreOpen(),
             'submission_deadline' => $event->submission_deadline?->toDateTimeString(),
             'settings' => $event->settings ?? [],
         ];

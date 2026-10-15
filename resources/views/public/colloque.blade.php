@@ -32,7 +32,7 @@
     @php
         $languages = $e->settings['languages'] ?? null;
         $languages = is_array($languages) ? implode(' - ', $languages) : $languages;
-        $countdownToDeadline = $e->submission_open && $e->submission_deadline && $e->submission_deadline->isFuture();
+        $countdownToDeadline = $e->submissionsAreOpen() && $e->submission_deadline;
         $cdTarget = $countdownToDeadline ? $e->submission_deadline : $e->date_start;
         $cdLabel = $countdownToDeadline ? 'Clôture des soumissions dans' : 'Le colloque commence dans';
         $hasCountdown = $cdTarget && $cdTarget->isFuture();
@@ -83,7 +83,7 @@
                         @endif
                     </div>
                     <div class="ukc-hero-cta">
-                        @if ($e->submission_open)
+                        @if ($e->submissionsAreOpen())
                             <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
                                 <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
                             </a>
@@ -159,7 +159,7 @@
                     <a href="{{ route('home') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Accueil') }}</a>
                     <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Déroulement') }}</a>
                     <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Mon espace') }}</a>
-                    @if ($e->submission_open)
+                    @if ($e->submissionsAreOpen())
                         <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Soumettre') }}</a>
                     @endif
                     <x-ukc.lang-switcher />
@@ -260,7 +260,7 @@
                                 {!! __('Résumé de <strong>250 mots max.</strong> (FR ou EN), structure imposée. Support oral ou poster.') !!}
                                 @if ($e->submission_deadline) {{ __('Dernier délai :') }} <strong>{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>.@endif
                             </p>
-                            @if ($e->submission_open)
+                            @if ($e->submissionsAreOpen())
                                 <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
                                     <x-ukc.icon name="upload" :size="18" /> {{ __('Déposer mon résumé') }}
                                 </a>

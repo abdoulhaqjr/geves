@@ -130,7 +130,7 @@
                     @endif
                 </div>
             </div>
-        @elseif (! $event->submission_open)
+        @elseif (! $event->submissionsAreOpen())
             <div class="ukc-alert ukc-alert--err">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
                 <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cet événement.') !!}</div>

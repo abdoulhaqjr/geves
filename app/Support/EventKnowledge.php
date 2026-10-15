@@ -89,8 +89,7 @@ class EventKnowledge
         $lines = ['ÉCHÉANCES & DATES CLÉS'];
 
         // État réel des soumissions : « ouvertes » seulement si le délai n'est pas dépassé.
-        $open = $event->submission_open
-            && (! $event->submission_deadline || $event->submission_deadline->isFuture());
+        $open = $event->submissionsAreOpen();
         $lines[] = $open
             ? '- Soumissions : OUVERTES'.($event->submission_deadline
                 ? ' jusqu’au '.$event->submission_deadline->translatedFormat('d/m/Y à H\hi')

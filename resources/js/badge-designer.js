@@ -779,10 +779,10 @@
         styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
-        imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
-        styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
+        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
+        styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
       },
       /* Variante avec photo du même badge. Elle se choisit dans le designer
@@ -798,10 +798,10 @@
         styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
         styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
-        imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
-        styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
+        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
+        styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
       },
       /* A6 portrait 397×560 - disposition centree, photo 64px */

@@ -63,7 +63,7 @@
                 <p>Vos frais apparaîtront ici lorsque votre participation sera enregistrée. Si vous avez déposé un résumé, consultez son suivi dans vos communications. Pour assister sans présenter de communication, contactez l’organisation.</p>
                 <div class="payment-state__actions">
                     <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">Voir mes communications</a>
-                    @if ($event->submission_open && $event->slug)
+                    @if ($event->submissionsAreOpen() && $event->slug)
                         <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--outline">Déposer un résumé</a>
                     @endif
                 </div>

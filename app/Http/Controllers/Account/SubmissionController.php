@@ -58,7 +58,7 @@ class SubmissionController extends Controller
             ->get();
 
         // Événement ouverte aux soumissions (pour « Nouvelle soumission ») + échéance.
-        $openEdition = Event::where('status', 'open')->where('submission_open', true)
+        $openEdition = Event::acceptingSubmissions()
             ->latest('id')->first();
 
         // On soumet dans le colloque sélectionné (repli sur l'appel ouvert pour un

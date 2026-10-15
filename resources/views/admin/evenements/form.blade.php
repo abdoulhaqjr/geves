@@ -228,7 +228,7 @@
                                     <label for="status">Statut</label>
                                     <select id="status" name="status" x-model="f.status">
                                         <option value="draft">Brouillon</option>
-                                        <option value="open">Soumissions ouvertes</option>
+                                        <option value="open">Événement ouvert</option>
                                         <option value="closed">Clôturée</option>
                                         <option value="archived">Archivée</option>
                                     </select>
@@ -367,7 +367,8 @@
                     <div class="ukc-panel" :class="{ active: tab==='submissions' }">
                         <div class="ukc-card">
                             <h2>Soumissions</h2>
-                            <label class="ukc-check"><input type="checkbox" name="submission_open" value="1" x-model="f.submission_open"> Ouvrir les soumissions de résumés</label>
+                            <label class="ukc-check"><input type="checkbox" name="submission_open" value="1" x-model="f.submission_open" :disabled="deadlineExpired()"> Ouvrir les soumissions de résumés</label>
+                            <p class="ukc-hint" x-show="deadlineExpired()" style="display:none;">La date limite est atteinte. Prolongez-la pour pouvoir rouvrir les soumissions.</p>
                             <div class="ukc-form-grid" style="margin-top:8px;">
                                 <div class="ukc-form-row">
                                     <label for="submission_deadline">Date limite de soumission</label>
@@ -1138,7 +1139,7 @@
                         <div><span class="k">Dates</span><br><strong x-text="datesLabel()"></strong></div>
                         <div><span class="k">Lieu</span><br><span x-text="(f.location || '-').split('\n')[0]"></span></div>
                         <div><span class="k">Format</span><br><span x-text="f.format || '-'"></span></div>
-                        <div><span class="k">Soumissions</span><br><span x-text="f.submission_open ? ('Ouvertes' + (f.submission_deadline ? ' - limite ' + f.submission_deadline.slice(0,10) : '')) : 'Fermées'"></span></div>
+                        <div><span class="k">Soumissions</span><br><span x-text="f.submission_open && !deadlineExpired() ? ('Ouvertes' + (f.submission_deadline ? ' - limite ' + f.submission_deadline.slice(0,10) : '')) : 'Fermées'"></span></div>
                         <div><span class="k">Langues</span><br><span x-text="(f.languages && f.languages.length) ? f.languages.join(', ') : '-'"></span></div>
                         <div style="margin-bottom:0;"><span class="k">Chiffres</span><br><span x-text="statsLabel()"></span></div>
                     </div>
@@ -1152,14 +1153,29 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('editionForm', (cfg) => ({
                 tab: cfg.tab,
+                nowMs: Date.now(),
+                deadlineTimer: null,
                 // L'onglet vit dans l'URL sans rechargement : un lien s'envoie,
                 // et le retour arrière revient à l'onglet précédent.
                 init() {
+                    const syncDeadline = () => {
+                        this.nowMs = Date.now();
+                        if (this.deadlineExpired()) this.f.submission_open = false;
+                    };
+                    syncDeadline();
+                    this.$watch('f.submission_deadline', syncDeadline);
+                    this.deadlineTimer = window.setInterval(syncDeadline, 1000);
                     window.addEventListener('popstate', (e) => {
                         this.tab = e.state?.ukcTab
                             || new URLSearchParams(window.location.search).get('tab')
                             || cfg.tab;
                     });
+                },
+                destroy() { window.clearInterval(this.deadlineTimer); },
+                deadlineExpired() {
+                    if (!this.f.submission_deadline) return false;
+                    const deadline = Date.parse(this.f.submission_deadline.replace(' ', 'T') + 'Z');
+                    return Number.isFinite(deadline) && deadline <= this.nowMs;
                 },
                 goTab(key) {
                     if (key === this.tab) return;
@@ -1180,8 +1196,11 @@
                 addCom(g) { this[g].push({ person_name: '', person_title: '', institution: '' }); },
                 removeCom(g, i) { this[g].splice(i, 1); },
                 ...window.__editionArrays(cfg.arrays),
-                statusLabel() { return { draft:'Brouillon', open:'Soumissions ouvertes', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '-'; },
-                statusLive() { return this.f.status === 'open'; },
+                statusLabel() {
+                    if (this.f.status === 'open') return this.f.submission_open && !this.deadlineExpired() ? 'Soumissions ouvertes' : 'Soumissions fermées';
+                    return { draft:'Brouillon', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '-';
+                },
+                statusLive() { return this.f.status === 'open' && this.f.submission_open && !this.deadlineExpired(); },
                 fmtDate(d) {
                     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
                     if (!m) return d || '';

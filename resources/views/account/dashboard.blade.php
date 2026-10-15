@@ -230,7 +230,7 @@
                             <x-ukc.icon name="card" :size="16" /> {{ __('Payer mes frais') }}
                         </a>
                     </div>
-                @elseif ($submitEvent && $submitEvent->submission_open)
+                @elseif ($submitEvent && $submitEvent->submissionsAreOpen())
                     <div class="tdb-next__lede">
                         @if ($deadline && $deadline->isFuture())
                             <span class="n">J-{{ (int) ceil(now()->diffInDays($deadline, false)) }}</span>

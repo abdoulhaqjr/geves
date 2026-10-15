@@ -4297,3 +4297,20 @@ aperçu concerné ; garder la soumission classique si JavaScript est indisponibl
 de l'ancienne identité interne, pour l'aperçu participant et la planche admin.
 Garder les deux rendus et le QR alignés sur cette référence ; la planche passe
 `{verify_url}` au modèle. La route `/verifier` n'a pas encore de contrôle des badges.
+
+## Échéance des soumissions
+
+Utiliser `Event::submissionsAreOpen()` (ou le scope `acceptingSubmissions()` pour une
+requête) au lieu de lire seul `submission_open` : l'appel ferme à l'instant de sa
+date limite. Le scheduler `events:close-submissions` persiste ensuite la fermeture
+chaque minute. `SaveEvent` interdit d'enregistrer « ouvert » avec un délai passé ;
+le formulaire admin décoche la case en direct et permet une réouverture après
+prolongation de la date.
+
+## Pied des badges par défaut
+
+Le concepteur JS (`co` et `co-photo`) et `LayoutSanitizer::defaultBadge()` doivent
+garder les mêmes coordonnées pour les icônes de lieu et de calendrier, et les deux
+textes voisins. Les modèles standard déjà enregistrés sont ajustés par la migration
+`2026_10_15_000300_align_default_badge_footer`. Le badge délivré utilise
+`Event::dateRangeLabel()` pour les dates, comme l'aperçu du concepteur.

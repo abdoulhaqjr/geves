@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EventPhase;
 use App\Enums\EventType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -172,6 +173,23 @@ class Event extends Model
         return in_array($this->status, ['open', 'closed', 'archived'], true);
     }
 
+    /** La date limite ferme l'appel immédiatement, même avant le passage du planificateur. */
+    public function submissionsAreOpen(): bool
+    {
+        return $this->status === 'open'
+            && $this->submission_open
+            && ($this->submission_deadline === null || $this->submission_deadline->isFuture());
+    }
+
+    /** Même règle pour les listes d'appels accessibles sans charger chaque événement. */
+    public function scopeAcceptingSubmissions(Builder $query): Builder
+    {
+        return $query->where('status', 'open')
+            ->where('submission_open', true)
+            ->where(fn (Builder $q) => $q->whereNull('submission_deadline')
+                ->orWhere('submission_deadline', '>', now()));
+    }
+
     /** Le module Formations est-il activé pour cet événement ? (réglage du formulaire d'événement). */
     public function formationEnabled(): bool
     {
@@ -270,8 +288,7 @@ class Event extends Model
         }
 
         // Pré-événement (futur ou sans dates) : phase selon l'appel à communications.
-        if ($this->submission_open
-            && (! $this->submission_deadline || $this->submission_deadline->gte($now))) {
+        if ($this->submissionsAreOpen()) {
             return EventPhase::CallOpen;
         }
         if ($this->submission_deadline && $this->submission_deadline->lt($now)) {

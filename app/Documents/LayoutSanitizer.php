@@ -237,11 +237,11 @@ class LayoutSanitizer
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
-                ['type' => 'image', 'x' => 68, 'y' => 432, 'w' => 28, 'h' => 30, 'src' => '/img/badges/icon-location.png'],
-                ['type' => 'image', 'x' => 69, 'y' => 470, 'w' => 25, 'h' => 25, 'src' => '/img/badges/icon-calendar.png'],
+                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.png'],
+                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.png'],
                 // Lieu et dates.
-                $t(['x' => 98, 'y' => 434, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
-                $t(['x' => 98, 'y' => 472, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
+                $t(['x' => 98, 'y' => 438, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
+                $t(['x' => 98, 'y' => 476, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
                 ['type' => 'qr', 'x' => 295, 'y' => 438, 'size' => 78, 'value' => '{verify_url}'],
             ]),
         ];

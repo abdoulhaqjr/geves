@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\SaveEventRequest;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Support\EventArtwork;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -133,6 +134,10 @@ class SaveEvent
             $request->boolean('banner_image_remove'),
         );
 
+        $submissionDeadline = ($data['submission_deadline'] ?? null) ?: null;
+        $submissionOpen = $request->boolean('submission_open')
+            && ($submissionDeadline === null || Carbon::parse($submissionDeadline)->isFuture());
+
         $payload = [
             'banner_url' => $bannerUrl,
             'event_series_id' => $colloqueId,
@@ -146,8 +151,8 @@ class SaveEvent
             'location' => ($data['location'] ?? null) ?: null,
             'status' => $data['status'],
             'slug' => $this->resolveSlug((string) ($data['slug'] ?? ''), $data['title'], $event),
-            'submission_open' => $request->boolean('submission_open'),
-            'submission_deadline' => ($data['submission_deadline'] ?? null) ?: null,
+            'submission_open' => $submissionOpen,
+            'submission_deadline' => $submissionDeadline,
             'settings' => array_merge($existingSettings, [
                 'intro' => ($data['intro'] ?? null) ?: null,
                 'short_name' => ($data['short_name'] ?? null) ?: null,

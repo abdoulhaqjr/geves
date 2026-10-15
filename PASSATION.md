@@ -1965,3 +1965,12 @@ Lorsque le modèle d'un type contient un calque photo et que le compte possède 
 Le choix se présente sous forme d'interrupteur dans la colonne de droite, au-dessus des détails du QR code. `resources/js/app.js` soumet le formulaire en AJAX, remplace uniquement l'aperçu du badge concerné avec le HTML et les dimensions renvoyés par `updateBadgePhoto()`, puis restaure l'ancien état si l'enregistrement échoue. Le formulaire conserve une soumission classique avec JavaScript désactivé.
 
 Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXXX-XXXX`, calculées de façon déterministe dans `BadgeCatalog` à partir de l'identité de l'ancien badge. Le même code est utilisé dans « Mes documents », sur les planches administratives et dans les jetons `[badge.ref]` / `{ref}`. Aucun identifiant interne, nom de rôle ou e-mail n'apparaît dans la référence. La planche fournit aussi `{verify_url}` au calque QR, avec la même clé. La route `/verifier` reste le point de destination existant ; son traitement des références de badge est distinct de la vérification des attestations et n'est pas ajouté ici.
+
+### 2026-10-15 — Fermeture automatique des soumissions à l'échéance
+
+`Event::submissionsAreOpen()` et `scopeAcceptingSubmissions()` sont la règle commune : statut ouvert, option activée et date limite strictement future (ou absente). Les liens publics et participants, la phase de l'événement et la validation du POST de dépôt l'utilisent ; un scheduler indisponible ne peut donc pas laisser passer un résumé après l'échéance. `events:close-submissions`, planifié chaque minute, met aussi `events.submission_open` à `false` en base pour les délais atteints. `SaveEvent` refuse de réenregistrer l'option ouverte avec un délai déjà passé. Le formulaire admin décoche et désactive la case à l'échéance, même si la page reste ouverte ; prolonger la date la rend de nouveau disponible, puis l'administrateur peut rouvrir explicitement l'appel.
+
+### Pied des badges et dates (15 octobre 2026)
+
+- Les modèles A6 par défaut alignent désormais chaque pictogramme de lieu ou de calendrier avec son texte. La migration `2026_10_15_000300_align_default_badge_footer` ajuste seulement les modèles enregistrés dont les coordonnées correspondent exactement à l'ancien pied standard.
+- Les badges affichés dans « Mes documents » reprennent `Event::dateRangeLabel()`, comme l'aperçu du designer : pour l'édition du 11 au 13 novembre 2026, la date devient « 11 - 13 novembre 2026 ».

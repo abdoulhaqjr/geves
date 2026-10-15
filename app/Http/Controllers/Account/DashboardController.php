@@ -37,8 +37,7 @@ class DashboardController extends Controller
 
         // Appel ouvert, pour un compte qui ne participe encore à rien : il n'a pas
         // de colloque à sélectionner, et c'est pourtant là qu'il doit déposer.
-        $openEvent = Event::where('status', 'open')
-            ->where('submission_open', true)
+        $openEvent = Event::acceptingSubmissions()
             ->latest('id')
             ->first();
 

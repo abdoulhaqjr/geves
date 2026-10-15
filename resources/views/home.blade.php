@@ -37,7 +37,7 @@
                     @if ($featured)
                         <h3>
                             {{ __('À la une') }}
-                            @if ($featured->submission_open)
+                            @if ($featured->submissionsAreOpen())
                                 <span class="ukc-pill ukc-pill--open">{{ __('Soumissions ouvertes') }}</span>
                             @elseif ($ongoing && $featured->is($ongoing))
                                 <span class="ukc-pill ukc-pill--live">{{ __('En cours') }}</span>
@@ -59,7 +59,9 @@
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
                             <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ $featured->publicPageLabel() }}</a>
                             @auth('account')
-                                <a href="{{ route('account.submissions.create', $featured->slug) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Soumettre un résumé') }}</a>
+                                @if ($featured->submissionsAreOpen())
+                                    <a href="{{ route('account.submissions.create', $featured->slug) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Soumettre un résumé') }}</a>
+                                @endif
                             @endauth
                         </div>
                     @else
@@ -156,7 +158,7 @@
                     @foreach ($upcoming as $e)
                         <article class="colloque-card">
                             <div class="banner" style="{{ $bannerStyle($e) }}">
-                                @if ($e->submission_open)
+                                @if ($e->submissionsAreOpen())
                                     <span class="ukc-pill ukc-pill--open">{{ __('Appel ouvert') }}</span>
                                 @else
                                     <span class="ukc-pill ukc-pill--info">{{ __('À venir') }}</span>
@@ -172,7 +174,9 @@
                                 <div class="foot">
                                     <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ $e->publicPageLabel() }}</a>
                                     @auth('account')
-                                        <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Soumettre') }}</a>
+                                        @if ($e->submissionsAreOpen())
+                                            <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Soumettre') }}</a>
+                                        @endif
                                     @endauth
                                 </div>
                             </div>
