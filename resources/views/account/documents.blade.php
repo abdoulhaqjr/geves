@@ -165,9 +165,6 @@
                                                 <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} - {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
                                                 <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
                                             </dl>
-                                            <p class="note">
-                                                {!! __('Le QR pointe vers la page de contrôle d’accès. La vérification s’appuie sur une <strong>référence signée</strong> et, en production, sur le modèle <strong>W3C DIDs / Verifiable Credentials</strong>. Ne le partagez pas publiquement.') !!}
-                                            </p>
                                         </div>
                                     @else
                                         <div class="locked-msg">
