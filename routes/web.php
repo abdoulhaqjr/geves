@@ -221,6 +221,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
     Route::get('/documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
+    Route::put('/documents/badges/{event}/{type}/photo', [App\Http\Controllers\Account\DocumentController::class, 'updateBadgePhoto'])->name('account.documents.badge.photo');
     Route::get('/mes-temoignages', [AccountTestimonialController::class, 'index'])->name('account.testimonials');
     Route::post('/mes-temoignages', [AccountTestimonialController::class, 'store'])->name('account.testimonials.store');
     Route::get('/compte/notifications', [NotificationController::class, 'index'])->name('account.notifications');

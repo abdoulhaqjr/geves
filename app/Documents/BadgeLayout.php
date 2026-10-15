@@ -7,15 +7,15 @@ class BadgeLayout
 {
     /**
      * Une catégorie n'a qu'un modèle enregistré. Si ce modèle comporte un calque
-     * photo mais que le bénéficiaire n'a pas de photo, utiliser la variante
-     * officielle sans image plutôt qu'un cercle vide ou des initiales.
+     * photo mais que le bénéficiaire n'a pas de photo ou choisit de la masquer,
+     * utiliser la variante officielle sans image plutôt qu'un cercle vide.
      *
      * @param  array<string, mixed>  $layout  Mise en page déjà sanitizée
      * @return array<string, mixed>
      */
-    public static function forRecipient(array $layout, string $type, string $photo): array
+    public static function forRecipient(array $layout, string $type, string $photo, bool $withPhoto = true): array
     {
-        if ($photo !== '' || ! self::hasPhoto($layout)) {
+        if (($photo !== '' && $withPhoto) || ! self::hasPhoto($layout)) {
             return $layout;
         }
 
@@ -54,7 +54,7 @@ class BadgeLayout
     }
 
     /** @param array<string, mixed> $layout */
-    private static function hasPhoto(array $layout): bool
+    public static function hasPhoto(array $layout): bool
     {
         foreach ((array) ($layout['elements'] ?? []) as $element) {
             if (($element['type'] ?? '') === 'photo') {

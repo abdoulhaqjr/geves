@@ -19,6 +19,7 @@ use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -113,6 +114,8 @@ class DocumentController extends Controller
                     'ref' => $recipient['ref'],
                     // Seul le badge participant reste verrouillé avant paiement.
                     'locked' => $type === 'default' && ! $paid,
+                    'supports_photo' => $rendered['supports_photo'],
+                    'photo_mode' => $rendered['photo_mode'],
                     'html' => $rendered['html'],
                     'w' => $rendered['w'],
                     'h' => $rendered['h'],
@@ -144,7 +147,7 @@ class DocumentController extends Controller
      * « badge »), ou du modèle par défaut, avec les vraies données du participant.
      * Retourne le HTML positionné + les dimensions natives (pour la mise à l'échelle).
      *
-     * @return array{html: string, w: int, h: int}
+     * @return array{html: string, w: int, h: int, supports_photo: bool, photo_mode: string}
      */
     private function renderBadge(Event $event, User $account, Participant $participant, string $type, array $recipient): array
     {
@@ -155,7 +158,10 @@ class DocumentController extends Controller
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
 
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
-        $layout = BadgeLayout::forRecipient($layout, $type, $photoSrc);
+        $supportsPhoto = BadgeLayout::hasPhoto($layout);
+        $photoModes = (array) (($participant->meta ?? [])['badge_photo_preferences'] ?? []);
+        $photoMode = ($photoModes[$type] ?? 'with') === 'without' ? 'without' : 'with';
+        $layout = BadgeLayout::forRecipient($layout, $type, $photoSrc, $photoMode === 'with');
         $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$event->id);
 
         // Compatibilité avec les anciens modèles : photo enregistrée comme texte,
@@ -214,7 +220,35 @@ class DocumentController extends Controller
             'html' => LayoutRenderer::render($layout, $vars, badge: true),
             'w' => (int) $layout['width'],
             'h' => (int) $layout['height'],
+            'supports_photo' => $supportsPhoto,
+            'photo_mode' => $photoMode,
         ];
+    }
+
+    /** Préférence d'affichage propre à ce participant, cet événement et ce badge. */
+    public function updateBadgePhoto(Request $request, Event $event, string $type): RedirectResponse
+    {
+        abort_unless(BadgeCatalog::valid($type), 404);
+
+        $account = Auth::guard('account')->user();
+        $participant = Participant::where('event_id', $event->id)
+            ->where('user_id', $account->id)
+            ->firstOrFail();
+        abort_unless(BadgeCatalog::forAccount($event, $account, $participant)->contains('type', $type), 403);
+
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
+        abort_unless($account->photo_path && BadgeLayout::hasPhoto($layout), 422);
+
+        $data = $request->validate(['photo_mode' => 'required|in:with,without']);
+        $meta = $participant->meta ?? [];
+        $preferences = (array) ($meta['badge_photo_preferences'] ?? []);
+        $preferences[$type] = $data['photo_mode'];
+        $meta['badge_photo_preferences'] = $preferences;
+        $participant->update(['meta' => $meta]);
+
+        return redirect()->to(route('account.documents').'#badge-'.$type)
+            ->with('ukc_status', 'Présentation du badge enregistrée.');
     }
 
     public function livret(Event $event, Request $request): View|Response

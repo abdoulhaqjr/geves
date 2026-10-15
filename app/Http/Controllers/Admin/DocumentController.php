@@ -324,7 +324,7 @@ class DocumentController extends Controller
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
-        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, (string) ($person['photo'] ?? '')), [
+        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, (string) ($person['photo'] ?? ''), ($person['photo_mode'] ?? 'with') !== 'without'), [
             'org' => $event->series?->name ?? '',
             'event' => $event->title ?? '',
             'year' => (string) ($event->year ?: ''),

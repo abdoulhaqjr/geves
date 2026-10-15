@@ -3555,12 +3555,15 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   enregistré pour `default` sert à tous les participants de l'événement. Au
   rendu, `BadgeLayout::forRecipient()` choisit la variante officielle sans
   photo quand le modèle contient un calque photo mais que le compte n'a pas
-  renseigné de photo ; les autres bénéficiaires gardent le modèle enregistré.
+  renseigné de photo ou que ce participant l'a refusée pour ce type de badge.
+  Les autres bénéficiaires gardent le modèle enregistré.
   Le type historique `participant_photo` peut rester en base pour conserver
   d'anciennes mises en page, mais il n'est plus listé ni utilisé pour les badges
-  délivrés. La préférence individuelle « Badge sans photo de profil » et l'option
-  générale « Photo obligatoire » ont été retirées : la composition relève du
-  designer. Les anciens liens du designer ouvrent `default`. La migration
+  délivrés. Le choix individuel, par type de badge et par événement, est dans
+  « Mes documents » seulement si le modèle contient une photo et que le compte
+  en a renseigné une ; il est stocké dans `participants.meta.badge_photo_preferences`.
+  L'option générale « Photo obligatoire » reste retirée. Les anciens liens du
+  designer ouvrent `default`. La migration
   `2026_10_15_000400` reprend la maquette à photo personnalisée si le modèle
   `default` n'a jamais été personnalisé.
   - ⚠️ **La maquette à photo est AUSSI une variante de design du concepteur**

@@ -107,13 +107,14 @@ class BadgeCatalog
                     'ref' => $event->id.'-'.$person->id,
                     // Le calque photo est facultatif dans le modèle du designer.
                     'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
+                    'photo_mode' => ((array) (($person->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with',
                 ])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
         }
 
         if (in_array($type, ['moderation', 'rapporteur'], true)) {
             $prefix = $type === 'moderation' ? 'moderator' : 'rapporteur';
 
-            return self::unique(self::withCurrentAccountNames($event->sessions()->get()->map(fn ($session) => [
+            return self::unique(self::withCurrentAccountNames($event, $type, $event->sessions()->get()->map(fn ($session) => [
                 'name' => trim((string) $session->{$prefix.'_name'}),
                 'email' => trim((string) $session->{$prefix.'_email'}),
                 'institution' => '',
@@ -153,11 +154,11 @@ class BadgeCatalog
                 ]));
         }
 
-        return self::unique(self::withCurrentAccountNames($people));
+        return self::unique(self::withCurrentAccountNames($event, $type, $people));
     }
 
     /** Une affectation garde son nom historique ; le badge lit l'identité actuelle du compte lié. */
-    private static function withCurrentAccountNames(Collection $people): Collection
+    private static function withCurrentAccountNames(Event $event, string $type, Collection $people): Collection
     {
         $emails = $people->pluck('email')
             ->map(fn ($email) => mb_strtolower(trim((string) $email)))
@@ -169,12 +170,17 @@ class BadgeCatalog
 
         $accounts = User::query()->whereIn(DB::raw('LOWER(email)'), $emails->all())
             ->get()->keyBy(fn (User $user) => mb_strtolower(trim((string) $user->email)));
+        $participants = Participant::where('event_id', $event->id)
+            ->whereIn('user_id', $accounts->pluck('id'))
+            ->get()->keyBy('user_id');
 
-        return $people->map(function (array $person) use ($accounts) {
+        return $people->map(function (array $person) use ($accounts, $participants, $type) {
             $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
             if ($account) {
                 $person['name'] = self::accountName($account);
                 $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
+                $participation = $participants->get($account->id);
+                $person['photo_mode'] = ((array) (($participation?->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with';
             }
 
             return $person;
