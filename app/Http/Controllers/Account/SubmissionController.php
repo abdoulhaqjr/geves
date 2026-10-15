@@ -7,7 +7,6 @@ use App\Actions\NotifySubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ResubmitSubmissionRequest;
 use App\Http\Requests\Account\StoreSubmissionRequest;
-use App\Models\Attestation;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Slot;
@@ -160,12 +159,6 @@ class SubmissionController extends Controller
         // seul le déposant peut la modifier (gardé par $isOwner dans la vue).
         $isOwner = $this->authorizeView($submission);
 
-        $soumissionAtt = $submission->participant_id
-            ? Attestation::where('participant_id', $submission->participant_id)
-                ->where('event_id', $submission->event_id)
-                ->where('type', 'soumission')->where('revoked', false)->first()
-            : null;
-
         $slot = $this->currentSlot($submission);
 
         return view('account.submissions.show', [
@@ -174,7 +167,6 @@ class SubmissionController extends Controller
             'versions' => $submission->versions()->get(),
             'slot' => $slot,
             'availableSlots' => $this->availableSlots($submission),
-            'soumissionAtt' => $soumissionAtt,
             'isOwner' => $isOwner,
             'abstractMin' => (new SubmissionFormConfig($submission->event))->abstractMin(),
             'abstractMax' => (new SubmissionFormConfig($submission->event))->abstractMax(),

@@ -34,18 +34,6 @@
                         <div class="g-title">{{ __('Communication :num', ['num' => $i + 1]) }} - {{ $s->type === 'poster' ? __('Poster') : __('Orale') }}@if ($s->track) - {{ $s->track }}@endif</div>
                         <div class="g-sub">{{ $s->title }}</div>
                         <ul class="ukc-doc-list">
-                            @include('account._doc-row', [
-                                'name' => __('Attestation de soumission'),
-                                'sub' => $s->created_at ? __('Déposée le').' '.$s->created_at->format('d/m/Y') : null,
-                                'att' => $atts['soumission'] ?? null,
-                                'status' => __('En attente'),
-                            ])
-                            @include('account._doc-row', [
-                                'name' => __('Lettre d’acceptation'),
-                                'sub' => __('Liée à cette communication'),
-                                'att' => $atts['acceptation'] ?? null,
-                                'status' => $s->status === 'accepted' ? __('Bientôt') : __('En attente'),
-                            ])
                             {{-- ⚠️ Indexée par COMMUNICATION : par type, c'est celle de la
                                  dernière qui s'affichait en face de toutes les autres, et
                                  deux communications renvoyaient au même document. --}}

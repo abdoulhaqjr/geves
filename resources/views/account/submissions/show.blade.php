@@ -237,21 +237,6 @@
                             <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
                         </div>
                     @endif
-                    <div class="file-row">
-                        <div class="ico"><x-ukc.icon name="diploma" :size="20" /></div>
-                        <div style="flex:1;min-width:0;">
-                            <div class="name">{{ __('Attestation de soumission') }}</div>
-                            <div class="meta">{{ __('PDF - Générée automatiquement - QR de vérification') }}</div>
-                        </div>
-                        @if ($soumissionAtt)
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
-                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Vérifier') }}</a>
-                            </div>
-                        @else
-                            <span class="ukc-pill ukc-pill--muted">{{ __('En attente') }}</span>
-                        @endif
-                    </div>
                     <p class="hint">{{ __('En cas d’erreur matérielle sur le titre, les auteurs ou le fichier, contactez le secrétariat avant la décision du comité.') }}</p>
                 </div>
 
@@ -318,7 +303,7 @@
                         <li>
                             <div class="when">{{ $s->created_at?->format('d/m/Y - H:i') }}</div>
                             <div class="what">{{ __('Accusé de réception') }}</div>
-                            <div class="detail">{{ __('E-mail envoyé') }}@if($soumissionAtt) - {{ __('attestation de soumission générée') }} @endif</div>
+                            <div class="detail">{{ __('E-mail envoyé') }}</div>
                         </li>
                         <li @class(['muted' => $s->status === 'submitted'])>
                             <div class="when">{{ $s->status === 'submitted' ? __('À venir') : __('En cours') }}</div>
