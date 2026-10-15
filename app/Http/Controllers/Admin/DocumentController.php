@@ -335,6 +335,7 @@ class DocumentController extends Controller
             'role' => BadgeCatalog::role($type),
             'institution' => $person['institution'],
             'ref' => $person['ref'],
+            'verify_url' => url('/verifier?ref='.urlencode($person['ref']).'&ed='.$event->id),
             // Photo de profil pour le modèle « Participant avec photo » (élément photo).
             'recipient.photo' => $person['photo'] ?? '',
         ], badge: true));

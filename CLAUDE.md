@@ -4290,3 +4290,10 @@ Dans `/documents`, le choix « Avec photo / Sans photo » est un interrupteur da
 colonne des détails, juste avant le QR code. Il s'enregistre en AJAX pour chaque type
 de badge via `Account\DocumentController::updateBadgePhoto()` et remplace le seul
 aperçu concerné ; garder la soumission classique si JavaScript est indisponible.
+
+## Références des badges
+
+`BadgeCatalog::reference()` émet une clé stable `BDG-XXXX-XXXX-XXXX-XXXX` à partir
+de l'ancienne identité interne, pour l'aperçu participant et la planche admin.
+Garder les deux rendus et le QR alignés sur cette référence ; la planche passe
+`{verify_url}` au modèle. La route `/verifier` n'a pas encore de contrôle des badges.

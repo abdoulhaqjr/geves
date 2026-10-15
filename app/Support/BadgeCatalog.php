@@ -56,7 +56,7 @@ class BadgeCatalog
                 'name' => self::accountName($account),
                 'email' => (string) $participant->email,
                 'institution' => (string) $participant->institution,
-                'ref' => $event->id.'-'.$participant->id,
+                'ref' => self::reference($event->id.'-'.$participant->id),
             ],
         ]]);
 
@@ -104,7 +104,7 @@ class BadgeCatalog
                     'name' => $person->user ? self::accountName($person->user) : $person->full_name,
                     'email' => (string) $person->email,
                     'institution' => (string) $person->institution,
-                    'ref' => $event->id.'-'.$person->id,
+                    'ref' => self::reference($event->id.'-'.$person->id),
                     // Le calque photo est facultatif dans le modèle du designer.
                     'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
                     'photo_mode' => ((array) (($person->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with',
@@ -118,7 +118,7 @@ class BadgeCatalog
                 'name' => trim((string) $session->{$prefix.'_name'}),
                 'email' => trim((string) $session->{$prefix.'_email'}),
                 'institution' => '',
-                'ref' => $event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) ($session->{$prefix.'_email'} ?: $session->{$prefix.'_name'})))),
+                'ref' => self::reference($event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) ($session->{$prefix.'_email'} ?: $session->{$prefix.'_name'}))))),
             ])));
         }
 
@@ -135,7 +135,7 @@ class BadgeCatalog
                 'name' => trim((string) $user->first_name.' '.(string) $user->last_name) ?: (string) $user->name,
                 'email' => (string) $user->email,
                 'institution' => (string) $user->affiliation,
-                'ref' => $event->id.'-'.$type.'-user-'.$user->id,
+                'ref' => self::reference($event->id.'-'.$type.'-user-'.$user->id),
             ]);
 
         $committeeRole = match ($type) {
@@ -150,7 +150,7 @@ class BadgeCatalog
                     'name' => trim((string) $member->person_name),
                     'email' => (string) $member->email,
                     'institution' => (string) $member->institution,
-                    'ref' => $event->id.'-'.$type.'-committee-'.$member->id,
+                    'ref' => self::reference($event->id.'-'.$type.'-committee-'.$member->id),
                 ]));
         }
 
@@ -191,6 +191,14 @@ class BadgeCatalog
     {
         return trim(trim((string) $account->first_name).' '.trim((string) $account->last_name))
             ?: (trim((string) $account->name) ?: (string) $account->email);
+    }
+
+    /** Clé courte et stable, commune à l'aperçu participant et à la planche admin. */
+    private static function reference(string $identity): string
+    {
+        $hex = strtoupper(substr(hash('sha256', 'geves-badge-v1:'.$identity), 0, 16));
+
+        return 'BDG-'.implode('-', str_split($hex, 4));
     }
 
     /** @param Collection<int, array{name: string, email: string, institution: string, ref: string}> $people */
