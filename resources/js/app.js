@@ -312,16 +312,15 @@ document.addEventListener('change', async (event) => {
     const canvas = entry?.querySelector('.ukc-badge-canvas');
     const scaler = canvas?.querySelector('.scaler');
     const state = form?.querySelector('[data-badge-photo-state]');
-    const status = form?.querySelector('[data-badge-photo-status]');
-    if (! form || ! canvas || ! scaler || ! state || ! status) return;
+    if (! form || ! canvas || ! scaler || ! state) return;
 
     const previous = toggle.dataset.saved === 'with';
     const requestedMode = toggle.checked ? 'with' : 'without';
     const body = new FormData(form);
     body.set('photo_mode', requestedMode);
     toggle.setAttribute('aria-checked', String(toggle.checked));
+    state.textContent = toggle.checked ? 'Avec photo' : 'Sans photo';
     toggle.disabled = true;
-    status.textContent = 'Enregistrement…';
 
     try {
         const response = await fetch(form.action, {
@@ -343,12 +342,11 @@ document.addEventListener('change', async (event) => {
         toggle.checked = badge.photo_mode === 'with';
         toggle.setAttribute('aria-checked', String(toggle.checked));
         state.textContent = toggle.checked ? 'Avec photo' : 'Sans photo';
-        status.textContent = 'Enregistré.';
+        ukcToast('Présentation du badge enregistrée.');
     } catch (error) {
         toggle.checked = previous;
         toggle.setAttribute('aria-checked', String(previous));
         state.textContent = previous ? 'Avec photo' : 'Sans photo';
-        status.textContent = 'Enregistrement impossible.';
         ukcToast('Enregistrement du choix impossible.', 'err');
     } finally {
         toggle.disabled = false;

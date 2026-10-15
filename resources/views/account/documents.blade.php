@@ -152,7 +152,6 @@
                                                 <span class="ukc-badge-photo-choice__track" aria-hidden="true"></span>
                                                 <span class="ukc-badge-photo-choice__state" data-badge-photo-state>{{ $badge['photo_mode'] === 'with' ? __('Avec photo') : __('Sans photo') }}</span>
                                             </label>
-                                            <span class="ukc-badge-photo-choice__status" data-badge-photo-status role="status" aria-live="polite"></span>
                                             <noscript><button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Enregistrer') }}</button></noscript>
                                         </form>
                                     @elseif ($badge['supports_photo'])
