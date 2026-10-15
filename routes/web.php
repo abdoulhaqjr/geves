@@ -11,8 +11,8 @@ use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Account\ModerationController;
 use App\Http\Controllers\Account\OnboardingController as AccountOnboardingController;
 use App\Http\Controllers\Account\OrcidController;
-use App\Http\Controllers\Account\PasswordResetController;
 use App\Http\Controllers\Account\ParticipationModeController;
+use App\Http\Controllers\Account\PasswordResetController;
 use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
 use App\Http\Controllers\Account\PreferencesController;
 use App\Http\Controllers\Account\ProfileController;
@@ -221,6 +221,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
     Route::get('/documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
+    Route::post('/compte/badge-sans-photo', [App\Http\Controllers\Account\DocumentController::class, 'badgePhotoPreference'])->name('account.badge.photo');
     Route::get('/mes-temoignages', [AccountTestimonialController::class, 'index'])->name('account.testimonials');
     Route::post('/mes-temoignages', [AccountTestimonialController::class, 'store'])->name('account.testimonials.store');
     Route::get('/compte/notifications', [NotificationController::class, 'index'])->name('account.notifications');

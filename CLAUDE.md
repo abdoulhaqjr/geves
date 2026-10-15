@@ -3548,6 +3548,19 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   le rôle imprimé « Participant ». L'espace participant montre son aperçu
   verrouillé avant paiement et le débloque après règlement ; aucun badge
   communicant distinct n'existe.
+- ⚠️ **Modèle participant AVEC ou SANS photo = choisi automatiquement**
+  (`BadgeCatalog::participationType($account)`) : le badge participant prend le
+  modèle **`participant_photo`** (maquette à photo de profil) dès que le compte a
+  une `photo_path` **et** ne l'a pas refusée, sinon le modèle **`default`** (sans
+  photo). Sans photo, on retombe donc toujours sur `default`. Le refus est une
+  **préférence globale du compte** (`users.meta['badge_without_photo']`,
+  `prefersNoPhoto()`), posée par la case **« Badge sans photo de profil »** de
+  « Mes badges » (route `account.badge.photo`, visible seulement si une photo
+  existe). ⚠️ `participant_photo` reste un badge de PARTICIPANT : `role()` imprime
+  « Participant » (pas le nom du modèle), et il **vise les mêmes destinataires**
+  que `default` (inscriptions réglées) - c'est la seule maquette qui change. Ne
+  pas le doubler dans `forAccount()` (le `continue` sur `default`/`participant_photo`
+  est volontaire). Garde : `BadgePhotoModelTest`.
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique
@@ -3569,18 +3582,22 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   resserré pour laisser de la longueur aux filets). ⚠️
   L'ancien **sceau rond** (`/img/badges/parakou-seal.png`) a été **retiré** : utiliser
   l'asset officiel partagé, pas une image propre au badge.
-- ⚠️ **Le filet vert = UN trait au niveau des logos, INTERROMPU par eux** : trois segments
-  `rect` (`x0 w30` cadre→UK, `x184 w16` entre les logos, `x366 w31` Parakou→cadre ; `h4`,
-  `y71`). Idée : une ligne qui traverse toute la rangée des logos, mais comme les logos sont
-  **TRANSPARENTS**, aucun segment ne passe derrière eux (le vert les traverserait) - d'où
-  l'interruption, pas un trait continu. Gaps serrés (~4 px) pour que ça se lise comme une
-  seule ligne. Les deux bouts extrêmes **MORDENT sur le cadre** (`x0..12` / `x384..397`,
-  même vert, fusion). Ce sont des **ÉLÉMENTS de mise en page** (pas cuits dans le fond, qui
-  a été nettoyé) → ils se redimensionnent au changement de format. ⚠️ **Couleur `#00be62`
-  = EXACTEMENT celle du cadre (le contour), PAS `#009933`** (la charte) : les deux verts
-  juraient. PHP : 3 `rect` dans `defaultBadge()` ; concepteur : trois `barEl()` (shape
-  `line-h` + fond `#00be62`, sérialisés en `rect`). Garde : `BadgeDefaultTemplateTest`
-  (3 rects `#00be62`).
+- ⚠️ **Deux filets verts au niveau des logos** : un à gauche (cadre→UK, `x0 w30`), un à
+  droite (Parakou→cadre, `x367 w30`), `y69 h8`. **PAS de segment entre les deux logos** (le
+  trait du milieu n'était pas voulu). ⚠️ **Chaque filet part du bord même** (`x0` / finit à
+  `x397`) pour **MORDRE sur le cadre vert** cuit dans le fond (il occupe `x0..12` à gauche,
+  `x384..397` à droite) et fusionner avec lui - sinon il flotte et paraît détaché. Assez
+  **épais (`h8`)** pour que la jonction avec le cadre se lise nettement (un `h4` fin
+  paraissait décollé même à `x0`). Ce sont des **ÉLÉMENTS** (pas cuits dans le fond, qui a
+  été nettoyé) → ils se redimensionnent au changement de format. ⚠️ **Couleur `#00be62` =
+  EXACTEMENT celle du cadre (le contour), PAS `#009933`** (la charte). PHP : 2 `rect` dans
+  `defaultBadge()` ; concepteur : deux `barEl()` (shape `line-h` + fond `#00be62`, sérialisés
+  en `rect`). Garde : `BadgeDefaultTemplateTest` (2 rects `#00be62`).
+  - ⚠️ **Le badge DÉLIVRÉ rend un `DocumentTemplate` SAUVEGARDÉ** (`ensureFor()` ne recrée
+    que si `layout` est vide) : modifier `defaultBadge()` ne met PAS à jour un modèle déjà
+    enregistré. L'aperçu du concepteur, lui, suit le modèle JS `co` en direct. Après une
+    refonte du défaut, **réinitialiser le modèle** (Documents → supprimer le modèle = il se
+    recrée depuis le nouveau défaut) pour que le badge délivré colle à l'aperçu.
 - ⚠️ **Changer de format RÉAJUSTE la maquette** (`badge-designer.js`, `scaleEls(rx, ry)`
   dans le gestionnaire des chips `[data-size]`) : à chaque changement de format, position
   et taille de **chaque élément** sont mises à l'échelle du changement de dimensions (x et

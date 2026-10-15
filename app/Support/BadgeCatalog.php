@@ -44,6 +44,24 @@ class BadgeCatalog
         return $type === 'participant_photo' ? self::TYPES['default']['label'] : self::label($type);
     }
 
+    /** Le compte a-t-il refusé la photo sur son badge (préférence « Mes badges ») ? */
+    public static function prefersNoPhoto(User $account): bool
+    {
+        return (bool) ($account->meta['badge_without_photo'] ?? false);
+    }
+
+    /**
+     * Modèle de badge participant pour ce compte : AVEC photo si une photo de
+     * profil existe et n'a pas été refusée, SANS photo sinon. C'est la bascule
+     * automatique « pas de photo → modèle sans photo ».
+     */
+    public static function participationType(User $account): string
+    {
+        return (! self::prefersNoPhoto($account) && filled($account->photo_path))
+            ? 'participant_photo'
+            : 'default';
+    }
+
     /**
      * Badges d'un compte sur un événement. La participation figure même avant
      * paiement pour pouvoir afficher son aperçu verrouillé ; les fonctions sont
@@ -54,8 +72,14 @@ class BadgeCatalog
      */
     public static function forAccount(Event $event, User $account, Participant $participant): Collection
     {
+        // Le badge participant prend le modèle AVEC photo quand la personne a une
+        // photo de profil ET ne l'a pas refusée ; sinon le modèle SANS photo. Sans
+        // photo, on retombe automatiquement sur le modèle sans photo ; le refus se
+        // choisit dans « Mes badges » (clé `meta.badge_without_photo`).
+        $participationType = self::participationType($account);
+
         $badges = collect([[
-            'type' => 'default',
+            'type' => $participationType,
             'recipient' => [
                 'name' => $participant->full_name,
                 'email' => (string) $participant->email,
