@@ -188,11 +188,12 @@ class LayoutRenderer
     protected static function renderRect(array $el, int $x, int $y): string
     {
         $border = (int) ($el['border'] ?? 0);
+        $fill = ($el['fill'] ?? true) ? e($el['color'] ?? '#223ea4') : 'transparent';
 
         return sprintf(
             '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s;border-radius:%dpx;%s"></div>',
             $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30),
-            e($el['color'] ?? '#223ea4'), (int) ($el['radius'] ?? 0),
+            $fill, (int) ($el['radius'] ?? 0),
             $border > 0 ? sprintf('border:%dpx solid %s;', $border, e($el['border_color'] ?? '#223ea4')) : ''
         );
     }

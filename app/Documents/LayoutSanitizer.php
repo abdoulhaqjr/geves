@@ -83,6 +83,7 @@ class LayoutSanitizer
                 $e['spacing'] = self::clampFloat($el['spacing'] ?? 0, -5, 20, 0);
             } elseif ($t === 'rect') {
                 $e['color'] = self::color($el['color'] ?? null, $accent);
+                $e['fill'] = (bool) ($el['fill'] ?? true);
                 // Un filet ou un cadre arrondi devenait un aplat rectangulaire.
                 $e['radius'] = self::clampInt($el['radius'] ?? 0, 0, 400, 0);
                 $e['border'] = self::clampInt($el['border'] ?? 0, 0, 40, 0);
@@ -223,7 +224,7 @@ class LayoutSanitizer
                 // Lieu et dates (les pictogrammes sont dans l'image de fond).
                 $t(['x' => 110, 'y' => 434, 'w' => 180, 'h' => 22, 'text' => '{location}', 'size' => 12]),
                 $t(['x' => 110, 'y' => 472, 'w' => 180, 'h' => 22, 'text' => '{dates}', 'size' => 12]),
-                ['type' => 'qr', 'x' => 306, 'y' => 430, 'size' => 66, 'value' => '{ref}'],
+                ['type' => 'qr', 'x' => 306, 'y' => 430, 'size' => 66, 'value' => '{verify_url}'],
             ],
         ];
     }

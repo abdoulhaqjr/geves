@@ -329,7 +329,7 @@ class TemplateDesignerController extends Controller
             'signatory_role' => 'Président du comité d’organisation',
             'date' => now()->locale('fr')->translatedFormat('j F Y'),
             'ref' => 'UK-2026-001',
-            'verify_url' => url('/attestation/exemple'),
+            'verify_url' => $kind === 'badge' ? url('/verifier?ref=UK-2026-001') : url('/attestation/exemple'),
             'communication' => 'L’apport du numérique dans l’enseignement supérieur',
             'communication_ref' => 'CI-001',
             'communication_type' => 'Orale',

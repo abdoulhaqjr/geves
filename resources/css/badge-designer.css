@@ -113,8 +113,11 @@
     }
     .ed-shape:hover { border-color: var(--ukc-blue); background: #eef2ff; }
     .ed-shape .sq { width: 22px; height: 22px; background: #111; border-radius: 3px; }
+    .ed-shape .sq-o { width: 22px; height: 22px; border: 2px solid #111; border-radius: 3px; }
     .ed-shape .ci { width: 22px; height: 22px; background: #111; border-radius: 50%; }
+    .ed-shape .ci-o { width: 22px; height: 22px; border: 2px solid #111; border-radius: 50%; }
     .ed-shape .ln-h { width: 28px; height: 2px; background: #111; }
+    .ed-shape .ln-v { width: 2px; height: 28px; background: #111; }
 
     .ly-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
     .ly-toolbar button {
@@ -203,6 +206,8 @@
     }
     .ed-thumb[data-src] { color: transparent; font-size: 0; }
     .ed-thumb:hover { border-color: var(--ukc-blue); }
+    .ed-thumb--logo { display: flex; align-items: center; justify-content: center; }
+    .ed-thumb--logo img { max-width: 100%; max-height: 42px; object-fit: contain; display: block; }
 
     .ed-tpl-card {
       border: 1px solid var(--ukc-border); border-radius: 10px;
@@ -370,6 +375,8 @@
       font-size: 16px; font-weight: 900; text-align: center; color: #fff;
     }
     .ed-el.text.sub { font-size: 11px; color: #4b5563; }
+    .ed-el.text.subheading { font-size: 14px; font-weight: 700; color: var(--ukc-text); }
+    .ed-el.text.paragraph { font-size: 12px; font-weight: 400; color: var(--ukc-text); }
     .ed-el.text.name { font-size: 17px; font-weight: 800; text-align: center; line-height: 1.25; }
     .ed-el.text.role {
       font-size: 11px; font-weight: 700; text-align: center;
@@ -421,6 +428,7 @@
     }
     .ed-el.qr img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     .ed-el.shape-box { background: #111; border-radius: 4px; }
+    .ed-el.shape-box[style*="border-radius: 50%"] { border-radius: 50%; }
 
     .ed-guide-x, .ed-guide-y {
       position: absolute; pointer-events: none; z-index: 100; background: #ec4899;
@@ -553,7 +561,10 @@
       padding: 14px; text-align: center; font-size: 12.5px; color: var(--ukc-muted);
       cursor: pointer; background: #fff; margin-top: 10px;
     }
-    .ai-drop:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+    .ai-drop:hover, .ai-drop.dragover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #eef2ff; }
+    .ai-file { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; background: #fff; border: 1px solid var(--ukc-border); border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .ai-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ai-file .rm { margin-left: auto; color: #991b1b; font-size: 17px; font-weight: 800; cursor: pointer; padding: 2px 6px; }
     .ai-run {
       width: 100%; margin-top: 12px;
       background: linear-gradient(135deg, #223ea4, #009933);

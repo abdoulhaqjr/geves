@@ -17,7 +17,7 @@
   function markDirty() { dirty = true; }
   var SNAP = 6;
   var zoomLevel = 1;
-  var DEFAULT_QR_URL = 'https://univkara.tg/colloque/badge';
+  var DEFAULT_QR_URL = '{verify_url}';
   var inputModalCb = null;
 
   var EYE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
@@ -35,7 +35,13 @@
 
   function qrImageUrl(data, size) {
     size = size || 120;
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&data=' + encodeURIComponent(data || DEFAULT_QR_URL);
+    var value = data || DEFAULT_QR_URL;
+    var vars = ((window.UKC_EDITOR || {}).vars || {});
+    value = value.replace(/\[([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)?)\]|\{([A-Za-z0-9_]+)\}/g, function (whole, bracket, brace) {
+      var resolved = vars[bracket || brace];
+      return (typeof resolved === 'string' || typeof resolved === 'number') && String(resolved) !== '' ? String(resolved) : whole;
+    });
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&data=' + encodeURIComponent(value);
   }
   function setQrContent(el, url) {
     el.dataset.qrUrl = url || DEFAULT_QR_URL;
@@ -138,17 +144,24 @@
         return {
           id: el.id, html: el.innerHTML, className: el.className,
           label: el.dataset.label, locked: el.dataset.locked, hidden: el.dataset.hidden,
-          group: el.dataset.group || '',
+          group: el.dataset.group || '', outline: el.dataset.outline || '',
           blend: el.dataset.blend || 'normal', qrUrl: el.dataset.qrUrl || '',
           style: {
             left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height,
             opacity: el.style.opacity, fontSize: el.style.fontSize, fontFamily: el.style.fontFamily,
-            fontWeight: el.style.fontWeight, color: el.style.color, textAlign: el.style.textAlign,
+            fontWeight: el.style.fontWeight, fontStyle: el.style.fontStyle,
+            textDecoration: el.style.textDecoration, textTransform: el.style.textTransform,
+            lineHeight: el.style.lineHeight, letterSpacing: el.style.letterSpacing,
+            color: el.style.color, textAlign: el.style.textAlign,
+            background: el.style.background, border: el.style.border,
+            borderRadius: el.style.borderRadius,
             mixBlendMode: el.style.mixBlendMode, display: el.style.display
           }
         };
       }),
       bg: page.className,
+      bgStyle: document.getElementById('pageBg').style.background || '',
+      bgImage: document.getElementById('pageBg').style.backgroundImage || '',
       groups: JSON.parse(JSON.stringify(groups))
     };
   }
@@ -170,6 +183,8 @@
       return match ? Number(match[1]) : 0;
     }));
     page.className = snap.bg || 'ed-page';
+    document.getElementById('pageBg').style.background = snap.bgStyle || '';
+    document.getElementById('pageBg').style.backgroundImage = snap.bgImage || '';
     syncFormatControls();
     document.querySelectorAll('.ed-tpl-card').forEach(function (card) { card.classList.remove('active'); });
     (snap.els || []).forEach(function (s) {
@@ -180,6 +195,7 @@
       el.dataset.locked = s.locked || '0';
       el.dataset.hidden = s.hidden || '0';
       el.dataset.group = s.group || '';
+      el.dataset.outline = s.outline || '';
       el.dataset.blend = s.blend || 'normal';
       if (s.qrUrl) el.dataset.qrUrl = s.qrUrl;
       el.innerHTML = s.html;
@@ -197,8 +213,8 @@
     historyLock = false;
     updateUndoButtons();
   }
-  function undo() { if (historyIndex <= 0) return; historyIndex--; restoreSnapshot(history[historyIndex]); toast('Annule'); }
-  function redo() { if (historyIndex >= history.length - 1) return; historyIndex++; restoreSnapshot(history[historyIndex]); toast('Retabli'); }
+  function undo() { if (historyIndex <= 0) return; historyIndex--; restoreSnapshot(history[historyIndex]); toast('Annulé'); }
+  function redo() { if (historyIndex >= history.length - 1) return; historyIndex++; restoreSnapshot(history[historyIndex]); toast('Rétabli'); }
   function updateUndoButtons() {
     document.getElementById('btnUndo').disabled = historyIndex <= 0;
     document.getElementById('btnRedo').disabled = historyIndex >= history.length - 1;
@@ -251,6 +267,8 @@
       el.style.height = (cfg.h || 40) + 'px';
       if (cfg.shape === 'circle') el.style.borderRadius = '50%';
       if (cfg.shape === 'line-h') { el.style.height = '3px'; el.style.width = (cfg.w || 100) + 'px'; }
+      if (cfg.shape === 'line-v') { el.style.width = '3px'; el.style.height = (cfg.h || 80) + 'px'; }
+      if (cfg.outline) { el.dataset.outline = '1'; el.style.background = 'transparent'; el.style.border = '2px solid #111'; }
     } else {
       el.classList.add('text');
       if (cfg.cls) cfg.cls.split(/\s+/).forEach(function (c) { if (c) el.classList.add(c); });
@@ -283,14 +301,14 @@
       e.preventDefault();
     });
     el.addEventListener('dblclick', function (e) {
-      if (isLocked(el)) { toast('Calque verrouille'); return; }
+      if (isLocked(el)) { toast('Calque verrouillé'); return; }
       if (el.classList.contains('text')) {
         e.preventDefault(); startTextEdit(el);
       } else if (el.classList.contains('qr')) {
         e.preventDefault();
         openInputModal({
           title: 'URL du QR code',
-          hint: 'Lien encode dans le QR (verification badge).',
+          hint: 'Adresse ouverte au scan. Laissez {verify_url} pour chaque badge.',
           value: el.dataset.qrUrl || DEFAULT_QR_URL,
           onOk: function (url) { if (url) { setQrContent(el, url); pushHistory(); } }
         });
@@ -348,6 +366,7 @@
   function fontKeyB(family) {
     var f = (family || '').toLowerCase();
     if (f.indexOf('playfair') > -1) return 'playfair';
+    if (f.indexOf('times') > -1) return 'times';
     if (f.indexOf('georgia') > -1) return 'georgia';
     if (f.indexOf('lato') > -1) return 'lato';
     if (f.indexOf('arial') > -1 || f.indexOf('helvetica') > -1) return 'arial';
@@ -646,7 +665,7 @@
     refreshLayers();
     selectEl(el);
     pushHistory();
-    toast(lock ? 'Calque verrouille' : 'Calque deverrouille');
+    toast(lock ? 'Calque verrouillé' : 'Calque déverrouillé');
   }
 
   function moveLayer(dir) {
@@ -695,7 +714,7 @@
 
   function deleteSelected() {
     if (!selected) return;
-    if (isLocked(selected)) { toast('Calque verrouille'); return; }
+    if (isLocked(selected)) { toast('Calque verrouillé'); return; }
     selected.remove();
     selected = null;
     styleBar.classList.add('disabled');
@@ -711,6 +730,8 @@
     selected = null;
     hideFloatBar();
     page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
+    document.getElementById('pageBg').style.backgroundImage = '';
+    document.getElementById('pageBg').style.background = '';
     page.style.width = ''; page.style.height = '';
     document.querySelectorAll('[data-size]').forEach(function (b) { b.classList.remove('active'); });
 
@@ -751,7 +772,7 @@
         // ⚠️ Les filets verts sont CUITS DANS LE CADRE de l'image de fond (bg-co), pas
         // posés en éléments : soudés au contour, sans fente à gauche. Ne pas ajouter de
         // barEl ici (un filet-élément laissait un jour contre le cadre dans le concepteur).
-        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: '/img/logo-uk.png' });
+        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
         styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '{event}', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '{name}', size: 24, weight: 800, color: '#253c98' });
@@ -759,14 +780,14 @@
         styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '{theme}', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         styled({ label: 'Lieu', x: 110, y: 434, w: 180, text: '{location}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         styled({ label: 'Dates', x: 110, y: 472, w: 180, text: '{dates}', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 306, y: 430, w: 66, qrUrl: '{ref}' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 306, y: 430, w: 66, qrUrl: DEFAULT_QR_URL });
       },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
         // En-tete bandeau bleu (~0-180)
-        createEl({ type: 'logo', label: 'Logo UK', x: 24, y: 22, w: 130, html: '<div class="mark">UK</div> UNIVERSITE DE KARA' });
+        imgEl({ label: 'Logo UK', x: 24, y: 22, w: 130, h: 36, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         createEl({ type: 'text', label: 'Edition', x: 24, y: 68, w: 350, cls: 'sub on-blue', text: '[edition.name]' });
         createEl({ type: 'text', label: 'Dates', x: 24, y: 92, w: 350, cls: 'sub on-blue', text: '[edition.dates]' });
         // Zone blanche - photo centree (397/2 - 32 = 166.5)
@@ -784,7 +805,7 @@
         var chip = document.querySelector('[data-size="card-landscape"]');
         if (chip) chip.classList.add('active');
         // Carte 340×208
-        createEl({ type: 'logo', label: 'Logo', x: 14, y: 12, w: 110, html: '<div class="mark">UK</div> CSIUK' });
+        imgEl({ label: 'Logo UK', x: 14, y: 12, w: 110, h: 38, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         createEl({ type: 'photo', label: 'Photo', x: 16, y: 70, w: 48 });
         createEl({ type: 'text', label: 'Nom', x: 76, y: 72, w: 160, cls: 'name on-blue attr', text: '[recipient.name]' });
         createEl({ type: 'text', label: 'Role', x: 76, y: 104, w: 160, cls: 'role on-blue attr', text: '[recipient.role]' });
@@ -923,7 +944,9 @@
     btn.addEventListener('click', function () {
       var kind = btn.dataset.add;
       var cfg = { x: 40 + Math.random() * 30, y: 40 + Math.random() * 30 };
-      if (kind === 'heading') Object.assign(cfg, { type: 'text', label: 'Heading', cls: 'heading', text: 'Titre', w: 200 });
+      if (kind === 'heading') Object.assign(cfg, { type: 'text', label: 'Titre', cls: 'heading', text: 'Titre', w: 200 });
+      else if (kind === 'subheading') Object.assign(cfg, { type: 'text', label: 'Sous-titre', cls: 'subheading', text: 'Sous-titre', w: 190 });
+      else if (kind === 'normal') Object.assign(cfg, { type: 'text', label: 'Paragraphe', cls: 'paragraph', text: 'Votre texte', w: 210 });
       else if (kind === 'name') Object.assign(cfg, { type: 'text', label: 'Nom', cls: 'name attr', text: '[recipient.name]', w: 220 });
       else if (kind === 'role') Object.assign(cfg, { type: 'text', label: 'Role', cls: 'role attr', text: '[recipient.role]', w: 180 });
       else if (kind === 'textbox') Object.assign(cfg, { type: 'text', label: 'Texte', cls: 'sub', text: 'Nouveau texte', w: 160 });
@@ -931,19 +954,22 @@
       else if (kind === 'qr' || kind === 'qr-verify') Object.assign(cfg, { type: 'qr', label: 'QR Badge', w: 72, qrUrl: DEFAULT_QR_URL });
       else if (kind === 'qr-custom') {
         openInputModal({
-          title: 'QR personnalise',
-          hint: 'URL a encoder',
+          title: 'QR personnalisé',
+          hint: 'Adresse à encoder dans le QR code.',
           value: 'https://',
           onOk: function (url) {
             if (!url) return;
-            selectEl(createEl({ type: 'qr', label: 'QR Custom', x: 60, y: 60, w: 72, qrUrl: url }));
+            selectEl(createEl({ type: 'qr', label: 'QR personnalisé', x: 60, y: 60, w: 72, qrUrl: url }));
             pushHistory();
           }
         });
         return;
       } else if (kind === 'rect') Object.assign(cfg, { type: 'shape', shape: 'rect', label: 'Rectangle', w: 50, h: 30 });
+      else if (kind === 'rect-o') Object.assign(cfg, { type: 'shape', shape: 'rect', outline: true, label: 'Rectangle contour', w: 50, h: 30 });
       else if (kind === 'circle') Object.assign(cfg, { type: 'shape', shape: 'circle', label: 'Cercle', w: 40, h: 40 });
+      else if (kind === 'circle-o') Object.assign(cfg, { type: 'shape', shape: 'circle', outline: true, label: 'Cercle contour', w: 40, h: 40 });
       else if (kind === 'line-h') Object.assign(cfg, { type: 'shape', shape: 'line-h', label: 'Ligne', w: 120 });
+      else if (kind === 'line-v') Object.assign(cfg, { type: 'shape', shape: 'line-v', label: 'Ligne verticale', h: 80 });
       selectEl(createEl(cfg));
       pushHistory();
     });
@@ -984,6 +1010,12 @@
   document.getElementById('zoomIn').addEventListener('click', function () { zoomLevel = Math.min(2, Math.round((zoomLevel + 0.1) * 10) / 10); applyZoom(); });
   document.getElementById('zoomOut').addEventListener('click', function () { zoomLevel = Math.max(0.5, Math.round((zoomLevel - 0.1) * 10) / 10); applyZoom(); });
   document.getElementById('zoomReset').addEventListener('click', function () { zoomLevel = 1; applyZoom(); });
+  document.querySelector('.ed-canvas-area').addEventListener('wheel', function (e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    zoomLevel = Math.max(0.5, Math.min(2, Math.round((zoomLevel + (e.deltaY < 0 ? 0.1 : -0.1)) * 10) / 10));
+    applyZoom();
+  }, { passive: false });
 
   document.getElementById('fontSize').addEventListener('change', function () {
     if (selected && !isLocked(selected)) { selected.style.fontSize = this.value + 'px'; pushHistory(); }
@@ -1051,11 +1083,20 @@
       if (el.dataset.qrUrl || /\bqr\b/i.test(cls) || (img && /qrserver|qrcode/i.test(img.src))) {
         return { type: 'qr', x: x, y: y, size: Math.max(w, h) || 96, value: el.dataset.qrUrl || '{ref}' };
       }
-      if (img && /^https?:/i.test(img.src)) {
-        return { type: 'image', x: x, y: y, w: w, h: h, src: img.src };
+      if (img && /^(https?:|\/)/i.test(img.getAttribute('src') || img.src)) {
+        return { type: 'image', x: x, y: y, w: w, h: h, src: img.getAttribute('src') || img.src };
       }
       if (!text && (/\b(shape|rect|line|ln-|sq|band)\b/i.test(cls) || el.style.background || cs.backgroundColor !== 'rgba(0, 0, 0, 0)')) {
-        return { type: 'rect', x: x, y: y, w: w, h: h, color: rgbToHex(cs.backgroundColor) || '#223ea4' };
+        var outline = el.dataset.outline === '1';
+        var bw = el.style.border ? Math.round(parseFloat(cs.borderTopWidth) || 0) : 0;
+        return {
+          type: 'rect', x: x, y: y, w: w, h: h,
+          color: outline ? '#ffffff' : (rgbToHex(cs.backgroundColor) || '#223ea4'),
+          fill: !outline,
+          radius: Math.round(parseFloat(cs.borderTopLeftRadius) || 0),
+          border: bw,
+          border_color: bw > 0 ? (rgbToHex(cs.borderTopColor) || '#223ea4') : ''
+        };
       }
       var align = cs.textAlign;
       return {
@@ -1064,13 +1105,22 @@
         size: Math.round(parseFloat(cs.fontSize) || 14),
         weight: parseInt(cs.fontWeight, 10) || 500,
         color: rgbToHex(cs.color) || '#1a2332',
-        align: (align === 'center' || align === 'right') ? align : 'left'
+        align: (align === 'center' || align === 'right') ? align : 'left',
+        font: fontKeyB(cs.fontFamily),
+        italic: cs.fontStyle === 'italic',
+        underline: (cs.textDecorationLine || cs.textDecoration || '').indexOf('underline') > -1,
+        upper: cs.textTransform === 'uppercase',
+        leading: Math.round((parseFloat(cs.lineHeight) / (parseFloat(cs.fontSize) || 14)) * 100) / 100 || 1.2,
+        spacing: Math.round((parseFloat(cs.letterSpacing) || 0) * 100) / 100
       };
     }).filter(function (e) { return e && !(e.type === 'text' && !e.text); });
-    var out = { width: W, height: H, bg: '#ffffff', accent: '#223ea4', elements: elements };
+    var bgEl = document.getElementById('pageBg');
+    var out = { width: W, height: H, bg: rgbToHex(bgEl.style.backgroundColor) || '#ffffff', accent: '#223ea4', elements: elements };
     // Cadre officiel (image de fond) : sans ça, enregistrer un badge depuis le
     // concepteur perdait le cadre vert/bleu (serializeLayout ne l'émettait pas).
     if (page.classList.contains('bg-co')) out.bg_image = '/img/badges/badge-default-bg.png';
+    var customBg = bgEl.style.backgroundImage.match(/url\((['"]?)(.*?)\1\)/);
+    if (customBg) out.bg_image = customBg[2];
     return out;
   }
   function performSave(onSuccess) {
@@ -1213,7 +1263,14 @@
     clone.style.boxShadow = '0 20px 60px rgba(0,0,0,.5)';
     clone.querySelectorAll('.resize, .ed-guide, .ed-guide-label').forEach(function (n) { n.remove(); });
     fillBadgeTokens(clone);
-    clone.querySelectorAll('.ed-el').forEach(function (n) { n.style.outline = 'none'; n.style.border = 'none'; n.style.boxShadow = 'none'; n.classList.remove('selected'); });
+    clone.querySelectorAll('.ed-el').forEach(function (n) {
+      n.style.outline = 'none'; n.style.boxShadow = 'none'; n.classList.remove('selected');
+      if (!n.classList.contains('shape-box') && !n.classList.contains('qr')) n.style.border = 'none';
+      if (n.classList.contains('qr')) {
+        var qrImg = n.querySelector('img');
+        if (qrImg) qrImg.src = qrImageUrl(n.dataset.qrUrl || DEFAULT_QR_URL, 140);
+      }
+    });
     var frame = document.createElement('div');
     frame.style.cssText = 'transform:scale(' + scale + ');transform-origin:center center;';
     frame.appendChild(clone);
@@ -1235,14 +1292,11 @@
     }
     document.body.appendChild(overlay);
   });
-  document.getElementById('btnPreview').addEventListener('click', function () {
-    // Aperçu désactivé côté back-office (pas de page de scan autonome ici).
-  });
   document.getElementById('btnBlank').addEventListener('click', function () {
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     groups = {};
     selected = null; hideFloatBar(); refreshLayers(); pushHistory();
-    toast('Canvas vide');
+    toast('Badge vierge');
   });
 
   /* Background modal */
@@ -1264,24 +1318,38 @@
       else if (k === 'none') page.classList.add('bg-none');
       pushHistory();
       bgModal.classList.remove('open');
-      toast('Fond applique');
+      toast('Fond appliqué');
     });
   });
   document.getElementById('bgImportZone').addEventListener('click', function () { document.getElementById('bgFileInput').click(); });
+  function uploadImage(file) {
+    var cfg = window.UKC_EDITOR || {};
+    if (!cfg.uploadUrl) return Promise.reject(new Error('Téléversement indisponible'));
+    var body = new FormData();
+    body.append('file', file);
+    return fetch(cfg.uploadUrl, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': cfg.csrf || '', 'Accept': 'application/json' },
+      body: body
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.body || !res.body.ok || !res.body.url) throw new Error((res.body && res.body.message) || 'Échec du téléversement');
+        return res.body.url;
+      });
+  }
   document.getElementById('bgFileInput').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
+    uploadImage(file).then(function (url) {
       page.classList.add('bg-none');
       var bg = document.getElementById('pageBg');
-      bg.style.backgroundImage = 'url(' + reader.result + ')';
+      bg.style.backgroundImage = 'url("' + url + '")';
       bg.style.backgroundSize = 'cover';
       pushHistory();
       bgModal.classList.remove('open');
-      toast('Image de fond importee');
-    };
-    reader.readAsDataURL(file);
+      toast('Image de fond importée');
+    }).catch(function (error) { toast(error.message || 'Échec du téléversement'); });
+    e.target.value = '';
   });
 
   /* Input modal */
@@ -1322,40 +1390,140 @@
   document.getElementById('fileUpload').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
+    uploadImage(file).then(function (url) {
       var thumb = document.createElement('div');
       thumb.className = 'ed-thumb';
-      thumb.dataset.src = reader.result;
-      thumb.style.backgroundImage = 'url(' + reader.result + ')';
+      thumb.dataset.src = url;
+      thumb.style.backgroundImage = 'url("' + url + '")';
       thumb.title = file.name;
       thumb.addEventListener('click', function () {
         selectEl(createEl({
           type: 'logo', label: file.name.slice(0, 16), x: 40, y: 40, w: 80,
-          html: '<img src="' + reader.result + '" alt="" style="max-width:100%;max-height:60px;display:block;">'
+          html: '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
         }));
         pushHistory();
       });
       document.getElementById('uploadList').appendChild(thumb);
-      toast('Image ajoutee');
-    };
-    reader.readAsDataURL(file);
+      toast('Image ajoutée');
+    }).catch(function (error) { toast(error.message || 'Échec du téléversement'); });
     e.target.value = '';
+  });
+  document.querySelectorAll('#uploadList .ed-thumb[data-logo]').forEach(function (thumb) {
+    thumb.addEventListener('click', function () {
+      var logos = (window.UKC_EDITOR || {}).logos || {};
+      var parakou = thumb.dataset.logo === 'up';
+      var src = parakou ? logos.parakou : logos.uk;
+      if (!src) return;
+      var el = createEl({
+        type: 'logo', label: parakou ? 'Logo Parakou' : 'Logo UK',
+        x: 40, y: 40, w: parakou ? 125 : 115,
+        html: '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
+      });
+      el.style.height = '40px';
+      selectEl(el);
+      pushHistory();
+    });
   });
 
   /* AI */
-  document.getElementById('aiDrop').addEventListener('click', function () { document.getElementById('aiFile').click(); });
+  var aiFile = null;
+  var aiDrop = document.getElementById('aiDrop');
+  var aiInput = document.getElementById('aiFile');
+  function showAiFile() {
+    var list = document.getElementById('aiFileList');
+    list.innerHTML = '';
+    if (!aiFile) return;
+    var row = document.createElement('div'); row.className = 'ai-file';
+    var name = document.createElement('span'); name.textContent = aiFile.name;
+    var remove = document.createElement('button'); remove.type = 'button'; remove.className = 'rm'; remove.textContent = '×'; remove.title = 'Retirer';
+    remove.addEventListener('click', function () { aiFile = null; showAiFile(); });
+    row.appendChild(name); row.appendChild(remove); list.appendChild(row);
+  }
+  function chooseAiFile(file) {
+    if (!file) return;
+    if (!/image\/(png|jpeg|webp)/.test(file.type) || file.size > 8 * 1024 * 1024) {
+      toast('Choisissez une image PNG, JPG ou WebP de 8 Mo maximum'); return;
+    }
+    aiFile = file; showAiFile();
+  }
+  aiDrop.addEventListener('click', function () { aiInput.click(); });
+  aiDrop.addEventListener('dragover', function (e) { e.preventDefault(); aiDrop.classList.add('dragover'); });
+  aiDrop.addEventListener('dragleave', function () { aiDrop.classList.remove('dragover'); });
+  aiDrop.addEventListener('drop', function (e) { e.preventDefault(); aiDrop.classList.remove('dragover'); chooseAiFile(e.dataTransfer.files[0]); });
+  aiInput.addEventListener('change', function (e) { chooseAiFile(e.target.files && e.target.files[0]); e.target.value = ''; });
+
+  function applyGeneratedLayout(layout) {
+    var format = getCurrentFormat();
+    var dims = FORMAT_DIMENSIONS[format];
+    var sx = dims[0] / (Number(layout.width) || dims[0]);
+    var sy = dims[1] / (Number(layout.height) || dims[1]);
+    page.querySelectorAll('.ed-el').forEach(function (el) { el.remove(); });
+    groups = {}; selected = null; hideFloatBar();
+    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
+    var bg = document.getElementById('pageBg');
+    bg.style.background = layout.bg || '#ffffff';
+    if (layout.bg_image) bg.style.backgroundImage = 'url("' + layout.bg_image + '")';
+    (layout.elements || []).forEach(function (item, index) {
+      var base = { x: Math.round((item.x || 0) * sx), y: Math.round((item.y || 0) * sy), w: Math.max(4, Math.round((item.w || item.size || 50) * sx)), h: Math.max(4, Math.round((item.h || item.size || 30) * sy)) };
+      var el;
+      if (item.type === 'text') {
+        el = createEl(Object.assign(base, { type: 'text', label: 'Texte ' + (index + 1), text: item.text || 'Texte' }));
+        el.style.height = base.h + 'px';
+        el.style.fontSize = (item.size || 14) + 'px';
+        el.style.fontWeight = String(item.weight || 500);
+        el.style.color = item.color || '#1a2332';
+        el.style.textAlign = item.align || 'left';
+        if (item.font === 'times') el.style.fontFamily = "'Times New Roman', Times, serif";
+        else if (item.font === 'georgia') el.style.fontFamily = 'Georgia, serif';
+        else if (item.font === 'playfair') el.style.fontFamily = "'Playfair Display', Georgia, serif";
+        else if (item.font === 'lato') el.style.fontFamily = 'Lato, sans-serif';
+        else if (item.font === 'arial') el.style.fontFamily = 'Arial, sans-serif';
+        if (item.italic) el.style.fontStyle = 'italic';
+        if (item.underline) el.style.textDecoration = 'underline';
+        if (item.upper) el.style.textTransform = 'uppercase';
+        if (item.leading) el.style.lineHeight = String(item.leading);
+        if (item.spacing) el.style.letterSpacing = item.spacing + 'px';
+      } else if (item.type === 'rect') {
+        el = createEl(Object.assign(base, { type: 'shape', shape: 'rect', outline: item.fill === false, label: 'Forme ' + (index + 1) }));
+        el.style.background = item.fill === false ? 'transparent' : (item.color || '#223ea4');
+        el.style.borderRadius = (item.radius || 0) + 'px';
+        if (item.border) el.style.border = item.border + 'px solid ' + (item.border_color || '#223ea4');
+      } else if (item.type === 'image' && item.src) {
+        el = createEl(Object.assign(base, { type: 'logo', label: 'Image ' + (index + 1) }));
+        el.innerHTML = '';
+        var image = document.createElement('img');
+        image.src = item.src; image.alt = '';
+        image.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+        el.appendChild(image); appendResizeHandles(el);
+        el.style.height = base.h + 'px';
+      } else if (item.type === 'qr') {
+        createEl(Object.assign(base, { type: 'qr', label: 'QR Badge', qrUrl: item.value || DEFAULT_QR_URL }));
+      }
+    });
+    refreshLayers(); pushHistory(); selectEl(null);
+    document.querySelector('.ed-rail button[data-panel="layers"]').click();
+  }
   document.getElementById('aiRun').addEventListener('click', function () {
     var prompt = (document.getElementById('aiPrompt').value || '').trim();
-    if (!prompt) { toast('Saisissez un prompt'); return; }
+    if (!prompt) { toast('Décrivez le badge souhaité'); return; }
+    var cfg = window.UKC_EDITOR || {};
     var btn = document.getElementById('aiRun');
-    btn.disabled = true; btn.textContent = 'Analyse…';
-    setTimeout(function () {
-      var key = /carte|card/i.test(prompt) ? 'card' : 'participant';
-      loadTemplate(key);
-      btn.disabled = false; btn.textContent = 'Generer';
-      toast('Badge genere a partir du prompt');
-    }, 900);
+    var body = new FormData();
+    body.append('prompt', prompt);
+    body.append('event_id', cfg.editionId || '');
+    body.append('kind', 'badge');
+    body.append('type', cfg.type || 'default');
+    if (aiFile) body.append('inspiration', aiFile);
+    btn.disabled = true; btn.textContent = 'Génération en cours…';
+    fetch(cfg.generateUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': cfg.csrf || '', 'Accept': 'application/json' }, body: body })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.body || !res.body.layout) throw new Error((res.body && res.body.error) || 'Échec de la génération');
+        applyGeneratedLayout(res.body.layout);
+        toast('Mise en page générée ; vérifiez-la avant enregistrement');
+      })
+      .catch(function (error) { toast(error.message || 'Échec de la génération'); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Générer'; });
   });
 
   /* Keyboard */

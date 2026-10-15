@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Éditeur de badges - {{ config('app.name') }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  @php($ukcEditorCfg = ['editionId' => (string) $event_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Badge', 'backUrl' => route('admin.documents.attestations', ['event_id' => $event_id, 'tab' => 'badges']), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null, 'vars' => $vars ?? [], 'preview' => $preview ?? false])
+  @php($ukcEditorCfg = ['editionId' => (string) $event_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Badge', 'backUrl' => route('admin.documents.attestations', ['event_id' => $event_id, 'tab' => 'badges']), 'saveUrl' => route('admin.documents.templates.save'), 'generateUrl' => route('admin.documents.templates.generate'), 'uploadUrl' => route('admin.documents.templates.upload'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null, 'vars' => $vars ?? [], 'preview' => $preview ?? false, 'logos' => ['uk' => (parse_url(\App\Support\Branding::wide(), PHP_URL_PATH) ?: \App\Support\Branding::wide()), 'parakou' => '/img/attestations/logo-parakou.png']])
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   @vite(['resources/css/badge-designer.css', 'resources/css/designer-tailwise.css', 'resources/js/badge-designer.js'])
 </head>
 <body>
@@ -27,31 +27,31 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
         IA
       </button>
-      <button type="button" class="active" data-panel="templates" title="Templates">
+      <button type="button" data-panel="templates" title="Modèles">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z"/></svg>
-        Templates
+        Modèles
       </button>
-      <button type="button" data-panel="uploads" title="Uploads">
+      <button type="button" data-panel="uploads" title="Images">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        Uploads
+        Images
       </button>
-      <button type="button" data-panel="elements" title="Elements">
+      <button type="button" data-panel="elements" title="Éléments">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 17l-6.5 3.5 2-7L2 9h7z"/></svg>
-        Elements
+        Éléments
       </button>
-      <button type="button" data-panel="text" title="Text">
+      <button type="button" data-panel="text" title="Texte">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
-        Text
+        Texte
       </button>
-      <button type="button" data-panel="attributes" title="Attributes">
+      <button type="button" data-panel="attributes" title="Champs">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-        Attributes
+        Champs
       </button>
-      <button type="button" data-panel="qrcodes" title="QR Codes">
+      <button type="button" data-panel="qrcodes" title="QR codes">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5z"/></svg>
-        QR Codes
+        QR codes
       </button>
-      <button type="button" data-panel="layers" title="Calques">
+      <button type="button" class="active" data-panel="layers" title="Calques">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9L2 7v2l10 5 10-5V7l-10 4zm0 4L2 11v2l10 5 10-5v-2l-10 4z"/></svg>
         Calques
       </button>
@@ -64,16 +64,16 @@
           <p class="ly-meta">Décrivez le badge « {{ $scope }} » souhaité (couleurs, photo, QR…). Ce modèle sera utilisé pour les destinataires de cette catégorie.</p>
           <div class="ai-box">
             <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge {{ $scope }}, bandeau bleu UK, photo ronde, nom en grand, QR en bas, référence UKC-2026-…"></textarea>
-            <div class="ai-drop" id="aiDrop">Image / PDF de reference<br><span style="font-size:11px;">PNG, JPG, PDF - max 8 Mo</span></div>
-            <input type="file" id="aiFile" accept="image/*,.pdf" style="display:none;">
+            <div class="ai-drop" id="aiDrop">Image de référence<br><span style="font-size:11px;">PNG, JPG, WebP - max 8 Mo</span></div>
+            <input type="file" id="aiFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
             <div id="aiFileList"></div>
-            <button type="button" class="ai-run" id="aiRun">Generer</button>
+            <button type="button" class="ai-run" id="aiRun">Générer</button>
           </div>
         </div>
       </div>
 
-      <div class="panel-view active" id="panel-templates">
-        <div class="ed-panel-head">Modeles de design</div>
+      <div class="panel-view" id="panel-templates">
+        <div class="ed-panel-head">Modèles de design</div>
         <div class="ed-panel-body">
           <p class="ly-meta">Variantes de présentation du badge « {{ $scope }} ». Le modèle choisi s’applique aux destinataires de cette catégorie.</p>
           <div class="ed-panel-section" id="badgeDesignFormat">A6 Portrait</div>
@@ -94,44 +94,57 @@
       </div>
 
       <div class="panel-view" id="panel-uploads">
-        <div class="ed-panel-head">Uploads</div>
+        <div class="ed-panel-head">Images</div>
         <div class="ed-panel-body">
-          <div class="ed-upload" id="btnUploadImg">Upload Image<br><span style="font-size:11px;">SVG, PNG, JPG - max 2 Mo</span></div>
-          <input type="file" id="fileUpload" accept="image/*" style="display:none;">
-          <div class="ed-panel-section">Images ajoutees</div>
+          <div class="ed-upload" id="btnUploadImg">Téléverser une image<br><span style="font-size:11px;">PNG, JPG, WebP ou GIF</span></div>
+          <input type="file" id="fileUpload" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
+          <div class="ed-panel-section">Images ajoutées</div>
           <div class="ed-grid-2" id="uploadList">
-            <div class="ed-thumb" data-logo="uk">UK</div>
-            <div class="ed-thumb" data-logo="up">Parakou</div>
+            <div class="ed-thumb ed-thumb--logo" data-logo="uk" title="Université de Kara"><img src="{{ $ukcEditorCfg['logos']['uk'] }}" alt="Logo Université de Kara"></div>
+            <div class="ed-thumb ed-thumb--logo" data-logo="up" title="Université de Parakou"><img src="{{ $ukcEditorCfg['logos']['parakou'] }}" alt="Logo Université de Parakou"></div>
           </div>
+          <p class="ly-meta" style="margin-top:10px;">Cliquez une image pour l’ajouter au badge. Le fond se change avec <strong>Image de fond</strong>.</p>
         </div>
       </div>
 
       <div class="panel-view" id="panel-elements">
-        <div class="ed-panel-head">Elements</div>
+        <div class="ed-panel-head">Éléments</div>
         <div class="ed-panel-body">
           <button type="button" class="ed-tool-btn" data-add="photo">+ Photo participant</button>
+          <div class="ed-panel-section">Lignes</div>
+          <div class="ed-grid-2">
+            <button type="button" class="ed-shape" data-add="line-h" title="Ligne horizontale"><div class="ln-h"></div></button>
+            <button type="button" class="ed-shape" data-add="line-v" title="Ligne verticale"><div class="ln-v"></div></button>
+          </div>
           <div class="ed-panel-section">Formes</div>
           <div class="ed-grid-2">
-            <button type="button" class="ed-shape" data-add="rect"><div class="sq"></div></button>
-            <button type="button" class="ed-shape" data-add="circle"><div class="ci"></div></button>
-            <button type="button" class="ed-shape" data-add="line-h"><div class="ln-h"></div></button>
+            <button type="button" class="ed-shape" data-add="rect" title="Rectangle plein"><div class="sq"></div></button>
+            <button type="button" class="ed-shape" data-add="rect-o" title="Rectangle contour"><div class="sq-o"></div></button>
+            <button type="button" class="ed-shape" data-add="circle" title="Cercle plein"><div class="ci"></div></button>
+            <button type="button" class="ed-shape" data-add="circle-o" title="Cercle contour"><div class="ci-o"></div></button>
           </div>
         </div>
       </div>
 
       <div class="panel-view" id="panel-text">
-        <div class="ed-panel-head">Text</div>
+        <div class="ed-panel-head">Texte</div>
         <div class="ed-panel-body">
-          <button type="button" class="ed-tool-btn" data-add="textbox">+ Add text box</button>
-          <button type="button" class="ed-tool-btn" data-add="heading">Add heading</button>
-          <button type="button" class="ed-tool-btn" data-add="name">Add nom participant</button>
-          <button type="button" class="ed-tool-btn" data-add="role">Add role</button>
+          <button type="button" class="ed-tool-btn" data-add="textbox">+ Zone de texte</button>
+          <div class="ed-panel-section">Styles de texte</div>
+          <button type="button" class="ed-tool-btn" data-add="heading">Titre</button>
+          <button type="button" class="ed-tool-btn" data-add="subheading">Sous-titre</button>
+          <button type="button" class="ed-tool-btn" data-add="normal">Paragraphe</button>
+          <div class="ed-panel-section">Champs courants</div>
+          <button type="button" class="ed-tool-btn" data-add="name">Nom du titulaire</button>
+          <button type="button" class="ed-tool-btn" data-add="role">Rôle du titulaire</button>
+          <p class="ly-meta" style="margin-top:12px;">Double-cliquez un texte du badge pour le modifier.</p>
         </div>
       </div>
 
       <div class="panel-view" id="panel-attributes">
-        <div class="ed-panel-head">Attributes</div>
+        <div class="ed-panel-head">Champs du badge</div>
         <div class="ed-panel-body">
+          <p class="ly-meta">Cliquez un champ pour l’ajouter au badge. Sa valeur sera remplacée pour chaque destinataire.</p>
           <div class="ed-attr" data-attr="[recipient.name]">[recipient.name]</div>
           <div class="ed-attr" data-attr="[recipient.institution]">[recipient.institution]</div>
           <div class="ed-attr" data-attr="[recipient.role]">[recipient.role]</div>
@@ -139,20 +152,22 @@
           <div class="ed-attr" data-attr="[badge.ref]">[badge.ref]</div>
           <div class="ed-attr" data-attr="[edition.name]">[edition.name]</div>
           <div class="ed-attr" data-attr="[edition.dates]">[edition.dates]</div>
+          <div class="ed-attr" data-attr="[edition.location]">[edition.location]</div>
           <div class="ed-attr" data-attr="[edition.theme]">[edition.theme]</div>
         </div>
       </div>
 
       <div class="panel-view" id="panel-qrcodes">
-        <div class="ed-panel-head">QR Codes</div>
+        <div class="ed-panel-head">QR codes</div>
         <div class="ed-panel-body">
-          <button type="button" class="ed-tool-btn" data-add="qr-verify">+ QR verification badge</button>
-          <button type="button" class="ed-tool-btn" data-add="qr-custom">+ Custom URL</button>
-          <p class="ly-meta">Par défaut : identifiant du participant (DIDs / inscription).</p>
+          <button type="button" class="ed-tool-btn" data-add="qr-verify">+ Page de vérification</button>
+          <p class="ly-meta">Le QR code mène à la vérification du badge de son titulaire.</p>
+          <button type="button" class="ed-tool-btn" data-add="qr-custom">+ Adresse personnalisée</button>
+          <p class="ly-meta">Pointe vers l’adresse de votre choix.</p>
         </div>
       </div>
 
-      <div class="panel-view" id="panel-layers">
+      <div class="panel-view active" id="panel-layers">
         <div class="ed-panel-head"><span>Calques</span><span style="font-size:11px;font-weight:600;color:var(--ukc-light);" id="lyCount">0</span></div>
         <div class="ed-panel-body">
           <div class="ly-toolbar">
@@ -229,6 +244,7 @@
         <select id="fontFamily">
           <option value="Jost">Jost</option>
           <option value="Georgia">Georgia</option>
+          <option value="'Times New Roman'">Times</option>
           <option value="'Playfair Display'">Playfair</option>
           <option value="Arial">Arial</option>
           <option value="Lato, sans-serif">Lato</option>
