@@ -4322,3 +4322,10 @@ masquer le trait historique intégré au PNG. La migration
 standards sauvegardés et leur `editor_state`. Les pictogrammes du pied sont des
 images à `color` optionnel ; le designer affiche une teinte par masque et
 `LayoutRenderer` produit un PNG recoloré pour le HTML et le PDF.
+
+Le designer expose « Épaisseur » pour les lignes horizontales et verticales ;
+`rect.shape` garde leur orientation dans le modèle et la valeur de `h` ou `w`
+porte l’épaisseur exacte (1 à 40 px). Les pictogrammes du pied sont désormais
+des SVG vectoriels recolorables. `2026_10_15_000700_use_vector_badge_icons`
+convertit les sources PNG des modèles enregistrés, et `LayoutRenderer` conserve
+la prise en charge des anciens PNG pour les documents historiques.

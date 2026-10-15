@@ -62,8 +62,8 @@ class LayoutRenderer
         // Les couvrir uniquement si le modèle utilise les deux nouveaux calques.
         if (($layout['bg_image'] ?? '') === '/img/badges/badge-default-bg.png') {
             $iconSources = array_column((array) ($layout['elements'] ?? []), 'src');
-            if (in_array('/img/badges/icon-location.png', $iconSources, true)
-                && in_array('/img/badges/icon-calendar.png', $iconSources, true)) {
+            if (count(array_filter($iconSources, fn ($src) => in_array($src, ['/img/badges/icon-location.svg', '/img/badges/icon-location.png'], true))) > 0
+                && count(array_filter($iconSources, fn ($src) => in_array($src, ['/img/badges/icon-calendar.svg', '/img/badges/icon-calendar.png'], true))) > 0) {
                 $html .= sprintf(
                     '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:#fff;"></div>',
                     (int) round($w * 65 / 397), (int) round($h * 428 / 560),
@@ -158,7 +158,7 @@ class LayoutRenderer
         $h = (int) ($el['h'] ?? 30);
         $resolved = self::imageSrc($src, $pdf);
         $sizeSource = $resolved;
-        if (in_array($src, ['/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)
+        if (in_array($src, ['/img/badges/icon-location.svg', '/img/badges/icon-calendar.svg', '/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)
             && isset($el['color'])) {
             $resolved = self::coloredBadgeIcon($src, (string) $el['color']) ?? $resolved;
         }
@@ -188,7 +188,7 @@ class LayoutRenderer
         );
     }
 
-    /** Recolore les PNG des pictogrammes en conservant leur transparence, y compris pour le PDF. */
+    /** Recolore les pictogrammes vectoriels et conserve les anciens PNG pour les badges existants. */
     protected static function coloredBadgeIcon(string $src, string $color): ?string
     {
         static $cache = [];
@@ -196,7 +196,18 @@ class LayoutRenderer
         if (isset($cache[$key])) {
             return $cache[$key];
         }
-        if (! function_exists('imagecreatefrompng') || ! preg_match('/^#[0-9a-f]{6}$/i', $color)) {
+        if (! preg_match('/^#[0-9a-f]{6}$/i', $color)) {
+            return null;
+        }
+        if (str_ends_with($src, '.svg')) {
+            $svg = @file_get_contents(public_path(ltrim($src, '/')));
+            if ($svg === false) {
+                return null;
+            }
+
+            return $cache[$key] = 'data:image/svg+xml;base64,'.base64_encode(str_replace('#2e3440', strtolower($color), $svg));
+        }
+        if (! function_exists('imagecreatefrompng')) {
             return null;
         }
         $source = @imagecreatefrompng(public_path(ltrim($src, '/')));

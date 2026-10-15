@@ -60,8 +60,9 @@ class LayoutSanitizer
                 $e['size'] = self::clampInt($el['size'] ?? 96, 24, 400, 96);
                 $e['value'] = mb_substr((string) ($el['value'] ?? ''), 0, 200);
             } else {
-                $e['w'] = self::clampInt($el['w'] ?? 100, 4, $w, 100);
-                $e['h'] = self::clampInt($el['h'] ?? 30, 4, $h, 30);
+                $minimum = $t === 'rect' ? 1 : 4;
+                $e['w'] = self::clampInt($el['w'] ?? 100, $minimum, $w, 100);
+                $e['h'] = self::clampInt($el['h'] ?? 30, $minimum, $h, 30);
             }
 
             if ($t === 'text') {
@@ -82,6 +83,7 @@ class LayoutSanitizer
                 $e['leading'] = self::clampFloat($el['leading'] ?? 1.2, 0.8, 3.0, 1.2);
                 $e['spacing'] = self::clampFloat($el['spacing'] ?? 0, -5, 20, 0);
             } elseif ($t === 'rect') {
+                $e['shape'] = in_array($el['shape'] ?? null, ['line-h', 'line-v'], true) ? $el['shape'] : 'rect';
                 $e['color'] = self::color($el['color'] ?? null, $accent);
                 $e['fill'] = (bool) ($el['fill'] ?? true);
                 // Un filet ou un cadre arrondi devenait un aplat rectangulaire.
@@ -90,7 +92,7 @@ class LayoutSanitizer
                 $e['border_color'] = self::color($el['border_color'] ?? null, $accent);
             } elseif ($t === 'image') {
                 $e['src'] = self::src($el['src'] ?? '');
-                if (in_array($e['src'], ['/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)) {
+                if (in_array($e['src'], ['/img/badges/icon-location.svg', '/img/badges/icon-calendar.svg', '/img/badges/icon-location.png', '/img/badges/icon-calendar.png'], true)) {
                     $e['color'] = self::color($el['color'] ?? null, '#2e3440');
                 }
             } elseif ($t === 'signatures') {
@@ -241,10 +243,10 @@ class LayoutSanitizer
                 $t(['x' => 20, 'y' => $roleY, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
                 $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
-                ['type' => 'rect', 'x' => 108, 'y' => 417, 'w' => 181, 'h' => 4, 'color' => $dark, 'radius' => 2],
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => 108, 'y' => 417, 'w' => 181, 'h' => 4, 'color' => $dark, 'radius' => 2],
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
-                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.png', 'color' => $dark],
-                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.png', 'color' => $dark],
+                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
                 // Lieu et dates.
                 $t(['x' => 98, 'y' => 438, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
                 $t(['x' => 98, 'y' => 476, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),

@@ -273,6 +273,7 @@
         <button type="button" class="sbtn" id="fontSizeMinus" title="Taille -">−</button>
         <input type="number" id="fontSize" value="14" min="8" max="72" style="width:48px;">
         <button type="button" class="sbtn" id="fontSizePlus" title="Taille +">+</button>
+        <label class="ed-line-thickness" for="lineThickness">Épaisseur <input type="number" id="lineThickness" value="4" min="1" max="40"> px</label>
         <span class="sep"></span>
         <input type="color" id="fontColor" value="#1a2332" title="Couleur">
         <button type="button" class="sbtn" data-style="bold" title="Gras (Ctrl+B)">

@@ -144,7 +144,7 @@
         return {
           id: el.id, html: el.innerHTML, className: el.className,
           label: el.dataset.label, locked: el.dataset.locked, hidden: el.dataset.hidden,
-          group: el.dataset.group || '', outline: el.dataset.outline || '',
+          group: el.dataset.group || '', outline: el.dataset.outline || '', shape: el.dataset.shape || '',
           blend: el.dataset.blend || 'normal', qrUrl: el.dataset.qrUrl || '',
           style: {
             left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height,
@@ -196,6 +196,7 @@
       el.dataset.hidden = s.hidden || '0';
       el.dataset.group = s.group || '';
       el.dataset.outline = s.outline || '';
+      el.dataset.shape = s.shape || '';
       el.dataset.blend = s.blend || 'normal';
       if (s.qrUrl) el.dataset.qrUrl = s.qrUrl;
       el.innerHTML = s.html;
@@ -209,6 +210,7 @@
     });
     selected = null;
     styleBar.classList.add('disabled');
+    styleBar.classList.remove('is-line');
     hideFloatBar();
     refreshLayers();
     historyLock = false;
@@ -235,11 +237,12 @@
     var img = el && el.querySelector('img[src]');
     if (!img) return '';
     var src = img.getAttribute('src') || '';
-    return /^\/img\/badges\/icon-(location|calendar)\.png$/.test(src) ? src : '';
+    return /^\/img\/badges\/icon-(location|calendar)\.(?:png|svg)$/.test(src) ? src : '';
   }
   function paintBadgeIcon(el, color) {
     var src = badgeIconSrc(el);
     if (!src) return false;
+    el.classList.add('badge-icon');
     var img = el.querySelector('img[src]');
     var paint = el.querySelector('.ed-icon-paint');
     if (!paint) {
@@ -289,11 +292,12 @@
       el.appendChild(inner);
     } else if (cfg.type === 'shape') {
       el.classList.add('shape-box');
+      el.dataset.shape = cfg.shape || 'rect';
       el.style.width = (cfg.w || 40) + 'px';
       el.style.height = (cfg.h || 40) + 'px';
       if (cfg.shape === 'circle') el.style.borderRadius = '50%';
-      if (cfg.shape === 'line-h') { el.style.height = '3px'; el.style.width = (cfg.w || 100) + 'px'; }
-      if (cfg.shape === 'line-v') { el.style.width = '3px'; el.style.height = (cfg.h || 80) + 'px'; }
+      if (cfg.shape === 'line-h') { el.style.height = (cfg.h || 3) + 'px'; el.style.width = (cfg.w || 100) + 'px'; }
+      if (cfg.shape === 'line-v') { el.style.width = (cfg.w || 3) + 'px'; el.style.height = (cfg.h || 80) + 'px'; }
       if (cfg.outline) { el.dataset.outline = '1'; el.style.background = 'transparent'; el.style.border = '2px solid #111'; }
     } else {
       el.classList.add('text');
@@ -362,6 +366,16 @@
     if (edited) pushHistory();
   }
 
+  function lineDirection(el) {
+    if (!el || !el.classList.contains('shape-box')) return '';
+    if (el.dataset.shape === 'line-h' || el.dataset.shape === 'line-v') return el.dataset.shape;
+    var w = parseFloat(el.style.width) || el.offsetWidth;
+    var h = parseFloat(el.style.height) || el.offsetHeight;
+    if (h <= 40 && w >= h * 4) return 'line-h';
+    if (w <= 40 && h >= w * 4) return 'line-v';
+    return '';
+  }
+
   function selectEl(el) {
     stopTextEdit();
     if (selected) selected.classList.remove('selected');
@@ -375,10 +389,14 @@
       document.getElementById('lyOpacityVal').textContent = op + '%';
       document.getElementById('lyBlend').value = el.dataset.blend || 'normal';
       document.getElementById('fontSize').value = parseInt(window.getComputedStyle(el).fontSize, 10) || 13;
+      var direction = lineDirection(el);
+      styleBar.classList.toggle('is-line', !!direction);
+      if (direction) document.getElementById('lineThickness').value = Math.round(parseFloat(direction === 'line-h' ? el.style.height : el.style.width) || 3);
       syncTextControls(el, window.getComputedStyle(el));
       updateFloatBar();
     } else {
       styleBar.classList.add('disabled');
+      styleBar.classList.remove('is-line');
       document.getElementById('lyControls').classList.remove('show');
       hideFloatBar();
     }
@@ -810,8 +828,8 @@
         styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
-        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
+        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.svg' });
         styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
@@ -830,8 +848,8 @@
         styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
         styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.png' });
-        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.png' });
+        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.svg' });
         styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
@@ -1012,7 +1030,7 @@
         Object.assign(cfg, {
           type: 'logo', label: locationIcon ? 'Icône localisation' : 'Icône calendrier',
           w: 24,
-          html: '<img src="/img/badges/icon-' + (locationIcon ? 'location' : 'calendar') + '.png" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
+          html: '<img src="/img/badges/icon-' + (locationIcon ? 'location' : 'calendar') + '.svg" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
         });
       }
       else if (kind === 'qr' || kind === 'qr-verify') Object.assign(cfg, { type: 'qr', label: 'QR Badge', w: 72, qrUrl: DEFAULT_QR_URL });
@@ -1089,6 +1107,16 @@
 
   document.getElementById('fontSize').addEventListener('change', function () {
     if (selected && !isLocked(selected)) { selected.style.fontSize = this.value + 'px'; pushHistory(); }
+  });
+  document.getElementById('lineThickness').addEventListener('change', function () {
+    var direction = lineDirection(selected);
+    if (!direction || isLocked(selected)) return;
+    var thickness = Math.max(1, Math.min(40, parseInt(this.value, 10) || 1));
+    this.value = thickness;
+    selected.dataset.shape = direction;
+    selected.style[direction === 'line-h' ? 'height' : 'width'] = thickness + 'px';
+    pushHistory();
+    updateFloatBar();
   });
   document.getElementById('fontSizeMinus').addEventListener('click', function () {
     var i = document.getElementById('fontSize'); i.value = Math.max(8, parseInt(i.value, 10) - 1); i.dispatchEvent(new Event('change'));
@@ -1174,7 +1202,7 @@
         var outline = el.dataset.outline === '1';
         var bw = el.style.border ? Math.round(parseFloat(cs.borderTopWidth) || 0) : 0;
         return {
-          type: 'rect', x: x, y: y, w: w, h: h,
+          type: 'rect', shape: lineDirection(el) || el.dataset.shape || 'rect', x: x, y: y, w: w, h: h,
           color: outline ? '#ffffff' : (rgbToHex(cs.backgroundColor) || '#223ea4'),
           fill: !outline,
           radius: Math.round(parseFloat(cs.borderTopLeftRadius) || 0),
@@ -1564,12 +1592,12 @@
     bg.style.background = layout.bg || '#ffffff';
     if (layout.bg_image) bg.style.backgroundImage = 'url("' + layout.bg_image + '")';
     if (layout.bg_image === '/img/badges/badge-default-bg.png'
-      && (layout.elements || []).some(function (item) { return item.src === '/img/badges/icon-location.png'; })
-      && (layout.elements || []).some(function (item) { return item.src === '/img/badges/icon-calendar.png'; })) {
+      && (layout.elements || []).some(function (item) { return /^\/img\/badges\/icon-location\.(?:png|svg)$/.test(item.src || ''); })
+      && (layout.elements || []).some(function (item) { return /^\/img\/badges\/icon-calendar\.(?:png|svg)$/.test(item.src || ''); })) {
       page.classList.add('bg-co-icons');
     }
     (layout.elements || []).forEach(function (item, index) {
-      var base = { x: Math.round((item.x || 0) * sx), y: Math.round((item.y || 0) * sy), w: Math.max(4, Math.round((item.w || item.size || 50) * sx)), h: Math.max(4, Math.round((item.h || item.size || 30) * sy)) };
+      var base = { x: Math.round((item.x || 0) * sx), y: Math.round((item.y || 0) * sy), w: Math.max(1, Math.round((item.w || item.size || 50) * sx)), h: Math.max(1, Math.round((item.h || item.size || 30) * sy)) };
       var el;
       if (item.type === 'text') {
         el = createEl(Object.assign(base, { type: 'text', label: 'Texte ' + (index + 1), text: item.text || 'Texte' }));
@@ -1589,7 +1617,7 @@
         if (item.leading) el.style.lineHeight = String(item.leading);
         if (item.spacing) el.style.letterSpacing = item.spacing + 'px';
       } else if (item.type === 'rect') {
-        el = createEl(Object.assign(base, { type: 'shape', shape: 'rect', outline: item.fill === false, label: 'Forme ' + (index + 1) }));
+        el = createEl(Object.assign(base, { type: 'shape', shape: item.shape || 'rect', outline: item.fill === false, label: item.shape === 'line-h' ? 'Ligne horizontale' : item.shape === 'line-v' ? 'Ligne verticale' : 'Forme ' + (index + 1) }));
         el.style.background = item.fill === false ? 'transparent' : (item.color || '#223ea4');
         el.style.borderRadius = (item.radius || 0) + 'px';
         if (item.border) el.style.border = item.border + 'px solid ' + (item.border_color || '#223ea4');

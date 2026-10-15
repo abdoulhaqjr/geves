@@ -1979,3 +1979,8 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - Le trait sombre du pied du badge officiel est maintenant un calque `rect` horizontal indépendant. Le trait encore présent dans le PNG de cadre est masqué lorsque le modèle active `erase_default_rule`. Le designer et le rendu HTML/PDF appliquent cette même règle. La migration `2026_10_15_000600_make_badge_footer_rule_editable` ajoute le calque et adapte l'instantané de l'éditeur uniquement aux modèles dont le pied est encore à ses coordonnées standard.
 - Les pictogrammes de localisation et de calendrier disposent d'un aperçu dans la palette et acceptent la couleur de la barre d'outils. Leur teinte est conservée dans le modèle (`image.color`) et le moteur de rendu recolore les PNG en conservant la transparence, y compris dans les PDF.
+
+### Épaisseur du filet et pictogrammes vectoriels (15 octobre 2026)
+
+- La barre d'outils affiche « Épaisseur » pour les lignes horizontales et verticales. Le designer conserve `rect.shape` et enregistre leur épaisseur dans `h` ou `w` (1 à 40 px), identique dans l'éditeur et le rendu HTML/PDF.
+- Les pictogrammes localisation et calendrier utilisent des SVG recolorables dans la palette, le modèle par défaut et les badges délivrés. La migration `2026_10_15_000700_use_vector_badge_icons` convertit les modèles et instantanés enregistrés qui utilisaient les PNG standard ; les PNG historiques restent lisibles.
