@@ -119,19 +119,6 @@
                         {{ __('L’aperçu de votre badge sera disponible dès confirmation du paiement d’inscription.') }}
                     @endif
                 </p>
-                @if ($badgeHasPhoto)
-                    {{-- Le badge participant prend par défaut le modèle AVEC photo de
-                         profil ; on peut demander ici la version SANS photo. --}}
-                    <form method="POST" action="{{ route('account.badge.photo') }}" class="badge-photo-pref">
-                        @csrf
-                        <input type="hidden" name="without_photo" value="0">
-                        <label>
-                            <input type="checkbox" name="without_photo" value="1" @checked($badgeWithoutPhoto)>
-                            <span>{{ __('Badge sans photo de profil') }}</span>
-                        </label>
-                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Enregistrer') }}</button>
-                    </form>
-                @endif
                 <div class="ukc-badge-list">
                     @foreach ($badges as $badge)
                         @php

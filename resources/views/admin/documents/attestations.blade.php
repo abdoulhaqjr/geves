@@ -324,7 +324,6 @@
                             </div>
                             <div>
                                 <p class="desc">Les badges de participation sont disponibles après confirmation du paiement.</p>
-                                <label class="ukc-check"><input type="checkbox" name="badgePhotoRequired" value="1" @checked($opts['badgePhotoRequired'])> Photo participant obligatoire sur le badge</label>
                                 <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
                                 <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
                             </div>

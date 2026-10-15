@@ -3548,19 +3548,17 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   le rôle imprimé « Participant ». L'espace participant montre son aperçu
   verrouillé avant paiement et le débloque après règlement ; aucun badge
   communicant distinct n'existe.
-- ⚠️ **Modèle participant AVEC ou SANS photo = choisi automatiquement**
-  (`BadgeCatalog::participationType($account)`) : le badge participant prend le
-  modèle **`participant_photo`** (maquette à photo de profil) dès que le compte a
-  une `photo_path` **et** ne l'a pas refusée, sinon le modèle **`default`** (sans
-  photo). Sans photo, on retombe donc toujours sur `default`. Le refus est une
-  **préférence globale du compte** (`users.meta['badge_without_photo']`,
-  `prefersNoPhoto()`), posée par la case **« Badge sans photo de profil »** de
-  « Mes badges » (route `account.badge.photo`, visible seulement si une photo
-  existe). ⚠️ `participant_photo` reste un badge de PARTICIPANT : `role()` imprime
-  « Participant » (pas le nom du modèle), et il **vise les mêmes destinataires**
-  que `default` (inscriptions réglées) - c'est la seule maquette qui change. Ne
-  pas le doubler dans `forAccount()` (le `continue` sur `default`/`participant_photo`
-  est volontaire). Garde : `BadgePhotoModelTest`.
+- ⚠️ **Un seul modèle de badge participant** (`default`) : avec ou sans photo
+  se choisit dans le designer, parmi les variantes `co` et `co-photo`. Le modèle
+  enregistré pour `default` sert à tous les participants de l'événement ; le
+  calque photo, s'il est présent, utilise la photo du compte ou ses initiales.
+  Le type historique `participant_photo` peut rester en base pour conserver
+  d'anciennes mises en page, mais il n'est plus listé ni utilisé pour les badges
+  délivrés. La préférence individuelle « Badge sans photo de profil » et l'option
+  générale « Photo obligatoire » ont été retirées : la composition relève du
+  designer. Les anciens liens du designer ouvrent `default`. La migration
+  `2026_10_15_000400` reprend la maquette à photo personnalisée si le modèle
+  `default` n'a jamais été personnalisé.
   - ⚠️ **La maquette à photo est AUSSI une variante de design du concepteur**
     (`badge-designer.blade.php`, carte `data-tpl="co-photo"` « Cadre vert/bleu avec
     photo ») : un gestionnaire peut l'appliquer à **n'importe quel type** de badge

@@ -208,7 +208,6 @@ class DocumentHubController extends Controller
                 'attCertEnabled' => app(AttestationCertifier::class)->enabled(),
                 'badgePrefix' => (string) EventSettings::get($event, 'badges.prefix', 'UKC-2026-'),
                 'badgeFormat' => (string) EventSettings::get($event, 'badges.format', 'A6 Portrait'),
-                'badgePhotoRequired' => (bool) EventSettings::get($event, 'badges.photo_required', true),
                 'badgeQrAccess' => (bool) EventSettings::get($event, 'badges.qr_access', true),
                 'badgeBatchPrint' => (bool) EventSettings::get($event, 'badges.batch_print', false),
                 'forewordTitle' => (string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos'),
@@ -387,7 +386,6 @@ class DocumentHubController extends Controller
         EventSettings::setMany($event, [
             'badges.prefix' => (string) $request->input('badgePrefix'),
             'badges.format' => (string) $request->input('badgeFormat'),
-            'badges.photo_required' => $request->boolean('badgePhotoRequired'),
             'badges.qr_access' => $request->boolean('badgeQrAccess'),
             'badges.batch_print' => $request->boolean('badgeBatchPrint'),
         ]);

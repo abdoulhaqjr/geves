@@ -785,10 +785,8 @@
         styled({ label: 'Dates', x: 98, y: 472, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
       },
-      /* Badge participant AVEC PHOTO (type `participant_photo`).
-         ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge(true) (PHP) : même
-         maquette que `co`, mais l'événement remonte (y108), une photo ronde s'intercale
-         (y156), et nom/rôle/thème descendent pour lui faire la place. */
+      /* Variante avec photo du même badge. Elle se choisit dans le designer
+         et s'enregistre sur le modèle de la catégorie courante. */
       'co-photo': function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
@@ -1712,8 +1710,8 @@
   buildVariantThumbs();
   history = []; historyIndex = -1;
 
-  /* Init : le type `participant_photo` charge la maquette avec photo (`co-photo`). */
-  loadTemplate((window.UKC_EDITOR || {}).type === 'participant_photo' ? 'co-photo' : 'co');
+  /* Une catégorie a un seul modèle ; la photo est un choix de design. */
+  loadTemplate('co');
 
   /* ---------- Hydratation depuis le badge enregistré ---------- */
   (function () {
@@ -1737,7 +1735,7 @@
   (function () {
     var ed = window.UKC_EDITOR || {};
     var hydrated = ed.editorState && ed.editorState.els && ed.editorState.els.length;
-    var k = ed.type === 'participant_photo' ? 'co-photo' : 'co';
+    var k = 'co';
     document.querySelectorAll('.ed-tpl-card').forEach(function (c) {
       c.classList.toggle('active', !hydrated && c.dataset.tpl === k);
     });

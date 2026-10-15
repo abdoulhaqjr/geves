@@ -15,7 +15,6 @@ class BadgeCatalog
     /** @var array<string, array{label: string, title: string, source: string}> */
     public const TYPES = [
         'default' => ['label' => 'Participant', 'title' => 'Badge participant', 'source' => 'Inscriptions réglées'],
-        'participant_photo' => ['label' => 'Participant avec photo', 'title' => 'Badge participant (avec photo)', 'source' => 'Inscriptions réglées'],
         'moderation' => ['label' => 'Modérateur', 'title' => 'Badge modérateur', 'source' => 'Modérateurs de séance'],
         'rapporteur' => ['label' => 'Rapporteur', 'title' => 'Badge rapporteur', 'source' => 'Rapporteurs de séance'],
         'appui_organisation' => ['label' => 'Appui au comité d’organisation', 'title' => 'Badge d’appui à l’organisation', 'source' => 'Équipe d’appui'],
@@ -35,32 +34,10 @@ class BadgeCatalog
         return self::TYPES[$type]['label'] ?? self::TYPES['default']['label'];
     }
 
-    /**
-     * Rôle IMPRIMÉ sur le badge (≠ libellé de menu) : le modèle « Participant avec
-     * photo » reste un badge de PARTICIPANT, on imprime donc « Participant », pas le
-     * nom du modèle. Les autres types impriment leur libellé.
-     */
+    /** Rôle imprimé sur le badge. */
     public static function role(string $type): string
     {
-        return $type === 'participant_photo' ? self::TYPES['default']['label'] : self::label($type);
-    }
-
-    /** Le compte a-t-il refusé la photo sur son badge (préférence « Mes badges ») ? */
-    public static function prefersNoPhoto(User $account): bool
-    {
-        return (bool) ($account->meta['badge_without_photo'] ?? false);
-    }
-
-    /**
-     * Modèle de badge participant pour ce compte : AVEC photo si une photo de
-     * profil existe et n'a pas été refusée, SANS photo sinon. C'est la bascule
-     * automatique « pas de photo → modèle sans photo ».
-     */
-    public static function participationType(User $account): string
-    {
-        return (! self::prefersNoPhoto($account) && filled($account->photo_path))
-            ? 'participant_photo'
-            : 'default';
+        return self::label($type);
     }
 
     /**
@@ -73,14 +50,8 @@ class BadgeCatalog
      */
     public static function forAccount(Event $event, User $account, Participant $participant): Collection
     {
-        // Le badge participant prend le modèle AVEC photo quand la personne a une
-        // photo de profil ET ne l'a pas refusée ; sinon le modèle SANS photo. Sans
-        // photo, on retombe automatiquement sur le modèle sans photo ; le refus se
-        // choisit dans « Mes badges » (clé `meta.badge_without_photo`).
-        $participationType = self::participationType($account);
-
         $badges = collect([[
-            'type' => $participationType,
+            'type' => 'default',
             'recipient' => [
                 'name' => self::accountName($account),
                 'email' => (string) $participant->email,
@@ -94,10 +65,7 @@ class BadgeCatalog
             ->filter()->unique();
 
         foreach (array_keys(self::TYPES) as $type) {
-            // 'participant_photo' est un MODÈLE d'impression côté admin (mêmes
-            // destinataires que la participation) : on ne double pas le badge
-            // participant dans l'espace de la personne.
-            if ($type === 'default' || $type === 'participant_photo') {
+            if ($type === 'default') {
                 continue;
             }
 
@@ -127,9 +95,7 @@ class BadgeCatalog
             return collect();
         }
 
-        // Le modèle « Participant avec photo » vise les MÊMES destinataires que le
-        // badge participant (inscriptions réglées) ; seule la maquette diffère.
-        if ($type === 'default' || $type === 'participant_photo') {
+        if ($type === 'default') {
             return Participant::where('event_id', $event->id)
                 ->whereHas('participationPayments', fn ($query) => $query->where('status', 'paid'))
                 ->with('user')
@@ -139,7 +105,7 @@ class BadgeCatalog
                     'email' => (string) $person->email,
                     'institution' => (string) $person->institution,
                     'ref' => $event->id.'-'.$person->id,
-                    // Photo de profil (pour le badge avec photo) ; vide = initiales.
+                    // Le calque photo est facultatif dans le modèle du designer.
                     'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
                 ])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
         }

@@ -312,6 +312,9 @@ class DocumentController extends Controller
     public function badges(Request $request, Event $event): View
     {
         $type = (string) $request->query('type', 'default');
+        if ($type === 'participant_photo') {
+            $type = 'default'; // Ancien lien : un seul modèle participant désormais.
+        }
         abort_unless(BadgeCatalog::valid($type), 404);
         $people = BadgeCatalog::recipients($event, $type);
 

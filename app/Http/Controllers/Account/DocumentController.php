@@ -18,7 +18,6 @@ use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -111,9 +110,8 @@ class DocumentController extends Controller
                     'title' => BadgeCatalog::TYPES[$type]['title'],
                     'role' => BadgeCatalog::role($type),
                     'ref' => $recipient['ref'],
-                    // Le badge participant (avec OU sans photo) reste verrouillé tant
-                    // que l'inscription n'est pas réglée ; les fonctions ne le sont pas.
-                    'locked' => in_array($type, ['default', 'participant_photo'], true) && ! $paid,
+                    // Seul le badge participant reste verrouillé avant paiement.
+                    'locked' => $type === 'default' && ! $paid,
                     'html' => $rendered['html'],
                     'w' => $rendered['w'],
                     'h' => $rendered['h'],
@@ -136,29 +134,8 @@ class DocumentController extends Controller
             'hasBooklet' => $hasBooklet,
             'media' => $event->media,
             'badges' => $badges,
-            // Choix « Badge sans photo de profil » (visible seulement si une photo existe).
-            'badgeHasPhoto' => filled($account->photo_path),
-            'badgeWithoutPhoto' => BadgeCatalog::prefersNoPhoto($account),
             'didIssuer' => $didIssuer,
         ]);
-    }
-
-    /**
-     * Préférence « Badge sans photo de profil » (globale au compte, dans `meta`).
-     * Quand elle est active, le badge participant utilise le modèle SANS photo même
-     * si une photo de profil existe. Sans photo, le modèle sans photo est de toute
-     * façon le seul retenu.
-     */
-    public function badgePhotoPreference(Request $request): RedirectResponse
-    {
-        $account = $request->user('account');
-        $meta = (array) ($account->meta ?? []);
-        $meta['badge_without_photo'] = $request->boolean('without_photo');
-        $account->meta = $meta;
-        $account->save();
-
-        return back(fallback: route('account.documents'))
-            ->with('ukc_success', __('Préférence du badge enregistrée.'));
     }
 
     /**

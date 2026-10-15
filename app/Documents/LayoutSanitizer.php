@@ -195,8 +195,7 @@ class LayoutSanitizer
         // Logo UK large (suit le réglage des Réglages) ; chemin relatif pour le PDF.
         $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
 
-        // ⚠️ Variante AVEC PHOTO (type `participant_photo`, modèle « Participant avec
-        // photo ») : même maquette, mais le nom de l'événement REMONTE, une photo ronde
+        // Variante AVEC PHOTO du même badge : le nom de l'événement REMONTE, une photo ronde
         // s'intercale entre l'événement et le nom, et nom/rôle/thème DESCENDENT pour lui
         // faire la place. La photo (élément `photo`) se remplit avec `recipient.photo`
         // (profil), sinon les initiales. Le concepteur (`co-photo`) décrit la MÊME maquette.
