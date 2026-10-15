@@ -3552,8 +3552,10 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   communicant distinct n'existe.
 - ⚠️ **Un seul modèle de badge participant** (`default`) : avec ou sans photo
   se choisit dans le designer, parmi les variantes `co` et `co-photo`. Le modèle
-  enregistré pour `default` sert à tous les participants de l'événement ; le
-  calque photo, s'il est présent, utilise la photo du compte ou ses initiales.
+  enregistré pour `default` sert à tous les participants de l'événement. Au
+  rendu, `BadgeLayout::forRecipient()` choisit la variante officielle sans
+  photo quand le modèle contient un calque photo mais que le compte n'a pas
+  renseigné de photo ; les autres bénéficiaires gardent le modèle enregistré.
   Le type historique `participant_photo` peut rester en base pour conserver
   d'anciennes mises en page, mais il n'est plus listé ni utilisé pour les badges
   délivrés. La préférence individuelle « Badge sans photo de profil » et l'option
@@ -3582,8 +3584,9 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     (silhouette SVG dans `.photo-inner`), pas le mot « Photo ». À l'**aperçu**, la
     photo d'exemple est un avatar de la galerie des assistantes
     (`sampleVars` → `recipient.photo` = `img/agents/awa-3.webp`, seulement pour un
-    badge). Le badge délivré, lui, prend la vraie photo de profil (`recipient.photo`),
-    repli sur les initiales quand il n'y en a pas.
+    badge). Le badge délivré prend la vraie photo de profil (`recipient.photo`).
+    Sans photo, `BadgeLayout` utilise la maquette sans image dans l'espace
+    participant comme sur la planche administrative.
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique

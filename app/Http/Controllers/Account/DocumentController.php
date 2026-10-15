@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Documents\BadgeLayout;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretDocx;
@@ -154,6 +155,7 @@ class DocumentController extends Controller
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
 
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
+        $layout = BadgeLayout::forRecipient($layout, $type, $photoSrc);
         $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$event->id);
 
         // Compatibilité avec les anciens modèles : photo enregistrée comme texte,

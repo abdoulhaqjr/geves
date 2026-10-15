@@ -174,6 +174,7 @@ class BadgeCatalog
             $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
             if ($account) {
                 $person['name'] = self::accountName($account);
+                $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
             }
 
             return $person;

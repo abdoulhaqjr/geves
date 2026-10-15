@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Documents\BadgeLayout;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretDocx;
@@ -323,7 +324,7 @@ class DocumentController extends Controller
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
-        $badges = $people->map(fn (array $person) => LayoutRenderer::render($layout, [
+        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, (string) ($person['photo'] ?? '')), [
             'org' => $event->series?->name ?? '',
             'event' => $event->title ?? '',
             'year' => (string) ($event->year ?: ''),
