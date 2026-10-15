@@ -51,9 +51,9 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5z"/></svg>
         QR Codes
       </button>
-      <button type="button" data-panel="layers" title="Layers">
+      <button type="button" data-panel="layers" title="Calques">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9L2 7v2l10 5 10-5V7l-10 4zm0 4L2 11v2l10 5 10-5v-2l-10 4z"/></svg>
-        Layers
+        Calques
       </button>
     </nav>
 
@@ -153,26 +153,35 @@
       </div>
 
       <div class="panel-view" id="panel-layers">
-        <div class="ed-panel-head"><span>Layers</span><span style="font-size:11px;font-weight:600;color:var(--ukc-light);" id="lyCount">0</span></div>
+        <div class="ed-panel-head"><span>Calques</span><span style="font-size:11px;font-weight:600;color:var(--ukc-light);" id="lyCount">0</span></div>
         <div class="ed-panel-body">
           <div class="ly-toolbar">
-            <button type="button" id="lyFront" title="Premier plan">⤒</button>
-            <button type="button" id="lyUp" title="Monter">↑</button>
-            <button type="button" id="lyDown" title="Descendre">↓</button>
-            <button type="button" id="lyBack" title="Arriere-plan">⤓</button>
-            <button type="button" id="lyDup" title="Dupliquer">⧉</button>
-            <button type="button" id="lyDel" title="Supprimer">⌫</button>
+            <button type="button" id="lyFront" title="Premier plan (Ctrl+])">⤒</button>
+            <button type="button" id="lyUp" title="Monter (Ctrl+Maj+])">↑</button>
+            <button type="button" id="lyDown" title="Descendre (Ctrl+Maj+[)">↓</button>
+            <button type="button" id="lyBack" title="Arrière-plan (Ctrl+[)">⤓</button>
+            <button type="button" id="lyDup" title="Dupliquer (Ctrl+D)">⧉</button>
+            <button type="button" id="lyGroup" title="Grouper le calque (Ctrl+G)">⊞</button>
+            <button type="button" id="lyDel" title="Supprimer (Suppr)">⌫</button>
           </div>
-          <p class="ly-meta">Glisser ⠿ - double-clic pour renommer - <span class="kbd">Ctrl+L</span> verrouiller</p>
+          <p class="ly-meta">Glisser ⠿ pour réordonner - double-clic sur un nom pour le modifier - <span class="kbd">Ctrl+G</span> grouper</p>
           <div id="layersList"></div>
           <div class="ly-controls" id="lyControls">
-            <label>Opacite <input type="range" id="lyOpacity" min="10" max="100" value="100"><span id="lyOpacityVal">100%</span></label>
+            <label>Opacité <input type="range" id="lyOpacity" min="10" max="100" value="100"><span id="lyOpacityVal">100%</span></label>
             <label>Fusion
               <select id="lyBlend">
                 <option value="normal">Normal</option>
-                <option value="multiply">Multiply</option>
-                <option value="screen">Screen</option>
-                <option value="overlay">Overlay</option>
+                <option value="multiply">Produit</option>
+                <option value="screen">Superposition</option>
+                <option value="overlay">Incrustation</option>
+                <option value="darken">Obscurcir</option>
+                <option value="lighten">Éclaircir</option>
+                <option value="color-dodge">Densité couleur -</option>
+                <option value="color-burn">Densité couleur +</option>
+                <option value="hard-light">Lumière crue</option>
+                <option value="soft-light">Lumière tamisée</option>
+                <option value="difference">Différence</option>
+                <option value="exclusion">Exclusion</option>
               </select>
             </label>
           </div>

@@ -5,6 +5,8 @@
   var guidesEl = document.getElementById('guides');
   var selected = null;
   var elId = 0;
+  var groupId = 0;
+  var groups = {};
   var drag = null;
   var resize = null;
   var history = [];
@@ -136,6 +138,7 @@
         return {
           id: el.id, html: el.innerHTML, className: el.className,
           label: el.dataset.label, locked: el.dataset.locked, hidden: el.dataset.hidden,
+          group: el.dataset.group || '',
           blend: el.dataset.blend || 'normal', qrUrl: el.dataset.qrUrl || '',
           style: {
             left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height,
@@ -145,7 +148,8 @@
           }
         };
       }),
-      bg: page.className
+      bg: page.className,
+      groups: JSON.parse(JSON.stringify(groups))
     };
   }
   function pushHistory() {
@@ -159,15 +163,23 @@
   function restoreSnapshot(snap) {
     historyLock = true;
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
+    groups = JSON.parse(JSON.stringify(snap.groups || {}));
+    groupId = Math.max(groupId, ...Object.keys(groups).map(function (id) { return Number(id.slice(1)) || 0; }));
+    elId = Math.max(elId, ...(snap.els || []).map(function (item) {
+      var match = String(item.id || '').match(/^el-(\d+)$/);
+      return match ? Number(match[1]) : 0;
+    }));
     page.className = snap.bg || 'ed-page';
     syncFormatControls();
     document.querySelectorAll('.ed-tpl-card').forEach(function (card) { card.classList.remove('active'); });
     (snap.els || []).forEach(function (s) {
       var el = document.createElement('div');
       el.id = s.id; el.className = s.className;
+      el.classList.remove('selected', 'editing');
       el.dataset.label = s.label || s.id;
       el.dataset.locked = s.locked || '0';
       el.dataset.hidden = s.hidden || '0';
+      el.dataset.group = s.group || '';
       el.dataset.blend = s.blend || 'normal';
       if (s.qrUrl) el.dataset.qrUrl = s.qrUrl;
       el.innerHTML = s.html;
@@ -209,6 +221,7 @@
     el.dataset.label = cfg.label || el.id;
     el.dataset.locked = '0';
     el.dataset.hidden = '0';
+    el.dataset.group = cfg.group || '';
     el.dataset.blend = 'normal';
     el.style.left = (cfg.x || 40) + 'px';
     el.style.top = (cfg.y || 40) + 'px';
@@ -319,13 +332,15 @@
       document.getElementById('lyBlend').value = el.dataset.blend || 'normal';
       document.getElementById('fontSize').value = parseInt(window.getComputedStyle(el).fontSize, 10) || 13;
       syncTextControls(el, window.getComputedStyle(el));
-      refreshLayers();
       updateFloatBar();
     } else {
       styleBar.classList.add('disabled');
       document.getElementById('lyControls').classList.remove('show');
       hideFloatBar();
     }
+    layersList.querySelectorAll('.ed-layer').forEach(function (row) {
+      row.classList.toggle('active', !!el && row.dataset.id === el.id);
+    });
     updateLayerToolbar();
   }
 
@@ -393,7 +408,7 @@
 
   function updateLayerToolbar() {
     var has = !!selected;
-    ['lyFront', 'lyUp', 'lyDown', 'lyBack', 'lyDup', 'lyDel'].forEach(function (id) {
+    ['lyFront', 'lyUp', 'lyDown', 'lyBack', 'lyDup', 'lyGroup', 'lyDel'].forEach(function (id) {
       var n = document.getElementById(id);
       if (n) n.disabled = !has;
     });
@@ -446,74 +461,180 @@
     var els = getEls().reverse();
     layersList.innerHTML = '';
     document.getElementById('lyCount').textContent = els.length + ' calque' + (els.length > 1 ? 's' : '');
+    Object.keys(groups).forEach(function (id) {
+      if (!els.some(function (el) { return el.dataset.group === id; })) delete groups[id];
+    });
+    var renderedGroups = {};
     els.forEach(function (el) {
-      var hidden = el.dataset.hidden === '1';
-      var locked = el.dataset.locked === '1';
-      var row = document.createElement('div');
-      row.className = 'ed-layer' + (selected === el ? ' active' : '') + (hidden ? ' hidden-layer' : '') + (locked ? ' locked-layer' : '');
-      row.dataset.id = el.id;
-      row.draggable = true;
-      row.innerHTML =
-        '<span class="handle">⠿</span>' +
-        '<button type="button" class="ico-btn' + (hidden ? ' off' : '') + '" data-act="vis">' + (hidden ? EYE_OFF : EYE) + '</button>' +
-        '<span class="name" title="Double-clic pour renommer">' + (el.dataset.label || el.id) + '</span>' +
-        '<div class="actions"><button type="button" class="ico-btn' + (locked ? '' : ' off') + '" data-act="lock">' + (locked ? '🔒' : '🔓') + '</button></div>';
-      row.addEventListener('click', function (e) {
-        if (e.target.closest('[data-act]')) return;
-        selectEl(el);
-      });
-      row.querySelector('[data-act="vis"]').addEventListener('click', function (e) {
-        e.stopPropagation();
-        var hide = el.dataset.hidden !== '1';
-        el.dataset.hidden = hide ? '1' : '0';
-        el.style.display = hide ? 'none' : '';
-        refreshLayers();
-        if (selected === el && hide) selectEl(null);
-      });
-      row.querySelector('[data-act="lock"]').addEventListener('click', function (e) {
-        e.stopPropagation();
-        toggleLock(el);
-      });
-      row.querySelector('.name').addEventListener('dblclick', function (e) {
-        e.stopPropagation();
-        var prev = el.dataset.label || el.id;
-        var input = document.createElement('input');
-        input.value = prev;
-        this.textContent = '';
-        this.appendChild(input);
-        input.focus(); input.select();
-        function commit() {
-          el.dataset.label = input.value.trim() || prev;
-          refreshLayers();
-          selectEl(el);
+      var gid = el.dataset.group;
+      if (gid && groups[gid]) {
+        if (!renderedGroups[gid]) {
+          renderedGroups[gid] = true;
+          layersList.appendChild(renderLayerGroup(gid, els.filter(function (item) { return item.dataset.group === gid; })));
         }
-        input.addEventListener('blur', commit);
-        input.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter') input.blur();
-          if (ev.key === 'Escape') { input.value = prev; input.blur(); }
-        });
-      });
-      row.addEventListener('dragstart', function (e) {
-        e.dataTransfer.setData('text/plain', el.id);
-        window.__lyDragId = el.id;
-      });
-      row.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        var fromEl = document.getElementById(window.__lyDragId);
-        if (!fromEl || fromEl === el) return;
-        var els2 = getEls();
-        var fi = els2.indexOf(fromEl), ti = els2.indexOf(el);
-        if (fi < ti) page.insertBefore(fromEl, el.nextSibling);
-        else page.insertBefore(fromEl, el);
-      });
-      row.addEventListener('drop', function (e) {
-        e.preventDefault();
-        refreshLayers();
-        pushHistory();
-      });
-      layersList.appendChild(row);
+      } else layersList.appendChild(renderLayerRow(el));
     });
     updateLayerToolbar();
+  }
+
+  function renderLayerGroup(gid, members) {
+    var group = groups[gid];
+    var box = document.createElement('div');
+    box.className = 'ed-group' + (group.collapsed ? ' collapsed' : '');
+    box.draggable = !members.some(isLocked);
+    var head = document.createElement('div');
+    head.className = 'ed-group-head';
+    var handle = document.createElement('span'); handle.className = 'handle'; handle.textContent = '⠿';
+    var chevron = document.createElement('span'); chevron.className = 'chev'; chevron.textContent = group.collapsed ? '▶' : '▼';
+    var name = document.createElement('span'); name.className = 'grp-name'; name.textContent = '📁 ' + group.name;
+    name.title = 'Double-clic pour renommer';
+    var count = document.createElement('span'); count.textContent = String(members.length);
+    var ungroup = document.createElement('button'); ungroup.type = 'button'; ungroup.className = 'ico-btn';
+    ungroup.title = 'Dégrouper'; ungroup.textContent = '×';
+    head.append(handle, chevron, name, count, ungroup);
+    head.addEventListener('click', function (e) {
+      if (e.target === name || e.target === ungroup || e.target.closest('input')) return;
+      group.collapsed = !group.collapsed;
+      refreshLayers();
+    });
+    name.addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      var original = group.name;
+      var input = document.createElement('input'); input.value = original;
+      name.textContent = ''; name.appendChild(input); input.focus(); input.select();
+      input.addEventListener('blur', function () {
+        var value = input.value.trim() || original;
+        if (value !== original) { group.name = value; pushHistory(); }
+        refreshLayers();
+      });
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        if (event.key === 'Escape') { input.value = original; input.blur(); }
+      });
+    });
+    ungroup.addEventListener('click', function (e) {
+      e.stopPropagation();
+      members.forEach(function (el) { el.dataset.group = ''; });
+      delete groups[gid]; refreshLayers(); pushHistory();
+    });
+    box.appendChild(head);
+    var body = document.createElement('div'); body.className = 'ed-group-body';
+    members.forEach(function (el) { body.appendChild(renderLayerRow(el)); });
+    box.appendChild(body);
+    box.addEventListener('dragstart', function (e) {
+      if (e.target.closest('.ed-layer')) return;
+      e.dataTransfer.setData('text/plain', gid);
+      e.dataTransfer.setData('application/x-ukc-type', 'group');
+      e.dataTransfer.effectAllowed = 'move';
+      window.__lyDragId = gid; window.__lyDragType = 'group';
+    });
+    box.addEventListener('dragend', clearLayerDrag);
+    box.addEventListener('dragover', function (e) {
+      e.preventDefault(); e.stopPropagation(); box.classList.add('drag-over');
+    });
+    box.addEventListener('dragleave', function (e) {
+      if (!box.contains(e.relatedTarget)) box.classList.remove('drag-over');
+    });
+    box.addEventListener('drop', function (e) {
+      e.preventDefault(); e.stopPropagation(); box.classList.remove('drag-over');
+      var fromId = window.__lyDragId || e.dataTransfer.getData('text/plain');
+      if (window.__lyDragType === 'group') {
+        if (fromId === gid || !groups[fromId]) return;
+        var moving = getEls().filter(function (el) { return el.dataset.group === fromId; });
+        if (moving.some(isLocked)) return;
+        var target = getEls().filter(function (el) { return el.dataset.group === gid; }).pop();
+        var fragment = document.createDocumentFragment();
+        moving.forEach(function (el) { fragment.appendChild(el); });
+        page.insertBefore(fragment, target.nextSibling);
+      } else {
+        var fromEl = document.getElementById(fromId);
+        if (!fromEl || isLocked(fromEl)) return;
+        fromEl.dataset.group = gid;
+        var top = getEls().filter(function (el) { return el.dataset.group === gid && el !== fromEl; }).pop();
+        if (top) page.insertBefore(fromEl, top.nextSibling);
+        selectEl(fromEl);
+      }
+      clearLayerDrag(); refreshLayers(); pushHistory();
+    });
+    return box;
+  }
+
+  function clearLayerDrag() {
+    window.__lyDragId = null; window.__lyDragType = null;
+    layersList.querySelectorAll('.drag-over, .dragging').forEach(function (node) {
+      node.classList.remove('drag-over', 'dragging');
+    });
+  }
+
+  function renderLayerRow(el) {
+    var hidden = el.dataset.hidden === '1';
+    var locked = el.dataset.locked === '1';
+    var row = document.createElement('div');
+    row.className = 'ed-layer' + (selected === el ? ' active' : '') + (hidden ? ' hidden-layer' : '') + (locked ? ' locked-layer' : '');
+    row.dataset.id = el.id;
+    row.draggable = !locked;
+    row.innerHTML =
+      '<span class="handle" title="Glisser pour réordonner">⠿</span>' +
+      '<button type="button" class="ico-btn' + (hidden ? ' off' : '') + '" data-act="vis" title="Afficher / masquer">' + (hidden ? EYE_OFF : EYE) + '</button>' +
+      '<span class="name" title="Double-clic pour renommer"></span>' +
+      '<div class="actions"><button type="button" class="ico-btn' + (locked ? '' : ' off') + '" data-act="lock" title="Verrouiller / déverrouiller">' + (locked ? '🔒' : '🔓') + '</button></div>';
+    row.querySelector('.name').textContent = el.dataset.label || el.id;
+    row.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-act]')) selectEl(el);
+    });
+    row.querySelector('[data-act="vis"]').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var hide = el.dataset.hidden !== '1';
+      el.dataset.hidden = hide ? '1' : '0';
+      el.style.display = hide ? 'none' : '';
+      if (selected === el && hide) selectEl(null);
+      refreshLayers();
+      pushHistory();
+    });
+    row.querySelector('[data-act="lock"]').addEventListener('click', function (e) {
+      e.stopPropagation(); toggleLock(el);
+    });
+    row.querySelector('.name').addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      var original = el.dataset.label || el.id;
+      var input = document.createElement('input'); input.value = original;
+      this.textContent = ''; this.appendChild(input); input.focus(); input.select();
+      input.addEventListener('blur', function () {
+        var value = input.value.trim() || original;
+        if (value !== original) { el.dataset.label = value; pushHistory(); }
+        refreshLayers(); selectEl(el);
+      });
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        if (event.key === 'Escape') { input.value = original; input.blur(); }
+      });
+    });
+    row.addEventListener('dragstart', function (e) {
+      e.stopPropagation();
+      e.dataTransfer.setData('text/plain', el.id);
+      e.dataTransfer.setData('application/x-ukc-type', 'layer');
+      e.dataTransfer.effectAllowed = 'move';
+      window.__lyDragId = el.id; window.__lyDragType = 'layer';
+      requestAnimationFrame(function () { row.classList.add('dragging'); });
+    });
+    row.addEventListener('dragend', clearLayerDrag);
+    row.addEventListener('dragover', function (e) {
+      e.preventDefault(); e.stopPropagation(); row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', function () { row.classList.remove('drag-over'); });
+    row.addEventListener('drop', function (e) {
+      e.preventDefault(); e.stopPropagation(); row.classList.remove('drag-over');
+      if (window.__lyDragType !== 'layer') return;
+      var fromEl = document.getElementById(window.__lyDragId || e.dataTransfer.getData('text/plain'));
+      if (!fromEl || fromEl === el || isLocked(fromEl)) return;
+      var order = getEls();
+      if (order.indexOf(fromEl) < order.indexOf(el)) page.insertBefore(fromEl, el.nextSibling);
+      else page.insertBefore(fromEl, el);
+      fromEl.dataset.group = el.dataset.group || '';
+      clearLayerDrag();
+      refreshLayers(); selectEl(fromEl); pushHistory();
+    });
+    return row;
   }
 
   function toggleLock(el) {
@@ -524,6 +645,7 @@
     if (lock) stopTextEdit();
     refreshLayers();
     selectEl(el);
+    pushHistory();
     toast(lock ? 'Calque verrouille' : 'Calque deverrouille');
   }
 
@@ -548,6 +670,7 @@
             src.classList.contains('logo') ? 'logo' : src.classList.contains('shape-box') ? 'shape' : 'text',
       label: (src.dataset.label || src.id) + ' copie',
       x: src.offsetLeft + 12, y: src.offsetTop + 12, w: src.offsetWidth,
+      group: src.dataset.group || '',
       text: src.classList.contains('text') ? src.childNodes[0] && src.childNodes[0].textContent : undefined,
       html: src.classList.contains('logo') ? src.innerHTML.replace(/<div class="resize"><\/div>/, '') : undefined,
       qrUrl: src.dataset.qrUrl
@@ -559,6 +682,15 @@
     var el = createEl(cfg);
     selectEl(el);
     pushHistory();
+  }
+
+  function groupSelected() {
+    if (!selected) return;
+    var gid = 'g' + (++groupId);
+    groups[gid] = { name: 'Groupe ' + groupId, collapsed: false };
+    selected.dataset.group = gid;
+    refreshLayers(); pushHistory();
+    toast('Groupe créé : glissez d’autres calques dessus');
   }
 
   function deleteSelected() {
@@ -575,6 +707,7 @@
   function loadTemplate(key) {
     var targetFormat = getCurrentFormat();
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
+    groups = {};
     selected = null;
     hideFloatBar();
     page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co');
@@ -828,6 +961,7 @@
   document.getElementById('lyDown').addEventListener('click', function () { moveLayer('down'); });
   document.getElementById('lyBack').addEventListener('click', function () { moveLayer('back'); });
   document.getElementById('lyDup').addEventListener('click', duplicateLayer);
+  document.getElementById('lyGroup').addEventListener('click', groupSelected);
   document.getElementById('lyDel').addEventListener('click', deleteSelected);
   document.getElementById('lyOpacity').addEventListener('input', function () {
     if (!selected) return;
@@ -1106,6 +1240,7 @@
   });
   document.getElementById('btnBlank').addEventListener('click', function () {
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
+    groups = {};
     selected = null; hideFloatBar(); refreshLayers(); pushHistory();
     toast('Canvas vide');
   });
@@ -1234,7 +1369,12 @@
       if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); return; }
       if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); redo(); return; }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); duplicateLayer(); }
+      if (e.key === 'g' || e.key === 'G') { e.preventDefault(); groupSelected(); }
       if (e.key === 'l' || e.key === 'L') { e.preventDefault(); if (selected) toggleLock(selected); }
+      if (e.key === ']' && e.shiftKey) { e.preventDefault(); moveLayer('up'); }
+      else if (e.key === ']') { e.preventDefault(); moveLayer('front'); }
+      if (e.key === '[' && e.shiftKey) { e.preventDefault(); moveLayer('down'); }
+      else if (e.key === '[') { e.preventDefault(); moveLayer('back'); }
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); document.getElementById('btnSave').click(); }
     }
     if (e.key === 'Enter' && selected && selected.classList.contains('text') && !typing) {
