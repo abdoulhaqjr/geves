@@ -127,20 +127,6 @@
                         @endphp
                         <section class="ukc-badge-entry" id="badge-{{ $badge['type'] }}" aria-label="{{ __($badge['title']) }}">
                             <h4 class="ukc-badge-entry-title">{{ __($badge['title']) }}</h4>
-                            @if ($account->photo_path && $badge['supports_photo'])
-                                <form class="ukc-badge-photo-choice" method="POST" action="{{ route('account.documents.badge.photo', [$event, $badge['type']]) }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <label for="badge-photo-{{ $badge['type'] }}">{{ __('Photo sur ce badge') }}</label>
-                                    <select id="badge-photo-{{ $badge['type'] }}" name="photo_mode">
-                                        <option value="with" @selected($badge['photo_mode'] === 'with')>{{ __('Avec photo') }}</option>
-                                        <option value="without" @selected($badge['photo_mode'] === 'without')>{{ __('Sans photo') }}</option>
-                                    </select>
-                                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Appliquer') }}</button>
-                                </form>
-                            @elseif ($badge['supports_photo'])
-                                <p class="ukc-badge-photo-hint">{{ __('Ce badge s’affiche sans photo.') }} <a href="{{ route('account.profile') }}">{{ __('Ajoutez une photo de profil') }}</a> {{ __('pour pouvoir choisir le modèle avec photo.') }}</p>
-                            @endif
                             <div class="ukc-badge-stage">
                                 {{-- Modèle propre à ce type, avec les données du destinataire. --}}
                                 <div class="ukc-badge-canvas {{ $badge['locked'] ? 'locked' : '' }}"
@@ -155,6 +141,23 @@
                                 </div>
 
                                 <div class="ukc-badge-actions">
+                                    @if ($account->photo_path && $badge['supports_photo'])
+                                        <form class="ukc-badge-photo-choice" method="POST" action="{{ route('account.documents.badge.photo', [$event, $badge['type']]) }}" data-badge-photo-form>
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="photo_mode" value="without">
+                                            <span class="ukc-badge-photo-choice__title">{{ __('Photo sur ce badge') }}</span>
+                                            <label class="ukc-badge-photo-choice__switch" for="badge-photo-{{ $badge['type'] }}">
+                                                <input id="badge-photo-{{ $badge['type'] }}" type="checkbox" name="photo_mode" value="with" role="switch" aria-label="{{ __('Afficher la photo sur ce badge') }}" aria-checked="{{ $badge['photo_mode'] === 'with' ? 'true' : 'false' }}" data-saved="{{ $badge['photo_mode'] }}" data-badge-photo-toggle @checked($badge['photo_mode'] === 'with')>
+                                                <span class="ukc-badge-photo-choice__track" aria-hidden="true"></span>
+                                                <span class="ukc-badge-photo-choice__state" data-badge-photo-state>{{ $badge['photo_mode'] === 'with' ? __('Avec photo') : __('Sans photo') }}</span>
+                                            </label>
+                                            <span class="ukc-badge-photo-choice__status" data-badge-photo-status role="status" aria-live="polite"></span>
+                                            <noscript><button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Enregistrer') }}</button></noscript>
+                                        </form>
+                                    @elseif ($badge['supports_photo'])
+                                        <p class="ukc-badge-photo-hint">{{ __('Ce badge s’affiche sans photo.') }} <a href="{{ route('account.profile') }}">{{ __('Ajoutez une photo de profil') }}</a> {{ __('pour pouvoir choisir le modèle avec photo.') }}</p>
+                                    @endif
                                     @if (! $badge['locked'])
                                         <div class="ukc-qr-details">
                                             <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>

@@ -19,6 +19,7 @@ use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -226,7 +227,7 @@ class DocumentController extends Controller
     }
 
     /** Préférence d'affichage propre à ce participant, cet événement et ce badge. */
-    public function updateBadgePhoto(Request $request, Event $event, string $type): RedirectResponse
+    public function updateBadgePhoto(Request $request, Event $event, string $type): JsonResponse|RedirectResponse
     {
         abort_unless(BadgeCatalog::valid($type), 404);
 
@@ -234,7 +235,8 @@ class DocumentController extends Controller
         $participant = Participant::where('event_id', $event->id)
             ->where('user_id', $account->id)
             ->firstOrFail();
-        abort_unless(BadgeCatalog::forAccount($event, $account, $participant)->contains('type', $type), 403);
+        $badge = BadgeCatalog::forAccount($event, $account, $participant)->firstWhere('type', $type);
+        abort_unless($badge !== null, 403);
 
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
@@ -246,6 +248,13 @@ class DocumentController extends Controller
         $preferences[$type] = $data['photo_mode'];
         $meta['badge_photo_preferences'] = $preferences;
         $participant->update(['meta' => $meta]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'badge' => $this->renderBadge($event, $account, $participant, $type, $badge['recipient']),
+            ]);
+        }
 
         return redirect()->to(route('account.documents').'#badge-'.$type)
             ->with('ukc_status', 'Présentation du badge enregistrée.');

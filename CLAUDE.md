@@ -4283,3 +4283,10 @@ Deux mécanismes, complémentaires :
   FFmpeg : sans WinGet ni chemin configuré il rend `ffmpeg` tout court, et c'est le PATH
   qui tranche à l'exécution - ne pas écrire de test qui suppose l'inverse (cf. §Tests). `TUTORIAL_VIDEO_RENDER_WIDTH`
   et `TUTORIAL_VIDEO_RENDER_HEIGHT` documentent le format attendu (1920×1080).
+
+## Choix de la photo sur les badges participants
+
+Dans `/documents`, le choix « Avec photo / Sans photo » est un interrupteur dans la
+colonne des détails, juste avant le QR code. Il s'enregistre en AJAX pour chaque type
+de badge via `Account\DocumentController::updateBadgePhoto()` et remplace le seul
+aperçu concerné ; garder la soumission classique si JavaScript est indisponible.

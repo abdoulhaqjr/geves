@@ -301,6 +301,60 @@ function ukcToast(msg, type = 'ok') {
 }
 window.ukcToast = ukcToast;
 
+// Choix de la variante du badge : enregistrer la préférence et remplacer
+// uniquement le rendu concerné, sans perdre la position dans « Mes documents ».
+document.addEventListener('change', async (event) => {
+    const toggle = event.target;
+    if (! (toggle instanceof HTMLInputElement) || ! toggle.matches('[data-badge-photo-toggle]')) return;
+
+    const form = toggle.closest('[data-badge-photo-form]');
+    const entry = form?.closest('.ukc-badge-entry');
+    const canvas = entry?.querySelector('.ukc-badge-canvas');
+    const scaler = canvas?.querySelector('.scaler');
+    const state = form?.querySelector('[data-badge-photo-state]');
+    const status = form?.querySelector('[data-badge-photo-status]');
+    if (! form || ! canvas || ! scaler || ! state || ! status) return;
+
+    const previous = toggle.dataset.saved === 'with';
+    const requestedMode = toggle.checked ? 'with' : 'without';
+    const body = new FormData(form);
+    body.set('photo_mode', requestedMode);
+    toggle.setAttribute('aria-checked', String(toggle.checked));
+    toggle.disabled = true;
+    status.textContent = 'Enregistrement…';
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body,
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (! response.ok) throw new Error(`HTTP ${response.status}`);
+        const { ok, badge } = await response.json();
+        if (! ok || typeof badge?.html !== 'string' || ! badge.w || ! badge.h) throw new Error('Badge invalide');
+
+        const scale = 280 / badge.w;
+        scaler.innerHTML = badge.html;
+        scaler.style.width = `${badge.w}px`;
+        scaler.style.height = `${badge.h}px`;
+        scaler.style.transform = `scale(${scale})`;
+        canvas.style.height = `${Math.round(badge.h * scale)}px`;
+        toggle.dataset.saved = badge.photo_mode;
+        toggle.checked = badge.photo_mode === 'with';
+        toggle.setAttribute('aria-checked', String(toggle.checked));
+        state.textContent = toggle.checked ? 'Avec photo' : 'Sans photo';
+        status.textContent = 'Enregistré.';
+    } catch (error) {
+        toggle.checked = previous;
+        toggle.setAttribute('aria-checked', String(previous));
+        state.textContent = previous ? 'Avec photo' : 'Sans photo';
+        status.textContent = 'Enregistrement impossible.';
+        ukcToast('Enregistrement du choix impossible.', 'err');
+    } finally {
+        toggle.disabled = false;
+    }
+});
+
 // Popup de confirmation (style Tailwise) - remplace window.confirm(). Renvoie une
 // Promise<boolean>. Fermeture au clic sur le fond, Échap (annule) ou Entrée (confirme).
 window.ukcConfirm = function (message, opts = {}) {
