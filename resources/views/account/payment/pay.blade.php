@@ -83,7 +83,7 @@
     @elseif (! $eligible)
         <div class="ukc-card">
             <h2><x-ukc.icon name="clock" :size="20" /> Le paiement n’est pas encore ouvert</h2>
-            <p style="color:var(--ukc-muted);margin:0 0 16px;max-width:760px;">Vous pourrez régler vos frais lorsqu’au moins une de vos communications aura été acceptée. Suivez l’avancement de votre dossier depuis votre espace.</p>
+            <p style="color:var(--ukc-muted);margin:0 0 16px;">Vous pourrez régler vos frais lorsqu’au moins une de vos communications aura été acceptée. Suivez l’avancement de votre dossier depuis votre espace.</p>
             <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">Suivre mes communications</a>
         </div>
     @elseif (session('pay_instructions'))
