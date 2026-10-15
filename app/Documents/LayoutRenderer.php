@@ -21,8 +21,9 @@ class LayoutRenderer
      * @param  bool  $pdf  Rendu destiné à dompdf, qui **ne va chercher aucune image
      *                     distante** : les adresses servies par le site sont alors
      *                     résolues en chemins de fichier.
+     * @param  bool  $badge  Préserve les lignes des textes personnalisés sur les badges.
      */
-    public static function render(array $layout, array $vars = [], bool $pdf = false): string
+    public static function render(array $layout, array $vars = [], bool $pdf = false, bool $badge = false): string
     {
         // ⚠️ Les alias `[espace.cle]` sont ajoutés ICI, et non chez les appelants :
         // chacun fournissait sa propre liste, et un modèle dessiné avec la palette
@@ -66,7 +67,7 @@ class LayoutRenderer
 
             $html .= match ($el['type'] ?? '') {
                 'rect' => self::renderRect($el, $x, $y),
-                'text' => self::renderText($el, $x, $y, $vars, $pdf),
+                'text' => self::renderText($el, $x, $y, $vars, $pdf, $badge),
                 'image' => self::renderImage($el, $x, $y, $pdf),
                 'photo' => self::renderPhoto($el, $x, $y, $vars),
                 'signatures' => self::renderSignatures($el, $x, $y, $vars),
@@ -219,7 +220,7 @@ class LayoutRenderer
      * étaient perdus : un titre dessiné en Playfair italique ressortait en Jost
      * droit, et le document délivré ne ressemblait plus à la maquette.
      */
-    protected static function renderText(array $el, int $x, int $y, array $vars, bool $pdf = false): string
+    protected static function renderText(array $el, int $x, int $y, array $vars, bool $pdf = false, bool $badge = false): string
     {
         $fontKey = (string) ($el['font'] ?? 'jost');
         $font = LayoutSanitizer::FONTS[$fontKey] ?? LayoutSanitizer::FONTS['jost'];
@@ -256,6 +257,9 @@ class LayoutRenderer
 
         $size = (int) ($el['size'] ?? 16);
         $leading = (float) ($el['leading'] ?? 1.2);
+        if ($badge && in_array(mb_strtolower(trim((string) ($el['text'] ?? ''))), ['[recipient.name]', '{name}'], true)) {
+            $size = self::fitBadgeNameSize($el, $text, $size, $leading);
+        }
 
         if ($pdf) {
             // ⚠️ **dompdf n'applique PAS `line-height` au corps du texte** : il le
@@ -269,7 +273,13 @@ class LayoutRenderer
             $box = sprintf('left:%dpx;top:%dpx;width:%dpx;', $x, $y, (int) ($el['w'] ?? 100));
         } else {
             $lineHeight = sprintf('%.2f', $leading);
-            $box = sprintf('left:%dpx;top:%dpx;width:%dpx;height:%dpx;overflow:hidden;', $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30));
+            // Dans le designer, les jetons tiennent souvent sur une seule ligne.
+            // Une fois remplacés par le vrai titre ou thème, leur hauteur enregistrée
+            // peut être trop courte. Comme pour le PDF, le badge laisse voir les
+            // lignes supplémentaires dans l'espace libre de la maquette.
+            $box = sprintf('left:%dpx;top:%dpx;width:%dpx;height:%dpx;%s',
+                $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30),
+                $badge ? 'overflow:visible;' : 'overflow:hidden;');
         }
 
         return sprintf(
@@ -279,6 +289,59 @@ class LayoutRenderer
             e($el['color'] ?? '#1a2332'), e($el['align'] ?? 'left'),
             $lineHeight, $extra, e($text)
         );
+    }
+
+    /** Garde le nom entier dans sa boîte, au-dessus du rôle, même s'il est long. */
+    protected static function fitBadgeNameSize(array $el, string $text, int $size, float $leading): int
+    {
+        if (! function_exists('imagettfbbox') || trim($text) === '') {
+            return $size;
+        }
+
+        $family = match ($el['font'] ?? 'jost') {
+            'jost' => 'Jost', 'lato' => 'Lato', 'playfair' => 'Playfair Display',
+            default => null,
+        };
+        if ($family === null) {
+            return $size;
+        }
+
+        $weight = (int) ($el['weight'] ?? 500);
+        $faces = array_values(array_filter(DocumentFonts::FACES,
+            fn (array $face) => $face[1] === $family && $face[3] === (! empty($el['italic']) ? 'italic' : 'normal')));
+        usort($faces, fn (array $a, array $b) => abs($a[2] - $weight) <=> abs($b[2] - $weight));
+        $font = isset($faces[0]) ? public_path('fonts/'.$faces[0][0].'.ttf') : null;
+        if ($font === null || ! is_file($font)) {
+            return $size;
+        }
+
+        $width = max(1, (int) ($el['w'] ?? 100) - 4);
+        $height = max(1, (int) ($el['h'] ?? 30));
+        $paragraphs = preg_split('/\R/u', $text) ?: [$text];
+
+        for ($candidate = $size; $candidate >= 8; $candidate--) {
+            $lines = 0;
+            foreach ($paragraphs as $paragraph) {
+                $words = preg_split('/\s+/u', trim($paragraph), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $line = '';
+                foreach ($words as $word) {
+                    $next = $line === '' ? $word : $line.' '.$word;
+                    $bounds = imagettfbbox($candidate, 0, $font, $next);
+                    if ($line !== '' && $bounds !== false && ($bounds[2] - $bounds[0]) > $width) {
+                        $lines++;
+                        $line = $word;
+                    } else {
+                        $line = $next;
+                    }
+                }
+                $lines++;
+            }
+            if ($lines * $candidate * $leading <= $height) {
+                return $candidate;
+            }
+        }
+
+        return 8;
     }
 
     protected static function renderQr(array $el, int $x, int $y, array $vars, bool $pdf = false): string

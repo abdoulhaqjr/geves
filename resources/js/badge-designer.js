@@ -740,6 +740,7 @@
     // modèles qui veulent une typographie propre, hors classes .name/.role/.sub.
     function styled(o) {
       var e = createEl({ type: 'text', label: o.label, x: o.x, y: o.y, w: o.w, text: o.text });
+      if (o.h) e.style.height = o.h + 'px';
       e.style.fontSize = o.size + 'px';
       e.style.fontWeight = String(o.weight || 600);
       e.style.color = o.color || '#2e3440';
@@ -774,10 +775,10 @@
         // barEl ici (un filet-élément laissait un jour contre le cadre dans le concepteur).
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 24, y: 150, w: 349, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
-        styled({ label: 'Nom', x: 20, y: 232, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 20, y: 276, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 40, y: 322, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        styled({ label: 'Événement', x: 24, y: 150, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
+        styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
         imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
         styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
@@ -794,11 +795,11 @@
         page.classList.add('bg-co', 'bg-co-icons');
         imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
         imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 24, y: 108, w: 349, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
+        styled({ label: 'Événement', x: 24, y: 108, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
         createEl({ type: 'photo', label: 'Photo', x: 149, y: 156, w: 100 });
-        styled({ label: 'Nom', x: 20, y: 272, w: 357, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 20, y: 316, w: 357, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 40, y: 350, w: 317, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 24, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
         imgEl({ label: 'Icône localisation', x: 68, y: 432, w: 28, h: 30, src: '/img/badges/icon-location.png' });
         imgEl({ label: 'Icône calendrier', x: 69, y: 470, w: 25, h: 25, src: '/img/badges/icon-calendar.png' });
         styled({ label: 'Lieu', x: 98, y: 434, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });

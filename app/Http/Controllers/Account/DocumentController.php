@@ -232,7 +232,7 @@ class DocumentController extends Controller
         ];
 
         return [
-            'html' => LayoutRenderer::render($layout, $vars),
+            'html' => LayoutRenderer::render($layout, $vars, badge: true),
             'w' => (int) $layout['width'],
             'h' => (int) $layout['height'],
         ];

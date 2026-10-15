@@ -333,7 +333,7 @@ class DocumentController extends Controller
             'ref' => $person['ref'],
             // Photo de profil pour le modèle « Participant avec photo » (élément photo).
             'recipient.photo' => $person['photo'] ?? '',
-        ]));
+        ], badge: true));
 
         return view('documents.badges-template', [
             'event' => $event,
