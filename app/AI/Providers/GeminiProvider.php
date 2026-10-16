@@ -58,9 +58,11 @@ class GeminiProvider implements AiProvider
         try {
             return $this->send($this->model($tier), $instruction, $files);
         } catch (RequestException $e) {
-            // Palier de modèle refusé/indisponible (4xx) → repli transparent sur le modèle par défaut.
+            // Seul un modèle de palier distinct et indisponible justifie ce repli.
+            // Un 401 signifie que la clé est invalide : refaire la même requête
+            // avec le même compte retarde inutilement le fournisseur suivant.
             $status = (int) $e->response->status();
-            if ($tier !== null && $status >= 400 && $status < 500) {
+            if ($tier !== null && in_array($status, [400, 403, 404, 422], true) && $this->model($tier) !== $this->model()) {
                 return $this->send($this->model(), $instruction, $files);
             }
             throw $e;

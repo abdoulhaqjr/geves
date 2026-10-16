@@ -57,9 +57,10 @@ abstract class OpenAiCompatibleProvider implements AiProvider
         try {
             return $this->send($this->model($tier), $instruction, $files);
         } catch (RequestException $e) {
-            // Palier de modèle refusé/indisponible (4xx) → repli transparent sur le modèle par défaut.
+            // Repli seulement pour un modèle distinct ; un 401 est une erreur de
+            // clé API et ne doit pas déclencher une seconde requête identique.
             $status = (int) $e->response->status();
-            if ($tier !== null && $status >= 400 && $status < 500) {
+            if ($tier !== null && in_array($status, [400, 403, 404, 422], true) && $this->model($tier) !== $this->model()) {
                 return $this->send($this->model(), $instruction, $files);
             }
             throw $e;

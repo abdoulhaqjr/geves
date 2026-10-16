@@ -9,8 +9,9 @@ use Throwable;
 
 /**
  * Relance transparente des requêtes IA en échec passager. Un modèle surchargé
- * répond fréquemment 503 (ou 429 / 502 / 504) ou coupe la connexion : on rejoue
- * alors la requête jusqu'à 3 tentatives, sans que l'utilisateur ne le voie.
+ * répond fréquemment 503 (ou 429 / 502 / 504) : on rejoue alors la requête
+ * jusqu'à 3 tentatives. Une connexion coupée ou expirée passe directement au
+ * fournisseur suivant, sans refaire trois attentes de 120 secondes.
  * Après la 3ᵉ tentative, on lève une {@see AiUnavailableException} porteuse d'un
  * message clair destiné à l'utilisateur.
  */
@@ -33,6 +34,13 @@ trait RetriesTransientFailures
         try {
             return retry(3, $callback, 400, fn (Throwable $e) => $this->isTransient($e));
         } catch (RequestException|ConnectionException $e) {
+            if ($e instanceof ConnectionException) {
+                throw new AiUnavailableException(
+                    'Le fournisseur IA ne répond pas. Un autre fournisseur sera essayé si disponible.',
+                    previous: $e,
+                );
+            }
+
             if ($this->isTransient($e)) {
                 throw new AiUnavailableException(
                     'L’assistant IA est très sollicité en ce moment. Merci de réessayer dans quelques instants.',
@@ -46,10 +54,6 @@ trait RetriesTransientFailures
 
     private function isTransient(Throwable $e): bool
     {
-        if ($e instanceof ConnectionException) {
-            return true;
-        }
-
         return $e instanceof RequestException
             && in_array((int) $e->response->status(), self::TRANSIENT_STATUSES, true);
     }

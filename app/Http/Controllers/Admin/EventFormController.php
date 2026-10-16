@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\ExtractEventFromDocuments;
 use App\Actions\SaveEvent;
 use App\AI\AiManager;
+use App\AI\Exceptions\AiUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveEventRequest;
 use App\Models\Event;
@@ -97,12 +98,16 @@ class EventFormController extends Controller
             ->map(fn ($f) => ['mime' => (string) $f->getMimeType(), 'data' => base64_encode((string) $f->get())])
             ->all();
 
+        // La lecture d'un PDF par un fournisseur distant peut dépasser les 30 s
+        // de PHP-CGI. Cette limite est propre à l'analyse, pas aux autres pages.
+        set_time_limit(300);
+
         try {
             $data = $action->handle($files);
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withInput()->withErrors(['aiFiles' => 'Échec de l’analyse : '.$e->getMessage()]);
+            return back()->withInput()->withErrors(['aiFiles' => $this->aiAssistErrorMessage($e)]);
         }
 
         [$extracted, $summary] = $this->normalizeExtracted($data);
@@ -142,12 +147,14 @@ class EventFormController extends Controller
             return response()->json(['ok' => false, 'message' => 'Fournissez un document ou une consigne.'], 422);
         }
 
+        set_time_limit(300);
+
         try {
             [$extracted, $summary] = $this->normalizeExtracted($action->handle($files, $prompt));
         } catch (\Throwable $e) {
             report($e);
 
-            return response()->json(['ok' => false, 'message' => 'Échec de l’analyse : '.$e->getMessage()], 500);
+            return response()->json(['ok' => false, 'message' => $this->aiAssistErrorMessage($e)], 503);
         }
 
         return response()->json([
@@ -643,5 +650,12 @@ class EventFormController extends Controller
         }
 
         return [$out, $summary];
+    }
+
+    private function aiAssistErrorMessage(\Throwable $e): string
+    {
+        return $e instanceof AiUnavailableException
+            ? $e->getMessage()
+            : 'Analyse indisponible. Vérifiez la configuration des fournisseurs IA ou réessayez plus tard.';
     }
 }

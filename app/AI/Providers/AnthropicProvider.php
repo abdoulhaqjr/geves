@@ -54,9 +54,10 @@ class AnthropicProvider implements AiProvider
         try {
             return $this->send($this->model($tier), $instruction, $files);
         } catch (RequestException $e) {
-            // Palier de modèle refusé/indisponible (4xx) → repli transparent sur le modèle par défaut.
+            // Repli uniquement si le modèle de palier diffère du modèle par défaut.
+            // Une clé refusée (401) ne devient pas valide en changeant de modèle.
             $status = (int) $e->response->status();
-            if ($tier !== null && $status >= 400 && $status < 500) {
+            if ($tier !== null && in_array($status, [400, 403, 404, 422], true) && $this->model($tier) !== $this->model()) {
                 return $this->send($this->model(), $instruction, $files);
             }
             throw $e;

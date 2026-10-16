@@ -184,3 +184,20 @@ it('refuse une analyse vide et plus de six documents', function () {
         'aiFiles' => $files,
     ])->assertUnprocessable()->assertJsonValidationErrors('aiFiles');
 });
+
+it('masque les détails techniques d’un échec IA dans la réponse AJAX', function () {
+    $action = new class(fakeAiManager()) extends ExtractEventFromDocuments
+    {
+        public function handle(array $files, ?string $prompt = null): array
+        {
+            throw new RuntimeException('secret technique interne');
+        }
+    };
+    $this->app->instance(ExtractEventFromDocuments::class, $action);
+
+    $response = $this->actingAs(adminStaff(), 'web')->postJson(route('admin.evenements.ai-assist-json'), [
+        'aiPrompt' => 'Colloque à Kara',
+    ])->assertServiceUnavailable()->assertJsonPath('ok', false);
+
+    expect($response->json('message'))->not->toContain('secret technique interne');
+});

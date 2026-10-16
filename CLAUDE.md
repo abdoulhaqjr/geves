@@ -4351,3 +4351,10 @@ remplis sont décochées par défaut. « Appliquer » ne sauvegarde jamais l'év
 L'interface et le serveur acceptent six PDF/images au plus, 10 Mo par fichier et
 20 Mo au total. `public/.user.ini` porte les limites PHP-CGI de Herd à 10/24 Mo
 et la mémoire à 256 Mo pour l'encodage des documents.
+
+La route d'analyse porte sa seule limite PHP à 300 s : les fournisseurs HTTP
+peuvent attendre jusqu'à 120 s pour lire un PDF, alors que Herd coupe normalement
+PHP après 30 s. Les erreurs internes ne sont pas renvoyées telles quelles au
+panneau. Ne pas répéter une clé API refusée (401) sur un autre modèle du même
+fournisseur ; un délai de connexion expiré passe directement au fournisseur
+suivant, tandis que les réponses transitoires 429/5xx restent réessayées.

@@ -5,6 +5,8 @@ use App\AI\AiRouter;
 use App\AI\Contracts\AiProvider;
 use App\AI\Exceptions\AiUnavailableException;
 use App\AI\Providers\GeminiProvider;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /** Fournisseur factice : clé, capacité PDF et comportement d'extraction configurables. */
@@ -102,6 +104,33 @@ it('se replie sur le modèle par défaut si le palier est refusé (4xx)', functi
     $result = (new GeminiProvider)->extract('Bonjour ?', [], 'fast');
 
     expect($result['answer'])->toBe('repli');
+});
+
+it('ne répète pas une requête avec une clé Gemini refusée', function () {
+    config([
+        'services.gemini.key' => 'invalid',
+        'services.gemini.model' => 'gemini-default',
+        'services.gemini.model_deep' => 'gemini-deep',
+    ]);
+
+    Http::fake(['*generativelanguage.googleapis.com*' => Http::response('invalid key', 401)]);
+
+    expect(fn () => (new GeminiProvider)->extract('Analyse ce document', [], 'deep'))
+        ->toThrow(RequestException::class);
+    Http::assertSentCount(1);
+});
+
+it('passe au fournisseur suivant sans retenter une connexion expirée', function () {
+    config(['services.gemini.key' => 'k']);
+    $calls = 0;
+    Http::fake(function () use (&$calls) {
+        $calls++;
+        throw new ConnectionException('Connection timed out');
+    });
+
+    expect(fn () => (new GeminiProvider)->extract('Analyse ce document'))
+        ->toThrow(AiUnavailableException::class, 'ne répond pas');
+    expect($calls)->toBe(1);
 });
 
 /* --------------------------- Routeur de modèle ---------------------------- */
