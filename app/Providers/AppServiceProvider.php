@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Event;
 use App\Models\User;
 use App\Support\Settings;
+use App\Support\WindowsSafeFilesystem;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -25,7 +26,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->app->extend('files', fn () => new WindowsSafeFilesystem);
+        }
     }
 
     public function boot(): void

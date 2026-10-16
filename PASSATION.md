@@ -1984,3 +1984,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - La barre d'outils affiche « Épaisseur » pour les lignes horizontales et verticales. Le designer conserve `rect.shape` et enregistre leur épaisseur dans `h` ou `w` (1 à 40 px), identique dans l'éditeur et le rendu HTML/PDF.
 - Les pictogrammes localisation et calendrier utilisent des SVG recolorables dans la palette, le modèle par défaut et les badges délivrés. La migration `2026_10_15_000700_use_vector_badge_icons` convertit les modèles et instantanés enregistrés qui utilisaient les PNG standard ; les PNG historiques restent lisibles.
+
+### Cache des vues Blade sous Windows (16 octobre 2026)
+
+- Les erreurs intermittentes `rename(...storage/framework/views/...): Accès refusé (code: 5)` apparaissaient sur `/compte` quand deux processus Herd/PHP-CGI compilaient la même vue. `AppServiceProvider` utilise `WindowsSafeFilesystem` sur Windows : ses remplacements dans le seul dossier des vues compilées sont verrouillés par cible, comparent le contenu déjà écrit et réessaient brièvement un renommage bloqué. `php.bat artisan view:cache` a reconstruit le cache après la correction.

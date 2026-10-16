@@ -4329,3 +4329,12 @@ porte l’épaisseur exacte (1 à 40 px). Les pictogrammes du pied sont désorma
 des SVG vectoriels recolorables. `2026_10_15_000700_use_vector_badge_icons`
 convertit les sources PNG des modèles enregistrés, et `LayoutRenderer` conserve
 la prise en charge des anciens PNG pour les documents historiques.
+
+## Cache Blade sous Herd/Windows
+
+`AppServiceProvider` fournit `WindowsSafeFilesystem` seulement sur Windows.
+Dans `storage/framework/views`, `replace()` sérialise les écritures par fichier
+et reprend brièvement un renommage si PHP-CGI garde la cible ouverte. Cela évite
+les erreurs `rename(...): Accès refusé (code: 5)` lors de compilations Blade
+concurrentes, y compris celles du rendu d'exception. Les autres remplacements
+de fichiers gardent le comportement de Laravel.
