@@ -4365,3 +4365,7 @@ Après l'analyse, le panneau replie les sources et présente les propositions so
 forme de lignes compactes. Les longs aperçus restent consultables via « Voir tout » ;
 le compteur, la sélection globale et « Appliquer la sélection » restent en tête de
 liste. Le panneau emploie le bleu et le vert de `--ukc-blue`/`--ukc-green`.
+
+En local, `AppServiceProvider` privilégie le manifeste Vite compilé s'il existe :
+un `public/hot` abandonné ne doit plus casser le style. Pour utiliser le HMR,
+définir `VITE_USE_DEV_SERVER=true` dans `.env`, puis lancer `npm run dev`.

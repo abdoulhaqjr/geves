@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +34,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Un public/hot laissé par Vite suffit à détourner @vite vers un serveur
+        // arrêté ou bloqué et à rendre toutes les pages sans CSS. En local, le
+        // manifeste compilé est la source stable, sauf choix explicite du HMR.
+        if ($this->app->environment('local')
+            && is_file(public_path('build/manifest.json'))
+            && ! config('app.vite_use_dev_server')) {
+            Vite::useHotFile(storage_path('framework/vite-build-only.hot'));
+        }
+
         $this->applySettingsToConfig();
         $this->limiteLeFilDeVisio();
 

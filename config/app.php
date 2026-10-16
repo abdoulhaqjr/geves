@@ -28,6 +28,10 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    // En local, les assets compilés sont utilisés par défaut. Le serveur Vite
+    // reste disponible sur demande via VITE_USE_DEV_SERVER=true.
+    'vite_use_dev_server' => (bool) env('VITE_USE_DEV_SERVER', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
