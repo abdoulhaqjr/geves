@@ -1988,3 +1988,10 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Cache des vues Blade sous Windows (16 octobre 2026)
 
 - Les erreurs intermittentes `rename(...storage/framework/views/...): Accès refusé (code: 5)` apparaissaient sur `/compte` quand deux processus Herd/PHP-CGI compilaient la même vue. `AppServiceProvider` utilise `WindowsSafeFilesystem` sur Windows : ses remplacements dans le seul dossier des vues compilées sont verrouillés par cible, comparent le contenu déjà écrit et réessaient brièvement un renommage bloqué. `php.bat artisan view:cache` a reconstruit le cache après la correction.
+
+### Paramétrage assisté IA des événements (16 octobre 2026)
+
+- Le POST AJAX `/admin/editions/ia-assist-json` accepte une description seule ou avec PDF/images. La description rejoint l'instruction textuelle envoyée aux fournisseurs ; aucun fichier `text/plain` fictif n'est créé. Les axes extraits restent un tableau pour l'aperçu et l'application Alpine.
+- Le panneau montre chaque proposition avec une case à cocher. Les champs ou groupes déjà renseignés sont décochés par défaut ; l'administrateur peut les sélectionner explicitement avant d'appliquer. Cette étape ne sauvegarde pas l'édition.
+- Les limites sont six documents, 10 Mo chacun et 20 Mo au total, côté client et serveur. `public/.user.ini` règle PHP-CGI à `upload_max_filesize=10M`, `post_max_size=24M` et `memory_limit=256M` pour que ces limites soient atteignables sous Herd, y compris l'encodage des documents. La consigne est plafonnée à 4 000 caractères.
+- `tests/Feature/AiAssistTest.php` couvre la description seule, la combinaison avec PDF, le format des axes et les validations ; aucun fournisseur réel n'est appelé.

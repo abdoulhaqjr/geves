@@ -89,6 +89,10 @@ class EventFormController extends Controller
             'aiFiles.*' => ['file', 'mimes:pdf,png,jpg,jpeg,webp', 'max:10240'],
         ]);
 
+        if (array_sum(array_map(fn ($file) => $file->getSize(), $request->file('aiFiles'))) > 20 * 1024 * 1024) {
+            return back()->withInput()->withErrors(['aiFiles' => 'Les documents ne doivent pas dépasser 20 Mo au total.']);
+        }
+
         $files = collect($request->file('aiFiles'))
             ->map(fn ($f) => ['mime' => (string) $f->getMimeType(), 'data' => base64_encode((string) $f->get())])
             ->all();
@@ -124,21 +128,22 @@ class EventFormController extends Controller
             'aiPrompt' => ['nullable', 'string', 'max:4000'],
         ]);
 
-        $files = collect($request->file('aiFiles') ?? [])
+        $uploads = $request->file('aiFiles') ?? [];
+        if (array_sum(array_map(fn ($file) => $file->getSize(), $uploads)) > 20 * 1024 * 1024) {
+            return response()->json(['ok' => false, 'message' => 'Les documents ne doivent pas dépasser 20 Mo au total.'], 422);
+        }
+
+        $files = collect($uploads)
             ->map(fn ($f) => ['mime' => (string) $f->getMimeType(), 'data' => base64_encode((string) $f->get())])
             ->all();
 
-        // La consigne textuelle est passée comme « document » texte à l'extracteur.
-        if (trim((string) $request->input('aiPrompt')) !== '') {
-            $files[] = ['mime' => 'text/plain', 'data' => base64_encode((string) $request->input('aiPrompt'))];
-        }
-
-        if ($files === []) {
+        $prompt = trim((string) $request->input('aiPrompt'));
+        if ($files === [] && $prompt === '') {
             return response()->json(['ok' => false, 'message' => 'Fournissez un document ou une consigne.'], 422);
         }
 
         try {
-            [$extracted, $summary] = $this->normalizeExtracted($action->handle($files));
+            [$extracted, $summary] = $this->normalizeExtracted($action->handle($files, $prompt));
         } catch (\Throwable $e) {
             report($e);
 
@@ -627,7 +632,7 @@ class EventFormController extends Controller
             $summary[] = 'Date limite';
         }
         if (! empty($d['tracks'])) {
-            $out['tracks'] = implode("\n", $d['tracks']);
+            $out['tracks'] = $d['tracks'];
             $summary[] = 'Axes';
         }
         foreach (['fees' => 'Tarifs', 'committees' => 'Comités', 'partners' => 'Partenaires', 'faq' => 'FAQ'] as $k => $label) {

@@ -4338,3 +4338,16 @@ et reprend brièvement un renommage si PHP-CGI garde la cible ouverte. Cela évi
 les erreurs `rename(...): Accès refusé (code: 5)` lors de compilations Blade
 concurrentes, y compris celles du rendu d'exception. Les autres remplacements
 de fichiers gardent le comportement de Laravel.
+
+## Paramétrage assisté des événements
+
+L'édition d'un événement utilise `ai-assist-json` pour proposer des champs depuis une
+description, des PDF ou des images. `ExtractEventFromDocuments::handle($files, $prompt)`
+transmet la description dans l'instruction textuelle de l'IA : ne pas l'ajouter aux
+fichiers, car les fournisseurs interprètent tout fichier non PDF comme une image.
+Les axes sont renvoyés en tableau, comme l'attend le panneau Alpine. L'administrateur
+choisit les propositions à appliquer ; celles qui correspondent à des champs déjà
+remplis sont décochées par défaut. « Appliquer » ne sauvegarde jamais l'événement.
+L'interface et le serveur acceptent six PDF/images au plus, 10 Mo par fichier et
+20 Mo au total. `public/.user.ini` porte les limites PHP-CGI de Herd à 10/24 Mo
+et la mémoire à 256 Mo pour l'encodage des documents.

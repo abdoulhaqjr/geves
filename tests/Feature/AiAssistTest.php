@@ -53,6 +53,10 @@ function fakeAiManager(): AiManager
 
     return new class($provider) extends AiManager
     {
+        public string $lastInstruction = '';
+
+        public array $lastFiles = [];
+
         public function __construct(private AiProvider $p) {}
 
         public function available(): array
@@ -63,6 +67,14 @@ function fakeAiManager(): AiManager
         public function resolve(bool $needsPdf = false): ?AiProvider
         {
             return $this->p;
+        }
+
+        public function extract(string $instruction, array $files = [], ?string $tier = null, ?string $preferKey = null): array
+        {
+            $this->lastInstruction = $instruction;
+            $this->lastFiles = $files;
+
+            return $this->p->extract($instruction, $files, $tier);
         }
     };
 }
@@ -131,5 +143,44 @@ it('pré-remplit le formulaire d’événement depuis l’assistant IA', functio
     expect($d['title'])->toBe('EventSeries IA 2027');
     expect($d['year'])->toBe(2027);
     expect($d['location'])->toBe('Kara, Togo');
-    expect($d['tracks'])->toBe("Axe 1\nAxe 2");
+    expect($d['tracks'])->toBe(['Axe 1', 'Axe 2']);
+});
+
+it('analyse une description sans la transmettre comme une image', function () {
+    $manager = fakeAiManager();
+    $this->app->instance(AiManager::class, $manager);
+
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.evenements.ai-assist-json'), [
+        'aiPrompt' => 'Colloque à Kara du 10 au 12 novembre 2027.',
+    ])->assertOk()
+        ->assertJsonPath('suggestions.title', 'EventSeries IA 2027')
+        ->assertJsonPath('suggestions.tracks.0', 'Axe 1')
+        ->assertJsonPath('suggestions.tracks.1', 'Axe 2');
+
+    expect($manager->lastFiles)->toBe([]);
+    expect($manager->lastInstruction)->toContain('Colloque à Kara du 10 au 12 novembre 2027.');
+});
+
+it('transmet ensemble la consigne et le document sans modifier les fichiers', function () {
+    $manager = fakeAiManager();
+    $this->app->instance(AiManager::class, $manager);
+
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.evenements.ai-assist-json'), [
+        'aiPrompt' => 'Repérer les axes.',
+        'aiFiles' => [UploadedFile::fake()->create('appel.pdf', 50, 'application/pdf')],
+    ])->assertOk();
+
+    expect($manager->lastFiles)->toHaveCount(1);
+    expect($manager->lastFiles[0]['mime'])->toBe('application/pdf');
+    expect($manager->lastInstruction)->toContain('Repérer les axes.');
+});
+
+it('refuse une analyse vide et plus de six documents', function () {
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.evenements.ai-assist-json'), [])
+        ->assertUnprocessable()->assertJsonPath('ok', false);
+
+    $files = array_map(fn ($i) => UploadedFile::fake()->create("appel-{$i}.pdf", 1, 'application/pdf'), range(1, 7));
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.evenements.ai-assist-json'), [
+        'aiFiles' => $files,
+    ])->assertUnprocessable()->assertJsonValidationErrors('aiFiles');
 });

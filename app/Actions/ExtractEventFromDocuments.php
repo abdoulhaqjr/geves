@@ -19,7 +19,7 @@ class ExtractEventFromDocuments
      * @param  array<int, array{mime: string, data: string}>  $files
      * @return array<string, mixed>
      */
-    public function handle(array $files): array
+    public function handle(array $files, ?string $prompt = null): array
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
@@ -29,7 +29,12 @@ class ExtractEventFromDocuments
 
         // Extraction depuis des documents : palier qualité + bascule de fournisseur
         // (indispensable ici : certains fournisseurs ne lisent pas les PDF).
-        return $this->normalize($this->manager->extract($this->instruction(), $files, 'deep'));
+        $instruction = $this->instruction();
+        if (filled(trim((string) $prompt))) {
+            $instruction .= "\n\nDescription fournie par l'administrateur :\n".trim($prompt);
+        }
+
+        return $this->normalize($this->manager->extract($instruction, $files, 'deep'));
     }
 
     protected function instruction(): string
