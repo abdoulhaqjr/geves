@@ -875,22 +875,32 @@
 
 /* Panneau IA (sidebar) */
 .admin-edition-detail .ai-panel {
-  background: linear-gradient(180deg, #f5f3ff 0%, #fff 40%);
-  border: 1px solid #ddd6fe; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+  background: linear-gradient(180deg, #f3f7ff 0%, #fff 38%);
+  border: 1px solid #dbe3f3; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
 }
 .admin-edition-detail .ai-panel h2 {
-  font-size: 15px; font-weight: 800; margin-bottom: 6px; color: #5b21b6;
+  font-size: 15px; font-weight: 800; margin-bottom: 6px; color: var(--ukc-blue);
   display: flex; align-items: center; gap: 8px;
 }
+.admin-edition-detail .ai-panel-icon {
+  display: inline-flex; align-items: center; justify-content: center; width: 25px; height: 25px;
+  border-radius: 8px; background: #e7f6eb; color: var(--ukc-green); font-size: 17px;
+}
 .admin-edition-detail .ai-panel .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
+.admin-edition-detail .ai-source-summary {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  padding: 9px 10px; border: 1px solid #b9dfc5; border-radius: 9px; background: #f4fbf6;
+  color: #21683a; font-size: 11.5px;
+}
+.admin-edition-detail .ai-source-summary button { border: 0; padding: 0; background: none; color: var(--ukc-blue); cursor: pointer; font: inherit; font-weight: 700; text-decoration: underline; }
 .admin-edition-detail .ai-panel input[type="file"] { font-size: 12px; }
 .admin-edition-detail .ai-drop {
-  border: 2px dashed #c4b5fd; border-radius: 10px; padding: 14px; text-align: center;
-  font-size: 13px; color: #6d28d9; cursor: pointer; background: rgba(255,255,255,.7); margin-bottom: 10px;
+  border: 2px dashed #aebde7; border-radius: 10px; padding: 14px; text-align: center;
+  font-size: 13px; color: var(--ukc-blue); cursor: pointer; background: rgba(255,255,255,.8); margin-bottom: 10px;
 }
 .admin-edition-detail .ai-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
-.admin-edition-detail .ukc-btn--ai { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
-.admin-edition-detail .ukc-btn--ai:hover { filter: brightness(1.05); }
+.admin-edition-detail .ukc-btn--ai { background: var(--ukc-blue); color: #fff; }
+.admin-edition-detail .ukc-btn--ai:hover:not(:disabled) { background: #172f88; }
 
 /* Listes repetables (dates, axes, arguments, FAQ, comites) */
 .admin-edition-detail .list-item {
@@ -1091,26 +1101,44 @@
   .admin-edition-detail .prog-head { display: none; }
 }
 
-/* Suggestions IA */
-.admin-edition-detail .ai-suggestions { margin-top: 14px; padding-top: 14px; border-top: 1px solid #ddd6fe; }
+/* Suggestions IA : sélection et action visibles pendant la lecture des résultats. */
+.admin-edition-detail .ai-suggestions { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--ukc-border); }
+.admin-edition-detail .ai-results-toolbar {
+  position: sticky; top: 76px; z-index: 3; margin-bottom: 10px; padding: 10px;
+  background: #fff; border: 1px solid #dbe3f3; border-radius: 10px;
+  box-shadow: 0 5px 18px rgba(27, 49, 104, .08);
+}
+.admin-edition-detail .ai-results-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ukc-blue); }
+.admin-edition-detail .ai-results-head strong { font-weight: 800; }
+.admin-edition-detail .ai-selected-count { flex: none; padding: 3px 7px; border-radius: 20px; background: #e7f6eb; color: #08783a; font-size: 11px; font-weight: 700; }
+.admin-edition-detail .ai-select-tools { display: flex; flex-wrap: wrap; gap: 7px 12px; margin: 8px 0; }
+.admin-edition-detail .ai-select-tools button, .admin-edition-detail .ai-sug-expand {
+  border: 0; background: none; padding: 0; color: var(--ukc-blue); cursor: pointer; font-size: 11.5px; font-weight: 700; text-decoration: underline;
+}
+.admin-edition-detail .ai-select-tools button:hover, .admin-edition-detail .ai-sug-expand:hover { color: #172f88; }
+.admin-edition-detail .ai-apply-button { width: 100%; justify-content: center; }
+.admin-edition-detail .ai-apply-button:disabled { background: #e9edf5; color: #8792a5; cursor: not-allowed; }
+.admin-edition-detail .ai-results-toolbar small { display: block; margin-top: 7px; color: var(--ukc-muted); font-size: 11px; line-height: 1.35; }
 .admin-edition-detail .ai-sug-item {
-  display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
-  background: #fff; border: 1px solid #e9e5ff; border-radius: 10px;
-  padding: 12px 14px; margin-bottom: 8px; font-size: 13.5px;
+  background: #fff; border: 1px solid var(--ukc-border); border-radius: 9px;
+  padding: 9px 10px; margin-bottom: 7px; font-size: 12.5px; transition: border-color .15s, background-color .15s;
 }
-.admin-edition-detail .ai-sug-item input { margin-top: 3px; flex: none; accent-color: #6d28d9; }
-.admin-edition-detail .ai-sug-item > span { min-width: 0; overflow-wrap: anywhere; }
-.admin-edition-detail .ai-sug-item small { display: block; margin-top: 4px; color: var(--ukc-muted); }
-.admin-edition-detail .ai-sug-item strong {
-  display: block; margin-bottom: 4px; color: #5b21b6;
-  font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
-}
+.admin-edition-detail .ai-sug-item.is-selected { border-color: #8ed3a4; background: #f5fbf6; }
+.admin-edition-detail .ai-sug-choice { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+.admin-edition-detail .ai-sug-choice input { margin-top: 2px; flex: none; accent-color: var(--ukc-green); }
+.admin-edition-detail .ai-sug-body { min-width: 0; overflow-wrap: anywhere; line-height: 1.4; }
+.admin-edition-detail .ai-sug-body strong { display: block; margin-bottom: 2px; color: var(--ukc-blue); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.admin-edition-detail .ai-sug-preview { display: block; color: var(--ukc-muted); }
+.admin-edition-detail .ai-sug-preview.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.admin-edition-detail .ai-sug-body small { display: block; margin-top: 2px; color: #66758b; font-size: 10.5px; }
+.admin-edition-detail .ai-sug-expand { margin: 5px 0 0 24px; }
+.admin-edition-detail .ai-message { display: block; color: var(--ukc-muted); font-size: 12px; line-height: 1.45; }
 .admin-edition-detail .ai-panel textarea {
-  width: 100%; border: 1px solid #c4b5fd; border-radius: 10px;
+  width: 100%; border: 1px solid #aebde7; border-radius: 10px;
   padding: 10px; font-size: 13px; min-height: 90px; resize: vertical; background: #fff; margin-bottom: 4px;
 }
 .admin-edition-detail .ai-panel textarea:focus {
-  outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+  outline: none; border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34,62,164,.15);
 }
 
 .admin-submissions table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
@@ -1309,15 +1337,15 @@
 
 /* Panneau de paramétrage assisté : liste des documents déposés et rappel que
    « Appliquer » ne remplit que les champs - la fiche reste à enregistrer. */
-.admin-edition-detail .ai-drop.is-over { border-color: #7c3aed; background: #ede9fe; }
+.admin-edition-detail .ai-drop.is-over { border-color: var(--ukc-blue); background: #eef2ff; }
 .admin-edition-detail .ai-files { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 10px; }
 .admin-edition-detail .ai-file {
   display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
-  padding: 4px 8px; border-radius: 8px; background: #ede9fe; color: #5b21b6;
+  padding: 4px 8px; border-radius: 8px; background: #eef2ff; color: var(--ukc-blue);
   font-size: 12px; font-weight: 600;
 }
 .admin-edition-detail .ai-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
-.admin-edition-detail .ai-file button { border: 0; background: none; cursor: pointer; color: #7c3aed; font-size: 15px; line-height: 1; padding: 0 1px; }
+.admin-edition-detail .ai-file button { border: 0; background: none; cursor: pointer; color: var(--ukc-blue); font-size: 15px; line-height: 1; padding: 0 1px; }
 .admin-edition-detail .ai-file button:hover { color: #dc2626; }
 .admin-edition-detail .ai-unsaved {
   margin-top: 10px; padding: 10px 12px; border-radius: 10px;

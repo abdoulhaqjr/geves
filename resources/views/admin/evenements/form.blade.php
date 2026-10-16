@@ -1088,8 +1088,13 @@
                 {{-- Panneau IA (Analyser → suggestions → Appliquer) --}}
                 @if ($aiAvailable)
                     <div class="ai-panel">
-                        <h2><span>✨</span> Paramétrage assisté (IA)</h2>
+                        <h2><span class="ai-panel-icon" aria-hidden="true">✦</span> Paramétrage assisté (IA)</h2>
                         <div class="desc">Proposer des champs à partir de documents (appel, affiche, programme…) ou d’une description. Vérifiez les propositions avant de les appliquer.</div>
+                        <div class="ai-source-summary" x-show="aiSuggestions" x-cloak>
+                            <span><strong>Analyse terminée</strong> · <span x-text="aiFiles.length ? aiFiles.length + ' document(s)' : 'description'"></span></span>
+                            <button type="button" @click="aiSourcesOpen = !aiSourcesOpen" x-text="aiSourcesOpen ? 'Masquer les sources' : 'Modifier les sources'"></button>
+                        </div>
+                        <div x-show="!aiSuggestions || aiSourcesOpen">
                         <div class="ai-drop" :class="{ 'is-over': aiOver }"
                              @click="$refs.aiFile.click()"
                              @dragover.prevent="aiOver = true" @dragleave.prevent="aiOver = false"
@@ -1112,22 +1117,40 @@
                                 <span x-show="!aiBusy">Analyser</span><span x-show="aiBusy" style="display:none;">Analyse en cours…</span>
                             </button>
                         </div>
+                        </div>
                         {{-- ⚠️ Le piège du panneau : « Appliquer » ne fait que remplir les
                              champs. Sans ce rappel, l'admin quittait la fiche en croyant
                              l'événement enregistrée. --}}
                         <div class="ai-unsaved" x-show="aiApplied" x-cloak>
                             Champs remplis. <strong>Rien n’est encore enregistré</strong> : relisez les onglets, puis cliquez sur <em>Enregistrer</em>.
                         </div>
-                        <span class="ukc-hint" role="status" aria-live="polite" x-text="aiMsg" x-show="aiMsg" style="display:block;margin-top:8px;"></span>
+                        <span class="ai-message" role="status" aria-live="polite" x-text="aiMsg" x-show="aiMsg" style="display:block;margin-top:8px;"></span>
                         <div class="ai-suggestions" x-show="aiSuggestions" style="display:none;">
-                            <div class="ukc-hint" style="margin-bottom:8px;">Cochez les champs à reprendre. Les champs déjà renseignés sont décochés.</div>
+                            <div class="ai-results-toolbar">
+                                <div class="ai-results-head">
+                                    <strong><span x-text="suggestionList().length"></span> propositions</strong>
+                                    <span class="ai-selected-count"><span x-text="selectedSuggestionCount()"></span> sélectionnée(s)</span>
+                                </div>
+                                <div class="ai-select-tools">
+                                    <button type="button" @click="selectAllAi()">Tout sélectionner</button>
+                                    <button type="button" @click="clearAiSelection()">Tout désélectionner</button>
+                                </div>
+                                <button type="button" class="ukc-btn ukc-btn--ai ai-apply-button" @click="applyAi()" :disabled="!selectedSuggestionCount()">Appliquer la sélection</button>
+                                <small>Les champs déjà renseignés sont décochés. Vérifiez les remplacements avant d’enregistrer.</small>
+                            </div>
                             <template x-for="item in suggestionList()" :key="item.key">
-                                <label class="ai-sug-item">
-                                    <input type="checkbox" :checked="!!aiSelection[item.key]" @change="aiSelection[item.key] = $event.target.checked">
-                                    <span><strong x-text="item.label"></strong><span x-text="item.value"></span><small x-show="item.hasCurrent">Déjà renseigné</small></span>
-                                </label>
+                                <div class="ai-sug-item" :class="{ 'is-selected': aiSelection[item.key] }">
+                                    <label class="ai-sug-choice">
+                                        <input type="checkbox" :checked="!!aiSelection[item.key]" @change="aiSelection[item.key] = $event.target.checked">
+                                        <span class="ai-sug-body">
+                                            <strong x-text="item.label"></strong>
+                                            <span class="ai-sug-preview" :class="{ 'is-clamped': item.long && !aiExpanded[item.key] }" x-text="item.value"></span>
+                                            <small x-show="item.hasCurrent">Déjà renseigné</small>
+                                        </span>
+                                    </label>
+                                    <button type="button" class="ai-sug-expand" x-show="item.long" @click="aiExpanded[item.key] = !aiExpanded[item.key]" x-text="aiExpanded[item.key] ? 'Réduire' : 'Voir tout'"></button>
+                                </div>
                             </template>
-                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="width:100%;" @click="applyAi()" :disabled="!selectedSuggestionCount()">Appliquer la sélection</button>
                         </div>
                     </div>
                 @endif
@@ -1191,7 +1214,7 @@
                 refMode: @js($v('ref_prefix_mode')),
                 refAxes: @js(old('ref_axes', $refAxes)),
                 aiUrl: cfg.aiUrl, csrf: cfg.csrf,
-                aiPrompt: '', aiBusy: false, aiMsg: '', aiSuggestions: null, aiSelection: {}, aiFiles: [],
+                aiPrompt: '', aiBusy: false, aiMsg: '', aiSuggestions: null, aiSelection: {}, aiExpanded: {}, aiSourcesOpen: false, aiFiles: [],
                 aiOver: false, aiApplied: false,
                 comOrg: cfg.arrays.comOrg || [],
                 comSci: cfg.arrays.comSci || [],
@@ -1242,21 +1265,23 @@
                 onFiles(e) { this.addFiles(e.target.files); this.$refs.aiFile.value = ''; },
                 onDrop(e) { this.aiOver = false; this.addFiles(e.dataTransfer?.files); },
                 removeFile(i) { if (!this.aiBusy) { this.aiFiles.splice(i, 1); this.clearAiSuggestions(); } },
-                clearAiSuggestions() { this.aiSuggestions = null; this.aiSelection = {}; },
+                clearAiSuggestions() { this.aiSuggestions = null; this.aiSelection = {}; this.aiExpanded = {}; },
                 suggestionList() {
                     const s = this.aiSuggestions || {}, labels = { title:'Nom', event_label:'Libellé', theme:'Thème', subtitle:'Accroche', location:'Lieu', year:'Année', date_start:'Début', date_end:'Fin', submission_deadline:'Limite', intro:'Présentation' }, out = [];
-                    Object.keys(labels).forEach(k => { if (s[k]) out.push({ key:k, label:labels[k], value:String(s[k]).slice(0,160), hasCurrent:!!String(this.f[k] ?? '').trim() }); });
+                    Object.keys(labels).forEach(k => { if (s[k]) out.push({ key:k, label:labels[k], value:String(s[k]), hasCurrent:!!String(this.f[k] ?? '').trim() }); });
                     if (Array.isArray(s.tracks) && s.tracks.length) out.push({ key:'tracks', label:'Axes', value:s.tracks.join(', '), hasCurrent:this.axes.some(x => String(x.label || '').trim()) });
                     if (Array.isArray(s.fees) && s.fees.length) out.push({ key:'fees', label:'Tarifs', value:s.fees.length + ' catégorie(s)', hasCurrent:this.fees.some(x => String(x.label || '').trim()) });
                     if (Array.isArray(s.committees) && s.committees.length) out.push({ key:'committees', label:'Comités', value:s.committees.length + ' membre(s)', hasCurrent:[...this.comOrg,...this.comSci,...this.comSup].some(x => String(x.person_name || '').trim()) });
                     if (Array.isArray(s.partners) && s.partners.length) out.push({ key:'partners', label:'Partenaires', value:String(s.partners.length), hasCurrent:this.partners.some(x => String(x.name || '').trim()) });
                     if (Array.isArray(s.faq) && s.faq.length) out.push({ key:'faq', label:'FAQ', value:s.faq.length + ' question(s)', hasCurrent:this.faq.some(x => String(x.question || '').trim()) });
-                    return out;
+                    return out.map(item => ({ ...item, long: item.value.length > 65 }));
                 },
                 selectedSuggestionCount() { return Object.values(this.aiSelection).filter(Boolean).length; },
+                selectAllAi() { this.suggestionList().forEach(item => { this.aiSelection[item.key] = true; }); },
+                clearAiSelection() { this.suggestionList().forEach(item => { this.aiSelection[item.key] = false; }); },
                 async analyze() {
                     if (!this.aiFiles.length && !this.aiPrompt.trim()) { this.aiMsg = 'Ajoutez un document ou une consigne.'; return; }
-                    this.aiBusy = true; this.aiMsg = 'Analyse en cours…'; this.aiSuggestions = null; this.aiSelection = {};
+                    this.aiBusy = true; this.aiMsg = 'Analyse en cours…'; this.clearAiSuggestions();
                     // Le panneau est étroit et la fiche est longue : sans le voile,
                     // l'admin qui a fait défiler la page ne voit plus rien travailler.
                     window.ukcAiVeil?.show({
@@ -1277,6 +1302,8 @@
                         this.aiMsg = j.message || Object.values(j.errors || {}).flat().join(' ') || (r.ok ? '' : 'Échec de l’analyse.');
                         if (r.ok && j.ok && j.suggestions && Object.keys(j.suggestions).length) {
                             this.aiSuggestions = j.suggestions;
+                            this.aiMsg = '';
+                            this.aiSourcesOpen = false;
                             this.suggestionList().forEach(item => { this.aiSelection[item.key] = !item.hasCurrent; });
                         }
                         window.ukcAiVeil?.done(this.aiSuggestions ? 'Propositions prêtes.' : (this.aiMsg || 'Aucune information exploitable.'), !!this.aiSuggestions);
@@ -1301,7 +1328,7 @@
                     }
                     if (this.aiSelection.partners && Array.isArray(s.partners)) this.setPartners(s.partners);
                     if (this.aiSelection.faq && Array.isArray(s.faq)) this.faq = s.faq;
-                    this.aiMsg = ''; this.aiSuggestions = null; this.aiSelection = {}; this.aiApplied = true;
+                    this.aiMsg = ''; this.clearAiSuggestions(); this.aiApplied = true;
                     window.ukcToast?.('Champs remplis - pensez à enregistrer la fiche.');
                 },
             }));

@@ -4360,3 +4360,8 @@ fournisseur ; un délai de connexion expiré passe directement au fournisseur
 suivant, tandis que les réponses transitoires 429/5xx restent réessayées.
 Si tous les replis échouent, `AiManager` signale quels fournisseurs ont refusé
 leur clé (401/403) pour guider la correction des réglages.
+
+Après l'analyse, le panneau replie les sources et présente les propositions sous
+forme de lignes compactes. Les longs aperçus restent consultables via « Voir tout » ;
+le compteur, la sélection globale et « Appliquer la sélection » restent en tête de
+liste. Le panneau emploie le bleu et le vert de `--ukc-blue`/`--ukc-green`.
