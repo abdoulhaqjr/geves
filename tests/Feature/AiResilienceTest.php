@@ -120,6 +120,19 @@ it('ne répète pas une requête avec une clé Gemini refusée', function () {
     Http::assertSentCount(1);
 });
 
+it('indique quel fournisseur refuse sa clé quand les replis échouent', function () {
+    config(['services.ai.default' => 'gemini', 'services.gemini.key' => 'invalid']);
+    Http::fake(['*generativelanguage.googleapis.com*' => Http::response('invalid key', 401)]);
+
+    $manager = aiManagerWith([
+        new GeminiProvider,
+        aiProv('claude', true, fn () => throw new AiUnavailableException('indisponible')),
+    ]);
+
+    expect(fn () => $manager->extract('Analyse ce document', [['mime' => 'application/pdf', 'data' => 'x']]))
+        ->toThrow(AiUnavailableException::class, 'Gemini');
+});
+
 it('passe au fournisseur suivant sans retenter une connexion expirée', function () {
     config(['services.gemini.key' => 'k']);
     $calls = 0;

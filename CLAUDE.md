@@ -4358,3 +4358,5 @@ PHP après 30 s. Les erreurs internes ne sont pas renvoyées telles quelles au
 panneau. Ne pas répéter une clé API refusée (401) sur un autre modèle du même
 fournisseur ; un délai de connexion expiré passe directement au fournisseur
 suivant, tandis que les réponses transitoires 429/5xx restent réessayées.
+Si tous les replis échouent, `AiManager` signale quels fournisseurs ont refusé
+leur clé (401/403) pour guider la correction des réglages.

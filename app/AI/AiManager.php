@@ -105,6 +105,7 @@ class AiManager
         }
 
         $last = null;
+        $authFailures = [];
         foreach ($candidates as $provider) {
             try {
                 return $provider->extract($instruction, $files, $tier);
@@ -112,13 +113,18 @@ class AiManager
                 // Ce fournisseur ne peut pas honorer la tâche : on tente le suivant.
                 Log::warning('IA : bascule de fournisseur après échec de '.$provider->key(), ['message' => $e->getMessage()]);
                 $last = $e;
+                if ($e instanceof RequestException && in_array($e->response->status(), [401, 403], true)) {
+                    $authFailures[] = $provider->label();
+                }
 
                 continue;
             }
         }
 
         throw new AiUnavailableException(
-            'Les assistants IA sont momentanément indisponibles ou à court de crédits. Merci de réessayer plus tard.',
+            $authFailures === []
+                ? 'Les assistants IA sont momentanément indisponibles ou à court de crédits. Merci de réessayer plus tard.'
+                : 'Les assistants IA sont indisponibles. Clé ou accès refusé pour '.implode(', ', $authFailures).'. Vérifiez les réglages IA.',
             previous: $last,
         );
     }
