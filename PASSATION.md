@@ -13,6 +13,59 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Fichiers stockés rangés par événement (2026-10-17)
+
+Les pièces jointes vivaient sous l'**identifiant** de l'événement -
+`submissions/2/…`, `events/2/…` - et une partie de l'habillage à plat dans
+`events/`. Un dossier nommé `2` n'apprend rien à qui ouvre le disque, et deux
+événements mêlaient leurs visuels dans le même répertoire. Tout passe désormais
+par **`App\Support\EventStorage`**, et les fichiers vivent sous
+**`<type>/<nom-de-l-evenement-annee>/`**.
+
+Cinq racines sont concernées : `submissions/` (avec `camera-ready/` en dessous),
+`events/`, `formations/` (flyer), `livret/` et `livret-templates/`. Ce qui reste
+à plat l'est volontairement : `branding/`, `ai-agents/`, `tutorial-*/` et
+`documents/templates/` appartiennent à la plateforme, `account-photos/`,
+`staff-photos/`, `formation-trainers/` et `formation-signatures/` à une personne.
+
+Le nom vient du **slug** (identifiant public, unique en base, déjà normalisé) et
+l'**année n'est ajoutée que si le nom ne la porte pas déjà** - les deux colloques
+de la base la portent, et `avenir-durable-2025` avec `year = 2026` aurait donné
+`avenir-durable-2025-2026`.
+
+⚠️ **Un chemin enregistré ne se recalcule jamais à la lecture.** Le slug est
+modifiable : un dossier déduit après un renommage pointerait dans le vide. Les
+anciens fichiers restent où ils sont, les nouveaux vont dans le nouveau dossier.
+
+⚠️ **À la création d'un événement, la ligne n'existe pas encore** quand
+l'habillage est téléversé. `SaveEvent` résout donc le slug **avant** d'appeler
+`EventArtwork`, et lui passe le dossier (`dir:`) ; `EventArtwork` ne le déduit
+plus lui-même.
+
+⚠️ **Deux formes d'adresse cohabitent en base**, et il faut les deux : une URL
+absolue (`submissions.file_url`, `media.url`, `settings.hero_image`) et un chemin
+nu (`formations.flyer_path`, `settings['livret.cover_logo']`, les gabarits du
+livre). Ne traiter que la première laissait les secondes pointer sur un fichier
+déplacé.
+
+**Migration `2026_10_17_000100_classer_les_fichiers_par_evenement`** : elle
+déplace l'existant et réécrit les adresses dans le même passage. Mesuré sur la
+base de développement : **49 fichiers rangés** (47 pièces Word de l'import de
+l'eau + 2 affiches), 118 fichiers avant comme après, aucune adresse orpheline.
+
+⚠️ **Elle est pilotée par la BASE, jamais par le contenu des dossiers.** Il
+restait un `events/1/` peuplé des affiches du colloque de l'eau, du temps où cet
+événement portait l'identifiant 1 : déplacer les répertoires par leur nom aurait
+rangé ces affiches sous l'événement 1 d'aujourd'hui. C'est le sabotage qui le
+montre, et le cas de garde qui le retient.
+
+⚠️ **Restent 49 orphelins** sous `submissions/1/` et `events/1/`, doublons **à
+l'octet près** des fichiers rangés (vérifié par sha256), plus **3 PNG** dans le
+dossier legacy `editions/` que **rien** ne référence. La migration ne les touche
+pas : supprimer des fichiers n'est pas à elle de le décider. À arbitrer.
+
+Garde : **`ClassementDesFichiersTest`** (11 cas), **7 sabotages vérifiés**.
+
 ### Cas d'essai du paiement : accepté mais pas réglé, à 100 FCFA (2026-10-13)
 
 Le jeu de démonstration n'avait pas le parcours qu'on vient le plus souvent

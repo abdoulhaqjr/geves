@@ -21,6 +21,7 @@ use App\Support\AttestationQuery;
 use App\Support\BadgeCatalog;
 use App\Support\CommunicationAttestations;
 use App\Support\EventSettings;
+use App\Support\EventStorage;
 use App\Support\ListSort;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -516,7 +517,8 @@ class DocumentHubController extends Controller
         // Logo(s) de la page de garde (optionnel).
         if ($request->hasFile('livretCoverLogo')) {
             $request->validate(['livretCoverLogo' => ['image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096']]);
-            EventSettings::set($event, 'livret.cover_logo', $request->file('livretCoverLogo')->store('livret', 'public'));
+            EventSettings::set($event, 'livret.cover_logo', $request->file('livretCoverLogo')
+                ->store(EventStorage::in(EventStorage::LIVRET, $event), 'public'));
         }
 
         return back()->with('ukc_status', 'Apparence du livre enregistrée.');
@@ -539,7 +541,7 @@ class DocumentHubController extends Controller
 
         if ($request->hasFile('templateFile')) {
             $file = $request->file('templateFile');
-            $path = $file->store('livret-templates', 'public');
+            $path = $file->store(EventStorage::in(EventStorage::LIVRET_TEMPLATES, $event), 'public');
             $templates[] = [
                 'name' => $file->getClientOriginalName(),
                 'path' => $path,

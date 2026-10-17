@@ -14,9 +14,19 @@ use Illuminate\Support\Str;
  * L'admin peut donc au choix **téléverser** un fichier ou **coller une URL** : le
  * téléversement l'emporte, puisqu'il est l'action la plus explicite.
  *
- * ⚠️ On ne supprime du disque que **nos** fichiers (`editions/`) : une URL
+ * ⚠️ On ne supprime du disque que **nos** fichiers (sous `events/`) : une URL
  * externe ne nous appartient pas, et l'ancien fichier d'un événement resterait
  * servi publiquement si on l'oubliait.
+ *
+ * ⚠️ **Le dossier de destination se passe en argument** (`dir`), il n'est plus
+ * déduit ici : l'habillage se range PAR ÉVÉNEMENT ({@see EventStorage}), et à la
+ * création la ligne n'existe pas encore - seul l'appelant connaît le slug qu'il
+ * vient de résoudre. Sans `dir`, on retombe sur la racine commune, ce qui reste
+ * le bon choix pour un fichier qui n'appartient à aucun événement.
+ *
+ * ⚠️ `pathOf()` ne regarde que le préfixe `events/` : le ménage retrouve donc
+ * **aussi bien** les anciens fichiers posés à plat que les nouveaux rangés dans
+ * un sous-dossier.
  */
 class EventArtwork
 {
@@ -31,8 +41,9 @@ class EventArtwork
      * @param  string|null  $typed  URL saisie à la main
      * @param  string|null  $previous  valeur actuellement enregistrée
      * @param  bool  $remove  l'admin a demandé la suppression
+     * @param  string|null  $dir  dossier de destination (celui de l'événement)
      */
-    public static function resolve(?UploadedFile $file, ?string $typed, ?string $previous, bool $remove = false): ?string
+    public static function resolve(?UploadedFile $file, ?string $typed, ?string $previous, bool $remove = false, ?string $dir = null): ?string
     {
         $previous = trim((string) $previous) ?: null;
         $typed = trim((string) $typed) ?: null;
@@ -44,7 +55,7 @@ class EventArtwork
         }
 
         if ($file !== null) {
-            $path = $file->store(self::DIR, self::DISK);
+            $path = $file->store($dir ?: self::DIR, self::DISK);
             self::forget($previous);
 
             return Storage::disk(self::DISK)->url($path);

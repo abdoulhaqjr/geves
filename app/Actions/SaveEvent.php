@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\SaveEventRequest;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Support\EventArtwork;
+use App\Support\EventStorage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -60,6 +61,14 @@ class SaveEvent
                 'default' => (bool) ($f['default'] ?? false),
             ])->values()->all();
 
+        // ⚠️ **Le slug est résolu AVANT l'habillage**, car c'est lui qui nomme le
+        // dossier des fichiers ({@see EventStorage}). À la création, la ligne
+        // n'existe pas encore au moment du téléversement : sans cette résolution
+        // en amont, il n'y aurait rien pour nommer le dossier. `resolveSlug()`
+        // est déterministe - l'appeler ici ou plus bas donne le même résultat.
+        $slug = $this->resolveSlug((string) ($data['slug'] ?? ''), $data['title'], $event);
+        $dossier = EventStorage::artwork($slug, $data['year'] ?? null);
+
         // Logo d'un partenaire : téléversé OU collé, par le même chemin que
         // l'habillage de l'événement - le fichier l'emporte sur l'URL.
         // ⚠️ Chaque ligne porte l'URL qu'elle avait, et on ne rapproche JAMAIS
@@ -79,6 +88,7 @@ class SaveEvent
                     $request->file('partners.'.$i.'.logo_file'),
                     (string) ($p['logo_url'] ?? ''),
                     null,
+                    dir: $dossier,
                 ),
                 'level' => $p['level'] ?? null,
             ])->values()->all();
@@ -118,6 +128,7 @@ class SaveEvent
             $data['hero_image'] ?? null,
             $existingSettings['hero_image'] ?? null,
             $request->boolean('hero_image_remove'),
+            $dossier,
         );
 
         $heroVideo = EventArtwork::resolve(
@@ -125,6 +136,7 @@ class SaveEvent
             $data['hero_video'] ?? null,
             $existingSettings['hero_video'] ?? null,
             $request->boolean('hero_video_remove'),
+            $dossier,
         );
 
         $bannerUrl = EventArtwork::resolve(
@@ -132,6 +144,7 @@ class SaveEvent
             $data['banner_image'] ?? null,
             $event?->banner_url,
             $request->boolean('banner_image_remove'),
+            $dossier,
         );
 
         $submissionDeadline = ($data['submission_deadline'] ?? null) ?: null;
@@ -150,7 +163,10 @@ class SaveEvent
             'date_end' => ($data['date_end'] ?? null) ?: null,
             'location' => ($data['location'] ?? null) ?: null,
             'status' => $data['status'],
-            'slug' => $this->resolveSlug((string) ($data['slug'] ?? ''), $data['title'], $event),
+            // ⚠️ Le slug est résolu PLUS HAUT : c'est lui qui nomme le dossier des
+            // fichiers de l'événement (cf. EventStorage), et le téléversement de
+            // l'habillage le précède dans cette méthode.
+            'slug' => $slug,
             'submission_open' => $submissionOpen,
             'submission_deadline' => $submissionDeadline,
             'settings' => array_merge($existingSettings, [

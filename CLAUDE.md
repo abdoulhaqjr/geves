@@ -624,6 +624,81 @@ déploiement. Les deux se sont produites.
   `Schema::hasColumn`), la reprise rejoue un geste déjà fait et échoue à son
   tour.
 
+### Fichiers stockés = `<type>/<nom-de-l-evenement-annee>/`
+
+Source unique : **`App\Support\EventStorage`**. Les pièces jointes vivaient sous
+l'**identifiant** de l'événement (`submissions/2/…`, `events/2/…`) et une partie
+de l'habillage à plat dans `events/` : un dossier nommé `2` n'apprend rien à qui
+ouvre le disque, et deux événements mêlaient leurs visuels dans le même
+répertoire.
+
+**Cinq racines sont rangées par événement** (`EventStorage::ROOTS`) :
+`submissions/` (pièces jointes, plus `camera-ready/` en dessous), `events/`
+(bandeau, bannière, vidéo de fond, logos de partenaires), `formations/` (flyer),
+`livret/` (logo de couverture) et `livret-templates/` (gabarits .docx importés).
+
+- ⚠️ **Le nom vient du SLUG, pas du titre** : c'est déjà l'identifiant public
+  (`/colloque/{slug}`), il est **unique en base** - donc deux événements ne
+  peuvent pas partager un dossier - et déjà normalisé, ce qu'un titre n'est pas
+  (« VIIIe Colloque - Innover pour un avenir durable » ferait un répertoire de
+  48 caractères).
+- ⚠️ **L'année n'est ajoutée que si le nom ne la porte pas déjà.** Les deux
+  colloques de la base la portent dans leur slug ; ajouter `year` sans regarder
+  donnait `avenir-durable-2025-2026`, deux millésimes contradictoires dans le
+  même nom - la colonne dit 2026 là où le slug dit 2025.
+- ⚠️ **Jamais de segment VIDE** : il écrirait dans le dossier parent, et tous les
+  événements mêleraient leurs fichiers. Repli sur le titre, puis sur
+  l'identifiant, qui existe toujours.
+- ⚠️ **Un chemin déjà enregistré ne se recalcule JAMAIS à la lecture.** La base
+  garde l'adresse du fichier et c'est elle qu'on relit. Le slug étant
+  **modifiable**, un dossier déduit après un renommage pointerait dans le vide :
+  les anciens fichiers restent où ils sont, les nouveaux vont dans le nouveau
+  dossier, et rien ne casse.
+- ⚠️ **À la CRÉATION d'un événement, la ligne n'existe pas encore** quand
+  l'habillage est téléversé : `SaveEvent` résout donc le slug **avant** l'appel à
+  `EventArtwork`, et passe le dossier en argument (`dir:`). `EventArtwork` ne
+  déduit plus le dossier lui-même.
+- ⚠️ **Deux formes cohabitent en base** : une **URL** absolue
+  (`submissions.file_url`, `media.url`, `settings.hero_image`) et un **chemin
+  nu** (`formations.flyer_path`, `settings['livret.cover_logo']`, les gabarits du
+  livre). Tout code qui touche à ces valeurs doit traiter les deux.
+- **Ce qui reste à plat, et pourquoi** : `branding/`, `ai-agents/`,
+  `tutorial-*/`, `documents/templates/` appartiennent à la **plateforme** ;
+  `account-photos/`, `staff-photos/`, `formation-trainers/`,
+  `formation-signatures/` à une **personne** - sa photo ne change pas d'un
+  colloque à l'autre, et la ranger par événement la dupliquerait.
+
+**Migration `2026_10_17_000100_classer_les_fichiers_par_evenement`** : elle a
+déplacé l'existant ET réécrit les adresses enregistrées dans le même passage -
+un fichier déplacé sans son adresse est un fichier perdu.
+
+- ⚠️ **Elle est pilotée par la BASE, jamais par le contenu des dossiers.** Il
+  restait un `events/1/` peuplé des affiches du colloque de l'eau, du temps où
+  cet événement portait l'identifiant 1 : déplacer les répertoires par leur nom
+  aurait rangé ces affiches sous l'événement 1 d'aujourd'hui, « Innover pour un
+  avenir durable ». Chaque ligne, elle, sait de quel événement elle relève.
+- ⚠️ **Forme d'arrivée `<racine>/<dossier>[/camera-ready]/<fichier>`** : les
+  segments intermédiaires sont abandonnés, parce qu'ils redisaient l'événement
+  (l'import de l'eau rangeait sous `submissions/2/eau-togo-2026/`). C'est aussi
+  **exactement** ce que le code écrit maintenant : sans cela, le prochain passage
+  du seeder d'import ne retrouverait pas ses 47 pièces Word et les réécrirait à
+  côté.
+- ⚠️ **Elle ne réécrit une adresse que si le fichier est VRAIMENT à destination**
+  (déplacé, ou déjà en place au rejeu), et **n'écrase jamais** une destination
+  occupée. Un fichier introuvable des deux côtés garde son adresse : la corriger
+  ferait pointer la base vers un fichier qui n'existe nulle part, et on perdrait
+  la seule piste qui reste pour le retrouver.
+- ⚠️ **L'hôte de l'adresse est conservé** : les URL stockées sont absolues et ont
+  pu l'être sous un autre domaine. On ne touche qu'au chemin, repéré par le
+  marqueur `/storage/<racine>/`.
+- ⚠️ Son `down()` est **vide** : reculer ne rendrait pas un dossier nommé `2`
+  plus lisible, et le code n'écrit plus que la nouvelle forme.
+
+Garde : **`ClassementDesFichiersTest`** (règles de nommage, les trois chemins
+d'écriture, le flyer, le déplacement, le rejeu, l'adresse laissée intacte quand
+le fichier manque, et le dossier orphelin qu'aucune ligne ne réclame) - 7
+sabotages vérifiés, dont celui qui déplace les répertoires par leur nom.
+
 ### URLs de l'espace participant = sous `/compte`
 
 Les pages personnelles du compte vivent sous **`/compte/...`** (`/compte`, `/compte/profil`,

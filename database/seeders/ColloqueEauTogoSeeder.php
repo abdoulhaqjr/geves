@@ -10,6 +10,7 @@ use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Models\User;
+use App\Support\EventStorage;
 use App\Support\Phone;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -28621,14 +28622,14 @@ ARCHIVE;
     {
         $posters = [
             'primary' => [
-                'path' => "events/{$event->id}/eau-togo-2026/affiche-colloque.jpeg",
+                'path' => EventStorage::artwork($event).'/affiche-colloque.jpeg',
                 'title' => 'Affiche du colloque',
                 'sha256' => self::POSTER_PRIMARY_SHA256,
                 'base64' => self::POSTER_PRIMARY_BASE64,
                 'ordre' => 1,
             ],
             'second_call' => [
-                'path' => "events/{$event->id}/eau-togo-2026/affiche-deuxieme-appel.jpeg",
+                'path' => EventStorage::artwork($event).'/affiche-deuxieme-appel.jpeg',
                 'title' => 'Deuxième appel à communication',
                 'sha256' => self::POSTER_SECOND_CALL_SHA256,
                 'base64' => self::POSTER_SECOND_CALL_BASE64,
@@ -28965,7 +28966,7 @@ ARCHIVE;
             throw new RuntimeException("Extension Word inattendue pour {$reference}.");
         }
 
-        $path = "submissions/{$event->id}/eau-togo-2026/{$reference}.{$extension}";
+        $path = EventStorage::submissions($event)."/{$reference}.{$extension}";
         $disk = Storage::disk('public');
         if (! $disk->exists($path)) {
             $bytes = $zip->getFromIndex((int) $source['file_index']);

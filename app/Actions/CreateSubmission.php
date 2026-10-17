@@ -6,6 +6,7 @@ use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Event;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\EventStorage;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
@@ -37,7 +38,7 @@ class CreateSubmission
         // Téléversement du fichier (I/O) hors transaction.
         $fileUrl = null;
         if ($config->enabled('file') && $file) {
-            $path = $file->store('submissions/'.$event->id, 'public');
+            $path = $file->store(EventStorage::submissions($event), 'public');
             $fileUrl = Storage::disk('public')->url($path);
         }
 
@@ -102,6 +103,7 @@ class CreateSubmission
         // Création atomique : le participant (upsert) et la communication ensemble.
         $submission = DB::transaction(function () use ($account, $event, $data, $authors, $fileUrl, $customMeta, $editionGrade, $editionAffiliation): Submission {
             $participant = $this->upsert->handle($event, $account, 'author', $editionGrade, $editionAffiliation);
+
             // ref_code + access_token sont générés par SubmissionObserver.
             return Submission::create([
                 'event_id' => $event->id,

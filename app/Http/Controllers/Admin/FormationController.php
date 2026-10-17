@@ -16,6 +16,7 @@ use App\Models\FormationTrainer;
 use App\Models\Participant;
 use App\Models\User;
 use App\Support\AuthorMatcher;
+use App\Support\EventStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -114,7 +115,8 @@ class FormationController extends Controller
             if (filled($formation->flyer_path)) {
                 Storage::disk('public')->delete((string) $formation->flyer_path);
             }
-            $formation->update(['flyer_path' => $request->file('flyer')->store('formations', 'public')]);
+            $formation->update(['flyer_path' => $request->file('flyer')
+                ->store(EventStorage::in(EventStorage::FORMATIONS, $formation->event), 'public')]);
         }
     }
 

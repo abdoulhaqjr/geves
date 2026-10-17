@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Support\CalendarExport;
 use App\Support\CurrentEvent;
 use App\Support\EventLock;
+use App\Support\EventStorage;
 use App\Support\Html;
 use App\Support\ParticipantTypes;
 use App\Support\RorClient;
@@ -242,7 +243,7 @@ class SubmissionController extends Controller
             'file.required' => 'Joignez le fichier de la version définitive.',
         ]);
 
-        $path = $request->file('file')->store('submissions/'.$submission->event_id.'/camera-ready', 'public');
+        $path = $request->file('file')->store(EventStorage::submissions($submission->event).'/camera-ready', 'public');
 
         $meta = $submission->meta ?? [];
         $meta['camera_ready'] = [
@@ -344,7 +345,7 @@ class SubmissionController extends Controller
         // Nouveau fichier éventuel.
         $fileUrl = $submission->file_url;
         if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('submissions/'.$submission->event_id, 'public');
+            $path = $request->file('file')->store(EventStorage::submissions($submission->event), 'public');
             $fileUrl = Storage::disk('public')->url($path);
         }
 
