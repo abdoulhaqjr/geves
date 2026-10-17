@@ -4510,11 +4510,27 @@ fenêtre. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 
-⚠️ **Rien de tout cela n'a été éprouvé contre un vrai compte marchand** : aucune
-clé n'est renseignée, et la validation au bac à sable reste à faire (cf. §8 de
-PASSATION.md). Les cas Pest portent sur ce que NOUS décidons - ce qui part dans
-la requête, ce qui atteint la page, ce qu'on croit du navigateur.
+⚠️ **ÉPROUVÉ EN CONDITIONS RÉELLES le 2026-10-18** (compte marchand en
+production, clés `live`) : le formulaire s'ouvre bien sur `/compte/paiement/{id}`
+sans aucune redirection, il porte le bon marchand, notre identifiant de
+transaction, et il arrive **pré-rempli** de l'e-mail et du téléphone du payeur.
 
+⚠️ **Deux choses mesurées là, et seulement là :**
+
+- **Tout réglage enregistré doit être listé dans `applySettingsToConfig()`.** La
+  clé publique se saisissait, se rangeait en base et se réaffichait dans le
+  formulaire - sans jamais atteindre la passerelle : le formulaire embarqué
+  restait muet et le paiement repartait en redirection, **sans un mot**. Un
+  réglage absent de cette liste ment. Un cas d'`AdminSettingsTest` le tient.
+- **Le prestataire pose son cadre à 150px** et le laisse défiler en dedans : le
+  formulaire tenait dans une meurtrière, avec sa propre barre de défilement DANS
+  la nôtre. On ne lui impose pas de hauteur, on lui donne un **plancher** - il
+  reste libre de grandir.
+
+⚠️ **La CARTE dépend du compte marchand, et elle n'était pas ouverte** : le
+formulaire ne proposait que Mobile Money. Le réglage « Proposer la carte
+bancaire » doit alors être **décoché**, sinon GEVES annonce un moyen que la page
+de paiement ne donne pas.
 Cinq cas dans `PaymentGatewayTest`, trois sabotages vérifiés.
 
 ### Carte bancaire : acceptée depuis toujours, proposée depuis le 2026-10-18

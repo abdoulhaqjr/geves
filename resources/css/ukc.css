@@ -1511,6 +1511,12 @@ body.ukc-overlay-open { overflow: hidden; }
 /* Le prestataire pose son formulaire ici. Une hauteur minimale évite que le
    panneau ne s'effondre à une barre de titre pendant le chargement. */
 .ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: min(420px, 50dvh); padding: 6px; }
+/* ⚠️ **Le prestataire pose son cadre à 150px** et le laisse défiler en dedans :
+   mesuré en conditions réelles, le formulaire tenait dans une meurtrière, avec
+   sa propre barre de défilement DANS la nôtre - deux défilements imbriqués, ce
+   que le projet s'interdit ailleurs. On ne lui impose pas une hauteur, on lui
+   donne un PLANCHER : il reste libre de grandir quand son formulaire s'allonge. */
+.ukc-pay-embed__box iframe { width: 100%; min-height: min(440px, 52dvh); border: 0; }
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
 .ukc-pay-embed__failed { display: none; }

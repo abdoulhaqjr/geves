@@ -229,7 +229,12 @@ class AppServiceProvider extends ServiceProvider
         Config::set('payments.default', $set('payments.default', config('payments.default')));
 
         // Identifiants passerelles (repli sur config/.env)
-        foreach (['secret', 'mode', 'webhook_secret'] as $k) {
+        // ⚠️ **Tout réglage enregistré doit être LISTÉ ICI**, sinon il se saisit,
+        // se range en base, se réaffiche dans le formulaire - et n'arrive jamais
+        // à la passerelle. Vu sur `public_key` : la clé était bien là, le
+        // formulaire embarqué restait muet et le paiement repartait en
+        // redirection, sans un mot. Un réglage absent de cette liste ment.
+        foreach (['secret', 'mode', 'webhook_secret', 'public_key'] as $k) {
             if (filled($set("fedapay.$k"))) {
                 Config::set("services.fedapay.$k", $set("fedapay.$k"));
             }

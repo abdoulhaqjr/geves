@@ -90,6 +90,7 @@ it('applique les réglages à la configuration au boot', function () {
         'mail.host' => 'smtp.test.tg',
         'mail.port' => '465',
         'fedapay.webhook_secret' => 'whsec_demo',
+        'fedapay.public_key' => 'pk_live_demo',
         'ai.default' => 'gemini',
         'ai.anthropic_key' => 'sk-ant-abc',
         'ai.grok_key' => 'xai-abc',
@@ -105,6 +106,11 @@ it('applique les réglages à la configuration au boot', function () {
     expect(config('mail.default'))->toBe('smtp');
     expect(config('mail.mailers.smtp.host'))->toBe('smtp.test.tg');
     expect(config('services.fedapay.webhook_secret'))->toBe('whsec_demo');
+    // ⚠️ Le défaut vécu : la clé publique s'enregistrait, se réaffichait dans
+    // le formulaire, et n'atteignait JAMAIS la passerelle - le formulaire
+    // embarqué restait muet et le paiement repartait en redirection, sans un
+    // mot. Un réglage qui ne descend pas dans la configuration ment.
+    expect(config('services.fedapay.public_key'))->toBe('pk_live_demo');
     expect(config('services.ai.default'))->toBe('gemini');
     expect(config('services.anthropic.key'))->toBe('sk-ant-abc');
     expect(config('services.grok.key'))->toBe('xai-abc');
