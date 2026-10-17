@@ -118,6 +118,13 @@ class DocumentController extends Controller
             'Gauche' => 'left', 'Droite' => 'right', 'Justifié' => 'justify', default => 'center',
         };
 
+        // ⚠️ Le style intégré sélectionné pilote AUSSI l'aperçu PDF pour « general »
+        // (comité d'organisation en tableau + « Communications en ateliers »), afin
+        // que l'aperçu reflète fidèlement le .docx. Les autres styles gardent la
+        // mise en page par défaut dans le PDF. Résolu EN TÊTE : la casse des auteurs
+        // de l'index en dépend (cf. LivretDocx::authorCase).
+        $general = $this->livretStyle($event) === 'general';
+
         // Index des auteurs : nom => références des résumés (renvoi), même règle que le .docx.
         $authorIndex = [];
         $n = 0;
@@ -126,8 +133,10 @@ class DocumentController extends Controller
                 $n++;
                 $ref = trim((string) $s->ref_code) ?: '#'.$n;
                 foreach (collect($s->authors ?? []) as $a) {
-                    // Nom en MAJUSCULES (convention du livret).
-                    $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
+                    // ⚠️ Casse SELON LE STYLE, via la source unique partagée avec le
+                    // .docx (majuscules pour default/fss, « NOM Prénom » tel quel pour
+                    // general) - ne pas remettre un mb_strtoupper inconditionnel ici.
+                    $name = LivretDocx::authorCase((string) ($a['name'] ?? ''), $general);
                     if ($name !== '') {
                         $authorIndex[$name][] = $ref;
                     }
@@ -151,12 +160,6 @@ class DocumentController extends Controller
                 : trim((string) $sl->session_label) !== '')
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
-
-        // ⚠️ Le style intégré sélectionné pilote AUSSI l'aperçu PDF pour « general »
-        // (comité d'organisation en tableau + « Communications en ateliers »), afin
-        // que l'aperçu reflète fidèlement le .docx. Les autres styles gardent la
-        // mise en page par défaut dans le PDF.
-        $general = $this->livretStyle($event) === 'general';
 
         // Ordre des comités : « general » suit le document de référence
         // (supervision → scientifique → organisation), sinon l'ordre UK/UP par défaut.
@@ -211,6 +214,9 @@ class DocumentController extends Controller
             // qui vérifie que le programme n'annonce pas de communication refusée.
             'programme' => $programme,
             'general' => $general,
+            // Palette du style « general », source unique (cf. LivretDocx) partagée
+            // avec le .docx pour que les couleurs ne divergent pas.
+            'palette' => LivretDocx::generalCssPalette(),
             'commissionsTitle' => $general
                 ? 'Les différentes commissions et programmes du colloque'
                 : 'Différentes commissions et programmes du colloque',

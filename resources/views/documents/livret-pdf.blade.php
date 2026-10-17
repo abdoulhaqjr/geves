@@ -57,23 +57,25 @@
     @if ($isGen)
     {{-- Palette EXACTE du « Document général du colloque » : titres noirs,
          ateliers terracotta, tableaux à en-tête gris et bandeau de jour bleu. --}}
+    {{-- Couleurs issues de la SOURCE UNIQUE `LivretDocx::generalCssPalette()`
+         (partagée avec le .docx) : ne pas recopier d'hexadécimaux en dur ici. --}}
     <style>
-        h1.part { color: #000; border-bottom: none; }
-        h2.axis { color: #000; }
+        h1.part { color: {{ $palette['black'] }}; border-bottom: none; }
+        h2.axis { color: {{ $palette['black'] }}; }
         {{-- Dispositions EXACTES du document de référence : code à droite, titre /
             auteurs / affiliations / correspondant CENTRÉS. --}}
-        .ref { color: #000; text-align: right; font-size: 10.5pt; font-weight: bold; margin: 16px 0 2px; }
-        .abs-title { color: #000; text-align: center; }
-        .authors { color: #000; font-weight: bold; font-style: italic; font-size: 11pt; text-align: center; }
-        .aff { color: #000; font-style: italic; text-align: center; }
-        .corr { color: #000; font-style: italic; text-align: center; }
-        .lbl { color: #000; }
-        .kw .muted { color: #000 !important; }
-        table.prog th { background: #f2f2f2; color: #000; }
-        table.prog th, table.prog td { border-color: #bfbfbf; }
-        .atelier-head { color: #c0504d; }
-        td.day-banner { background: #95b3d7; color: #000; font-weight: bold; text-align: center; }
-        tr.grp td { background: #f2f2f2; font-weight: bold; text-align: center; }
+        .ref { color: {{ $palette['black'] }}; text-align: right; font-size: 10.5pt; font-weight: bold; margin: 16px 0 2px; }
+        .abs-title { color: {{ $palette['black'] }}; text-align: center; }
+        .authors { color: {{ $palette['black'] }}; font-weight: bold; font-style: italic; font-size: 11pt; text-align: center; }
+        .aff { color: {{ $palette['black'] }}; font-style: italic; text-align: center; }
+        .corr { color: {{ $palette['black'] }}; font-style: italic; text-align: center; }
+        .lbl { color: {{ $palette['black'] }}; }
+        .kw .muted { color: {{ $palette['black'] }} !important; }
+        table.prog th { background: {{ $palette['head_fill'] }}; color: {{ $palette['black'] }}; }
+        table.prog th, table.prog td { border-color: {{ $palette['border'] }}; }
+        .atelier-head { color: {{ $palette['terracotta'] }}; }
+        td.day-banner { background: {{ $palette['day_fill'] }}; color: {{ $palette['black'] }}; font-weight: bold; text-align: center; }
+        tr.grp td { background: {{ $palette['head_fill'] }}; font-weight: bold; text-align: center; }
     </style>
     @endif
 </head>
@@ -156,13 +158,13 @@
     // Numéro de la rubrique « Communications en ateliers » dans la section A
     // (comités présents + programme synthétique), pour « 5. COMMUNICATIONS… ».
     $ateliersNo = $committeeList->count() + ($synDays->isNotEmpty() ? 1 : 0) + 1;
-    $hColor = $isGen ? '#000' : $primary;
+    $hColor = $isGen ? $palette['black'] : $primary;
     $isCoord = fn ($q) => (bool) preg_match('/president|vice|rapporteur|coordinat|secretaire|tresorier/i', \Illuminate\Support\Str::ascii((string) $q));
 @endphp
 @if ($committeeList->isNotEmpty() || $synDays->isNotEmpty())
     <div class="page-break">
         @if ($isGen)
-            <p class="sans" style="font-weight:bold;font-size:14pt;color:#000;margin:0 0 14px;">A) {{ $commissionsTitle }}</p>
+            <p class="sans" style="font-weight:bold;font-size:14pt;color:{{ $palette['black'] }};margin:0 0 14px;">A) {{ $commissionsTitle }}</p>
         @else
             <h1 class="part sans">{{ $commissionsTitle ?? 'Différentes commissions et programmes du colloque' }}</h1>
         @endif
@@ -230,7 +232,7 @@
 @if (($programmeGroups ?? collect())->isNotEmpty())
     <div class="page-break">
         @if ($isGen)
-            <p class="sans" style="text-align:center;font-weight:bold;font-size:14pt;color:#000;margin:0 0 14px;">{{ $ateliersNo }}. COMMUNICATIONS EN ATELIERS</p>
+            <p class="sans" style="text-align:center;font-weight:bold;font-size:14pt;color:{{ $palette['black'] }};margin:0 0 14px;">{{ $ateliersNo }}. COMMUNICATIONS EN ATELIERS</p>
         @else
             <h1 class="part sans">{{ $programmeTitle ?? 'Programme' }}</h1>
         @endif
@@ -278,8 +280,10 @@
                     @foreach ($daySlots as $sl)
                         @php
                             $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a) {
-                                $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
+                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a) use ($isGen) {
+                                // Même casse que le .docx (source unique) ; ce bloc n'est
+                                // atteint que hors « general » (le general n'a pas d'auteurs ici).
+                                $name = \App\Documents\LivretDocx::authorCase((string) ($a['name'] ?? ''), $isGen);
                                 $aff = trim((string) ($a['affiliation'] ?? ''));
                                 return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
                             })->filter()->implode('; ');
@@ -302,7 +306,7 @@
 {{-- ===================== RÉSUMÉS ===================== --}}
 <div class="page-break">
     @if ($isGen)
-        <p class="sans center" style="font-weight:bold;font-size:16pt;color:#000;margin:0 0 14px;">B) Résumés des communications</p>
+        <p class="sans center" style="font-weight:bold;font-size:16pt;color:{{ $palette['black'] }};margin:0 0 14px;">B) Résumés des communications</p>
     @else
         <h1 class="part sans">Résumés des communications</h1>
     @endif
@@ -319,8 +323,9 @@
                 $n++;
                 $ref = trim((string) $s->ref_code);
                 $people = collect($s->authors ?? [])->map(fn ($a) => [
-                    // Nom affiché TEL QUEL (« NOM Prénom ») - pas de passage en capitales.
-                    'name' => trim((string) ($a['name'] ?? '')),
+                    // Casse SELON LE STYLE, via la source unique partagée avec le .docx
+                    // (« NOM Prénom » tel quel pour general, MAJUSCULES pour default/fss).
+                    'name' => \App\Documents\LivretDocx::authorCase((string) ($a['name'] ?? ''), $isGen),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
                     'phone' => trim((string) ($a['phone'] ?? '')),

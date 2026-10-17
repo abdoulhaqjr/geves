@@ -3,6 +3,7 @@
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Models\CommitteeMember;
+use App\Models\Event;
 use App\Models\Slot;
 use App\Models\User;
 use App\Support\EventSettings;
@@ -379,4 +380,40 @@ it('écarte aussi les communications hors livre du programme servi au PDF', func
         ->get(route('admin.documents.livret', ['event' => $event]))
         ->assertOk()
         ->assertDontSee('Communication refusée après planification');
+});
+
+/** Rend le HTML de la vue PDF (dompdf) du livret, tel que le contrôleur l'alimente. */
+function livretPdfHtml(Event $event): string
+{
+    $groups = $event->submissions()->acceptedCanonical()->orderBy('track')->get()
+        ->groupBy(fn ($s) => $s->track ?: 'Autres');
+    $m = new ReflectionMethod(DocumentController::class, 'livretViewData');
+    $m->setAccessible(true);
+    $data = $m->invoke(app(DocumentController::class), $event, $groups);
+
+    return view('documents.livret-pdf', $data)->render();
+}
+
+it('casse des auteurs : le .docx et le PDF concordent selon le style', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $submission->update(['authors' => [['name' => 'Jean Dupont', 'email' => 'jean@example.tg', 'corresponding' => true]]]);
+    $event = $submission->event;
+
+    $docx = fn () => livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
+            ->streamedContent()
+    );
+
+    // Style par défaut : nom en MAJUSCULES dans les DEUX rendus (source unique
+    // LivretDocx::authorCase). ⚠️ C'est la divergence corrigée : le PDF affichait
+    // le nom TEL QUEL alors que le .docx le mettait en capitales.
+    expect($docx())->toContain('JEAN DUPONT');
+    expect(livretPdfHtml($event->fresh()))->toContain('JEAN DUPONT')->not->toContain('Jean Dupont');
+
+    // Style « general » : « NOM Prénom » tel quel dans les DEUX rendus.
+    EventSettings::set($event, 'livret.template', 'general');
+    expect($docx())->toContain('Jean Dupont')->not->toContain('JEAN DUPONT');
+    expect(livretPdfHtml($event->fresh()))->toContain('Jean Dupont')->not->toContain('JEAN DUPONT');
 });

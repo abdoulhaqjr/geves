@@ -3634,6 +3634,18 @@ ajoutée par la vue, elle ne se saisit pas.
     reste « Prénom Nom »). ⚠️ Chaque auteur de la
     ligne du PDF est enveloppé dans un `<span white-space:nowrap>` : sans cela l'exposant d'affiliation
     (« 4 ») se détachait du nom et retombait seul à la ligne ; la coupure ne se fait qu'aux virgules.
+  - ⚠️ **Word et PDF = DEUX moteurs (PhpWord / dompdf), donc DEUX rendus à ne pas laisser
+    diverger.** Le PDF n'est PAS produit à partir du .docx (pas de LibreOffice sur le mutualisé
+    o2switch) : `DocumentController::livretViewData()` alimente la vue dompdf `documents/livret-pdf`
+    en parallèle du générateur `LivretDocx`. Pour limiter la dérive, deux **sources uniques
+    partagées** par les deux rendus : **`LivretDocx::authorCase($nom, $general)`** (la casse des
+    auteurs - corps, programme, correspondant, index - MAJUSCULES pour `default`/`fss`, tel quel pour
+    `general`) et **`LivretDocx::generalCssPalette()`** (les couleurs du style `general` : `black`,
+    `terracotta`, `day_fill`, `head_fill`, `border` - la vue lit ces valeurs, pas des hexadécimaux en
+    dur). ⚠️ Ne pas réintroduire dans la vue un `mb_strtoupper`/`trim` isolé ni une couleur en dur :
+    c'est ainsi que la casse des auteurs du PDF (affichée TELLE QUELLE même en `default`) divergeait du
+    .docx. Garde : `LivretTest` « casse des auteurs : le .docx et le PDF concordent selon le style »
+    (rend les DEUX et compare).
     ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes
     + la **1re ligne de données** vivent dans un même `<tbody class="prog-start">` **insécable**
     (`page-break-inside: avoid`), les lignes suivantes dans un second `<tbody>`. L'en-tête ne reste

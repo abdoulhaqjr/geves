@@ -1467,18 +1467,47 @@ class LivretDocx
     }
 
     /**
-     * Nom d'auteur pour l'affichage. ⚠️ Dépend du STYLE :
-     *  - « general » (Document général du colloque) : rendu TEL QU'IL EST SAISI,
+     * Casse d'un nom d'auteur selon le style. ⚠️ SOURCE UNIQUE partagée par le
+     * .docx (ce générateur) ET le PDF (vue dompdf `documents/livret-pdf`), pour
+     * que les deux rendus ne divergent JAMAIS sur la casse :
+     *  - « general » (Document général du colloque) : nom TEL QU'IL EST SAISI,
      *    au format « NOM Prénom » du document de référence (nom de famille en
-     *    capitales, prénom en casse normale) - on ne force donc PAS les majuscules.
+     *    capitales, prénom en casse normale) - pas de passage en majuscules.
      *  - autres styles (défaut, FSS) : nom ENTIÈREMENT en majuscules, convention
-     *    historique du livret (corps du résumé et index des auteurs).
+     *    historique du livret (corps du résumé, programme et index des auteurs).
+     * Le PDF l'appelle en statique ; ne pas réintroduire un `mb_strtoupper` ou un
+     * `trim` isolé dans la vue (c'est ainsi que la divergence était née).
      */
-    private function displayName(string $name): string
+    public static function authorCase(string $name, bool $general): string
     {
         $name = trim($name);
 
-        return $this->isGeneral() ? $name : mb_strtoupper($name, 'UTF-8');
+        return $general ? $name : mb_strtoupper($name, 'UTF-8');
+    }
+
+    /**
+     * Palette CSS (#rrggbb) du style « general », SOURCE UNIQUE partagée avec le
+     * PDF : la vue dompdf lit ces valeurs au lieu de recopier les hexadécimaux,
+     * donc changer une couleur ici la change dans les DEUX rendus. Les clés
+     * `black`/`terracotta`/`day_fill`/`head_fill` reprennent les constantes du
+     * .docx ; `border` est le filet de tableau (propre au PDF).
+     *
+     * @return array<string, string>
+     */
+    public static function generalCssPalette(): array
+    {
+        return [
+            'black' => '#'.self::BLACK,
+            'terracotta' => '#'.self::TERRACOTTA,
+            'day_fill' => '#'.self::REF_DAY_FILL,
+            'head_fill' => '#'.self::REF_HEAD_FILL,
+            'border' => '#bfbfbf',
+        ];
+    }
+
+    private function displayName(string $name): string
+    {
+        return self::authorCase($name, $this->isGeneral());
     }
 
     /**
