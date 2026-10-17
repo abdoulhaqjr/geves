@@ -1934,7 +1934,7 @@ MenuParticipantTest » mais n'a touché que le gabarit.
 
 1220 tests / 4343 assertions, Pint et PHPStan niveau 5 sans erreur.
 
-### 2026-10-14 — Tableau des modèles de badges
+### 2026-10-14 - Tableau des modèles de badges
 
 Le tableau **Documents → Badges → Modèles** ne reprend plus les quatre lignes du
 mockup. Il lit le modèle `badge/default` effectivement rendu, déduit son format
@@ -1946,7 +1946,7 @@ le même filtre, y compris si une ancienne URL porte `paid=0`. Les variantes
 « Communicant » et « Staff » ont été retirées de la palette du designer pour
 éviter de changer le rôle imprimé sur le modèle unique.
 
-### 2026-10-14 — Badges de fonction par catégorie
+### 2026-10-14 - Badges de fonction par catégorie
 
 Le modèle participant `badge/default` reste réservé aux inscriptions dont le
 paiement de participation est réglé ; il n'existe toujours pas de badge
@@ -1969,25 +1969,25 @@ référence de son type ; le badge participant reste verrouillé jusqu'au paieme
 les badges de fonction sont disponibles indépendamment de celui-ci. La pastille
 du tableau de bord suit le même décompte.
 
-### 2026-10-14 — Modalités de dépôt d'une communication
+### 2026-10-14 - Modalités de dépôt d'une communication
 
 Le champ `type` des soumissions reste **oral/poster**, présenté comme « Type de communication ». Un nouveau champ `participation_mode` (**online/onsite**) représente « Mode de participation » et s'enregistre séparément. Le formulaire public limite ses options selon `Event.settings.format` ; la requête les valide côté serveur. Le formulaire administrateur expose les deux champs, et `SubmissionFormConfig` remplace à la lecture l'ancien libellé « Mode de présentation » des événements déjà configurés. La migration reprend les valeurs Présentiel/Distantiel des métadonnées importées du colloque Eau au Togo ; les autres soumissions historiques restent sans mode tant qu'il n'est pas connu. Le seeder alimente désormais la nouvelle colonne à la création et lors d'une relance pour ses lignes existantes.
 
 L'axe thématique, le type de communication et le mode de participation partagent une ligne sur grand écran dans le formulaire public. Leur grille est un frère de la grille du titre, pas son enfant : elle occupe ainsi toute la largeur disponible. Le comité retrouve le mode dans la liste des soumissions (filtre, aperçu, export CSV) et dans les créneaux du programme (pastille et filtre), afin d'identifier les communicants à distance.
 
-### 2026-10-14 — Mode de participation propre au participant
+### 2026-10-14 - Mode de participation propre au participant
 
 `participants.participation_mode` est désormais la seule source du mode pour une personne sur un événement. La migration `2026_10_14_000200` reprend le dernier mode connu de ses soumissions (ou la réponse importée), puis retire la colonne des soumissions. Le dépôt suivant préremplit ce choix ; si la personne le modifie, `CreateSubmission` actualise sa fiche participant dans la transaction. Les anciennes et nouvelles communications affichent aussitôt cette même valeur. Les filtres du back-office et du programme lisent la fiche participant. L'import Eau au Togo renseigne la fiche sans écraser un mode déjà personnalisé lors d'une relance.
 
 Le participant disposant déjà d'une fiche retrouve ce réglage dans **Inscription & paiement → Ma participation**, même avant l'ouverture du paiement. Le formulaire de communication propose un lien vers cette carte. Le formulaire envoie son choix à `account.participation.mode.update`, qui vérifie la propriété de la fiche et les modes autorisés par le format de l'événement ; il revient ensuite à la carte de l'événement concerné. Le profil global ne contient plus ce choix propre à chaque événement.
 
-### 2026-10-14 — Présentation de chaque communication distincte de la présence au colloque
+### 2026-10-14 - Présentation de chaque communication distincte de la présence au colloque
 
 La décision précédente d'utiliser le mode du participant pour toutes ses communications est remplacée : `participants.participation_mode` décrit uniquement sa présence au colloque, et `submissions.presentation_mode` décrit la présentation de **chaque** communication. Le formulaire de dépôt nomme maintenant ce second choix « Mode de présentation » ; il n'écrit plus sur la fiche participant. La clé `participation_mode` du paramétrage historique du formulaire est conservée pour relire les réglages déjà enregistrés. La migration `2026_10_14_000300` reprend d'abord `meta.presentation_mode` des résumés importés (choix original), puis le mode actuel du participant quand l'historique individuel n'existe plus. Modifier la carte **Inscription & paiement** ne change pas les communications ; une fiche de communication propose une modification indépendante à son propriétaire.
 
 La liste, la fiche et le CSV administrateur montrent séparément la présentation et la participation au colloque. Le filtre des créneaux du programme suit le mode de présentation de la communication, qui détermine comment l'intervention aura lieu. Lors d'une resoumission, l'archive garde ce mode. L'import Eau au Togo renseigne `presentation_mode` à la création et sur ses anciens dépôts seulement si la colonne est encore vide.
 
-### 2026-10-15 — Designer de badges aligné sur le designer d'attestations
+### 2026-10-15 - Designer de badges aligné sur le designer d'attestations
 
 `badge-designer.blade.php`, `badge-designer.js` et `badge-designer.css` reprennent les libellés français, le panneau Calques ouvert par défaut, les logos officiels, les formes et styles de texte supplémentaires, le zoom au défilement et les réglages de mise en page persistés. Les images et fonds importés passent par `templates.upload` : ne pas réintroduire de `data:` dans la mise en page, car `LayoutSanitizer` les refuse. Le QR de vérification utilise `{verify_url}` pour chaque titulaire. Les cadres sans remplissage gardent leur contour via `rect.fill=false` dans `LayoutSanitizer` et `LayoutRenderer`. L'assistant du badge appelle désormais `templates.generate` et affiche son erreur si aucun fournisseur IA n'est configuré. Les formats et champs propres aux badges restent distincts de ceux des attestations.
 
@@ -2005,11 +2005,11 @@ Le nom du bénéficiaire du modèle A6 standard démarre à **22 px** (avec ou s
 
 La catégorie de badge participant n'a plus qu'un seul modèle `default`. La variante à photo reste une carte du designer (`co-photo`) et, lorsqu'elle est choisie, se sauvegarde sur ce même modèle. `BadgeCatalog::TYPES` ne publie plus `participant_photo` : la liste des modèles, les badges prêts et leurs compteurs ne doublent plus les mêmes inscrits. L'espace participant rend toujours `default`, avec le calque photo du modèle seulement lorsque le profil fournit une image ; il n'offre plus de préférence individuelle de photo. L'ancien modèle `participant_photo` reste stocké pour préserver les données historiques mais n'est plus utilisé ; `LayoutSanitizer` sait encore lire sa maquette par compatibilité. La migration `2026_10_15_000400` promeut sa mise en page si elle avait été personnalisée et que `default` ne l'avait pas été.
 
-### 2026-10-15 — Fenêtres et icônes des deux designers
+### 2026-10-15 - Fenêtres et icônes des deux designers
 
 Les dialogues « Modifications non enregistrées » des designers de badges et d'attestations utilisent les mêmes dimensions, police, en-tête, pied et boutons arrondis que la confirmation commune du projet. Leur style partagé se trouve dans `resources/css/designer-tailwise.css` ; les trois actions et la gestion du focus restent dans leurs scripts respectifs. Les deux vues autonomes chargent les favicons 16/32 px et l'icône d'accueil dynamique (`Branding::mark()`) comme le layout principal.
 
-### 2026-10-15 — Badge sans photo de profil
+### 2026-10-15 - Badge sans photo de profil
 
 Un modèle de catégorie peut contenir un calque photo, mais chaque badge se rend selon le profil de son destinataire. `BadgeLayout::forRecipient()` garde le modèle enregistré si la photo existe et que son titulaire choisit de l'afficher ; sinon, il choisit la maquette officielle sans image et conserve le format sélectionné. Ce choix vaut pour « Mes documents » et la planche administrative. `BadgeCatalog::recipients()` transmet maintenant aussi la photo du compte lié pour les fonctions de modération et de comité. Le repli sur un cercle vide ou les initiales n'est plus le comportement du badge délivré.
 
@@ -2019,7 +2019,7 @@ Le choix se présente sous forme d'interrupteur dans la colonne de droite, au-de
 
 Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXXX-XXXX`, calculées de façon déterministe dans `BadgeCatalog` à partir de l'identité de l'ancien badge. Le même code est utilisé dans « Mes documents », sur les planches administratives et dans les jetons `[badge.ref]` / `{ref}`. Aucun identifiant interne, nom de rôle ou e-mail n'apparaît dans la référence. La planche fournit aussi `{verify_url}` au calque QR, avec la même clé. La route `/verifier` reste le point de destination existant ; son traitement des références de badge est distinct de la vérification des attestations et n'est pas ajouté ici.
 
-### 2026-10-15 — Fermeture automatique des soumissions à l'échéance
+### 2026-10-15 - Fermeture automatique des soumissions à l'échéance
 
 `Event::submissionsAreOpen()` et `scopeAcceptingSubmissions()` sont la règle commune : statut ouvert, option activée et date limite strictement future (ou absente). Les liens publics et participants, la phase de l'événement et la validation du POST de dépôt l'utilisent ; un scheduler indisponible ne peut donc pas laisser passer un résumé après l'échéance. `events:close-submissions`, planifié chaque minute, met aussi `events.submission_open` à `false` en base pour les délais atteints. `SaveEvent` refuse de réenregistrer l'option ouverte avec un délai déjà passé. Le formulaire admin décoche et désactive la case à l'échéance, même si la page reste ouverte ; prolonger la date la rend de nouveau disponible, puis l'administrateur peut rouvrir explicitement l'appel.
 

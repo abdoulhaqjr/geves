@@ -1091,7 +1091,7 @@
                         <h2><span class="ai-panel-icon" aria-hidden="true">✦</span> Paramétrage assisté (IA)</h2>
                         <div class="desc">Proposer des champs à partir de documents (appel, affiche, programme…) ou d’une description. Vérifiez les propositions avant de les appliquer.</div>
                         <div class="ai-source-summary" x-show="aiSuggestions" x-cloak>
-                            <span><strong>Analyse terminée</strong> · <span x-text="aiFiles.length ? aiFiles.length + (aiFiles.length === 1 ? ' document' : ' documents') : 'description'"></span></span>
+                            <span><strong>Analyse terminée</strong> - <span x-text="aiFiles.length ? aiFiles.length + (aiFiles.length === 1 ? ' document' : ' documents') : 'description'"></span></span>
                             <button type="button" @click="aiSourcesOpen = !aiSourcesOpen" x-text="aiSourcesOpen ? 'Masquer les sources' : 'Modifier les sources'"></button>
                         </div>
                         <div x-show="!aiSuggestions || aiSourcesOpen">
@@ -1111,7 +1111,7 @@
                             </template>
                         </div>
                         <textarea x-model="aiPrompt" @input="clearAiSuggestions()" :disabled="aiBusy" rows="4" maxlength="4000" aria-label="Description de l’événement" placeholder="Ex. : dates du colloque, thème, axes, public cible…"></textarea>
-                        <span class="ukc-hint">PDF, PNG, JPG ou WebP · 6 fichiers maximum · 10 Mo chacun, 20 Mo au total.</span>
+                        <span class="ukc-hint">PDF, PNG, JPG ou WebP - 6 fichiers maximum - 10 Mo chacun, 20 Mo au total.</span>
                         <div class="ai-actions">
                             <button type="button" class="ukc-btn ukc-btn--ai" style="width:100%;" @click="analyze()" :disabled="aiBusy">
                                 <span x-show="!aiBusy">Analyser</span><span x-show="aiBusy" style="display:none;">Analyse en cours…</span>

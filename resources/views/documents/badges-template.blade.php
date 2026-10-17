@@ -24,7 +24,7 @@
     <div class="badge-page" style="max-width:900px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;" class="no-print">
             <p class="ukc-muted" style="margin:0;font-size:13px;">
-                {{ $badgeType }} · {{ count($badges) }} badge(s) · {{ $cols }}&times;{{ $rows }} = {{ $perPage }} par page A4
+                {{ $badgeType }} - {{ count($badges) }} badge(s) - {{ $cols }}&times;{{ $rows }} = {{ $perPage }} par page A4
             </p>
             <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
