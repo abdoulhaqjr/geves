@@ -10,11 +10,12 @@
 <head>
     <meta charset="utf-8">
     <title>Livret des résumés - {{ $event->title }}</title>
+    @include('documents._fonts', ['pdf' => true])
     <style>
         @page { margin: 2.2cm 2.2cm 2.4cm; }
         * { box-sizing: border-box; }
-        body { font-family: 'DejaVu Serif', serif; font-size: 11pt; line-height: 1.5; color: #1f2937; }
-        h1, h2, h3, .sans { font-family: 'DejaVu Sans', sans-serif; }
+        body { font-family: {!! $opts['font_body'] !!}; font-size: {{ $opts['size_body'] }}pt; line-height: {{ $opts['line_height'] }}; color: #1f2937; }
+        h1, h2, h3, .sans { font-family: {!! $opts['font_head'] !!}; }
         .footer { position: fixed; bottom: -1.3cm; left: 0; right: 0; text-align: center; font-size: 9pt; color: {{ $muted }}; }
         .footer:after { content: counter(page); }
         .page-break { page-break-before: always; }
@@ -23,10 +24,10 @@
         .banner { width: 100%; margin: 10px 0 18px; }
         .banner td { height: 8px; }
         h1.part { font-size: 16pt; color: {{ $primary }}; border-bottom: 2px solid #ffd700; padding-bottom: 4px; margin: 0 0 14px; }
-        h2.axis { font-size: 13pt; color: {{ $primary }}; text-transform: uppercase; margin: 18px 0 8px; }
+        h2.axis { font-size: {{ $opts['size_axis'] }}pt; color: {{ $primary }}; text-transform: uppercase; margin: 18px 0 8px; }
         .ref { font-size: 9pt; font-weight: bold; color: {{ $muted }}; text-align: center; margin: 14px 0 2px; }
-        .abs-title { font-size: 12pt; font-weight: bold; color: {{ $primary }}; margin: 0 0 3px; }
-        .authors { font-size: 9.5pt; color: {{ $muted }}; margin: 0 0 2px; }
+        .abs-title { font-size: {{ $opts['size_abstract'] }}pt; font-weight: bold; color: {{ $primary }}; margin: 0 0 3px; }
+        .authors { font-size: {{ $opts['size_authors'] }}pt; color: {{ $muted }}; margin: 0 0 2px; }
         .aff { font-size: 8.5pt; font-style: italic; color: {{ $muted }}; margin: 0; }
         .corr { font-size: 8.5pt; color: {{ $muted }}; margin: 3px 0 4px; }
         .lbl { font-size: 9pt; font-weight: bold; color: {{ $primary }}; margin: 6px 0 2px; }
@@ -80,14 +81,17 @@
     @endif
 </head>
 <body>
-<div class="footer"></div>
+@if ($opts['page_numbers'])<div class="footer"></div>@endif
 
 {{-- ===================== PAGE DE GARDE ===================== --}}
 <div style="padding-top: 90px;">
+    @if ($opts['cover_logo_data'])
+        <p class="center" style="margin:0 0 14px;"><img src="{{ $opts['cover_logo_data'] }}" alt="Logo de couverture" style="max-width:140px;max-height:100px;"></p>
+    @endif
     @if ($name = trim((string) $event->series?->name))
         <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:12pt;margin:0 0 6px;">{{ \Illuminate\Support\Str::upper($name) }}</p>
     @endif
-    <h1 class="sans center" style="font-size:24pt;margin:30px 0 6px;color:#111827;">{{ $event->title }}</h1>
+    <h1 class="sans center" style="font-size:{{ $opts['size_cover'] }}pt;margin:30px 0 6px;color:#111827;">{{ $event->title }}</h1>
     @if ($label = trim((string) $event->event_label))
         <p class="center muted" style="margin:0 0 6px;">{{ $label }}</p>
     @endif
@@ -100,7 +104,7 @@
             @if ($loc = trim((string) $event->location)) &nbsp;-&nbsp; {{ $loc }} @endif
         </p>
     @endif
-    <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>
+    <p class="center sans" style="font-weight:bold;color:{{ $opts['color_secondary'] }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>
 </div>
 
 {{-- ===================== HAUT PATRONAGE ===================== --}}

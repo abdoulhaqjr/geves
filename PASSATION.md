@@ -2222,3 +2222,8 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Pages d'erreur personnalisées (17 octobre 2026)
 
 - Les vues Laravel `resources/views/errors/{400,403,404,500,503}.blade.php` utilisent un gabarit commun aux couleurs GEVES, des messages adaptés, un lien d'accueil et un contact DRI. Les pages 500/503 proposent aussi de réessayer pour les requêtes GET. Le CSS et le logo sont servis comme fichiers publics indépendants du rendu Vite et de la base, afin de ne pas masquer une panne initiale. Les textes ont une traduction anglaise dans `lang/en.json`. Avec `APP_DEBUG=true`, Laravel montre la trace des exceptions 500 plutôt que la page personnalisée ; celle-ci s'affiche lorsque le mode debug est désactivé.
+
+### Apparence du livre par modèle (17 octobre 2026)
+
+- Le formulaire « Apparence du livre » charge et enregistre les options du modèle actif. `LivretAppearance` les conserve dans `edition.settings['doc']['livret.appearances']`, indexées par la clé ou le nom du modèle. Au premier changement de modèle, les anciennes options communes sont copiées sur le modèle jusque-là actif ; revenir à ce modèle retrouve ses valeurs. Un modèle sans configuration reçoit les valeurs par défaut. Les réglages d'un modèle importé sont supprimés avec lui.
+- `LivretDocx` et l'aperçu PDF utilisent les options du modèle actif. Le PDF prend désormais en compte les polices, tailles, interligne, logo de couverture et numéros de page ; la couleur secondaire teinte la mention de couverture dans les deux rendus. Un enregistrement issu d'un onglet resté ouvert sur un ancien modèle est refusé avec un message invitant à recharger la page.

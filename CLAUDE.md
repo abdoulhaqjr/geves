@@ -3725,6 +3725,11 @@ ajoutée par la vue, elle ne se saisit pas.
     ⚠️ La vue `admin/documents/attestations.blade.php` utilise des **`@php(...)` en ligne** : n'y
     ajoutez **pas** de bloc `@php … @endphp` (mélange = compilation Blade cassée, cf. Pièges) - préparez
     la donnée dans le contrôleur (`DocumentHubController::livretViewExtras()`).
+  - **Apparence par modèle actif** : `App\Documents\LivretAppearance` conserve les options dans
+    `edition.settings['doc']['livret.appearances'][nom_du_modèle]`. Le premier changement de modèle
+    capture les anciennes options `livret.*` sur le modèle alors actif ; les autres modèles
+    commencent avec leurs valeurs par défaut. Le formulaire affiche et enregistre uniquement
+    celles du modèle sélectionné. `LivretDocx` et l'aperçu PDF relisent cette même portée.
 - **Remboursement → révocation des attestations** : une attestation atteste d'un droit
   acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
   `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste

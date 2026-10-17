@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Documents\BadgeLayout;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
+use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
@@ -113,6 +114,19 @@ class DocumentController extends Controller
     private function livretViewData(Event $event, Collection $groups): array
     {
         $g = fn (string $key, mixed $default = null): mixed => EventSettings::get($event, $key, $default);
+        $a = fn (string $key): mixed => LivretAppearance::get($event, $key);
+        $font = fn (string $value): string => match ($value) {
+            'Times New Roman' => "'Times New Roman', Times, serif",
+            'Jost' => "'Jost', sans-serif",
+            'Playfair Display' => "'Playfair Display', serif",
+            'Georgia' => 'Georgia, serif',
+            'Arial' => 'Arial, sans-serif',
+            'Garamond' => 'Garamond, serif',
+            default => 'Times, serif',
+        };
+        $size = fn (string $key, int $min, int $max): int => min($max, max($min, (int) $a($key)));
+        $color = fn (string $key, string $default): string => preg_match('/^#[0-9a-fA-F]{6}$/', (string) $a($key))
+            ? (string) $a($key) : $default;
         // Alignement (réglage FR) -> valeur CSS text-align.
         $css = fn (mixed $v): string => match ((string) $v) {
             'Gauche' => 'left', 'Droite' => 'right', 'Justifié' => 'justify', default => 'center',
@@ -184,6 +198,14 @@ class DocumentController extends Controller
         }
 
         $synthesis = $event->settings['program_synthesis'] ?? null;
+        $logo = (string) $a('cover_logo');
+        $logoData = null;
+        if ($logo !== '' && Storage::disk('public')->exists($logo)) {
+            $mime = Storage::disk('public')->mimeType($logo);
+            if (in_array($mime, ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], true)) {
+                $logoData = 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($logo));
+            }
+        }
 
         return [
             'event' => $event,
@@ -219,16 +241,28 @@ class DocumentController extends Controller
                 'president_title' => trim((string) $g('livret.president_title', 'Mot du président')) ?: 'Mot du président',
                 'president_text' => trim((string) $g('livret.president_text', '')),
                 'president_signature' => trim((string) $g('livret.president_signature', '')),
-                'cover_mention' => trim((string) $g('livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS',
-                'show_theme' => (bool) $g('livret.show_theme', true),
-                'show_dates' => (bool) $g('livret.show_dates', true),
-                'number' => (bool) $g('livret.number_abstracts', false),
-                'author_index' => (bool) $g('livret.author_index', true),
-                'color_primary' => trim((string) $g('livret.color_primary', '#223ea4')) ?: '#223ea4',
-                'align_body' => $g('livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'justify',
-                'align_titles' => $css($g('livret.align_titles', 'Centré')),
-                'align_axis' => $css($g('livret.align_axis', 'Centré')),
-                'align_authors' => $css($g('livret.align_authors', 'Centré')),
+                'cover_mention' => trim((string) $a('cover_mention')) ?: 'LIVRE DES RÉSUMÉS',
+                'show_theme' => (bool) $a('show_theme'),
+                'show_dates' => (bool) $a('show_dates'),
+                'number' => (bool) $a('number_abstracts'),
+                'author_index' => (bool) $a('author_index'),
+                'color_primary' => $color('color_primary', '#223ea4'),
+                'color_secondary' => $color('color_secondary', '#009933'),
+                'font_body' => $font((string) $a('font_body')),
+                'font_head' => $font((string) $a('font_head')),
+                'size_body' => $size('size_body', 8, 16),
+                'size_cover' => $size('size_cover', 14, 48),
+                'size_axis' => $size('size_axis', 12, 28),
+                'size_abstract' => $size('size_abstract', 10, 18),
+                'size_authors' => $size('size_authors', 8, 14),
+                'line_height' => in_array((string) $a('line_height'), ['1.0', '1.15', '1.5', '2.0'], true)
+                    ? (string) $a('line_height') : '1.15',
+                'page_numbers' => (bool) $a('page_numbers'),
+                'cover_logo_data' => $logoData,
+                'align_body' => $a('align_body') === 'Gauche' ? 'left' : 'justify',
+                'align_titles' => $css($a('align_titles')),
+                'align_axis' => $css($a('align_axis')),
+                'align_authors' => $css($a('align_authors')),
             ],
         ];
     }

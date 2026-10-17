@@ -498,7 +498,7 @@
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <div>
                                 <h3 style="margin:0 0 4px;">Modèle utilisé pour cet événement</h3>
-                                <div class="desc" style="margin:0;">Choisissez le modèle qui sert à compiler le <strong>Word (.docx)</strong>. L’aperçu HTML et le PDF utilisent toujours la mise en page par défaut.</div>
+                                <div class="desc" style="margin:0;">Choisissez le modèle du <strong>Word (.docx)</strong>. L’aperçu PDF reprend les réglages du modèle actif ; un fichier .docx importé conserve sa propre mise en forme.</div>
                             </div>
                             <span class="ukc-pill ukc-pill--info" style="white-space:nowrap;"><x-ukc.icon name="check" :size="14" /> Actif : {{ $livretActiveLabel }}</span>
                         </div>
@@ -585,10 +585,11 @@
                 <div x-show="livre==='apparence'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
                         <input type="hidden" name="event_id" value="{{ $event->id }}">
+                        <input type="hidden" name="livretModel" value="{{ $opts['livretTemplate'] }}">
                         @csrf
                         <h3>Apparence du livre - modèles intégrés</h3>
                         <x-ukc.scope-edition :event="$event" />
-                        <div class="desc">Typographie, couleurs et page de garde appliquées aux <strong>deux modèles intégrés</strong> (par défaut et Journées scientifiques). Les modèles .docx importés gardent leur propre mise en forme.</div>
+                        <div class="desc">Ces réglages sont propres au modèle actif : <strong>{{ $livretActiveLabel }}</strong>. Un autre modèle conserve ses propres valeurs. Les modèles .docx importés gardent aussi la mise en forme définie dans leur fichier.</div>
 
                         <div class="ukc-form-grid">
                             <div class="ukc-form-row">
@@ -630,7 +631,7 @@
                                 </div>
                             </div>
                             <div class="ukc-form-row" x-data="{ c: '{{ $opts['livretColorSecondary'] }}' }">
-                                <label>Couleur secondaire</label>
+                                <label>Couleur secondaire (mention de couverture)</label>
                                 <div class="color-row">
                                     <input type="color" x-model="c">
                                     <input type="text" name="livretColorSecondary" x-model="c" style="flex:1;">

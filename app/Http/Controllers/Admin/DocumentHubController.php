@@ -6,6 +6,7 @@ use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
 use App\Documents\LayoutSanitizer;
+use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
@@ -224,28 +225,28 @@ class DocumentHubController extends Controller
                 'livretPresidentTitle' => (string) EventSettings::get($event, 'livret.president_title', 'Mot du président'),
                 'livretPresidentText' => (string) EventSettings::get($event, 'livret.president_text', ''),
                 'livretPresidentSignature' => (string) EventSettings::get($event, 'livret.president_signature', ''),
-                'livretShowTheme' => (bool) EventSettings::get($event, 'livret.show_theme', true),
-                'livretShowDates' => (bool) EventSettings::get($event, 'livret.show_dates', true),
-                'livretNumber' => (bool) EventSettings::get($event, 'livret.number_abstracts', false),
-                'livretAuthorIndex' => (bool) EventSettings::get($event, 'livret.author_index', true),
-                'livretPageNumbers' => (bool) EventSettings::get($event, 'livret.page_numbers', true),
-                // Apparence du livre (modèle par défaut) - mockup admin-documents.
-                'livretFontBody' => (string) EventSettings::get($event, 'livret.font_body', 'Times New Roman'),
-                'livretFontHead' => (string) EventSettings::get($event, 'livret.font_head', 'Jost'),
-                'livretSizeBody' => (int) EventSettings::get($event, 'livret.size_body', 11),
-                'livretSizeCover' => (int) EventSettings::get($event, 'livret.size_cover', 24),
-                'livretSizeAxis' => (int) EventSettings::get($event, 'livret.size_axis', 16),
-                'livretSizeAbstract' => (int) EventSettings::get($event, 'livret.size_abstract', 12),
-                'livretSizeAuthors' => (int) EventSettings::get($event, 'livret.size_authors', 10),
-                'livretLineHeight' => (string) EventSettings::get($event, 'livret.line_height', '1.15'),
-                'livretColorPrimary' => (string) EventSettings::get($event, 'livret.color_primary', '#223ea4'),
-                'livretColorSecondary' => (string) EventSettings::get($event, 'livret.color_secondary', '#009933'),
-                'livretAlignTitles' => (string) EventSettings::get($event, 'livret.align_titles', 'Centré'),
-                'livretAlignAxis' => (string) EventSettings::get($event, 'livret.align_axis', 'Centré'),
-                'livretAlignAuthors' => (string) EventSettings::get($event, 'livret.align_authors', 'Centré'),
-                'livretAlignBody' => (string) EventSettings::get($event, 'livret.align_body', 'Justifié'),
-                'livretCoverMention' => (string) EventSettings::get($event, 'livret.cover_mention', ''),
-                'livretCoverLogo' => (string) EventSettings::get($event, 'livret.cover_logo', ''),
+                'livretShowTheme' => (bool) LivretAppearance::get($event, 'show_theme', true),
+                'livretShowDates' => (bool) LivretAppearance::get($event, 'show_dates', true),
+                'livretNumber' => (bool) LivretAppearance::get($event, 'number_abstracts', false),
+                'livretAuthorIndex' => (bool) LivretAppearance::get($event, 'author_index', true),
+                'livretPageNumbers' => (bool) LivretAppearance::get($event, 'page_numbers', true),
+                // Apparence propre au modèle de livre actuellement actif.
+                'livretFontBody' => (string) LivretAppearance::get($event, 'font_body', 'Times New Roman'),
+                'livretFontHead' => (string) LivretAppearance::get($event, 'font_head', 'Jost'),
+                'livretSizeBody' => (int) LivretAppearance::get($event, 'size_body', 11),
+                'livretSizeCover' => (int) LivretAppearance::get($event, 'size_cover', 24),
+                'livretSizeAxis' => (int) LivretAppearance::get($event, 'size_axis', 16),
+                'livretSizeAbstract' => (int) LivretAppearance::get($event, 'size_abstract', 12),
+                'livretSizeAuthors' => (int) LivretAppearance::get($event, 'size_authors', 10),
+                'livretLineHeight' => (string) LivretAppearance::get($event, 'line_height', '1.15'),
+                'livretColorPrimary' => (string) LivretAppearance::get($event, 'color_primary', '#223ea4'),
+                'livretColorSecondary' => (string) LivretAppearance::get($event, 'color_secondary', '#009933'),
+                'livretAlignTitles' => (string) LivretAppearance::get($event, 'align_titles', 'Centré'),
+                'livretAlignAxis' => (string) LivretAppearance::get($event, 'align_axis', 'Centré'),
+                'livretAlignAuthors' => (string) LivretAppearance::get($event, 'align_authors', 'Centré'),
+                'livretAlignBody' => (string) LivretAppearance::get($event, 'align_body', 'Justifié'),
+                'livretCoverMention' => (string) LivretAppearance::get($event, 'cover_mention', ''),
+                'livretCoverLogo' => (string) LivretAppearance::get($event, 'cover_logo', ''),
                 'livretTemplate' => (string) EventSettings::get($event, 'livret.template', 'default'),
             ],
             'templates' => is_array(EventSettings::get($event, 'livret.templates')) ? EventSettings::get($event, 'livret.templates') : [],
@@ -484,7 +485,7 @@ class DocumentHubController extends Controller
         return back()->with('ukc_status', 'Avant-propos généré par IA - vérifiez puis enregistrez.');
     }
 
-    /** Apparence du livre (typographie, couleurs, page de garde) → modèle par défaut. */
+    /** Apparence du livre (typographie, couleurs, page de garde) du modèle actif. */
     public function saveLivretApparence(Request $request): RedirectResponse
     {
         $event = $this->currentEdition($request);
@@ -492,35 +493,56 @@ class DocumentHubController extends Controller
             return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
-        EventSettings::setMany($event, [
-            'livret.font_body' => (string) $request->input('livretFontBody', 'Times New Roman'),
-            'livret.font_head' => (string) $request->input('livretFontHead', 'Jost'),
-            'livret.size_body' => (int) $request->input('livretSizeBody', 11),
-            'livret.size_cover' => (int) $request->input('livretSizeCover', 24),
-            'livret.size_axis' => (int) $request->input('livretSizeAxis', 16),
-            'livret.size_abstract' => (int) $request->input('livretSizeAbstract', 12),
-            'livret.size_authors' => (int) $request->input('livretSizeAuthors', 10),
-            'livret.line_height' => (string) $request->input('livretLineHeight', '1.15'),
-            'livret.color_primary' => (string) $request->input('livretColorPrimary', '#223ea4'),
-            'livret.color_secondary' => (string) $request->input('livretColorSecondary', '#009933'),
-            'livret.align_titles' => (string) $request->input('livretAlignTitles', 'Centré'),
-            'livret.align_axis' => (string) $request->input('livretAlignAxis', 'Centré'),
-            'livret.align_authors' => (string) $request->input('livretAlignAuthors', 'Centré'),
-            'livret.align_body' => (string) $request->input('livretAlignBody', 'Justifié'),
-            'livret.cover_mention' => trim((string) $request->input('livretCoverMention')),
-            'livret.show_theme' => $request->boolean('livretShowTheme'),
-            'livret.show_dates' => $request->boolean('livretShowDates'),
-            'livret.number_abstracts' => $request->boolean('livretNumber'),
-            'livret.author_index' => $request->boolean('livretAuthorIndex'),
-            'livret.page_numbers' => $request->boolean('livretPageNumbers'),
+        if ($request->input('livretModel') !== LivretAppearance::activeModel($event)) {
+            return back()->with('ukc_error', 'Le modèle actif a changé. Rechargez la page avant d’enregistrer son apparence.');
+        }
+
+        $request->validate([
+            'livretFontBody' => ['required', 'in:Times New Roman,Jost,Georgia,Arial,Garamond'],
+            'livretFontHead' => ['required', 'in:Jost,Playfair Display,Times New Roman,Arial,Georgia'],
+            'livretSizeBody' => ['required', 'integer', 'between:8,16'],
+            'livretSizeCover' => ['required', 'integer', 'between:14,48'],
+            'livretSizeAxis' => ['required', 'integer', 'between:12,28'],
+            'livretSizeAbstract' => ['required', 'integer', 'between:10,18'],
+            'livretSizeAuthors' => ['required', 'integer', 'between:8,14'],
+            'livretLineHeight' => ['required', 'in:1.0,1.15,1.5,2.0'],
+            'livretColorPrimary' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'livretColorSecondary' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'livretAlignTitles' => ['required', 'in:Centré,Gauche,Droite,Justifié'],
+            'livretAlignAxis' => ['required', 'in:Centré,Gauche,Droite'],
+            'livretAlignAuthors' => ['required', 'in:Centré,Gauche,Droite'],
+            'livretAlignBody' => ['required', 'in:Justifié,Gauche'],
+            'livretCoverMention' => ['nullable', 'string', 'max:255'],
+            'livretCoverLogo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096'],
         ]);
 
-        // Logo(s) de la page de garde (optionnel).
+        $values = [
+            'font_body' => (string) $request->input('livretFontBody'),
+            'font_head' => (string) $request->input('livretFontHead'),
+            'size_body' => (int) $request->input('livretSizeBody'),
+            'size_cover' => (int) $request->input('livretSizeCover'),
+            'size_axis' => (int) $request->input('livretSizeAxis'),
+            'size_abstract' => (int) $request->input('livretSizeAbstract'),
+            'size_authors' => (int) $request->input('livretSizeAuthors'),
+            'line_height' => (string) $request->input('livretLineHeight'),
+            'color_primary' => (string) $request->input('livretColorPrimary'),
+            'color_secondary' => (string) $request->input('livretColorSecondary'),
+            'align_titles' => (string) $request->input('livretAlignTitles'),
+            'align_axis' => (string) $request->input('livretAlignAxis'),
+            'align_authors' => (string) $request->input('livretAlignAuthors'),
+            'align_body' => (string) $request->input('livretAlignBody'),
+            'cover_mention' => trim((string) $request->input('livretCoverMention')),
+            'show_theme' => $request->boolean('livretShowTheme'),
+            'show_dates' => $request->boolean('livretShowDates'),
+            'number_abstracts' => $request->boolean('livretNumber'),
+            'author_index' => $request->boolean('livretAuthorIndex'),
+            'page_numbers' => $request->boolean('livretPageNumbers'),
+        ];
         if ($request->hasFile('livretCoverLogo')) {
-            $request->validate(['livretCoverLogo' => ['image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096']]);
-            EventSettings::set($event, 'livret.cover_logo', $request->file('livretCoverLogo')
-                ->store(EventStorage::in(EventStorage::LIVRET, $event), 'public'));
+            $values['cover_logo'] = $request->file('livretCoverLogo')
+                ->store(EventStorage::in(EventStorage::LIVRET, $event), 'public');
         }
+        LivretAppearance::save($event, $values);
 
         return back()->with('ukc_status', 'Apparence du livre enregistrée.');
     }
@@ -553,6 +575,7 @@ class DocumentHubController extends Controller
         }
 
         if ($request->filled('livretTemplate')) {
+            LivretAppearance::captureLegacy($event);
             EventSettings::set($event, 'livret.template', (string) $request->input('livretTemplate'));
         }
 
@@ -588,8 +611,10 @@ class DocumentHubController extends Controller
 
         // Le modèle supprimé était actif → repli sur le modèle par défaut.
         if ((string) EventSettings::get($event, 'livret.template', 'default') === $name) {
+            LivretAppearance::captureLegacy($event);
             EventSettings::set($event, 'livret.template', 'default');
         }
+        LivretAppearance::forget($event, $name);
 
         return back()->with('ukc_status', 'Modèle personnalisé supprimé.');
     }

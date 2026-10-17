@@ -126,8 +126,9 @@ class LivretDocx
 
         $doc = new PhpWord;
 
-        $doc->setDefaultFontName((string) EventSettings::get($this->event, 'livret.font_body', 'Times New Roman'));
-        $doc->setDefaultFontSize((int) EventSettings::get($this->event, 'livret.size_body', 11));
+        $doc->setDefaultFontName((string) LivretAppearance::get($this->event, 'font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) LivretAppearance::get($this->event, 'size_body', 11));
+        $doc->setDefaultParagraphStyle(['lineHeight' => (float) LivretAppearance::get($this->event, 'line_height', '1.15')]);
 
         // Les titres sont des paragraphes en gras (addText), PAS des addTitle : Word
         // ajoutait un numéro après chaque titre (style Titre indexé) et exigeait un TOC.
@@ -149,7 +150,7 @@ class LivretDocx
         ]);
 
         // Pied de page paginé (vide sur la page de garde). Réglage `livret.page_numbers`.
-        if ((bool) EventSettings::get($this->event, 'livret.page_numbers', true)) {
+        if ((bool) LivretAppearance::get($this->event, 'page_numbers', true)) {
             $section->addFooter(Footer::FIRST); // couverture : sans numéro
             $footer = $section->addFooter();
             $footer->addPreserveText('{PAGE}', ['size' => 9, 'color' => self::MUTED], ['alignment' => 'center']);
@@ -191,7 +192,7 @@ class LivretDocx
         $this->addBody($section);
 
         // Index des auteurs (renvoie au numéro de résumé). Réglage `livret.author_index`.
-        if ((bool) EventSettings::get($this->event, 'livret.author_index', true)) {
+        if ((bool) LivretAppearance::get($this->event, 'author_index', true)) {
             $this->addAuthorIndex($section);
         }
 
@@ -243,8 +244,9 @@ class LivretDocx
 
         Settings::setOutputEscapingEnabled(true);
         $doc = new PhpWord;
-        $doc->setDefaultFontName((string) EventSettings::get($this->event, 'livret.font_body', 'Times New Roman'));
-        $doc->setDefaultFontSize((int) EventSettings::get($this->event, 'livret.size_body', 11));
+        $doc->setDefaultFontName((string) LivretAppearance::get($this->event, 'font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) LivretAppearance::get($this->event, 'size_body', 11));
+        $doc->setDefaultParagraphStyle(['lineHeight' => (float) LivretAppearance::get($this->event, 'line_height', '1.15')]);
         $section = $doc->addSection();
 
         match ($tag) {
@@ -345,14 +347,14 @@ class LivretDocx
     /** Bloc Résumés (axe en gras direct + résumés), réutilise addAbstract. */
     private function tplResumes(Section $section): void
     {
-        $sizeAxis = (int) EventSettings::get($this->event, 'livret.size_axis', 16);
-        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
-        $sizeAbstract = (int) EventSettings::get($this->event, 'livret.size_abstract', 12);
-        $sizeAuthors = (int) EventSettings::get($this->event, 'livret.size_authors', 10);
-        $sizeBody = (int) EventSettings::get($this->event, 'livret.size_body', 11);
-        $alignBody = EventSettings::get($this->event, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
-        $number = (bool) EventSettings::get($this->event, 'livret.number_abstracts', false);
+        $sizeAxis = (int) LivretAppearance::get($this->event, 'size_axis', 16);
+        $primary = self::hex((string) LivretAppearance::get($this->event, 'color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
+        $sizeAbstract = (int) LivretAppearance::get($this->event, 'size_abstract', 12);
+        $sizeAuthors = (int) LivretAppearance::get($this->event, 'size_authors', 10);
+        $sizeBody = (int) LivretAppearance::get($this->event, 'size_body', 11);
+        $alignBody = LivretAppearance::get($this->event, 'align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) LivretAppearance::get($this->event, 'number_abstracts', false);
 
         $n = 0;
         foreach ($this->groups as $track => $submissions) {
@@ -367,17 +369,19 @@ class LivretDocx
     /** Page de garde : logo, bandeau, colloque, titre, thème, dates, « LIVRE DES RÉSUMÉS ». */
     private function addCover(Section $section): void
     {
-        $coverSize = (int) EventSettings::get($this->event, 'livret.size_cover', 24);
-        $showTheme = (bool) EventSettings::get($this->event, 'livret.show_theme', true);
-        $showDates = (bool) EventSettings::get($this->event, 'livret.show_dates', true);
+        $coverSize = (int) LivretAppearance::get($this->event, 'size_cover', 24);
+        $showTheme = (bool) LivretAppearance::get($this->event, 'show_theme', true);
+        $showDates = (bool) LivretAppearance::get($this->event, 'show_dates', true);
+        $primary = self::hex((string) LivretAppearance::get($this->event, 'color_primary', '#223ea4'), self::BLUE);
+        $secondary = self::hex((string) LivretAppearance::get($this->event, 'color_secondary', '#009933'), self::BLUE);
 
         // En-tête : nom du colloque en majuscules.
         if ($name = trim((string) $this->event->series?->name)) {
-            $section->addText(mb_strtoupper($name, 'UTF-8'), ['bold' => true, 'size' => 12, 'color' => self::BLUE], ['alignment' => 'center', 'spaceAfter' => 80]);
+            $section->addText(mb_strtoupper($name, 'UTF-8'), ['bold' => true, 'size' => 12, 'color' => $primary], ['alignment' => 'center', 'spaceAfter' => 80]);
         }
 
         // Logo(s) de couverture (réglage d'apparence), s'ils sont fournis et lisibles.
-        $logo = (string) EventSettings::get($this->event, 'livret.cover_logo', '');
+        $logo = (string) LivretAppearance::get($this->event, 'cover_logo', '');
         if ($logo !== '' && Storage::disk('public')->exists($logo)) {
             try {
                 $section->addImage(Storage::disk('public')->path($logo), ['width' => 140, 'alignment' => 'center']);
@@ -400,7 +404,7 @@ class LivretDocx
 
         // Thème de l'événement (réglage d'apparence).
         if ($showTheme && ($theme = trim((string) $this->event->theme)) !== '') {
-            $section->addText('« '.$theme.' »', ['italic' => true, 'size' => 12, 'color' => self::BLUE], ['alignment' => 'center', 'spaceBefore' => 60]);
+            $section->addText('« '.$theme.' »', ['italic' => true, 'size' => 12, 'color' => $primary], ['alignment' => 'center', 'spaceBefore' => 60]);
         }
 
         // Dates + lieu (réglage d'apparence).
@@ -416,8 +420,8 @@ class LivretDocx
         }
 
         // Libellé de couverture (réglage `cover_mention`, défaut « LIVRE DES RÉSUMÉS »).
-        $coverLabel = trim((string) EventSettings::get($this->event, 'livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
-        $section->addText($coverLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['alignment' => 'center', 'spaceBefore' => 240]);
+        $coverLabel = trim((string) LivretAppearance::get($this->event, 'cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
+        $section->addText($coverLabel, ['bold' => true, 'size' => 13, 'color' => $secondary], ['alignment' => 'center', 'spaceBefore' => 240]);
 
         $section->addPageBreak();
     }
@@ -661,7 +665,7 @@ class LivretDocx
      */
     private function registerGeneralHeadingStyles(PhpWord $doc): void
     {
-        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $font = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $doc->addTitleStyle(1,
             ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
             ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
@@ -673,7 +677,7 @@ class LivretDocx
     /** Titre de section lettré du style général (« A) … », « B) … ») : gras, noir. */
     private function generalSectionTitle(Section $section, string $text, int $size, string $align): void
     {
-        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $font = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $section->addText($text, ['bold' => true, 'size' => $size, 'color' => self::BLACK, 'name' => $font],
             ['alignment' => $align, 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
     }
@@ -681,7 +685,7 @@ class LivretDocx
     /** Titre numéroté du style général (comités, programme) : gras 14 pt noir. */
     private function generalHeading(Section $section, string $text): void
     {
-        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $font = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $section->addText($text, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
             ['spaceBefore' => 220, 'spaceAfter' => 80, 'keepNext' => true]);
     }
@@ -777,7 +781,7 @@ class LivretDocx
         // « 5. COMMUNICATIONS EN ATELIERS » : item numéroté de la section A, centré,
         // gras 14 pt noir (doc de référence).
         $heading = ($number > 0 ? $number.'. ' : '').'COMMUNICATIONS EN ATELIERS';
-        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $font = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $section->addText($heading, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
             ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
 
@@ -1065,14 +1069,14 @@ class LivretDocx
             return;
         }
 
-        $sizeAbstract = (int) EventSettings::get($this->event, 'livret.size_abstract', 12);
-        $sizeAuthors = (int) EventSettings::get($this->event, 'livret.size_authors', 10);
-        $sizeBody = (int) EventSettings::get($this->event, 'livret.size_body', 11);
-        $alignBody = EventSettings::get($this->event, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
-        $number = (bool) EventSettings::get($this->event, 'livret.number_abstracts', false);
-        $sizeAxis = (int) EventSettings::get($this->event, 'livret.size_axis', 16);
-        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $sizeAbstract = (int) LivretAppearance::get($this->event, 'size_abstract', 12);
+        $sizeAuthors = (int) LivretAppearance::get($this->event, 'size_authors', 10);
+        $sizeBody = (int) LivretAppearance::get($this->event, 'size_body', 11);
+        $alignBody = LivretAppearance::get($this->event, 'align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) LivretAppearance::get($this->event, 'number_abstracts', false);
+        $sizeAxis = (int) LivretAppearance::get($this->event, 'size_axis', 16);
+        $primary = self::hex((string) LivretAppearance::get($this->event, 'color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $alignAxis = $this->align('livret.align_axis');
 
         $n = 0;
@@ -1432,7 +1436,7 @@ class LivretDocx
     /** Alignement OOXML d'après un réglage d'apparence (Centré/Gauche/Droite/Justifié). */
     private function align(string $key, string $default = 'Centré'): string
     {
-        return match ((string) EventSettings::get($this->event, $key, $default)) {
+        return match ((string) LivretAppearance::get($this->event, str_replace('livret.', '', $key), $default)) {
             'Gauche' => 'left',
             'Droite' => 'right',
             'Justifié' => 'both',
@@ -1443,8 +1447,8 @@ class LivretDocx
     /** Titre de section (paragraphe gras, aligné selon `livret.align_titles`). */
     private function partTitle(Section $section, string $text): void
     {
-        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $primary = self::hex((string) LivretAppearance::get($this->event, 'color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
         $section->addText($text, ['bold' => true, 'size' => 18, 'color' => $primary, 'name' => $fontHead],
             ['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 160, 'keepNext' => true]);
     }
