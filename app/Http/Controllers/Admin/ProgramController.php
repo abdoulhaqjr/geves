@@ -76,7 +76,9 @@ class ProgramController extends Controller
      */
     public function reports(Request $request): RedirectResponse
     {
-        return redirect()->route('admin.secretariat', array_filter([
+        // ⚠️ Vers l'onglet des RAPPORTS, pas vers l'entrée du module - qui mène
+        // désormais aux Documents. C'est un rapport que cette adresse promettait.
+        return redirect()->route('admin.secretariat.reports', array_filter([
             'event_id' => $request->query('event_id'),
         ]));
     }

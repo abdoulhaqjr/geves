@@ -85,7 +85,34 @@ class SecretariatController extends Controller
         'chevalets' => ['label' => 'Chevalets nominatifs', 'icon' => 'card', 'hint' => 'Cartes pliables nom + fonction (modérateurs, rapporteurs).'],
     ];
 
-    public function index(Request $request): View
+    /**
+     * Entrée du module : elle mène à l'onglet **Documents**.
+     *
+     * ⚠️ C'est l'onglet qu'on vient ouvrir le plus souvent - imprimer une liste
+     * de présence, une feuille d'émargement, un ordre du jour - et il ne dépend
+     * d'aucun travail en cours. Les **rapports de séance**, eux, n'ont de sens
+     * qu'une fois les séances tenues : arriver dessus montrait, hors période de
+     * colloque, un tableau vide ou une liste qu'on n'a rien à faire.
+     *
+     * ⚠️ **Un renvoi, pas une seconde page** : l'onglet Documents a déjà son
+     * adresse, et la rendre ici en ferait deux URL pour le même écran - le
+     * travers que ce module a précisément corrigé pour les rapports.
+     */
+    public function index(): RedirectResponse
+    {
+        return redirect()->route('admin.secretariat.documents');
+    }
+
+    /**
+     * Onglet « Rapports de séance » : poste de travail unique du secrétariat -
+     * lecture, amélioration et validation dans le panneau latéral.
+     *
+     * ⚠️ **Il n'y a toujours qu'UNE page de rapports** : celle-ci. Elle vivait à
+     * l'adresse d'entrée du module et `/secretariat/rapports` y renvoyait ; les
+     * deux ont échangé leur rôle, l'écran est le même. Ne pas en recréer une
+     * seconde par événement.
+     */
+    public function reports(Request $request): View
     {
         $events = $this->accessibleEditions($request, 'editions_read');
         $editionId = $request->has('event_id')
@@ -265,11 +292,6 @@ class SecretariatController extends Controller
      * qu'une REDIRECTION pour les anciens liens, signets et e-mails. Deux écrans
      * pour le même objet, c'était deux endroits où chercher.
      */
-    public function reports(Request $request): RedirectResponse
-    {
-        return redirect()->route('admin.secretariat');
-    }
-
     /**
      * Relance le rapporteur d'une séance SILENCIEUSEMENT au clic : une
      * notification in-app à son compte (s'il en a un) et, selon sa préférence

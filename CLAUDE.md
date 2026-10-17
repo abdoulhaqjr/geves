@@ -1217,7 +1217,7 @@ paiement (`pay`), inscription à une formation.
     créneaux » l'onglet **Options**, et l'**Agenda** (FullCalendar) se déplie
     dans **Planning**.
   - ⚠️ **Les rapports de séance appartiennent au SECRÉTARIAT**
-    (`admin.secretariat`, poste de travail unifié : lecture / amélioration /
+    (`admin.secretariat.reports`, poste de travail unifié : lecture / amélioration /
     validation dans un panneau latéral ; la validation verrouille le rapport côté
     rapporteur). Le module Programme n'en porte **aucune copie** - deux écrans pour
     le même objet, c'est deux endroits où chercher. `admin.program.reports` redirige
@@ -3829,10 +3829,16 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
 
 `SecretariatController` + `admin/secretariat/_nav.blade.php` (pilules `.ukc-nav-docs`,
 `['current' => …]`). **Ordre des onglets : Documents - Secrétariat assisté - Rapports de
-séance** (le défaut `admin.secretariat` reste le tableau de bord des rapports, même s'il
-est listé en dernier) :
+séance.**
 
-- **Rapports de séance** (`admin.secretariat`, vue `admin/secretariat.blade.php`) =
+⚠️ **L'entrée du module (`admin.secretariat`, `/admin/secretariat`) RENVOIE vers
+l'onglet Documents.** C'est celui qu'on vient ouvrir le plus souvent - imprimer une
+liste de présence, une feuille d'émargement, un ordre du jour - et le seul qui ne
+dépende d'aucun travail en cours : hors période de colloque, arriver sur les rapports
+montrait un tableau vide. **Un renvoi, pas une seconde page** : l'onglet Documents a
+déjà son adresse, et la rendre aussi à l'entrée ferait deux URL pour le même écran.
+
+- **Rapports de séance** (`admin.secretariat.reports`, vue `admin/secretariat.blade.php`) =
   **poste de travail unifié**, **scopé par événement** (sélecteur « Événement » en tête,
   `?event_id=`, défaut `currentEditionId()` - comme les onglets Documents et Assisté).
   Quatre cartes KPI **cliquables = filtres** (`à valider` / `en attente` / `validés` /
@@ -3850,11 +3856,16 @@ est listé en dernier) :
     (`<form :action="cur.action">` → `admin.program.reports.save`) et, pour un rapport
     validé, propose **Rouvrir au rapporteur** (`cur.reopen` → `admin.program.reports.reopen`,
     `data-confirm`). Mêmes endpoints de mutation qu'avant (dans `ProgramController`).
-  - ⚠️ **Il n'y a plus de page `/secretariat/rapports` par événement** : elle doublait
-    ce tableau de bord (deux écrans « Rapports de séance » avec cartes + liste). La route
-    `admin.secretariat.reports` **redirige** vers `admin.secretariat` (anciens liens,
-    signets, e-mails, et redirection de `admin.program.reports`). Ne pas la recréer en
-    page. Vue `admin/secretariat/reports.blade.php` **supprimée**.
+  - ⚠️ **Il n'y a qu'UNE page de rapports, et c'est celle-ci.** Il en a existé une
+    seconde, par événement, qui doublait ce tableau de bord (deux écrans « Rapports de
+    séance » avec cartes + liste) : elle a été retirée, et sa vue
+    `admin/secretariat/reports.blade.php` **supprimée**. Ne pas la recréer.
+  - ⚠️ **`/secretariat` et `/secretariat/rapports` ont ÉCHANGÉ leur rôle** : l'entrée
+    du module menait au tableau de bord et `/secretariat/rapports` y renvoyait ; c'est
+    désormais l'inverse. Ce sont les URL qui ont bougé, pas le nombre d'écrans. Tout ce
+    qui VEUT les rapports vise donc `admin.secretariat.reports` - la redirection de
+    `admin.program.reports` comprise, sans quoi une adresse qui promet un rapport
+    déposerait sur des documents à imprimer.
   - ⚠️ **« Relancer » = notification SILENCIEUSE, pas un `mailto`** (POST
     `admin.secretariat.remind` → `SecretariatController::remind`). Au clic : une
     notification in-app au compte du rapporteur (`Notifier::account`, kind

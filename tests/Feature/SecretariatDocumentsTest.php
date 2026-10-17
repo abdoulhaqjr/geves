@@ -27,11 +27,31 @@ function secretariatEvent(): Event
     return $event;
 }
 
-it('affiche les trois onglets du secrétariat', function () {
+/**
+ * ⚠️ **L'entrée du module mène aux DOCUMENTS**, pas aux rapports de séance.
+ * C'est l'onglet qu'on vient ouvrir le plus souvent, et le seul qui ne dépende
+ * d'aucun travail en cours : hors période de colloque, arriver sur les rapports
+ * montrait un tableau vide.
+ */
+it('ouvre le secrétariat sur l’onglet Documents', function () {
     $staff = adminStaff();
     secretariatEvent();
 
     $this->actingAs($staff, 'web')->get(route('admin.secretariat'))
+        ->assertRedirect(route('admin.secretariat.documents'));
+
+    // Et c'est bien la page des documents qui s'affiche au bout.
+    $this->actingAs($staff, 'web')->followingRedirects()->get(route('admin.secretariat'))
+        ->assertOk()
+        ->assertSee('Liste de présence')
+        ->assertSee('Feuille d’émargement', false);
+});
+
+it('affiche les trois onglets du secrétariat', function () {
+    $staff = adminStaff();
+    secretariatEvent();
+
+    $this->actingAs($staff, 'web')->get(route('admin.secretariat.documents'))
         ->assertOk()->assertSee('Rapports de séance')->assertSee('Documents');
 
     $this->actingAs($staff, 'web')->get(route('admin.secretariat.assistant'))

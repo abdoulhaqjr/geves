@@ -292,7 +292,7 @@ it('redirige les anciennes adresses du programme vers le bon onglet', function (
     // l'ancienne adresse y renvoie plutôt que vers un onglet qui n'existe plus.
     $this->actingAs($staff, 'web')
         ->get(route('admin.program.reports', ['event_id' => $event->id]))
-        ->assertRedirect(route('admin.secretariat', ['event_id' => $event->id]));
+        ->assertRedirect(route('admin.secretariat.reports', ['event_id' => $event->id]));
 
     $this->actingAs($staff, 'web')
         ->get(route('admin.program.slots', ['event_id' => $event->id]))

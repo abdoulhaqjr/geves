@@ -177,7 +177,7 @@ it('affiche au secrétariat sa file de rapports à valider (scopée à ses évé
     $staff->assignedEditions()->attach($event->id, ['role' => 'secretariat']);
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.secretariat'))
+        ->get(route('admin.secretariat.reports'))
         ->assertOk()
         ->assertSee('Rapports à valider')
         ->assertSee('Séance à valider')
@@ -304,7 +304,7 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
     // Fusionné dans le tableau de bord : le rapport soumis y figure (à valider),
     // son contenu étant chargé dans le panneau latéral de validation.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.secretariat'))
+        ->get(route('admin.secretariat.reports'))
         ->assertOk()
         ->assertSee('Session - Atelier 4')
         ->assertSee('Rita Rapporteuse')
@@ -312,10 +312,23 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
         ->assertSee('À valider');
 });
 
-it('redirige l’ancienne page /secretariat/rapports vers le tableau de bord', function () {
+/**
+ * ⚠️ **Les deux adresses ont échangé leur rôle** : `/secretariat` mène
+ * désormais aux Documents, et `/secretariat/rapports` PORTE le tableau de bord
+ * au lieu d'y renvoyer. Il n'y a toujours qu'UNE page de rapports - ce sont
+ * les URL qui ont bougé, pas le nombre d'écrans.
+ */
+it('sert le tableau de bord des rapports à son adresse, et les documents à l’entrée', function () {
+    // ⚠️ Sans événement en base, le tableau est vide : on vise le sous-titre de
+    // l'écran, pas une ligne de données qui n'existe pas ici.
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.secretariat.reports', ['event_id' => 1]))
-        ->assertRedirect(route('admin.secretariat'));
+        ->assertOk()
+        ->assertSee('Rapports de séance - suivi administratif');
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.secretariat'))
+        ->assertRedirect(route('admin.secretariat.documents'));
 });
 
 it('notifie le modérateur et le rapporteur à leur désignation sur une séance', function () {

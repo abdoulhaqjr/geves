@@ -13,6 +13,35 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Le Secrétariat s'ouvre sur l'onglet Documents (2026-10-17)
+
+`/admin/secretariat` arrivait sur **Rapports de séance**. C'est l'onglet qui
+dépend le plus d'un travail en cours : hors période de colloque, il montre un
+tableau vide, et il est listé en dernier dans la sous-navigation. L'entrée du
+module **renvoie désormais vers Documents** - celui qu'on vient ouvrir le plus
+souvent (liste de présence, feuille d'émargement, ordre du jour), et qui ne
+dépend d'aucune séance tenue.
+
+⚠️ **Un renvoi, pas une seconde page.** L'onglet Documents a déjà son adresse ;
+la rendre aussi à l'entrée ferait deux URL pour le même écran - exactement le
+travers que ce module avait corrigé pour les rapports.
+
+⚠️ **`/secretariat` et `/secretariat/rapports` ont ÉCHANGÉ leur rôle.** L'entrée
+portait le tableau de bord et `/secretariat/rapports` y renvoyait ; c'est
+maintenant l'inverse. **Il n'y a toujours qu'UNE page de rapports** - ce sont les
+URL qui ont bougé, pas le nombre d'écrans.
+
+⚠️ **Tout ce qui VEUT les rapports doit viser `admin.secretariat.reports`**, et
+pas l'entrée du module. La redirection de `admin.program.reports` a été reprise
+dans le même mouvement : une adresse qui promet un rapport ne doit pas déposer
+sur des documents à imprimer.
+
+Garde : `SecretariatDocumentsTest` (« ouvre le secrétariat sur l'onglet
+Documents » - le renvoi **et** la page au bout) et `RoleWorkspacesTest` (« sert
+le tableau de bord des rapports à son adresse, et les documents à l'entrée »).
+**Deux sabotages vérifiés** : l'entrée qui retombe sur les rapports, et l'onglet
+des rapports qui n'a plus de page à son adresse.
+
 ### Fichiers stockés rangés par événement (2026-10-17)
 
 Les pièces jointes vivaient sous l'**identifiant** de l'événement -
