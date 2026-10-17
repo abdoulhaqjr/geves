@@ -13,6 +13,41 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### CashPay (SEMOA) retirée des moyens de paiement (2026-10-18)
+
+Il ne reste que **Paiement manuel** (encaissement hors ligne) et **FedaPay**.
+
+⚠️ **SEMOA n'était pas une passerelle à part : c'est la société derrière
+CashPay.** Le projet écrivait « CashPay (SEMOA) » dans les deux listes de
+l'admin, et son API vivait sur `api.semoa-payments.ovh` - retirer le nom sans
+retirer la passerelle n'aurait donc rien retiré.
+
+Elle n'avait jamais encaissé : aucun paiement sous cette clé en base, et la
+validation au bac à sable n'avait jamais été faite. Retirés : la classe
+`CashpayGateway`, son entrée au registre, `services.cashpay`, les six variables
+`CASHPAY_*`, les deux listes déroulantes et leurs champs d'identifiants, la
+surcharge runtime, les règles de validation et six cas de `PaymentGatewayTest`.
+
+⚠️ **Ce qui reste, et ne doit pas être « nettoyé » : le libellé `cashpay` dans
+`Payment::ONLINE_METHODS`.** Un règlement déjà encaissé garde sa clé en base ;
+sans ce libellé, l'historique l'afficherait sans nom. Effacer la trace d'un
+encaissement pour faire disparaître une passerelle, ce serait réécrire des
+comptes.
+
+⚠️ **Les identifiants enregistrés ont été supprimés de la base** (migration
+`2026_10_18_000100_retirer_les_identifiants_cashpay`) : ce sont des secrets
+marchands, et plus rien ne les lit. **Deux dépôts**, pas un - les réglages de la
+plateforme et ceux propres à chaque événement ; n'en nettoyer qu'un laissait la
+moitié des secrets en place. La passerelle par défaut qui désignait CashPay
+revient à `manual`, sinon le registre y retomberait en silence.
+
+⚠️ **`firebase/php-jwt` reste une dépendance** : jetons LiveKit et certification
+des attestations.
+
+**Garde** : `PaymentOperatorTest` - clé absente du registre, fichier supprimé,
+les deux formulaires qui la refusent, le libellé d'historique conservé, et trois
+cas sur la migration.
+
 ### Parcours en 5 étapes de la page colloque : la mise en page reprise (2026-10-17)
 
 Le bloc « Votre parcours en 5 étapes » s'affichait **sur une seule ligne** :
@@ -317,7 +352,7 @@ La section `#apropos` présente désormais deux panneaux complémentaires : ce q
 - **But** : plateforme professionnelle, autonome (sans WordPress).
 - **Stack** : Laravel 13 (PHP 8.4), **Blade + Livewire 4 + Alpine 3**, Tailwind v4 (+ design system maison), Vite 8, SQLite en dev, Pest pour les tests.
 - **Dépôt** : **GitHub privé** `https://github.com/abdoulhaqjr/geves` (branche `master`). Voir le workflow Git en [§8](#8-pièges--bonnes-pratiques-à-lire-avant-de-coder).
-- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)**, **paiement en ligne (CashPay/FedaPay)** (voir §6).
+- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)**, **paiement en ligne (FedaPay)** (voir §6).
 
 ### Sources de référence (hors dépôt, dans `Downloads/`)
 - `Site Web/uk-colloques/` - **plugin WordPress source** (27 modules, ~19 600 lignes). Référence fonctionnelle.
@@ -487,7 +522,7 @@ composer.bat check                   # pint --test + phpstan + tests (= le CI)
 
 **Visio - salle/lien custom côté admin (fait)** : par session, bouton « Salle » (partiel `_meeting`) ouvre un panneau inline (`editMeeting`/`saveMeeting`/`cancelMeetingEdit`, une session à la fois) : **fournisseur Jitsi** (nom de salle libre, vide = auto ; validé `[A-Za-z0-9 _-]`) ou **Lien externe** (`meeting_url`, URL requise). Nouveau `App\Meetings\Providers\CustomProvider` (renvoie `meeting_url`, **non embarquable**) enregistré dans le registry ; contrat étendu de `embeddable()`. `EventSession::meetingEmbeddable()`. Page « Rejoindre » : Jitsi → **IFrame API officielle** (voir ci-dessous) ; lien externe → carte **« Rejoindre (nouvel onglet) »** (les services type Zoom/Meet bloquent l'iframe) ; état « salle non configurée » si live sans lien. *(commit à venir)*
 
-**Visio - fournisseur LiveKit (fait, défaut)** : ajout de `App\Meetings\Providers\LiveKitProvider` au registry (défaut `meetings.default` = **livekit**). ⚠️ LiveKit n'a **pas de mode public** : requiert un serveur (Cloud ou self-host) + `LIVEKIT_URL` (wss), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (`config/meetings.php`). `isAvailable()` = ces 3 valeurs présentes ; **sinon le registry retombe sur Jitsi** (`for()`/`default()` vérifient `isAvailable()`, plus de salle cassée). Le token d'accès est un **JWT HS256** (firebase/php-jwt) porté par `LiveKitProvider::token()` : claims LiveKit `video.{room, roomJoin, canPublish, canSubscribe, canPublishData, roomAdmin}` - **droits dérivés du rôle** (Moderator → roomAdmin+publish ; Presenter → publish ; Attendee → subscribe seul). `joinUrl()` = `{meet_url}?liveKitUrl=…&token=…` (app LiveKit Meet, `meet_url` par défaut `https://meet.livekit.io/custom`, remplaçable par une app self-host). Admin : LiveKit ajouté au sélecteur de `_meeting` (salle nommée comme Jitsi). **Identifiants configurables depuis l'admin** (comme CashPay/FedaPay/IA - pattern `settings` + `applySettingsToConfig`) : section « Visio des sessions » dans `Admin\Settings\Index` (`/admin/reglages`) → fournisseur par défaut + `LIVEKIT_URL`/`API_KEY`/`API_SECRET`/`meet_url` ; clés `settings` `meetings.default` + `livekit.*` appliquées au boot par `AppServiceProvider::applySettingsToConfig()` (repli `.env`/config). Plus besoin de toucher au `.env`.
+**Visio - fournisseur LiveKit (fait, défaut)** : ajout de `App\Meetings\Providers\LiveKitProvider` au registry (défaut `meetings.default` = **livekit**). ⚠️ LiveKit n'a **pas de mode public** : requiert un serveur (Cloud ou self-host) + `LIVEKIT_URL` (wss), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (`config/meetings.php`). `isAvailable()` = ces 3 valeurs présentes ; **sinon le registry retombe sur Jitsi** (`for()`/`default()` vérifient `isAvailable()`, plus de salle cassée). Le token d'accès est un **JWT HS256** (firebase/php-jwt) porté par `LiveKitProvider::token()` : claims LiveKit `video.{room, roomJoin, canPublish, canSubscribe, canPublishData, roomAdmin}` - **droits dérivés du rôle** (Moderator → roomAdmin+publish ; Presenter → publish ; Attendee → subscribe seul). `joinUrl()` = `{meet_url}?liveKitUrl=…&token=…` (app LiveKit Meet, `meet_url` par défaut `https://meet.livekit.io/custom`, remplaçable par une app self-host). Admin : LiveKit ajouté au sélecteur de `_meeting` (salle nommée comme Jitsi). **Identifiants configurables depuis l'admin** (comme FedaPay/IA - pattern `settings` + `applySettingsToConfig`) : section « Visio des sessions » dans `Admin\Settings\Index` (`/admin/reglages`) → fournisseur par défaut + `LIVEKIT_URL`/`API_KEY`/`API_SECRET`/`meet_url` ; clés `settings` `meetings.default` + `livekit.*` appliquées au boot par `AppServiceProvider::applySettingsToConfig()` (repli `.env`/config). Plus besoin de toucher au `.env`.
 
 **Visio - lecteur LiveKit inline (fait, charte UK)** : `LiveKitProvider::embeddable()` = **true** ; `EventSession::liveKitEmbedConfig(?Account, isStaff)` → `{url, token, userName, canPublish}` (token = droits `video.*` selon le rôle). La page « Rejoindre » (`meeting.join`, branche `@if ($liveKit)`) embarque un **lecteur maison en `livekit-client`** - **SDK installé via npm et bundlé par Vite** (⚠️ **pas** de CDN) : `resources/js/meeting.js` (import `Room`/`RoomEvent`) est **code-splitté** en chunk `meeting-*.js` (~491 Ko) chargé à la demande par `resources/js/app.js` (`import('./meeting.js')` uniquement si `#lk-config` présent). La config (`{url, token, canPublish, backUrl}`) est passée par un `<script type="application/json" id="lk-config">@json($liveKit)</script>` (⚠️ construite **dans le contrôleur** - un `@php`/`@json([...])` multi-ligne dans la vue cassait le compilateur Blade). UI : grille vidéo sombre (navy UK), tuiles initiales/nom, **barre de contrôles** micro/caméra/partage d'écran (seulement si `canPublish`) + quitter, aux couleurs `ukc` ; gère `TrackSubscribed/Unsubscribed`, `Participant(Dis)Connected`, `LocalTrackPublished`, `Disconnected`→retour ; `beforeunload`→disconnect. ⚠️ **Rebuild requis** (`npm run build`) après modif de `meeting.js`. Contrôleur : 3 branches (`meetingEmbedConfig` Jitsi / `liveKitEmbedConfig` LiveKit / `joinUrl` externe). **Vérifié en réel** avec les identifiants de l'admin : page HTTP 200, SDK chargé, `wss://` + vrai JWT (405 car.) injectés, `canPublish` gaté par rôle. ⚠️ **Non vérifiable sans interaction** : la connexion média WebRTC réelle (caméra/micro + serveur) se teste en cliquant « Rejoindre ». Le lien LiveKit Meet (`joinUrl()`) reste dispo mais n'est plus utilisé par la page. *(commit à venir)*
 
@@ -539,7 +574,7 @@ app/
 ├─ Payments/             # Abstraction passerelles (interface + registre + gateways)
 │  ├─ Contracts/PaymentGateway
 │  ├─ GatewayRegistry
-│  └─ Gateways/          # ManualGateway, CashpayGateway (SEMOA), FedaPayGateway ; contrat OnlineGateway
+│  └─ Gateways/          # ManualGateway, FedaPayGateway ; contrat OnlineGateway
 ├─ Support/Fees          # Résolution des frais depuis settings.fees
 ├─ Models/               # 14 modèles Eloquent + User
 └─ Http/Controllers/     # Account/ (verify, logout), Admin/ (logout, ReceiptController)
@@ -588,7 +623,7 @@ database/seeders/        # RolesAndAdminSeeder + ColloqueAvenirSeeder/VolumeSeed
 - **`AssignReviewer`** - crée/retrouve un participant relecteur (jeton de portail) + `Review`, passe la soumission en `under_review`.
 - **`ConfirmPayment`** - passe un paiement à `paid` avec **garde anti-double-paiement** (un seul `paid` par participant/édition), génère `receipt_no` (`REC-{année}-{seq}`), envoie `PaymentReceiptMail`.
 - **`Support\Fees`** - `resolveAmount(edition, grade)` (insensible casse), `highestAmount(edition)`, `grid(edition)` depuis `settings.fees`. ⚠️ `grid()` passe désormais par **`Fees::normalize($raw)`** : la grille canonique est une **liste de `['label' => string, 'amount' => float]`**, et toute entrée malformée (scalaire, libellé vide, ancien format associatif `grade => montant`) est **ignorée** au lieu de casser le rendu. Utiliser `Fees::grid()`/`Fees::normalize()` partout où on lit `settings.fees` (jamais l'accès brut).
-- **Passerelles** - `GatewayRegistry` résout les passerelles **disponibles** (`isAvailable()` = identifiants configurés) et la **par défaut** (`config('payments.default')`, repli `manual`). `ManualGateway` (hors-ligne), `CashpayGateway` (SEMOA) et `FedaPayGateway` sont **implémentées** ; contrat `OnlineGateway` (verify + parseWebhook) pour le flux en ligne (voir §6 module 11).
+- **Passerelles** - `GatewayRegistry` résout les passerelles **disponibles** (`isAvailable()` = identifiants configurés) et la **par défaut** (`config('payments.default')`, repli `manual`). `ManualGateway` (hors-ligne) et `FedaPayGateway` sont **implémentées** ; contrat `OnlineGateway` (verify + parseWebhook) pour le flux en ligne (voir §6 module 11).
 
 ---
 
@@ -602,18 +637,18 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 4. **Workflow admin des soumissions** (Module 2) - liste filtrable, fiche détaillée, actions **en relecture / correction / accepter / refuser** avec message + e-mail à l'auteur (méthode `applyStatus`, ⚠️ `transition` réservé Livewire). *(commit `f83324b`)*
 5. **Resoumission / versionnage** (Module 2) - fiche participant `/mes-communications/{submission}` : retour relecteurs (après décision) + resoumission quand `revision`. Une ligne **canonique** (`revision_of=0`) + **archives** (`revision_of=id`), `version++`. *(commit `f83324b`)*
 6. **Relecture / peer review** (Module 3) - assignation depuis la fiche admin (panneau Relecteurs + synthèse note moyenne/recommandations), **portail relecteur en aveugle par jeton** `/relecture/{token}` + évaluation `/relecture/{token}/{review}` (recommandation, note /20, commentaires auteur + confidentiels), invitation par e-mail. *(commit `f83324b`)*
-7. **Paiement** (Modules 4, 12, 17, 18) - encaissement **manuel** back-office (liste + totaux + reçu imprimable + e-mail + marquer réglé/rembourser), parcours **participant** (`/mon-compte/paiement/{edition}`, éligible si communication acceptée, montant du grade), **abstraction passerelle** (manuel ; CashPay/FedaPay implémentées au module 11). Garde anti-double-paiement partout. *(commit `f83324b`)*
+7. **Paiement** (Modules 4, 12, 17, 18) - encaissement **manuel** back-office (liste + totaux + reçu imprimable + e-mail + marquer réglé/rembourser), parcours **participant** (`/mon-compte/paiement/{edition}`, éligible si communication acceptée, montant du grade), **abstraction passerelle** (manuel ; FedaPay implémentée au module 11). Garde anti-double-paiement partout. *(commit `f83324b`)*
 8. **Ateliers, sessions & créneaux** (Modules 7, 26) - admin : ateliers (titre + axes), sessions (plénière/atelier, jour/horaire/salle, modérateur/rapporteur), créneaux + assignation des acceptées. Participant : choix d'un créneau libre sur sa fiche. *(commit `0144165`)*
 9. **Back-office Participants** (Modules 5, 27) - liste par édition (rôle, paiement, invité), filtres, invitation individuelle + groupée (payés non invités), `ParticipantInvitationMail`. *(commit `16bedeb`)*
 10. **Documents** (Modules 6, 8, 16, 19) - **attestations vérifiables par QR** (`IssueAttestation` UUID idempotent, émission par type/audience, révocation ; document imprimable avec QR → page publique `/verifier/{uuid}`), **livret** des résumés (par axe) et **badges** (A4, couleur par rôle) imprimables. Lib `simplesoftwareio/simple-qrcode` (SVG). *(commit `1f9d6c0`)*
-11. **Paiement en ligne** (Modules 16, 18, 19) - contrat `OnlineGateway` (verify + parseWebhook **fail-closed**) ; `PaymentController` retour (`/paiement/retour/{gateway}`) + webhook (`/webhooks/paiement/{gateway}`, hors CSRF) avec confirmation via `ConfirmPayment` (le statut vient **toujours** d'une vérification serveur). **CashPay (SEMOA)** : OAuth token caché, `POST /orders` (bill_url), `GET /orders/{ref}`, callback **JWT HS256** vérifié (`firebase/php-jwt`). **FedaPay** : `POST /transactions` + `/token`, `GET /transactions/{id}` (approved), webhook **HMAC-SHA256** (`X-FEDAPAY-Signature`). Registre = CashPay + FedaPay + Manuel. *(commit `dbc1435`)*
+11. **Paiement en ligne** (Modules 16, 18, 19) - contrat `OnlineGateway` (verify + parseWebhook **fail-closed**) ; `PaymentController` retour (`/paiement/retour/{gateway}`) + webhook (`/webhooks/paiement/{gateway}`, hors CSRF) avec confirmation via `ConfirmPayment` (le statut vient **toujours** d'une vérification serveur). **FedaPay** : `POST /transactions` + `/token`, `GET /transactions/{id}` (approved), webhook **HMAC-SHA256** (`X-FEDAPAY-Signature`). Registre = FedaPay + Manuel. ⚠️ **CashPay (SEMOA) a été RETIRÉE le 2026-10-18** - elle avait été implémentée ici (OAuth, bill_url, callback JWT HS256) mais n'a jamais encaissé. *(commit `dbc1435`)*
 
 11bis. **Passerelle de paiement par édition** - le gestionnaire/co-gestionnaire renseigne
-    les identifiants de passerelle (FedaPay/CashPay + passerelle par défaut) pour **son
+    les identifiants de passerelle (FedaPay + passerelle par défaut) pour **son
     édition** via l'onglet **Paiement** du formulaire d'édition (`admin.editions.payment`,
     cap `editions_write`). Persistés dans `edition.settings['payment']` (seules les valeurs
     **remplies** sont stockées). `App\Support\EditionPaymentConfig::apply($edition)`
-    surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, avec **repli
+    surcharge `payments.default` + `services.fedapay.*` au runtime, avec **repli
     global** champ par champ. Appelé en tête de chaque parcours (`Account\PaymentController`,
     `Public\CoauthorController`, `Account\FormationController` - `show`/`pay`/`enroll`) et
     dans `PaymentController::return` via `$payment->edition`. Pour enchaîner plusieurs
@@ -646,7 +681,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 12. **Programme public & fiches de session** (Modules 7, 26) - section « Programme » sur la page publique (plénières + ateliers + communications programmées via les créneaux, partiel `_session.blade.php`) ; **fiches de session imprimables** (`DocumentController@sessionSheets`, `/admin/editions/{edition}/fiches-session`). *(commit `502a78f`)*
 
-13. **Réglages back-office** - table `settings` (clé/valeur JSON) + `App\Support\Settings` (caché) ; `AppServiceProvider::applySettingsToConfig()` applique au boot (mail SMTP, `services.cashpay/fedapay`, `services.openai/anthropic/gemini` + `services.ai.default`, `payments.default`) en repli sur `.env`. `Admin\Settings\Index` (Général, SMTP + e-mail de test, Paiement + identifiants, **IA** : fournisseur par défaut + clés OpenAI/Claude/Gemini). *(commits `6a249c6`, `f41b1a7`)*
+13. **Réglages back-office** - table `settings` (clé/valeur JSON) + `App\Support\Settings` (caché) ; `AppServiceProvider::applySettingsToConfig()` applique au boot (mail SMTP, `services.fedapay`, `services.openai/anthropic/gemini` + `services.ai.default`, `payments.default`) en repli sur `.env`. `Admin\Settings\Index` (Général, SMTP + e-mail de test, Paiement + identifiants, **IA** : fournisseur par défaut + clés OpenAI/Claude/Gemini). *(commits `6a249c6`, `f41b1a7`)*
 14. **Espace participant enrichi** - dashboard : stepper (participation/attestation dérivées), blocs **Mes communications**, **Paiements & reçus**, **Mes attestations** (téléchargement par UUID) ; reçu participant `Account\ReceiptController` (`/mon-compte/recu/{payment}`, contrôle de propriété). *(commit `6a249c6`)*
 
 15. **Page publique enrichie** (Modules 15, 20, 21) - comités (groupés par rôle), partenaires (logos par niveau), FAQ (accordéon), **compte à rebours** dans le hero (Alpine `ukcCountdown` dans `resources/js/app.js`). Gérés depuis le formulaire d'édition (comités = table `committee_members` sync ; partenaires/FAQ = `settings`). *(commit `d55865c`)*
@@ -682,7 +717,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 ## 7. Ce qui reste à faire
 
 ### Priorité haute
-1. **Validation des paiements en ligne au sandbox** - CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement et **déclarer l'URL côté marchand** - de préférence l'URL **dédiée à l'édition** affichée dans l'onglet Paiement (`/webhooks/paiement/{gateway}/{edition}`). ⚠️ En dev local, aucun webhook ne peut arriver : c'est la **réconciliation** (`payments:reconcile`, module 11ter) qui confirmera le paiement - vérifier que le scheduler tourne (`php artisan schedule:work`).
+1. **Validation des paiements en ligne au sandbox** - FedaPay est **implémentée** (voir §6 module 11 ; ⚠️ CashPay/SEMOA a été retirée le 2026-10-18 sans avoir jamais encaissé). Reste à : renseigner les identifiants (`.env` : `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`). Puis exposer les webhooks publiquement et **déclarer l'URL côté marchand** - de préférence l'URL **dédiée à l'édition** affichée dans l'onglet Paiement (`/webhooks/paiement/{gateway}/{edition}`). ⚠️ En dev local, aucun webhook ne peut arriver : c'est la **réconciliation** (`payments:reconcile`, module 11ter) qui confirmera le paiement - vérifier que le scheduler tourne (`php artisan schedule:work`).
 2. ~~**Livret .docx « vrai »** via `phpoffice/phpword`~~ **fait** - `App\Documents\LivretDocx` (page de garde charte + résumés acceptés groupés par axe : titre/auteurs/résumé) ; téléchargement via `?format=docx` sur les routes livret **admin** (`admin.documents.livret`) et **participant** (`account.documents.livret`, contrôle de propriété conservé), bouton « Word (.docx) » dans la vue `documents.livret`. ⚠️ phpword veut des **twips entiers** (`(int) Converter::cmToTwip(...)`). Tests : le `.docx` est dézippé (`word/document.xml`) pour vérifier titre/axe/communication.
 
 ### Ensuite
@@ -711,7 +746,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 - **Paiement en ligne - confiance zéro dans l'URL** : le statut « payé » vient **toujours** d'une vérification serveur (`OnlineGateway::verify`) ou d'un webhook **à signature vérifiée** (`parseWebhook`, **fail-closed** = retourne `null` si invalide). Ne jamais confirmer un paiement d'après un paramètre d'URL de retour. `ConfirmPayment` reste idempotent + anti-double-paiement.
 - **Certification des attestations - ne pas improviser la crypto** : la signature = **EdDSA/Ed25519** sur un **Verifiable Credential en JWS compact** (VC-JWT) via `firebase/php-jwt` (libsodium), **jamais** de canonicalisation JSON-LD maison (pas de vrai `Ed25519Signature2020`). Clé privée = graine **hors dépôt** (`ATTESTATION_SIGNING_KEY`), **jamais en base**. **Fail-open** à l'émission (sans clé → non signée), **fail-closed** sur la preuve (n'afficher « vérifié » que si la signature vérifie). La révocation reste un **état DB** (une signature ne se défait pas). Cf. `App\Documents\AttestationCertifier`, §11.
 - **`firebase/php-jwt` - clés EdDSA** : la clé passée à `JWT::encode/decode` est une **chaîne base64url** (dernier `\n`-segment, décodé `urlsafe`) - clé **secrète 64 o** pour signer, clé **publique 32 o** pour vérifier (cf. `validateEdDSAKey`). On stocke la **graine 32 o** et on dérive le couple avec `sodium_crypto_sign_seed_keypair`.
-- **`firebase/php-jwt` (HS256)** : refuse les clés trop courtes (`Provided key is too short`). En test, utiliser une clé d'API ≥ ~32 caractères (les vraies clés SEMOA le sont). Le corps du callback CashPay peut être le JWT brut **ou** un champ `token` - `CashpayGateway::parseWebhook` gère les deux ; à confirmer au sandbox.
+- **`firebase/php-jwt` (HS256)** : refuse les clés trop courtes (`Provided key is too short`). En test, utiliser une clé d'API ≥ ~32 caractères. ⚠️ La dépendance **reste nécessaire** après le retrait de CashPay : elle porte aussi les jetons LiveKit et la certification des attestations.
 - **Webhooks hors CSRF** : les routes `/webhooks/*` sont exclues de la vérification CSRF dans `bootstrap/app.php` (`validateCsrfTokens(except: ['webhooks/*'])`).
 - **Livewire 4 - « Invalid snapshot structure » en test** = une exception/`abort()` **avalée pendant le render initial** (le snapshot devient NULL, l'erreur ne remonte qu'au 1ᵉʳ `->set()`/`->call()`). Chercher un `abort_unless` faux dans `mount()`/`render()`, pas le trait `WithFileUploads`. Astuce diagnostic : dumper `$c->html()` et vérifier la présence de `wire:id`.
 - **Modèle fraîchement créé ≠ rechargé** : `Model::create([...])` **ne reflète pas les valeurs par défaut SQL** en mémoire (ex. `revision_of` reste `null`, pas `0`). Une comparaison stricte `=== 0` casse alors. → **caster** (`'revision_of' => 'integer'`) et comparer en `(int)`, ou passer `->fresh()`. (Incident réel corrigé sur la resoumission.)

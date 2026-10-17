@@ -38,9 +38,15 @@ class Payment extends Model
 
     /**
      * Moyens issus d'un parcours de paiement choisi par le payeur (clés des
-     * passerelles). ⚠️ On ne nomme jamais l'agrégateur : `fedapay`/`cashpay` sont
-     * des clés techniques, leur libellé reste générique. `manual` = la passerelle
+     * passerelles). ⚠️ On ne nomme jamais l'agrégateur : `fedapay` est une clé
+     * technique, son libellé reste générique. `manual` = la passerelle
      * « sur place / virement » (le payeur choisit, l'admin valide ensuite).
+     *
+     * ⚠️ **`cashpay` n'est plus une passerelle, et son libellé reste ici.** La
+     * passerelle a été retirée du projet, mais un paiement DÉJÀ encaissé par
+     * elle garde sa clé en base : sans ce libellé, l'historique l'afficherait
+     * sans nom. Ne rien proposer sous cette clé - le registre ne la connaît
+     * plus, elle n'est donc plus sélectionnable.
      */
     public const ONLINE_METHODS = [
         'fedapay' => 'En ligne - Mobile money / carte',

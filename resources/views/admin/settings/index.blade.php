@@ -256,21 +256,11 @@
                             <label for="payments_default">Passerelle par défaut</label>
                             <select id="payments_default" name="payments_default">
                                 <option value="manual" @selected($v('payments_default') === 'manual')>Paiement sur place / virement (manuel)</option>
-                                <option value="cashpay" @selected($v('payments_default') === 'cashpay')>CashPay (SEMOA)</option>
                                 <option value="fedapay" @selected($v('payments_default') === 'fedapay')>FedaPay</option>
                             </select>
                             <span class="hint">Une passerelle n’est proposée que si ses identifiants sont renseignés.</span>
                             @error('payments_default') <span class="error">{{ $message }}</span> @enderror
                         </div>
-                    </div>
-
-                    <h3 style="font-size:.95rem;margin:16px 0 8px;">CashPay (SEMOA)</h3>
-                    <div class="ukc-form-grid">
-                        <div class="ukc-field full"><label for="cashpay_base_url">URL de base</label><input type="text" id="cashpay_base_url" name="cashpay_base_url" value="{{ $v('cashpay_base_url') }}"></div>
-                        <div class="ukc-field"><label for="cashpay_username">Identifiant</label><input type="text" id="cashpay_username" name="cashpay_username" value="{{ $v('cashpay_username') }}" autocomplete="off"></div>
-                        <div class="ukc-field"><label for="cashpay_password">Mot de passe</label><input type="password" id="cashpay_password" name="cashpay_password" value="{{ $v('cashpay_password') }}" autocomplete="new-password"></div>
-                        <div class="ukc-field"><label for="cashpay_client_secret">Client secret</label><input type="password" id="cashpay_client_secret" name="cashpay_client_secret" value="{{ $v('cashpay_client_secret') }}" autocomplete="new-password"></div>
-                        <div class="ukc-field"><label for="cashpay_api_key">API key (callback)</label><input type="password" id="cashpay_api_key" name="cashpay_api_key" value="{{ $v('cashpay_api_key') }}" autocomplete="new-password"></div>
                     </div>
 
                     <h3 style="font-size:.95rem;margin:16px 0 8px;">FedaPay</h3>

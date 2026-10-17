@@ -3,7 +3,6 @@
 namespace App\Payments;
 
 use App\Payments\Contracts\PaymentGateway;
-use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
 use App\Payments\Gateways\ManualGateway;
 
@@ -19,7 +18,6 @@ class GatewayRegistry
     public function __construct()
     {
         $this->gateways = [
-            new CashpayGateway,
             new FedaPayGateway,
             new ManualGateway,
         ];

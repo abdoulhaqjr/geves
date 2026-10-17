@@ -389,25 +389,18 @@ class EventFormController extends Controller
     }
 
     /**
-     * Passerelle de paiement PROPRE à l'événement (identifiants FedaPay / CashPay).
+     * Passerelle de paiement PROPRE à l'événement (identifiants FedaPay).
      * Les champs laissés vides retombent sur la configuration globale de la
      * plateforme (cf. {@see EventPaymentConfig}).
      */
     public function savePayment(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
-            'gateway' => ['nullable', 'in:manual,cashpay,fedapay'],
+            'gateway' => ['nullable', 'in:manual,fedapay'],
             'fedapay' => ['array'],
             'fedapay.secret' => ['nullable', 'string', 'max:255'],
             'fedapay.mode' => ['nullable', 'in:test,live'],
             'fedapay.webhook_secret' => ['nullable', 'string', 'max:255'],
-            'cashpay' => ['array'],
-            'cashpay.base_url' => ['nullable', 'string', 'max:255'],
-            'cashpay.username' => ['nullable', 'string', 'max:255'],
-            'cashpay.password' => ['nullable', 'string', 'max:255'],
-            'cashpay.client_id' => ['nullable', 'string', 'max:255'],
-            'cashpay.client_secret' => ['nullable', 'string', 'max:255'],
-            'cashpay.api_key' => ['nullable', 'string', 'max:255'],
         ]);
 
         // On ne conserve que les valeurs renseignées (les vides = repli global).
@@ -415,7 +408,6 @@ class EventFormController extends Controller
         $payment = array_filter([
             'gateway' => $data['gateway'] ?? null,
             'fedapay' => $clean($data['fedapay'] ?? []),
-            'cashpay' => $clean($data['cashpay'] ?? []),
         ], fn ($v) => filled($v));
 
         $settings = $event->settings ?? [];

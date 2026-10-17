@@ -84,7 +84,7 @@ class DemoDataSeeder extends Seeder
                         'amount' => [15000, 25000, 30000][$i % 3],
                         'currency' => 'XOF',
                         'method' => ['mobile_money', 'card', 'manual'][$i % 3],
-                        'gateway' => ['fedapay', 'cashpay', 'manual'][$i % 3],
+                        'gateway' => ['fedapay', 'manual'][$i % 2],
                         'status' => $i % 5 === 0 ? 'pending' : 'paid',
                         'receipt_no' => 'RC-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                     ]

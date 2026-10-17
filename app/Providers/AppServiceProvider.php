@@ -229,11 +229,6 @@ class AppServiceProvider extends ServiceProvider
         Config::set('payments.default', $set('payments.default', config('payments.default')));
 
         // Identifiants passerelles (repli sur config/.env)
-        foreach (['username', 'password', 'client_secret', 'api_key', 'base_url'] as $k) {
-            if (filled($set("cashpay.$k"))) {
-                Config::set("services.cashpay.$k", $set("cashpay.$k"));
-            }
-        }
         foreach (['secret', 'mode', 'webhook_secret'] as $k) {
             if (filled($set("fedapay.$k"))) {
                 Config::set("services.fedapay.$k", $set("fedapay.$k"));

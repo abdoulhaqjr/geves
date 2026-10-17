@@ -428,11 +428,11 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 - **Passerelle de paiement par édition** : le gestionnaire/co-gestionnaire peut renseigner
-  les identifiants de passerelle (FedaPay/CashPay + passerelle par défaut) pour **son
+  les identifiants de passerelle (FedaPay + passerelle par défaut) pour **son
   édition** via l'onglet **Paiement** du formulaire d'édition (`admin.editions.payment`,
   cap `editions_write`). Stockés dans `edition.settings['payment']` (seules les valeurs
   **remplies** sont conservées). `App\Support\EditionPaymentConfig::apply($edition)`
-  surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, **repli sur la
+  surcharge `payments.default` + `services.fedapay.*` au runtime, **repli sur la
   config globale** quand un champ est vide. Appelé en tête de chaque parcours de paiement
   (Account/Public/Formation `show`+`pay`, `PaymentController::return` avec
   `$payment->edition`). Pour essayer plusieurs configurations d'affilée, utiliser
@@ -4292,8 +4292,8 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 - **Paiement en ligne** : le statut « payé » vient **toujours** d'une vérification
   serveur ou d'un webhook à signature vérifiée (fail-closed), jamais d'un paramètre
   d'URL de retour.
-- **Ne jamais nommer l'agrégateur de paiement côté payeur** (FedaPay, CashPay,
-  SEMOA…) : les libellés de `PaymentGateway::label()` et les textes des pages de
+- **Ne jamais nommer l'agrégateur de paiement côté payeur** (FedaPay…) : les
+  libellés de `PaymentGateway::label()` et les textes des pages de
   paiement restent génériques (« Mobile money / carte bancaire »). Le nom de
   l'agrégateur n'apparaît que dans la **configuration admin** de l'édition. Un test
   (`PaymentOperatorTest`) garde cette règle.
@@ -4436,6 +4436,45 @@ dont six dans le seul barème. Un cas Pest lit les `__()` de la vue et exige
 leur clé dans `lang/en.json`. Les intitulés de catégorie et les noms de grades
 restent en français : ce sont des **données** saisies par l'organisation, pas
 des chaînes d'interface.
+
+### ⚠️ CashPay (SEMOA) a été RETIRÉE des moyens de paiement (2026-10-18)
+
+Il ne reste que **`manual`** (encaissement hors ligne) et **`fedapay`**.
+
+⚠️ **SEMOA n'était pas une passerelle à part : c'est la société derrière
+CashPay.** Le projet écrivait « CashPay (SEMOA) » dans les deux listes de
+l'admin, et son API vivait sur `api.semoa-payments.ovh`. Retirer « SEMOA »
+sans retirer CashPay n'aurait donc rien retiré du tout.
+
+Ce qui a disparu : la classe `CashpayGateway`, son entrée au registre, le bloc
+`services.cashpay`, les six variables `CASHPAY_*`, les deux listes déroulantes
+(plateforme et par événement) avec leurs champs d'identifiants, la surcharge
+runtime (`EventPaymentConfig::CASHPAY_KEYS`, `AppServiceProvider`), les règles
+de validation (`in:manual,fedapay`) et six cas de `PaymentGatewayTest`.
+
+⚠️ **Ce qui RESTE, et ne doit pas être « nettoyé » : le libellé `cashpay` dans
+`Payment::ONLINE_METHODS`.** Un règlement déjà encaissé par elle garde sa clé en
+base ; sans ce libellé, l'historique des paiements l'afficherait **sans nom**.
+Effacer la trace d'un encaissement pour faire disparaître une passerelle, ce
+serait réécrire des comptes. Le registre, lui, ne connaît plus la clé : elle
+n'est plus sélectionnable nulle part.
+
+⚠️ **Les identifiants enregistrés ont été SUPPRIMÉS de la base** (migration
+`2026_10_18_000100_retirer_les_identifiants_cashpay`) : mot de passe, client
+secret et clé de vérification du callback sont des secrets marchands, et plus
+rien ne les lit. Deux dépôts à nettoyer, pas un : les réglages de la
+**plateforme** (`settings`, clés `cashpay.*`) **et** ceux propres à chaque
+**événement** (`events.settings`, sous `payment.cashpay`). La passerelle par
+défaut qui désignait CashPay revient à `manual` - sinon le réglage pointerait
+sur une passerelle absente et le registre y retomberait en silence. `down()`
+est vide : on ne restaure pas des secrets supprimés.
+
+⚠️ **`firebase/php-jwt` RESTE une dépendance** : elle sert aussi aux jetons
+LiveKit et à la certification des attestations.
+
+Gardes dans `PaymentOperatorTest` : la clé absente du registre, le fichier
+supprimé, les deux formulaires qui la refusent, le libellé d'historique
+conservé, et les trois cas de la migration.
 
 ### ⚠️ Parcours en 5 étapes : une classe CSS portée par deux composants (2026-10-17)
 

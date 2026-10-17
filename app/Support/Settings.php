@@ -9,7 +9,7 @@ use Throwable;
 
 /**
  * Accès aux réglages éditables (clé/valeur), avec cache. Les clés sont plates
- * (ex. « mail.host », « cashpay.username », « payments.default »).
+ * (ex. « mail.host », « fedapay.secret », « payments.default »).
  */
 class Settings
 {

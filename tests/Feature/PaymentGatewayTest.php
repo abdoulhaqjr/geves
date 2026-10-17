@@ -3,12 +3,8 @@
 use App\Actions\ReconcilePayments;
 use App\Models\Event;
 use App\Models\EventSeries;
-use App\Models\Payment;
 use App\Models\User;
-use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
-use Firebase\JWT\JWT;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
@@ -26,114 +22,10 @@ function onlineSetup(): array
     return [$event, $account, $participant];
 }
 
-function configureCashpay(): void
-{
-    config(['services.cashpay' => [
-        'base_url' => 'https://api.semoa-payments.ovh/sandbox-v3',
-        'username' => 'user.demo', 'password' => 'secret',
-        'client_id' => 'cashpay', 'client_secret' => 'cs',
-        'api_key' => 'cashpay-sandbox-api-key-0123456789abcdef',
-    ]]);
-    Cache::flush();
-}
-
 function configureFedapay(): void
 {
     config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec']]);
 }
-
-/* ------------------------------- CashPay ---------------------------------- */
-
-it('CashPay : initie une facture et redirige vers bill_url', function () {
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'cashpay', 'status' => 'pending']);
-
-    Http::fake([
-        '*/auth' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
-        '*/orders/*' => Http::response(['state' => 'Pending']),
-        '*/orders' => Http::response(['order_reference' => 'REF-1', 'bill_url' => 'https://lk.semoa.tg/abc', 'state' => 'Pending'], 201),
-    ]);
-
-    $result = (new CashpayGateway)->initiate($payment);
-
-    expect($result['type'])->toBe('redirect');
-    expect($result['url'])->toBe('https://lk.semoa.tg/abc');
-    expect($payment->fresh()->gateway_ref)->toBe('REF-1');
-});
-
-it('CashPay : vérifie le statut (Paid → paid)', function () {
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'cashpay', 'gateway_ref' => 'REF-1', 'status' => 'pending']);
-
-    Http::fake([
-        '*/auth' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
-        '*/orders/*' => Http::response(['state' => 'Paid', 'order_reference' => 'REF-1']),
-    ]);
-
-    expect((new CashpayGateway)->verify($payment))->toBe('paid');
-});
-
-it('CashPay : le webhook JWT valide confirme le paiement', function () {
-    Mail::fake();
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'cashpay', 'gateway_ref' => 'REF-1', 'status' => 'pending']);
-
-    $jwt = JWT::encode(['order_reference' => 'REF-1', 'state' => 'Paid'], 'cashpay-sandbox-api-key-0123456789abcdef', 'HS256');
-
-    $this->post(route('payment.webhook', ['gateway' => 'cashpay']), ['token' => $jwt])->assertOk();
-
-    expect($payment->fresh()->status)->toBe('paid');
-    expect($payment->fresh()->receipt_no)->not->toBeEmpty();
-});
-
-it('CashPay : le webhook mal signé ne confirme rien (fail-closed)', function () {
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'cashpay', 'gateway_ref' => 'REF-1', 'status' => 'pending']);
-
-    $jwt = JWT::encode(['order_reference' => 'REF-1', 'state' => 'Paid'], 'wrong-key-9876543210zyxwvutsrqponmlkjihg', 'HS256');
-
-    $this->post(route('payment.webhook', ['gateway' => 'cashpay']), ['token' => $jwt])->assertOk();
-
-    expect($payment->fresh()->status)->toBe('pending'); // non confirmé
-});
-
-it('CashPay : le retour navigateur vérifie et confirme', function () {
-    Mail::fake();
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'cashpay', 'gateway_ref' => 'REF-1', 'status' => 'pending']);
-
-    Http::fake([
-        '*/auth' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
-        '*/orders/*' => Http::response(['state' => 'Paid']),
-    ]);
-
-    $this->get(route('payment.return', ['gateway' => 'cashpay']).'?payment='.$payment->id)
-        ->assertRedirect(route('account.payment', $event->id));
-
-    expect($payment->fresh()->status)->toBe('paid');
-});
-
-it('CashPay : la page de paiement initie et redirige', function () {
-    configureCashpay();
-    [$event, $account, $participant] = onlineSetup();
-
-    Http::fake([
-        '*/auth' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]),
-        '*/orders/*' => Http::response(['state' => 'Pending']),
-        '*/orders' => Http::response(['order_reference' => 'REF-9', 'bill_url' => 'https://lk.semoa.tg/pay9'], 201),
-    ]);
-
-    $this->actingAs($account, 'account')
-        ->post(route('account.payment.pay', $event), ['gateway' => 'cashpay'])
-        ->assertRedirect('https://lk.semoa.tg/pay9');
-
-    expect(Payment::where('gateway', 'cashpay')->first()->gateway_ref)->toBe('REF-9');
-});
 
 /* ------------------------------- FedaPay ---------------------------------- */
 

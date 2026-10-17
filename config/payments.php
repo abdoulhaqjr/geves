@@ -9,7 +9,7 @@ return [
     |
     | Clé de la passerelle proposée en priorité au participant. Repli automatique
     | sur « manual » (paiement sur place / virement) si la passerelle choisie
-    | n'est pas configurée. Passerelles : cashpay, fedapay, manual.
+    | n'est pas configurée. Passerelles : fedapay, manual.
     |
     */
 

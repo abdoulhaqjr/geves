@@ -15,7 +15,7 @@ use Firebase\JWT\JWT;
  * - Self-host avec JWT (`JITSI_APP_ID`/`JITSI_APP_SECRET`) : un jeton signé
  *   matérialise le rôle (modérateur vs invité) et le nom, imposés par le serveur.
  *
- * Réutilise firebase/php-jwt (déjà présent pour CashPay).
+ * Réutilise firebase/php-jwt (déjà présent pour la certification des attestations).
  */
 class JitsiProvider implements MeetingProvider
 {

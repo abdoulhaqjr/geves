@@ -2,8 +2,9 @@
 
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
-use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
+use App\Support\Settings;
+use Illuminate\Support\Facades\DB;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
@@ -21,8 +22,40 @@ it('propose des opérateurs mobile money ciblables', function () {
 
     expect($operators)->toHaveKey('togocel');
     expect($operators['togocel'])->not->toContain('FedaPay');
-    // La passerelle qui ne sait pas cibler l'opérateur renvoie une liste vide.
-    expect((new CashpayGateway)->mobileOperators())->toBe([]);
+});
+
+/**
+ * ⚠️ **CashPay - c'est-à-dire SEMOA - a été RETIRÉE du projet.** Elle n'avait
+ * jamais encaissé (aucun paiement sous cette clé, et la validation au bac à
+ * sable n'avait pas été faite), mais elle restait proposée dans les deux listes
+ * de l'admin et ses identifiants dormaient en base.
+ *
+ * ⚠️ Ce qui RESTE, et ne doit pas être « nettoyé » : le libellé `cashpay` dans
+ * {@see Payment::ONLINE_METHODS}. Un paiement déjà encaissé par elle garderait
+ * sa clé en base ; sans ce libellé, l'historique l'afficherait sans nom.
+ */
+it('ne propose plus CashPay comme passerelle, ni dans le registre ni en réglage', function () {
+    $registre = app(GatewayRegistry::class);
+
+    expect(array_map(fn ($g) => $g->key(), $registre->all()))->not->toContain('cashpay');
+    expect($registre->get('cashpay'))->toBeNull();
+    expect(file_exists(app_path('Payments/Gateways/CashpayGateway.php')))->toBeFalse();
+
+    // La passerelle par défaut de la plateforme ne peut plus être posée sur elle.
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.settings.update'), ['payments_default' => 'cashpay'])
+        ->assertSessionHasErrors('payments_default');
+
+    // Ni celle d'un événement.
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.evenements.payment', openEdition()), ['gateway' => 'cashpay'])
+        ->assertSessionHasErrors('gateway');
+});
+
+/** Le libellé d'historique, lui, reste lisible. */
+it('sait encore nommer un paiement déjà encaissé par CashPay', function () {
+    expect(Payment::ONLINE_METHODS)->toHaveKey('cashpay');
+    expect(Payment::ONLINE_METHODS['cashpay'])->not->toContain('CashPay')->not->toContain('SEMOA');
 });
 
 it('mémorise l’opérateur choisi sur le paiement et l’oublie si vidé', function () {
@@ -132,4 +165,76 @@ it('garde l’événement sélectionné quand on change un filtre sur la page Pa
         ->assertOk()
         ->assertSee('111')
         ->assertDontSee('222');
+});
+
+/**
+ * La migration de retrait. ⚠️ Chargée UNE fois : un `require` déjà exécuté rend
+ * `true`, pas la migration.
+ */
+function migrationDeRetraitCashpay(): object
+{
+    static $migration = null;
+
+    if ($migration === null) {
+        $migration = require database_path('migrations/2026_10_18_000100_retirer_les_identifiants_cashpay.php');
+    }
+
+    return $migration;
+}
+
+/**
+ * ⚠️ **Les identifiants d'une passerelle retirée ne dorment pas en base.** Mot
+ * de passe, client secret, clé de vérification du callback : ce sont des
+ * secrets marchands, et plus rien ne les lit. Les laisser, c'est les exposer
+ * sans aucune contrepartie.
+ *
+ * ⚠️ Et il y a **deux dépôts** : les réglages de la plateforme et ceux propres
+ * à chaque événement. N'en nettoyer qu'un laissait la moitié des secrets.
+ */
+it('efface les identifiants CashPay des réglages de la plateforme', function () {
+    Settings::setMany([
+        'cashpay.username' => 'user.demo',
+        'cashpay.api_key' => 'cle-de-callback-tres-secrete',
+        'payments.default' => 'cashpay',
+        'fedapay.secret' => 'sk_test_garde',
+    ]);
+
+    migrationDeRetraitCashpay()->up();
+
+    expect(DB::table('settings')->where('key', 'like', 'cashpay.%')->count())->toBe(0);
+    // ⚠️ Le réglage ne peut pas rester sur une passerelle absente : sans ce
+    // retour au manuel, le registre y retomberait en silence.
+    expect(Settings::get('payments.default'))->toBe('manual');
+    // Ce qui n'est pas CashPay n'est pas touché.
+    expect(Settings::get('fedapay.secret'))->toBe('sk_test_garde');
+});
+
+it('efface les identifiants CashPay propres à un événement, sans toucher aux autres', function () {
+    $garde = openEdition();
+    $garde->forceFill(['settings' => ['payment' => [
+        'gateway' => 'fedapay',
+        'fedapay' => ['secret' => 'sk_edition'],
+        'cashpay' => ['username' => 'u', 'api_key' => 'secret-callback'],
+    ]] + $garde->settings])->save();
+
+    migrationDeRetraitCashpay()->up();
+
+    $paiement = $garde->fresh()->settings['payment'];
+    expect($paiement)->not->toHaveKey('cashpay');
+    expect($paiement['gateway'])->toBe('fedapay');
+    expect($paiement['fedapay']['secret'])->toBe('sk_edition');
+});
+
+it('retire la passerelle de l’événement quand elle désignait CashPay', function () {
+    $event = openEdition();
+    $event->forceFill(['settings' => ['payment' => [
+        'gateway' => 'cashpay',
+        'cashpay' => ['username' => 'u'],
+    ]] + $event->settings])->save();
+
+    migrationDeRetraitCashpay()->up();
+
+    // ⚠️ Le bloc devenu vide S'EN VA, il ne reste pas en tableau vide :
+    // `EventPaymentConfig` distingue « aucun réglage » de « réglage vide ».
+    expect($event->fresh()->settings)->not->toHaveKey('payment');
 });

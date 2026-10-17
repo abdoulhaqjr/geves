@@ -34,7 +34,6 @@ it('permet au staff d’enregistrer la passerelle de paiement d’un événement
         ->post(route('admin.evenements.payment', $event), [
             'gateway' => 'fedapay',
             'fedapay' => ['secret' => 'sk_test_x', 'mode' => 'test', 'webhook_secret' => ''],
-            'cashpay' => [],
         ])
         ->assertRedirect();
 

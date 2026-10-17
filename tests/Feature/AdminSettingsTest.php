@@ -62,7 +62,7 @@ it('enregistre les réglages', function () {
     $this->actingAs($staff, 'web')->post(route('admin.settings.update'), [
         'from_name' => 'EventSeries UK',
         'from_address' => 'colloques@univkara.tg',
-        'payments_default' => 'cashpay',
+        'payments_default' => 'fedapay',
         'mail_host' => 'smtp.univkara.tg',
         'ai_default' => 'grok',
         'ai_anthropic_key' => 'sk-ant-xyz',
@@ -75,7 +75,7 @@ it('enregistre les réglages', function () {
     ])->assertSessionHasNoErrors();
 
     expect(Settings::get('mail.from_name'))->toBe('EventSeries UK');
-    expect(Settings::get('payments.default'))->toBe('cashpay');
+    expect(Settings::get('payments.default'))->toBe('fedapay');
     expect(Settings::get('mail.host'))->toBe('smtp.univkara.tg');
     expect(Settings::get('ai.default'))->toBe('grok');
     expect(Settings::get('ai.anthropic_key'))->toBe('sk-ant-xyz');
@@ -89,7 +89,7 @@ it('applique les réglages à la configuration au boot', function () {
         'mail.from_name' => 'GESCO Test',
         'mail.host' => 'smtp.test.tg',
         'mail.port' => '465',
-        'cashpay.username' => 'user.demo',
+        'fedapay.webhook_secret' => 'whsec_demo',
         'ai.default' => 'gemini',
         'ai.anthropic_key' => 'sk-ant-abc',
         'ai.grok_key' => 'xai-abc',
@@ -104,7 +104,7 @@ it('applique les réglages à la configuration au boot', function () {
     expect(config('mail.from.name'))->toBe('GESCO Test');
     expect(config('mail.default'))->toBe('smtp');
     expect(config('mail.mailers.smtp.host'))->toBe('smtp.test.tg');
-    expect(config('services.cashpay.username'))->toBe('user.demo');
+    expect(config('services.fedapay.webhook_secret'))->toBe('whsec_demo');
     expect(config('services.ai.default'))->toBe('gemini');
     expect(config('services.anthropic.key'))->toBe('sk-ant-abc');
     expect(config('services.grok.key'))->toBe('xai-abc');

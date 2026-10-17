@@ -338,7 +338,7 @@
                         </div>
                         <div class="report-item">
                             <h3>Journal des paiements</h3>
-                            <p>Transactions FedaPay / CashPay : reçu, montant, passerelle, statut, date.</p>
+                            <p>Transactions en ligne : reçu, montant, passerelle, statut, date.</p>
                             <div class="meta">CSV - XLSX - ~{{ $counts['payments'] }} lignes</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>

@@ -834,7 +834,6 @@
                                         <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
                                         <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
                                         <option value="fedapay" @selected(($pay['gateway'] ?? '') === 'fedapay')>FedaPay</option>
-                                        <option value="cashpay" @selected(($pay['gateway'] ?? '') === 'cashpay')>CashPay (SEMOA)</option>
                                     </select>
                                 </div>
 
@@ -859,33 +858,6 @@
                                 <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'event' => $event])"
                                                    label="URL du webhook FedaPay à déclarer" />
 
-                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
-                                <div class="ukc-field">
-                                    <label for="cp-base">Base URL</label>
-                                    <input type="text" id="cp-base" name="cashpay[base_url]" value="{{ $pay['cashpay']['base_url'] ?? '' }}" autocomplete="off" placeholder="https://… (laisser vide = défaut)">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-user">Utilisateur</label>
-                                    <input type="text" id="cp-user" name="cashpay[username]" value="{{ $pay['cashpay']['username'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-pass">Mot de passe</label>
-                                    <input type="text" id="cp-pass" name="cashpay[password]" value="{{ $pay['cashpay']['password'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-cid">Client ID</label>
-                                    <input type="text" id="cp-cid" name="cashpay[client_id]" value="{{ $pay['cashpay']['client_id'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-csecret">Client secret</label>
-                                    <input type="text" id="cp-csecret" name="cashpay[client_secret]" value="{{ $pay['cashpay']['client_secret'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-api">Clé API (callback)</label>
-                                    <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'event' => $event])"
-                                                   label="URL du callback CashPay à déclarer" />
 
                                 <div class="ukc-form-actions full">
                                     <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la passerelle</button>
