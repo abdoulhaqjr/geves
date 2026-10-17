@@ -600,7 +600,7 @@
                             <div class="ukc-form-row">
                                 <label>Police des titres</label>
                                 <select name="livretFontHead">
-                                    @foreach (['Jost', 'Playfair Display', 'Arial', 'Georgia'] as $f)<option @selected($opts['livretFontHead'] === $f)>{{ $f }}</option>@endforeach
+                                    @foreach (['Jost', 'Playfair Display', 'Times New Roman', 'Arial', 'Georgia'] as $f)<option @selected($opts['livretFontHead'] === $f)>{{ $f }}</option>@endforeach
                                 </select>
                             </div>
                         </div>
