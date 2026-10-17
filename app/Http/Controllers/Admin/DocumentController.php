@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Documents\BadgeLayout;
+use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
@@ -33,6 +34,14 @@ class DocumentController extends Controller
     /** Livret des résumés : communications acceptées, groupées par axe. */
     public function livret(Event $event, Request $request): View|Response
     {
+        if ($request->query('format') === 'pdf' && $request->boolean('inline') && ! $request->boolean('raw')) {
+            return view('documents.pdf-preview', [
+                'title' => 'Livre des résumés · '.$event->title,
+                'pdfUrl' => route('admin.documents.livret', ['event' => $event, 'format' => 'pdf', 'inline' => 1, 'raw' => 1]),
+                'downloadUrl' => route('admin.documents.livret', ['event' => $event, 'format' => 'pdf']),
+            ]);
+        }
+
         // ⚠️ Source unique de « ce que le livre contient » : le programme ci-dessous
         // s'y aligne aussi, sans quoi il annoncerait des communications absentes
         // de la section Résumés (cf. Submission::scopeForBooklet).
@@ -55,8 +64,10 @@ class DocumentController extends Controller
         }
 
         if ($request->query('format') === 'pdf') {
-            $pdf = Pdf::loadView('documents.livret-pdf', $this->livretViewData($event, $groups))
-                ->setPaper('a4');
+            $pdf = BrandedPdf::stamp(
+                Pdf::loadView('documents.livret-pdf', $this->livretViewData($event, $groups))->setPaper('a4'),
+                'Livre des résumés · '.$event->title,
+            );
             $file = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf';
 
             // `inline` → aperçu dans le navigateur (vrai rendu final) ; sinon téléchargement.

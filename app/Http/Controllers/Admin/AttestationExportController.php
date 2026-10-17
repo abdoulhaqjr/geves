@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Documents\AttestationVars;
+use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Http\Controllers\Controller;
@@ -87,8 +88,10 @@ class AttestationExportController extends Controller
         $w = (int) $layout['width'];
         $h = (int) $layout['height'];
 
-        return Pdf::loadView('pdf.attestations-lot', ['pages' => $pages])
-            ->setPaper([0, 0, $w * 0.75, $h * 0.75])
+        return BrandedPdf::stamp(
+            Pdf::loadView('pdf.attestations-lot', ['pages' => $pages])->setPaper([0, 0, $w * 0.75, $h * 0.75]),
+            'Lot d’attestations · '.$event->title,
+        )
             ->download('attestations-'.$type.'-lot'.$lot.'.pdf');
     }
 
@@ -117,11 +120,12 @@ class AttestationExportController extends Controller
             return back()->with('ukc_error', 'Aucune attestation à porter sur la liste d’émargement.');
         }
 
-        return Pdf::loadView('pdf.attestations-emargement', [
+        return BrandedPdf::stamp(Pdf::loadView('pdf.attestations-emargement', [
             'event' => $event,
             'attestations' => $attestations,
             'typeLabel' => Attestation::TYPES[(string) $request->query('type', '')] ?? 'Tous types',
-        ])->setPaper('a4', 'portrait')->download('emargement-attestations.pdf');
+        ])->setPaper('a4', 'portrait'), 'Liste d’émargement · '.$event->title)
+            ->download('emargement-attestations.pdf');
     }
 
     /**

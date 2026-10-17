@@ -2266,3 +2266,8 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - Le formulaire « Apparence du livre » charge et enregistre les options du modèle actif. `LivretAppearance` les conserve dans `edition.settings['doc']['livret.appearances']`, indexées par la clé ou le nom du modèle. Au premier changement de modèle, les anciennes options communes sont copiées sur le modèle jusque-là actif ; revenir à ce modèle retrouve ses valeurs. Un modèle sans configuration reçoit les valeurs par défaut. Les réglages d'un modèle importé sont supprimés avec lui.
 - `LivretDocx` et l'aperçu PDF utilisent les options du modèle actif. Le PDF prend désormais en compte les polices, tailles, interligne, logo de couverture et numéros de page ; la couleur secondaire teinte la mention de couverture dans les deux rendus. Un enregistrement issu d'un onglet resté ouvert sur un ancien modèle est refusé avec un message invitant à recharger la page.
+
+### Identité GEVES dans les aperçus et PDF (17 octobre 2026)
+
+- L'aperçu du livre (`format=pdf&inline=1`) est une page HTML GEVES avec favicon, monogramme, titre du document et bouton de téléchargement. Elle intègre le même PDF final via `raw=1`, sans modifier la route de téléchargement direct.
+- `public/favicon.ico`, auparavant vide, contient les favicons UK en 16 et 32 px pour les accès sans page HTML. `App\Documents\BrandedPdf` ajoute le titre, l'auteur et le créateur GEVES aux PDF serveur (livre, attestations, lots, émargement et reçus). Un PDF brut reste affiché par le lecteur propre au navigateur ; seule une page HTML d'aperçu peut imposer un favicon d'onglet.

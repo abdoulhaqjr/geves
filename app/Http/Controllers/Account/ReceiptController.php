@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Documents\BrandedPdf;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -30,7 +31,7 @@ class ReceiptController extends Controller
         );
 
         if ($request->boolean('pdf')) {
-            return Pdf::loadView('pdf.receipt', ['payment' => $payment])
+            return BrandedPdf::stamp(Pdf::loadView('pdf.receipt', ['payment' => $payment]), 'Reçu de paiement · '.$payment->receipt_no)
                 ->download('recu-'.$payment->receipt_no.'.pdf');
         }
 

@@ -3730,6 +3730,12 @@ ajoutée par la vue, elle ne se saisit pas.
     capture les anciennes options `livret.*` sur le modèle alors actif ; les autres modèles
     commencent avec leurs valeurs par défaut. Le formulaire affiche et enregistre uniquement
     celles du modèle sélectionné. `LivretDocx` et l'aperçu PDF relisent cette même portée.
+  - **Aperçu PDF avec identité GEVES** : `format=pdf&inline=1` ouvre la page
+    `documents/pdf-preview.blade.php` (favicon, titre, monogramme, téléchargement),
+    qui intègre le PDF brut via `raw=1`. Le téléchargement `format=pdf` reste direct.
+    `public/favicon.ico` contient les mêmes icônes UK que les favicons PNG pour
+    les navigations sans page HTML ; `BrandedPdf` renseigne les métadonnées des
+    PDF serveur (livre, attestations, reçus).
 - **Remboursement → révocation des attestations** : une attestation atteste d'un droit
   acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
   `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste

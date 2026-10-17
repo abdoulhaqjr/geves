@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Documents\AttestationCertifier;
 use App\Documents\AttestationVars;
+use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
@@ -123,10 +124,10 @@ class AttestationController extends Controller
         $w = (int) $layout['width'];
         $h = (int) $layout['height'];
 
-        return Pdf::loadView('pdf.attestation-template', [
+        return BrandedPdf::stamp(Pdf::loadView('pdf.attestation-template', [
             'attestation' => $attestation,
             'canvas' => $canvas,
-        ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
+        ])->setPaper([0, 0, $w * 0.75, $h * 0.75]), 'Attestation · '.$attestation->recipient_name)
             ->download('attestation-'.$attestation->uuid.'.pdf');
     }
 
