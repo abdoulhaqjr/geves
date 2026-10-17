@@ -4291,6 +4291,14 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 
 - **Livewire 4** : ne pas nommer une action `transition` (réservé) ni une variable de
   vue `slots` (injectée par Livewire).
+- ⚠️ **Une variable de `foreach` ÉCRASE une fermeture du même nom, et l'écrasement
+  SURVIT à la boucle.** `DocumentController::livretViewData()` déclare
+  `$a = fn (string $key) => LivretAppearance::get(...)`, puis une boucle plus bas
+  parcourait les auteurs dans `$a`. Après elle, `$a('cover_logo')` appelait un
+  tableau : « Array callback must have exactly two elements », et **l'aperçu du
+  livret comme son PDF tombaient en 500 dès qu'une communication portait un
+  auteur** - c'est-à-dire toujours. Une fermeture d'une lettre est une invitation
+  à la collision : nommer les deux, et jamais pareil.
 - **Colonnes `nullable` traitées comme « 0 »** (`slots.submission_id`, `revision_of`) :
   forcer `=> 0` à la création, un modèle fraîchement `create()` ne reflète pas les
   défauts SQL en mémoire.

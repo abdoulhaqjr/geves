@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
@@ -399,22 +400,52 @@ it('persiste l’apparence du livre (typographie, couleurs, page de garde)', fun
     $staff = adminStaff();
     $event = openEdition();
 
-    $this->actingAs($staff, 'web')->post(route('admin.documents.livret.apparence'), [
+    // ⚠️ **Le formulaire poste le MODÈLE ACTIF** depuis « Isoler l'apparence du
+    // livre par modèle actif » : l'apparence appartient désormais à un modèle, et
+    // l'action refuse d'enregistrer si celui de la page n'est plus celui de la
+    // base - deux onglets ouverts suffiraient sinon à écrire l'apparence d'un
+    // modèle sur un autre. Ce cas ne le postait pas, donc rien n'était enregistré.
+    //
+    // ⚠️ Et ce refus-là **n'est pas une erreur de validation** : il part en message
+    // flash. `assertSessionHasNoErrors()` ne le voit pas - le cas restait vert
+    // jusqu'à l'assertion finale, qui accusait le stockage au lieu du refus. On
+    // éprouve donc aussi l'absence de refus.
+    $reponse = $this->actingAs($staff, 'web')->post(route('admin.documents.livret.apparence'), [
         'event_id' => $event->id,
+        'livretModel' => LivretAppearance::activeModel($event),
         'livretFontBody' => 'Georgia',
+        'livretFontHead' => 'Jost',
         'livretSizeBody' => '12',
+        'livretSizeCover' => '24',
+        'livretSizeAxis' => '16',
+        'livretSizeAbstract' => '12',
+        'livretSizeAuthors' => '10',
+        'livretLineHeight' => '1.15',
         'livretColorPrimary' => '#123456',
+        'livretColorSecondary' => '#009933',
+        'livretAlignTitles' => 'Centré',
+        'livretAlignAxis' => 'Centré',
+        'livretAlignAuthors' => 'Centré',
         'livretAlignBody' => 'Gauche',
         'livretCoverMention' => 'Livre des résumés - UK',
         'livretNumber' => '1',
-    ])->assertSessionHasNoErrors();
+    ]);
+
+    $reponse->assertSessionHasNoErrors();
+    expect(session('ukc_error'))->toBeNull();
 
     $event = $event->fresh();
-    expect(EventSettings::get($event, 'livret.font_body'))->toBe('Georgia');
-    expect((int) EventSettings::get($event, 'livret.size_body'))->toBe(12);
-    expect(EventSettings::get($event, 'livret.color_primary'))->toBe('#123456');
-    expect(EventSettings::get($event, 'livret.cover_mention'))->toBe('Livre des résumés - UK');
-    expect((bool) EventSettings::get($event, 'livret.number_abstracts'))->toBeTrue();
+
+    // ⚠️ **L'apparence est rangée PAR MODÈLE** (`livret.appearances.<modèle>`)
+    // depuis « Isoler l'apparence du livre par modèle actif » : chaque modèle
+    // garde la sienne. Ce cas lisait encore les clés plates `livret.font_body`,
+    // qui ne sont plus écrites - il mesurait donc l'ancien rangement, pas le
+    // réglage. On relit par la source de vérité, celle que le rendu emploie.
+    expect(LivretAppearance::get($event, 'font_body'))->toBe('Georgia');
+    expect((int) LivretAppearance::get($event, 'size_body'))->toBe(12);
+    expect(LivretAppearance::get($event, 'color_primary'))->toBe('#123456');
+    expect(LivretAppearance::get($event, 'cover_mention'))->toBe('Livre des résumés - UK');
+    expect((bool) LivretAppearance::get($event, 'number_abstracts'))->toBeTrue();
 });
 
 it('applique les réglages d’apparence au .docx (mention de couverture + numérotation)', function () {

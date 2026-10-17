@@ -146,11 +146,19 @@ class DocumentController extends Controller
             foreach ($submissions as $s) {
                 $n++;
                 $ref = trim((string) $s->ref_code) ?: '#'.$n;
-                foreach (collect($s->authors ?? []) as $a) {
+                // ⚠️ **La variable de boucle ne s'appelle PAS `$a`** : c'est le nom
+                // de la fermeture qui lit l'apparence du livre, déclarée plus haut
+                // dans la MÊME portée. Un `foreach` l'écrase - et ce n'est pas une
+                // ombre passagère, elle reste écrasée après la boucle : plus loin,
+                // `$a('cover_logo')` appelait alors un tableau d'auteur, « Array
+                // callback must have exactly two elements », et l'aperçu du livret
+                // comme son PDF tombaient en 500 dès qu'une communication portait
+                // un auteur - c'est-à-dire toujours.
+                foreach (collect($s->authors ?? []) as $auteur) {
                     // ⚠️ Casse SELON LE STYLE, via la source unique partagée avec le
                     // .docx (majuscules pour default/fss, « NOM Prénom » tel quel pour
                     // general) - ne pas remettre un mb_strtoupper inconditionnel ici.
-                    $name = LivretDocx::authorCase((string) ($a['name'] ?? ''), $general);
+                    $name = LivretDocx::authorCase((string) ($auteur['name'] ?? ''), $general);
                     if ($name !== '') {
                         $authorIndex[$name][] = $ref;
                     }
