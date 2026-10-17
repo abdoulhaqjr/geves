@@ -506,6 +506,11 @@ class ColloqueAvenirSeeder extends Seeder
         // Module Formations : une formation publiée, deux formateurs, des inscrits.
         $this->buildFormation($event, $start);
 
+        // Comités (supervision, scientifique, organisation) : alimentent la section
+        // « commissions » du livret, dont le TABLEAU du comité d'organisation
+        // (modèle « Document général du colloque »).
+        $this->buildCommittees($event);
+
         // Un communicant accepté qui n'a PAS réglé : le cas d'essai du paiement.
         $this->buildCommunicantNonRegle($event);
 
@@ -547,6 +552,70 @@ class ColloqueAvenirSeeder extends Seeder
      * comptent les 200 communications et vérifient que les acceptées sont toutes
      * planifiées. Celle-ci ne l'est pas, et n'a pas à l'être.
      */
+    /**
+     * Comités de démonstration du colloque « Avenir durable ». Idempotent et
+     * STRICTEMENT scopé à l'événement passé (jamais un autre colloque) : on efface
+     * puis recrée les membres de CE seul événement. Le comité d'organisation porte
+     * téléphone + qualité pour alimenter le tableau du livret « Document général ».
+     */
+    public function buildCommittees(Event $event): void
+    {
+        $event->committeeMembers()->delete();
+
+        $supervision = [
+            ['Professeur', 'Komla ADJALO', 'Université de Kara, Chimie (Togo)'],
+            ['Professeur', 'Bertrand DOSSOU', 'Recteur de l’Université de Parakou (Bénin)'],
+            ['Professeur', 'Nasser BABA', 'Université de Parakou, Agro-sociologie (Bénin)'],
+            ['Professeur', 'Yvette ONIBON', 'Université de Parakou, Sociologie (Bénin)'],
+            ['Monsieur', 'Egbaou ASSOTE', 'Secrétariat général (Togo)'],
+        ];
+
+        $scientifique = [
+            ['Professeur', 'Komla ADJALO', 'Université de Kara, Chimie (Togo)'],
+            ['Professeur', 'Dodzi KOKOU', 'Université de Lomé, Droit (Togo)'],
+            ['Professeur', 'Kokou TCHARIE', 'Université de Kara, Mathématiques (Togo)'],
+            ['Professeur', 'Adama KPODAR', 'Université de Lomé, Droit public (Togo)'],
+            ['Professeur', 'Larry AMIN', 'Université de Kara, Littérature américaine (Togo)'],
+            ['Professeur', 'Messanvi GBEASSOR', 'Université de Lomé, Physiologie animale (Togo)'],
+            ['Professeur', 'Padabé KADOUZA', 'Université de Kara, Géographie agraire (Togo)'],
+            ['Madame', 'Emeline ASSEDE (MC)', 'Université de Parakou, Écologie (Bénin)'],
+            ['Monsieur', 'Bawa KAMMAMPOAL (MC)', 'Université de Kara, Littérature africaine (Togo)'],
+            ['Monsieur', 'Komlan ALEMAWO (MCA)', 'Université de Kara, Droit privé (Togo)'],
+        ];
+
+        // Comité d'organisation : [nom, grade, téléphone, e-mail, qualité].
+        $organisation = [
+            ['Tchaa PALI', 'PT', '+228 90 06 05 76', 'president.co@colloque.test', 'Président'],
+            ['Honoré BIAOU', 'PT', '+229 94 15 04 85', 'vp1.co@colloque.test', '1er Vice-président'],
+            ['Kwami WONYRA', 'MCA', '+228 90 01 32 09', 'vp2.co@colloque.test', '2e Vice-président'],
+            ['Mikémina PILO', 'MCA', '+228 92 86 69 38', 'rapporteur1.co@colloque.test', '1er Rapporteur'],
+            ['Doman GNOUFOUGOU', 'MCA', '+228 90 22 14 07', 'rapporteur2.co@colloque.test', '2e Rapporteur'],
+            ['Assogba GUEZERE', 'MC', '+228 91 14 20 26', 'tresorier.co@colloque.test', 'Trésorier'],
+            ['Awa KODJO', 'MA', '+228 90 55 95 87', 'logistique.co@colloque.test', 'Commission logistique'],
+            ['Kofi MENSAH', 'MA', '+228 96 47 77 60', 'accueil.co@colloque.test', 'Commission accueil'],
+        ];
+
+        $ordre = 0;
+        foreach ($supervision as [$grade, $name, $inst]) {
+            $event->committeeMembers()->create([
+                'role' => 'supervision', 'person_name' => $name, 'person_title' => $grade,
+                'institution' => $inst, 'ordre' => $ordre++,
+            ]);
+        }
+        foreach ($scientifique as [$grade, $name, $inst]) {
+            $event->committeeMembers()->create([
+                'role' => 'scientifique', 'person_name' => $name, 'person_title' => $grade,
+                'institution' => $inst, 'ordre' => $ordre++,
+            ]);
+        }
+        foreach ($organisation as [$name, $grade, $phone, $email, $qualite]) {
+            $event->committeeMembers()->create([
+                'role' => 'organisation', 'person_name' => $name, 'person_title' => $grade,
+                'phone' => $phone, 'email' => $email, 'qualite' => $qualite, 'ordre' => $ordre++,
+            ]);
+        }
+    }
+
     private function buildCommunicantNonRegle(Event $event): void
     {
         $user = $this->user(self::COMPTE_NON_REGLE, 'Abdoul', 'TOURE');
@@ -805,11 +874,20 @@ class ColloqueAvenirSeeder extends Seeder
             return;
         }
 
+        // Nom d'auteur « NOM Prénom » du livre (nom de famille en capitales), construit
+        // depuis le compte - le nom du compte, lui, reste « Prénom Nom ».
+        $authorName = function (User $u): string {
+            $last = trim((string) $u->last_name);
+            $first = trim((string) $u->first_name);
+
+            return $last === '' && $first === '' ? trim((string) $u->name) : trim(mb_strtoupper($last, 'UTF-8').' '.$first);
+        };
+
         foreach ($signataires as $i => $ligne) {
             $submission = $ligne['submission'];
 
             $auteurs = [[
-                'name' => $ligne['user']->name,
+                'name' => $authorName($ligne['user']),
                 'email' => $ligne['user']->email,
                 'affiliation' => 'Université de Kara',
                 'corresponding' => true,
@@ -819,7 +897,7 @@ class ColloqueAvenirSeeder extends Seeder
             foreach ([1, 2] as $pas) {
                 $co = $signataires[($i + $pas) % $total];
                 $auteurs[] = [
-                    'name' => $co['user']->name,
+                    'name' => $authorName($co['user']),
                     'email' => $co['user']->email,
                     'affiliation' => 'Université de Kara',
                     'corresponding' => false,

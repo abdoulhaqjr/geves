@@ -29,12 +29,15 @@ class AttestationVars
             // [recipient.role]…) : sans elles, ses jetons restaient vides.
             'theme' => (string) ($event?->theme ?? ''),
             'dates' => $event?->dateRangeLabel() ?? '',
-            'institution' => (string) ($attestation->participant?->institution ?? ''),
+            // Affiliation et civilité FIGÉES à l'émission (meta) : une attestation
+            // ne doit pas changer si le profil est modifié après coup. Repli sur la
+            // valeur en direct pour les attestations émises avant ce gel.
+            'institution' => (string) ($meta['recipient_institution'] ?? $attestation->participant?->institution ?? ''),
             'role' => (string) ($attestation->participant?->roleLabel() ?? ''),
-            // Civilité réelle du bénéficiaire (M. / Mme / Mlle), lue sur son compte.
+            // Civilité réelle du bénéficiaire (M. / Mme / Mlle), figée à l'émission.
             // data_get : la relation user est nullable au runtime (Larastan la croit
             // non-nulle → `?->` déclencherait nullsafe.neverNull).
-            'civility' => (string) (data_get($attestation, 'participant.user.civility') ?? ''),
+            'civility' => (string) ($meta['recipient_civility'] ?? data_get($attestation, 'participant.user.civility') ?? ''),
             'name' => (string) $attestation->recipient_name,
             'type' => mb_strtolower($attestation->typeLabel()),
             // Date rédigée en toutes lettres (« 12 octobre 2026 »), jamais 12/10/2026 :

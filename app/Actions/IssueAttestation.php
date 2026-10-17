@@ -69,6 +69,15 @@ class IssueAttestation
                 ->take(2)->values()->all();
         }
 
+        // Identité du bénéficiaire FIGÉE à l'émission, au même titre que
+        // `recipient_name` : la civilité et l'affiliation IMPRIMÉES ne doivent plus
+        // bouger si le profil change ensuite (une attestation est un document signé
+        // qui dit ce qu'il disait le jour de sa délivrance). `eventIdentity()`
+        // respecte l'instantané d'archivage s'il existe, sinon lit en direct.
+        $identity = $participant->eventIdentity();
+        $meta['recipient_civility'] = $identity['civility'];
+        $meta['recipient_institution'] = $identity['institution'];
+
         // uuid généré par AttestationObserver.
         $attestation = Attestation::create([
             'event_id' => $participant->event_id,
@@ -78,7 +87,8 @@ class IssueAttestation
             'formation_id' => $formation?->id,
             'recipient_name' => $participant->full_name,
             'recipient_email' => $participant->email,
-            'meta' => $meta ?: null,
+            // $meta porte toujours au moins l'identité figée (civilité/affiliation).
+            'meta' => $meta,
             'revoked' => false,
             'issued_at' => now(),
         ]);

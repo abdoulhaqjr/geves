@@ -64,9 +64,9 @@
       <div class="panel-view" id="panel-ai">
         <div class="ed-panel-head">Assistant IA</div>
         <div class="ed-panel-body">
-          <p class="ly-meta">Décrivez le badge « {{ $scope }} » souhaité (couleurs, photo, QR…). Ce modèle sera utilisé pour les destinataires de cette catégorie.</p>
+          <p class="ly-meta">Décrivez le badge « {{ $scope }} » souhaité (couleurs, photo, QR, disposition…). L'assistant part du cadre officiel (logos UK x Parakou, QR, jetons) et l'adapte à votre consigne. Vérifiez le résultat avant d'enregistrer ; ce modèle servira aux destinataires de cette catégorie.</p>
           <div class="ai-box">
-            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge {{ $scope }}, bandeau bleu UK, photo ronde, nom en grand, QR en bas, référence UKC-2026-…"></textarea>
+            <textarea id="aiPrompt" rows="8" placeholder="Ex. : Badge {{ $scope }} avec photo ronde sous les logos, nom du porteur en grand et en bleu, fonction en dessous, thème du colloque en capitales, pictogrammes lieu et dates en bas, QR dans le coin bas-droit."></textarea>
             <div class="ai-drop" id="aiDrop">Image de référence<br><span style="font-size:11px;">PNG, JPG, WebP - max 8 Mo</span></div>
             <input type="file" id="aiFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
             <div id="aiFileList"></div>

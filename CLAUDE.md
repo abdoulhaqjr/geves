@@ -1148,6 +1148,47 @@ paiement (`pay`), inscription à une formation.
   main (corriger une décision, émettre une attestation oubliée, rembourser). Leurs
   droits restent portés par le RBAC par édition.
 - Tests : `tests/Feature/ArchivedEditionLockTest.php`.
+
+### Identité d'événement FIGÉE à l'archivage (documents authentiques)
+
+Les badges se dessinent **en direct** depuis le compte (nom, photo, affiliation…) :
+sans gel, une correction de profil **après la clôture** retouchait rétroactivement
+les badges d'un événement terminé (badges erronés, attestations incohérentes). À
+l'**archivage** (`status = archived`, le même déclencheur que `EditionLock`), on
+**gèle** l'identité des participants.
+
+- **Instantané par participant** : `participants.meta['identity']` (nom, civilité,
+  grade, affiliation, téléphone, e-mail, `photo_path`), écrit par
+  **`App\Actions\FreezeEventIdentities`**. La **photo est RECOPIÉE** dans
+  `event-identity/{event}/{participant}.ext` (disque public) : sans copie, une
+  suppression/un remplacement ultérieur de la photo de profil casserait le badge
+  gelé.
+- **Déclencheur = hook sur le modèle `Event`** (`booted()` → `updated`, transition
+  vers `archived`) : couvre TOUT chemin (formulaire, import, commande), synchrone
+  et tolérant (un échec de gel n'empêche pas l'archivage). ⚠️ **Écrase** l'instantané
+  existant à chaque archivage → désarchiver / corriger / ré-archiver **applique** la
+  correction. Regel manuel : `php artisan events:freeze-identities {event?}`.
+- **Résolveur unique = `Participant::eventIdentity()`** (et `displayName()` /
+  `displayInstitution()` / `displayPhotoUrl()`) : l'instantané s'il existe
+  (`isIdentityFrozen()`), sinon le direct (`liveIdentity()` : compte d'abord, repli
+  colonnes du participant). ⚠️ **Tous les rendus de badge lisent ce résolveur** -
+  `BadgeCatalog::recipients()`/`forAccount()`/`withCurrentAccountNames()` ET
+  `Account\DocumentController::renderBadge()` (qui lisait nom/photo en direct). Avant
+  archivage, `displayName()` == l'ancien `accountName($user)` → comportement inchangé.
+- ⚠️ **Les ATTESTATIONS figent leur identité à l'ÉMISSION, pas à l'archivage** : un
+  document signé dit ce qu'il disait le jour de sa délivrance. `recipient_name` était
+  déjà une colonne figée (et c'est elle qui est **signée**, cf. `AttestationCertifier`) ;
+  `IssueAttestation` fige désormais aussi **civilité + affiliation** dans `meta`
+  (`recipient_civility`/`recipient_institution`), et `AttestationVars` les lit depuis
+  `meta` (repli direct pour les attestations antérieures). Indépendant de l'instantané
+  du participant.
+- ⚠️ **Le LIVRE DES RÉSUMÉS n'en dépend pas** : `LivretDocx` lit les auteurs **saisis
+  à la soumission** (`submission.authors`), pas le compte - il est donc déjà figé à la
+  soumission (seule une harmonisation IA de casse peut s'appliquer).
+- ⚠️ **`?->` INTERDIT sur `Participant::user`** dans ce code : Larastan type la
+  relation BelongsTo comme non-nulle → `$user?->x` déclenche `nullsafe.neverNull`. On
+  passe par une branche explicite `if ($user)` (cf. `liveIdentity()`).
+- Tests : `tests/Feature/EventIdentityFreezeTest.php`.
 - ⚠️ **Téléphone = identifiant UNIQUE** : `users.phone` porte un index unique, et
   **`App\Support\Phone::normalize()`** en donne la forme canonique (séparateurs
   retirés, `+` conservé ; **aucun indicatif deviné**). La normalisation est
@@ -1271,6 +1312,11 @@ paiement (`pay`), inscription à une formation.
   manuellement**, passerelle `manual`, reçu numéroté). Montants via
   `Fees::resolveAmount()`, grades via `ParticipantTypes::all()`. Seeders idempotents ;
   le seed prend ~45 s (200 comptes). Un test de garde vérifie les 200 et les 93 %.
+  ⚠️ **Les titres de communication NE portent PAS de numéro « (N) » en suffixe**
+  (`title()` rend l'intitulé seul, l'unicité vient du `ref_code` `AVD-###`), et le co-auteur
+  non inscrit a une affiliation **propre** (« Laboratoire associé », jamais « (hors plateforme) ») :
+  ces deux artefacts ressortaient tels quels dans le livret/programme et ne figurent pas dans le
+  document de référence.
   ⚠️ Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque,
   DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
   - **Module Formations** semé (`ColloqueAvenirSeeder::buildFormation()`) :
@@ -3771,6 +3817,22 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   exigeait « aucun `rect` » tombait donc sur lui : la garde distingue désormais les
   deux (aucun `rect` vert, aucun dans la bande d'en-tête, et exactement un
   séparateur `line-h`).
+  - ⚠️ **Assistant IA du concepteur = `GenerateDocumentLayout::instruction()`**, la
+    consigne envoyée au modèle. Elle décrit TOUT ce que le concepteur sait rendre
+    (types `text`/`image`/`photo`/`qr`/`rect`/`signatures`, mise en forme du texte,
+    filets/coins, `bg_image`), liste les **clés de polices** (`LayoutSanitizer::FONTS`),
+    les **bons jetons** par `kind` (palette `[recipient.name]`…, pas de valeurs en dur),
+    les **chemins des assets réels** (cadre `badge-default-bg.png`, logos UK/Parakou,
+    pictogrammes), et surtout **injecte la maquette officielle du type**
+    (`LayoutSanitizer::default($kind, $type)`) comme BASE à améliorer - le modèle garde
+    le cadre, les logos et le QR au lieu de repartir d'une page blanche. ⚠️ Ajouter une
+    capacité au concepteur = l'ajouter aussi à cette consigne, sinon l'IA ne la connaît
+    pas. Même endpoint `admin.documents.templates.generate` pour badge ET attestation.
+    Gardes : `BadgeAiGenerationTest`.
+  - ⚠️ **Repli du cadre quand l'IA est muette** : `LayoutSanitizer::sanitize()` retombe
+    sur les éléments **ET le `bg_image`** de la maquette par défaut dès que l'IA ne rend
+    aucun élément exploitable - sinon les éléments par défaut flottaient sur un fond blanc
+    parce que le JSON de l'IA avait omis `bg_image`.
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique
@@ -4517,7 +4579,7 @@ images à `color` optionnel ; le designer affiche une teinte par masque et
 
 Le designer expose « Épaisseur » pour les lignes horizontales et verticales ;
 `rect.shape` garde leur orientation dans le modèle et la valeur de `h` ou `w`
-porte l’épaisseur exacte (1 à 40 px). Les pictogrammes du pied sont désormais
+porte l'épaisseur exacte (1 à 40 px). Les pictogrammes du pied sont désormais
 des SVG vectoriels recolorables. `2026_10_15_000700_use_vector_badge_icons`
 convertit les sources PNG des modèles enregistrés, et `LayoutRenderer` conserve
 la prise en charge des anciens PNG pour les documents historiques.

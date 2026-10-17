@@ -230,7 +230,7 @@ class TemplateDesignerController extends Controller
         } catch (\Throwable $e) {
             report($e);
 
-            return response()->json(['error' => 'Échec de la génération : '.$e->getMessage()]);
+            return response()->json(['error' => 'Échec de la génération : '.$e->getMessage()], 422);
         }
 
         return response()->json([

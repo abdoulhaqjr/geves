@@ -103,18 +103,26 @@ class LayoutSanitizer
             $elements[] = $e;
         }
 
-        if ($elements === []) {
-            $elements = $default['elements'];
-        }
-
         // ⚠️ L'image de fond n'était pas enregistrée : une attestation dessinée
         // sur un fond illustré ressortait sur du blanc.
+        $bgImage = self::src($raw['bg_image'] ?? '');
+
+        $usedDefaultElements = $elements === [];
+        if ($usedDefaultElements) {
+            // Rien d'exploitable (IA muette, JSON vide) : on retombe sur la maquette
+            // officielle - ET son cadre. Sans ce second repli, les éléments par défaut
+            // flottaient sur un fond blanc parce que l'IA avait omis `bg_image`.
+            $elements = $default['elements'];
+            if ($bgImage === '') {
+                $bgImage = (string) ($default['bg_image'] ?? '');
+            }
+        }
+
         return [
             'width' => $w, 'height' => $h, 'bg' => $bg, 'accent' => $accent,
-            'bg_image' => self::src($raw['bg_image'] ?? ''),
-            'erase_default_rule' => $kind === 'badge'
-                && self::src($raw['bg_image'] ?? '') === '/img/badges/badge-default-bg.png'
-                && (bool) ($raw['erase_default_rule'] ?? false),
+            'bg_image' => $bgImage,
+            'erase_default_rule' => $kind === 'badge' && $bgImage === '/img/badges/badge-default-bg.png'
+                && (bool) ($raw['erase_default_rule'] ?? $usedDefaultElements),
             'elements' => $elements,
         ];
     }

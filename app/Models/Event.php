@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\FreezeEventIdentities;
 use App\Enums\EventPhase;
 use App\Enums\EventType;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,27 @@ class Event extends Model
     protected $guarded = ['id'];
 
     public const STATUSES = ['draft', 'open', 'closed', 'archived'];
+
+    /**
+     * À l'archivage (le moment où le dossier est figé, cf. EditionLock), on gèle
+     * l'identité des participants : les documents dessinés en direct (badges) ne
+     * suivront plus une modification de profil faite après la clôture. Hook sur le
+     * modèle (et non un contrôleur) pour couvrir TOUT chemin d'archivage - formulaire,
+     * import, commande. Synchrone et tolérant : l'échec du gel ne doit pas empêcher
+     * l'archivage (il est rejouable via `events:freeze-identities`).
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (Event $event): void {
+            if ($event->wasChanged('status') && $event->status === 'archived') {
+                try {
+                    app(FreezeEventIdentities::class)->handle($event);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        });
+    }
 
     protected function casts(): array
     {

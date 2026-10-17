@@ -53,9 +53,10 @@ class BadgeCatalog
         $badges = collect([[
             'type' => 'default',
             'recipient' => [
-                'name' => self::accountName($account),
+                // Identité figée si l'événement est archivé, sinon en direct.
+                'name' => $participant->displayName(),
                 'email' => (string) $participant->email,
-                'institution' => (string) $participant->institution,
+                'institution' => $participant->displayInstitution(),
                 'ref' => self::reference($event->id.'-'.$participant->id),
             ],
         ]]);
@@ -74,7 +75,8 @@ class BadgeCatalog
                     && trim($person['email']) !== ''
             );
             if ($recipient !== null) {
-                $recipient['name'] = self::accountName($account);
+                // Même personne que la participation : identité figée si archivé.
+                $recipient['name'] = $participant->displayName();
                 $badges->push(['type' => $type, 'recipient' => $recipient]);
             }
         }
@@ -115,16 +117,19 @@ class BadgeCatalog
                 ->with('user')
                 ->orderBy('last_name')->orderBy('first_name')->get()
                 ->map(fn (Participant $person) => [
-                    'name' => $person->user ? self::accountName($person->user) : $person->full_name,
+                    // Identité FIGÉE si l'événement est archivé (instantané du participant),
+                    // sinon l'identité en direct du compte. Un profil modifié après la
+                    // clôture ne retouche donc plus le badge de cet événement.
+                    'name' => $person->displayName(),
                     'email' => (string) $person->email,
-                    'institution' => (string) $person->institution,
+                    'institution' => $person->displayInstitution(),
                     'ref' => self::reference($event->id.'-'.$person->id),
                     // Le calque photo est facultatif dans le modèle du designer.
-                    'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
-                    // ⚠️ La préférence vient d'une colonne JSON : elle n'a aucun type
-                    // garanti. On la ramène à une chaîne ici, là où elle entre dans le
-                    // destinataire - sinon « sans photo » se comparerait à une valeur
-                    // dont personne ne sait la forme.
+                    // ⚠️ Identité d'événement (figée à l'archivage) via displayPhotoUrl().
+                    'photo' => $person->displayPhotoUrl(),
+                    // ⚠️ La préférence vient d'une colonne JSON : aucun type garanti.
+                    // On la ramène à une chaîne ici (cf. type de retour photo_mode: string) -
+                    // sinon « sans photo » se comparerait à une valeur de forme inconnue.
                     'photo_mode' => (string) (((array) (($person->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with'),
                 ])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
         }
@@ -219,14 +224,20 @@ class BadgeCatalog
             $person = $sansCompte($person);
             $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
             if ($account) {
-                $person['name'] = self::accountName($account);
-                $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
-                // ⚠️ `data_get` plutôt que `?->meta` : la collection d'inscriptions rend
-                // bien `null` pour un compte sans inscription à CET événement, mais
-                // l'analyse statique type `Collection::get()` comme non-nul et refuse
-                // alors l'opérateur de sûreté (cf. CLAUDE.md, pièges Larastan).
-                $preferences = (array) data_get($participants->get($account->id), 'meta.badge_photo_preferences', []);
-                $person['photo_mode'] = (string) ($preferences[$type] ?? 'with');
+                $participation = $participants->get($account->id);
+                if ($participation) {
+                    // La personne est inscrite : on suit son identité d'événement,
+                    // figée à l'archivage (sinon l'identité du compte ci-dessous).
+                    $person['name'] = $participation->displayName();
+                    $person['photo'] = $participation->displayPhotoUrl();
+                    $prefs = (array) (($participation->meta ?? [])['badge_photo_preferences'] ?? []);
+                } else {
+                    $person['name'] = self::accountName($account);
+                    $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
+                    $prefs = [];
+                }
+                // ⚠️ Préférence JSON → chaîne garantie (cf. type de retour photo_mode: string).
+                $person['photo_mode'] = (string) ($prefs[$type] ?? 'with');
             }
 
             return $person;

@@ -23,7 +23,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -158,7 +157,10 @@ class DocumentController extends Controller
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
 
-        $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
+        // Identité d'événement : figée si l'événement est archivé (instantané du
+        // participant), sinon en direct. Un profil modifié après la clôture ne
+        // retouche donc plus le badge de cet événement.
+        $photoSrc = $participant->displayPhotoUrl();
         $supportsPhoto = BadgeLayout::hasPhoto($layout);
         $photoModes = (array) (($participant->meta ?? [])['badge_photo_preferences'] ?? []);
         $photoMode = ($photoModes[$type] ?? 'with') === 'without' ? 'without' : 'with';
@@ -186,9 +188,10 @@ class DocumentController extends Controller
         }, (array) ($layout['elements'] ?? []));
 
         $dates = $event->dateRangeLabel() ?? '';
-        // Le profil du compte est la source actuelle du nom sur tous ses badges ;
-        // les fiches de séance et d'inscription conservent parfois l'ancien nom.
-        $name = BadgeCatalog::accountName($account);
+        // Nom et affiliation d'événement : figés si l'événement est archivé, sinon
+        // le profil du compte (source actuelle sur tous ses badges) ; les fiches de
+        // séance et d'inscription conservent parfois l'ancien nom.
+        $name = $participant->displayName();
         $institution = $recipient['institution'];
 
         $vars = [

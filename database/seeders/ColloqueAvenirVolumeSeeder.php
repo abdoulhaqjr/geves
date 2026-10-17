@@ -182,7 +182,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'participant_id' => $participant->id,
                         'access_token' => Str::random(40),
                         'title' => $this->title($n, $track),
-                        'authors' => [['name' => $first.' '.$last, 'email' => $email, 'affiliation' => $institution, 'corresponding' => true]],
+                        'authors' => [['name' => $this->authorName($first, $last), 'email' => $email, 'affiliation' => $institution, 'corresponding' => true]],
                         'abstract' => $this->abstract($track),
                         'keywords' => 'innovation, durabilité, Afrique de l’Ouest',
                         'track' => $track,
@@ -195,7 +195,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 $created++;
                 $roster[$i] = [
                     'user' => $user, 'submission' => $submission,
-                    'name' => $first.' '.$last, 'email' => $email, 'affiliation' => $institution,
+                    'name' => $this->authorName($first, $last), 'email' => $email, 'affiliation' => $institution,
                 ];
 
                 if ($isPaid) {
@@ -515,10 +515,12 @@ class ColloqueAvenirVolumeSeeder extends Seeder
             // Une communication sur trois cite quelqu'un qui n'a pas de compte.
             if (($i + 1) % 3 === 0) {
                 $auteurs[] = [
-                    'name' => self::FIRST_NAMES[($i + 5) % count(self::FIRST_NAMES)]
-                        .' '.self::LAST_NAMES[($i + 3) % count(self::LAST_NAMES)],
+                    'name' => $this->authorName(
+                        self::FIRST_NAMES[($i + 5) % count(self::FIRST_NAMES)],
+                        self::LAST_NAMES[($i + 3) % count(self::LAST_NAMES)],
+                    ),
                     'email' => sprintf('coauteur-externe%03d@example.org', $i + 1),
-                    'affiliation' => 'Laboratoire associé (hors plateforme)',
+                    'affiliation' => 'Laboratoire associé',
                     'corresponding' => false,
                 ];
                 $etats[] = ['role' => 'coauthor', 'user' => null, 'match' => null, 'status' => 'invited'];
@@ -650,6 +652,16 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         }
     }
 
+    /**
+     * Nom d'auteur au format du livre de référence : « NOM Prénom » - nom de famille
+     * en CAPITALES, prénom en casse normale (c'est ce qu'affiche le livret, pas tout
+     * en majuscules). Le nom du COMPTE reste « Prénom Nom ».
+     */
+    private function authorName(string $first, string $last): string
+    {
+        return trim(mb_strtoupper(trim($last), 'UTF-8').' '.trim($first));
+    }
+
     private function title(int $n, string $track): string
     {
         $theme = trim(Str::after($track, '- ')) ?: 'sciences';
@@ -661,7 +673,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
             'Formation, recherche et %s : le rôle des universités',
         ];
 
-        return sprintf($angles[$n % count($angles)], mb_strtolower($theme)).' ('.$n.')';
+        return sprintf($angles[$n % count($angles)], mb_strtolower($theme));
     }
 
     private function abstract(string $track): string

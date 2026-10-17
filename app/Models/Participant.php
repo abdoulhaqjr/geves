@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Participant : présence d'une personne sur un événement (auteur, auditeur,
@@ -148,6 +149,114 @@ class Participant extends Model
     public function getFullNameAttribute(): string
     {
         return trim($this->first_name.' '.$this->last_name);
+    }
+
+    /**
+     * L'identité affichée sur les documents de cet événement est-elle GELÉE ?
+     *
+     * Un instantané (`meta['identity']`) est pris à l'archivage de l'événement
+     * (cf. FreezeEventIdentities). Tant qu'il existe, les documents dessinés en
+     * direct (badges) lisent l'instantané plutôt que le compte - une correction
+     * de profil (nom, photo, grade, affiliation…) ne retouche donc plus un
+     * événement clôturé. Les attestations, elles, figent leur identité dès
+     * l'émission (colonnes + `meta`), indépendamment de cet instantané.
+     */
+    public function isIdentityFrozen(): bool
+    {
+        $snap = ($this->meta ?? [])['identity'] ?? null;
+
+        return is_array($snap) && $snap !== [];
+    }
+
+    /**
+     * Identité effective pour les documents de cet événement : l'instantané gelé
+     * s'il existe, sinon les valeurs « en direct ».
+     *
+     * @return array{name: string, civility: string, title: string, institution: string, phone: string, email: string, photo: string}
+     */
+    public function eventIdentity(): array
+    {
+        if ($this->isIdentityFrozen()) {
+            $snap = (array) (($this->meta ?? [])['identity']);
+            $photoPath = (string) ($snap['photo_path'] ?? '');
+
+            return [
+                'name' => (string) ($snap['name'] ?? ''),
+                'civility' => (string) ($snap['civility'] ?? ''),
+                'title' => (string) ($snap['title'] ?? ''),
+                'institution' => (string) ($snap['institution'] ?? ''),
+                'phone' => (string) ($snap['phone'] ?? ''),
+                'email' => (string) ($snap['email'] ?? ''),
+                'photo' => $photoPath !== '' ? Storage::url($photoPath) : '',
+            ];
+        }
+
+        return $this->liveIdentity();
+    }
+
+    /**
+     * Identité « en direct » : le compte lié d'abord (il porte le nom, la
+     * civilité et la photo réels), repli sur les colonnes du participant. C'est
+     * aussi ce qui est photographié dans l'instantané au gel.
+     *
+     * @return array{name: string, civility: string, title: string, institution: string, phone: string, email: string, photo: string, photo_path: string}
+     */
+    public function liveIdentity(): array
+    {
+        // ⚠️ On lit le compte lié SANS `?->` : Larastan type la relation BelongsTo
+        // comme non-nulle (alors qu'elle est nullable au runtime), donc `$user?->x`
+        // déclenche nullsafe.neverNull. On passe donc par une branche explicite.
+        $user = $this->user;
+
+        $name = $this->full_name;
+        $civility = '';
+        $grade = '';
+        $affiliation = '';
+        $userPhone = '';
+        $userEmail = '';
+        $photoPath = '';
+
+        if ($user) {
+            // Même règle d'affichage que BadgeCatalog::accountName().
+            $name = trim(trim((string) $user->first_name).' '.trim((string) $user->last_name))
+                ?: (trim((string) $user->name) ?: (string) $user->email);
+            $civility = (string) $user->civility;
+            $grade = (string) $user->grade;
+            $affiliation = (string) $user->affiliation;
+            $userPhone = (string) $user->phone;
+            $userEmail = (string) $user->email;
+            $photoPath = (string) $user->photo_path;
+        }
+
+        return [
+            'name' => $name,
+            'civility' => $civility,
+            // Le grade est capté PAR ÉVÉNEMENT (participant.title) ; repli sur le profil.
+            'title' => (string) ($this->title ?: $grade),
+            'institution' => (string) ($this->institution ?: $affiliation),
+            'phone' => (string) ($this->phone ?: $userPhone),
+            'email' => (string) ($this->email ?: $userEmail),
+            'photo' => $photoPath !== '' ? Storage::url($photoPath) : '',
+            'photo_path' => $photoPath,
+        ];
+    }
+
+    /** Nom affiché sur les documents de cet événement (gelé si l'événement l'est). */
+    public function displayName(): string
+    {
+        return $this->eventIdentity()['name'];
+    }
+
+    /** URL de la photo à imprimer sur le badge (gelée si l'événement l'est), '' si aucune. */
+    public function displayPhotoUrl(): string
+    {
+        return $this->eventIdentity()['photo'];
+    }
+
+    /** Affiliation affichée sur les documents de cet événement. */
+    public function displayInstitution(): string
+    {
+        return $this->eventIdentity()['institution'];
     }
 
     /** Au moins une communication acceptée (canonique) sur l'événement. */
