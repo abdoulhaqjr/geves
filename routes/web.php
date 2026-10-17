@@ -73,6 +73,7 @@ use App\Http\Controllers\Public\GescoController;
 use App\Http\Controllers\SessionEngagementController;
 use App\Http\Controllers\SessionPresenceApiController;
 use App\Http\Middleware\StampAccountSession;
+use App\Models\Event;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -367,7 +368,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/creer', [EventFormController::class, 'create'])->name('admin.evenements.create');
             Route::post('/editions/creer', [EventFormController::class, 'store'])->name('admin.evenements.store');
             // Anciennes URL de détail : ouvrir la page de modification sans exposer la route DELETE au navigateur.
-            Route::get('/editions/{event}', fn (\App\Models\Event $event) => redirect()->route('admin.evenements.edit', $event))
+            Route::get('/editions/{event}', fn (Event $event) => redirect()->route('admin.evenements.edit', $event))
                 ->name('admin.evenements.show');
             Route::post('/editions/ia-assist', [EventFormController::class, 'aiAssist'])->name('admin.evenements.ai-assist');
             Route::post('/editions/ia-assist-json', [EventFormController::class, 'aiAssistJson'])->name('admin.evenements.ai-assist-json');
