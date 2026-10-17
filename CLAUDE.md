@@ -4409,6 +4409,48 @@ leur clé dans `lang/en.json`. Les intitulés de catégorie et les noms de grade
 restent en français : ce sont des **données** saisies par l'organisation, pas
 des chaînes d'interface.
 
+### ⚠️ Parcours en 5 étapes : une classe CSS portée par deux composants (2026-10-17)
+
+**`.ukc-step` est défini DEUX fois, et le parcours héritait du mauvais.**
+`ukc.css` en fait une **ligne flex** (pastille à gauche, libellé à droite) pour
+les boîtes d'étape du tableau de bord et du dépôt de communication ; `public.css`
+en fait le **jalon vertical** du parcours de la page colloque. Le second
+neutralisait bien le fond, le cadre et les marges du premier - mais **pas son
+`display`**. Résultat à l'écran : la pastille, le titre et la précision des cinq
+étapes se rangeaient bout à bout sur **une seule ligne** (« 1 Compte Création &
+vérification 2 Soumission… »), traversée à mi-hauteur par le filet de liaison.
+Rien ne tombait : aucun cas ne lisait la feuille de style.
+
+⚠️ **Ce qu'une classe partagée impose, il faut le défaire en entier** - `display`
+compris, et pas seulement ce qui se voit dans le composant d'origine.
+
+⚠️ **Le filet relie deux pastilles VOISINES** (`.ukc-step + .ukc-step::before`,
+de `left: -50%` à `right: 50%`), il ne se tend plus d'un bord à l'autre du
+conteneur. `left: 10%; right: 10%` ne tombait sur le centre des pastilles
+extrêmes que pour **cinq** étapes exactement : en ajouter ou en retirer une le
+laissait flotter à côté d'elles.
+
+⚠️ **Sur mobile, le jalon est une GRILLE, pas une ligne flex** : en flex, la
+pastille, le titre et la précision sont trois frères de rang égal, donc trois
+colonnes - le même travers qu'en plein écran, en plus serré. La grille
+(`grid-template-columns: auto 1fr`, pastille sur `grid-row: 1 / span 2`) empile
+le texte en face de la pastille sans bloc enveloppant de plus. Et le filet s'y
+**redresse** au lieu de disparaître : empilées sans lui, les étapes ne se lisent
+plus comme un parcours mais comme une liste de services.
+
+⚠️ **Aucune étape n'est « active ».** La première portait la pastille pleine de
+l'étape en cours, sur une page **publique qui ne sait pas qui la lit** : elle
+annonçait « vous en êtes là » à quelqu'un qui n'a peut-être rien commencé, ou
+qui a déjà tout terminé - et qui par ailleurs ne doit rien voir de personnalisé
+ici (la page est cacheable en HTTP). Les cinq étapes **décrivent** le parcours ;
+c'est le tableau de bord qui y situe quelqu'un.
+
+Le balisage est une **liste ordonnée** (`<ol class="ukc-stepper">`), parce que
+l'ordre est tout le propos et que cinq `div` ne le portaient qu'à l'œil. Les
+chiffres des pastilles sont `aria-hidden` : la liste les dit déjà.
+
+Trois cas dans `PageColloquePubliqueTest.php` (feuille de style lue
+**commentaires retirés**, cf. `cssPublic()`), vérifiés par sabotage.
 ### ⚠️ UN SEUL chemin de règlement pour un co-auteur : son compte
 
 `/colloque/{slug}/co-auteur` est une **porte d'entrée**, plus un parcours de

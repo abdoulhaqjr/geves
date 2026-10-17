@@ -964,16 +964,72 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-callout p { font-size: 14.5px; color: rgba(255,255,255,0.85); margin-bottom: 20px; }
 
 /* ---- Colloque : Parcours (stepper) + Infos pratiques + Éditions ---- */
-.ukc-stepper { display: flex; justify-content: space-between; position: relative; max-width: 900px; margin: 0 auto; }
-.ukc-stepper::before { content: ''; position: absolute; top: 28px; left: 10%; right: 10%; height: 3px; background: var(--ukc-border); z-index: 0; }
-/* scopé à .ukc-stepper pour ne pas hériter du .ukc-step (box) du dashboard participant */
-.ukc-stepper .ukc-step { position: relative; z-index: 1; text-align: center; flex: 1; background: none; border: none; padding: 0; min-width: 0; }
-.ukc-stepper .ukc-step .circle { width: 56px; height: 56px; border-radius: 50%; background: #fff; border: 3px solid var(--ukc-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; font-size: 18px; color: var(--ukc-light); transition: all .2s; }
-.ukc-stepper .ukc-step.active .circle { border-color: var(--ukc-blue); background: var(--ukc-blue); color: #fff; box-shadow: 0 4px 14px rgba(34,62,164,0.3); }
-.ukc-stepper .ukc-step.active { background: none; }
-.ukc-stepper .ukc-step h4 { font-size: 13.5px; font-weight: 700; color: var(--ukc-text); }
-.ukc-stepper .ukc-step p { font-size: 12.5px; color: var(--ukc-light); margin-top: 2px; }
-@media (max-width: 600px) { .ukc-stepper { flex-direction: column; gap: 20px; } .ukc-stepper::before { display: none; } .ukc-stepper .ukc-step { display: flex; align-items: center; gap: 14px; text-align: left; } .ukc-stepper .ukc-step .circle { margin: 0; flex-shrink: 0; } }
+/* ⚠️ **`.ukc-step` est AUSSI la boîte d'étape du tableau de bord** (`ukc.css`) :
+   une LIGNE flex, pastille à gauche, libellé à droite. La remise à zéro qui suit
+   neutralisait son fond, son cadre et ses marges, mais PAS son `display` : la
+   pastille, le titre et la précision se rangeaient donc côte à côte sur une
+   seule ligne, les cinq étapes bout à bout, et le filet de liaison leur passait
+   au travers à mi-hauteur. Ce qu'une boîte impose, il faut le défaire en
+   ENTIER. */
+.ukc-stepper {
+  display: flex; align-items: flex-start; position: relative;
+  max-width: 900px; margin: 0 auto; padding: 0; list-style: none;
+}
+.ukc-stepper .ukc-step {
+  display: block; position: relative; flex: 1 1 0; min-width: 0;
+  text-align: center; background: none; border: none; border-radius: 0;
+  padding: 0; gap: 0; font-size: inherit; font-weight: inherit; color: inherit;
+}
+/* ⚠️ **Le filet relie DEUX pastilles voisines** : porté par l'étape de droite,
+   il court du centre de la précédente jusqu'au sien. Il suit donc le nombre
+   d'étapes, là où le filet unique tendu sur le conteneur (`left:10%; right:10%`)
+   tenait pour acquis qu'elles soient exactement cinq - en ajouter ou en retirer
+   une le laissait flotter à côté des pastilles. */
+.ukc-stepper .ukc-step + .ukc-step::before {
+  content: ''; position: absolute; top: 27px; left: -50%; right: 50%;
+  height: 2px; background: var(--ukc-border);
+}
+.ukc-stepper .ukc-step .circle {
+  position: relative; /* au-dessus du filet, que son fond interrompt */
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 2px solid rgba(34, 62, 164, .22);
+  font-weight: 800; font-size: 18px; color: var(--ukc-blue);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .05);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.ukc-stepper .ukc-step:hover .circle {
+  border-color: var(--ukc-blue); transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(34, 62, 164, .18);
+}
+.ukc-stepper .ukc-step h4 { font-size: 14.5px; font-weight: 700; color: var(--ukc-text); margin: 0; line-height: 1.3; }
+.ukc-stepper .ukc-step p { font-size: 12.5px; color: var(--ukc-light); margin: 5px auto 0; max-width: 140px; line-height: 1.45; text-wrap: balance; }
+@media (max-width: 860px) {
+  .ukc-stepper .ukc-step .circle { width: 48px; height: 48px; font-size: 16px; margin-bottom: 11px; }
+  .ukc-stepper .ukc-step + .ukc-step::before { top: 23px; }
+  .ukc-stepper .ukc-step h4 { font-size: 13px; }
+  .ukc-stepper .ukc-step p { font-size: 11.5px; max-width: 120px; }
+}
+@media (max-width: 600px) {
+  .ukc-stepper { flex-direction: column; gap: 22px; max-width: 420px; }
+  /* ⚠️ Une GRILLE, pas une ligne flex : en flex, la pastille, le titre et la
+     précision sont trois frères de RANG ÉGAL, donc trois colonnes - le même
+     travers qu'en plein écran, en plus serré. La grille donne à la pastille sa
+     colonne et deux rangées, et le texte s'empile en face sans qu'il faille
+     l'envelopper dans un bloc de plus. */
+  .ukc-stepper .ukc-step {
+    display: grid; grid-template-columns: auto 1fr;
+    align-items: center; column-gap: 16px; text-align: left;
+  }
+  .ukc-stepper .ukc-step .circle { grid-row: 1 / span 2; margin: 0; }
+  /* ⚠️ Le filet se REDRESSE au lieu de disparaître : empilées sans lui, les cinq
+     étapes ne se lisent plus comme un parcours mais comme une liste de services,
+     et l'ordre - qui est tout le propos - ne se voit plus. */
+  .ukc-stepper .ukc-step + .ukc-step::before {
+    top: -22px; left: 23px; right: auto; width: 2px; height: 22px;
+  }
+  .ukc-stepper .ukc-step p { margin: 3px 0 0; max-width: none; }
+}
 
 .ukc-practical { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
 .ukc-practical-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 24px 22px; }

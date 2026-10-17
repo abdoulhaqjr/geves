@@ -13,6 +13,45 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Parcours en 5 étapes de la page colloque : la mise en page reprise (2026-10-17)
+
+Le bloc « Votre parcours en 5 étapes » s'affichait **sur une seule ligne** :
+pastille, titre et précision de chaque étape bout à bout, les cinq étapes à la
+suite, le filet de liaison leur passant au travers à mi-hauteur.
+
+⚠️ **La cause : `.ukc-step` est défini deux fois.** `ukc.css` en fait une ligne
+flex (pastille à gauche, libellé à droite) pour les boîtes d'étape du tableau de
+bord ; `public.css` en fait le jalon du parcours. Le second neutralisait le
+fond, le cadre et les marges du premier mais **pas son `display`**. Ce qu'une
+classe partagée impose doit se défaire en ENTIER.
+
+Repris du même geste :
+
+- ⚠️ **Le filet relie deux pastilles voisines** au lieu de se tendre d'un bord à
+  l'autre du conteneur. `left: 10%; right: 10%` ne tombait sur le centre des
+  pastilles extrêmes que pour **cinq** étapes exactement.
+- ⚠️ **Sur mobile, le jalon est une grille**, pas une ligne flex : en flex, la
+  pastille, le titre et la précision sont trois frères de rang égal, donc trois
+  colonnes - le même travers, en plus serré. Et le filet s'y **redresse** au lieu
+  de disparaître : sans lui, les cinq étapes empilées ne se lisent plus comme un
+  parcours.
+- ⚠️ **Aucune étape n'est « active ».** La première portait la pastille pleine de
+  l'étape en cours, sur une page publique qui ne sait pas qui la lit : elle
+  annonçait « vous en êtes là » à quelqu'un qui n'a peut-être rien commencé, ou
+  qui a déjà tout terminé. Les cinq étapes décrivent le parcours, elles n'y
+  situent personne.
+- Le balisage est une **liste ordonnée** : l'ordre est tout le propos, et cinq
+  `div` ne le portaient qu'à l'œil.
+
+**Garde** : trois cas dans `PageColloquePubliqueTest.php`, qui lisent la feuille
+de style **commentaires retirés** - un commentaire n'applique rien. Les trois
+vérifiés par sabotage.
+
+⚠️ **Rien ne tombait avant**, parce que rien ne lisait la feuille de style de ce
+bloc : une mise en page cassée est muette tant qu'aucun cas ne la regarde.
+
+**1274 tests**, Pint et PHPStan sans erreur.
+
 ### Remise au vert : 8 erreurs d'analyse et 9 cas rouges (2026-10-17)
 
 `composer check` était rouge depuis une série de commits sur les badges. Rien

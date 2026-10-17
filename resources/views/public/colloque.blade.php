@@ -343,20 +343,29 @@
                 </section>
             @endif
 
-            {{-- Votre parcours en 5 étapes (fidèle au mockup : stepper) --}}
+            {{-- Votre parcours en 5 étapes (fidèle au mockup : stepper).
+                 ⚠️ C'est une LISTE ORDONNÉE, et l'ordre est tout le propos : un
+                 empilement de `div` ne le disait qu'à l'œil, et ne le disait
+                 plus du tout dès que la feuille de style flanchait.
+                 ⚠️ **Aucune étape n'est « active ».** La première portait la
+                 pastille pleine de l'étape en cours, sur une page PUBLIQUE qui
+                 ne sait pas qui la lit : elle annonçait « vous en êtes là » à
+                 quelqu'un qui n'a peut-être rien commencé, ou qui a déjà tout
+                 terminé. Les cinq étapes DÉCRIVENT le parcours, elles n'y
+                 situent personne - c'est le tableau de bord qui le fait. --}}
             <section id="parcours" style="scroll-margin-top:72px;">
                 <div class="ukc-block-head">
                     <h2>{{ __('Votre parcours en 5 étapes') }}</h2>
                     <div class="ukc-accent"><i></i><i></i><i></i></div>
                     <p>{{ __('Du dépôt de résumé jusqu’à l’attestation de participation.') }}</p>
                 </div>
-                <div class="ukc-stepper">
-                    <div class="ukc-step active"><div class="circle">1</div><h4>{{ __('Compte') }}</h4><p>{{ __('Création & vérification') }}</p></div>
-                    <div class="ukc-step"><div class="circle">2</div><h4>{{ __('Soumission') }}</h4><p>{{ __('Résumé en ligne') }}</p></div>
-                    <div class="ukc-step"><div class="circle">3</div><h4>{{ __('Évaluation') }}</h4><p>{{ __('Relecture en aveugle') }}</p></div>
-                    <div class="ukc-step"><div class="circle">4</div><h4>{{ __('Paiement') }}</h4><p>{{ __('Mobile money / carte') }}</p></div>
-                    <div class="ukc-step"><div class="circle">5</div><h4>{{ __('Attestation') }}</h4><p>{{ __('Documents & livret') }}</p></div>
-                </div>
+                <ol class="ukc-stepper">
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">1</span><h4>{{ __('Compte') }}</h4><p>{{ __('Création & vérification') }}</p></li>
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">2</span><h4>{{ __('Soumission') }}</h4><p>{{ __('Résumé en ligne') }}</p></li>
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">3</span><h4>{{ __('Évaluation') }}</h4><p>{{ __('Relecture en aveugle') }}</p></li>
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">4</span><h4>{{ __('Paiement') }}</h4><p>{{ __('Mobile money / carte') }}</p></li>
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">5</span><h4>{{ __('Attestation') }}</h4><p>{{ __('Documents & livret') }}</p></li>
+                </ol>
             </section>
 
             {{-- Frais de participation.
