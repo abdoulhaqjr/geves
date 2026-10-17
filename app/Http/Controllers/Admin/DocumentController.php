@@ -161,42 +161,21 @@ class DocumentController extends Controller
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
 
-        // Ordre des comités : « general » suit le document de référence
-        // (supervision → scientifique → organisation), sinon l'ordre UK/UP par défaut.
-        $committeeRoles = $general
-            ? [
-                'supervision' => 'Comité de supervision',
-                'scientifique' => 'Comité scientifique',
-                'organisation' => 'Comité d’organisation',
-            ]
-            : [
-                'supervision' => 'Comité de supervision',
-                'organisation' => 'Comité d’organisation',
-                'scientifique' => 'Comité scientifique',
-            ];
+        // Ordre + libellés des comités : SOURCE UNIQUE partagée avec le .docx
+        // (« general » suit le document de référence, sinon l'ordre UK/UP).
+        $committeeRoles = LivretDocx::committeeOrder($general);
 
         // Programme : « Communications en ateliers » (par axe) pour le style general,
-        // sinon « Programme » par jour. Même source de créneaux que les résumés.
+        // sinon « Programme » par jour. Le regroupement par axe/jour vient de la
+        // SOURCE UNIQUE `LivretDocx::ateliersGroups()` (même structure que le .docx) ;
+        // ici on ne compose que l'intitulé « ATELIER n : … ».
         if ($general) {
-            $byTrack = $event->slots()->with(['submission', 'session'])
-                ->whereNotNull('starts_at')->orderBy('starts_at')->get()
-                ->filter(fn ($sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
-                ->groupBy(fn ($sl) => trim((string) $sl->submission?->track) ?: 'Autres');
-            $tracks = collect($event->settings['tracks'] ?? [])->map(fn ($t) => trim((string) $t))->filter()->values();
-            $ordered = $tracks->filter(fn ($t) => $byTrack->has($t))
-                ->merge($byTrack->keys()->reject(fn ($t) => $tracks->contains($t)))
-                ->unique()->values();
-
             $programmeTitle = 'Communications en ateliers';
-            $programmeGroups = $ordered->map(function ($t, $i) use ($byTrack) {
-                $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $t));
-
-                return [
-                    'heading' => 'ATELIER '.($i + 1).' : '.mb_strtoupper($axis !== '' ? $axis : (string) $t, 'UTF-8'),
-                    'days' => ($byTrack->get($t) ?? collect())
-                        ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
-                ];
-            })->filter(fn ($g) => collect($g['days'])->isNotEmpty())->values();
+            $programmeGroups = LivretDocx::ateliersGroups($event)
+                ->map(fn (array $g, int $i) => [
+                    'heading' => 'ATELIER '.($i + 1).' : '.mb_strtoupper($g['axis'], 'UTF-8'),
+                    'days' => $g['days'],
+                ])->values();
         } else {
             $programmeTitle = 'Programme';
             $programmeGroups = $programme->isNotEmpty()

@@ -766,15 +766,11 @@ class LivretDocx
      */
     private function addAteliers(Section $section, int $number = 0): void
     {
-        // Mêmes communications que les résumés (acceptées + canoniques) : une
-        // communication refusée après planification garde son créneau mais n'est
-        // pas au livre.
-        $byTrack = $this->event->slots()->with(['submission', 'session'])
-            ->whereNotNull('starts_at')->orderBy('starts_at')->get()
-            ->filter(fn (Slot $sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
-            ->groupBy(fn (Slot $sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+        // Structure PARTAGÉE avec l'aperçu PDF (acceptées + canoniques, par axe
+        // puis par jour, ordre des axes réglés) : une seule source de vérité.
+        $groups = self::ateliersGroups($this->event);
 
-        if ($byTrack->isEmpty()) {
+        if ($groups->isEmpty()) {
             return;
         }
 
@@ -785,32 +781,19 @@ class LivretDocx
         $section->addText($heading, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
             ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
 
-        $tracks = collect($this->event->settings['tracks'] ?? [])
-            ->map(fn ($t) => trim((string) $t))->filter()->values();
-        $ordered = $tracks->filter(fn ($t) => $byTrack->has($t))
-            ->merge($byTrack->keys()->reject(fn ($t) => $tracks->contains($t)))
-            ->unique()->values();
-
         $n = 0;
-        foreach ($ordered as $track) {
+        foreach ($groups as $group) {
             $n++;
-            // Le libellé « ATELIER n : » est posé par le livret ; si l'axe se nomme
-            // déjà « Atelier 2 - … », on retire ce préfixe pour ne pas le doubler.
-            $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $track));
-            if ($axis === '') {
-                $axis = (string) $track;
-            }
             // Titre d'atelier en TERRACOTTA (#C0504D), centré, gras 14 pt - couleur
             // signature du document de référence. addTitle (Heading1) → navigable ;
             // la couleur terracotta reste portée par le TextRun (le style est noir).
+            // L'axe est déjà dé-préfixé par ateliersGroups().
             $atelierRun = new TextRun;
-            $atelierRun->addText('ATELIER '.$n.' : '.mb_strtoupper($axis, 'UTF-8'),
+            $atelierRun->addText('ATELIER '.$n.' : '.mb_strtoupper($group['axis'], 'UTF-8'),
                 ['bold' => true, 'size' => 14, 'color' => self::TERRACOTTA, 'name' => $font]);
             $section->addTitle($atelierRun, 1);
 
-            $byDay = ($byTrack->get($track) ?? collect())
-                ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys();
-            foreach ($byDay as $day => $slots) {
+            foreach ($group['days'] as $day => $slots) {
                 $this->programmeDayTable($section, (string) $day, $slots);
             }
         }
@@ -1100,8 +1083,8 @@ class LivretDocx
                 // Axe « 1- DEMOGRAPHIE … » : gras 14 pt noir, centré, préfixé (doc de
                 // référence). addTitle (Heading1) → navigable (volet + sommaire) ;
                 // l'allure (Jost 14 pt noir centré) est portée par le style Heading1.
-                $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $track));
-                $section->addTitle($axisNo.'- '.mb_strtoupper($axis !== '' ? $axis : (string) $track, 'UTF-8'), 1);
+                // Dé-préfixage par la source unique partagée avec le programme/PDF.
+                $section->addTitle($axisNo.'- '.mb_strtoupper(self::ateliersAxisLabel((string) $track), 'UTF-8'), 1);
             } else {
                 $section->addText(mb_strtoupper((string) $track, 'UTF-8'),
                     ['bold' => true, 'size' => $sizeAxis, 'color' => $primary, 'name' => $fontHead],
@@ -1508,6 +1491,79 @@ class LivretDocx
     private function displayName(string $name): string
     {
         return self::authorCase($name, $this->isGeneral());
+    }
+
+    /**
+     * Ordre + libellés des comités selon le style. SOURCE UNIQUE partagée par le
+     * .docx et l'aperçu PDF : « general » suit le document de référence
+     * (supervision → scientifique → organisation), les autres l'ordre UK/UP.
+     *
+     * @return array<string, string>
+     */
+    public static function committeeOrder(bool $general): array
+    {
+        return $general ? self::GENERAL_COMMITTEE_ORDER : self::COMMITTEE_ORDER;
+    }
+
+    /**
+     * Libellé d'axe d'un atelier : le préfixe « Atelier n - » (quel que soit le
+     * tiret) est retiré pour ne pas le doubler avec « ATELIER n : » posé par le
+     * livret. SOURCE UNIQUE du dé-préfixage (programme général ET section résumés,
+     * .docx comme PDF).
+     */
+    public static function ateliersAxisLabel(string $track): string
+    {
+        $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', $track));
+
+        return $axis !== '' ? $axis : trim($track);
+    }
+
+    /**
+     * Ateliers du style « general » : communications orales programmées (acceptées
+     * + canoniques) regroupées par AXE puis par JOUR, dans l'ordre des axes réglés
+     * (`settings['tracks']`) puis les axes hors liste. SOURCE UNIQUE partagée par le
+     * .docx (`addAteliers`) et l'aperçu PDF (`DocumentController::livretViewData`) :
+     * on ne rend QUE la structure, l'intitulé « ATELIER n : … » étant composé par
+     * chaque appelant (style de titre Word d'un côté, `<p>` de l'autre).
+     *
+     * @return Collection<int, array{track: string, axis: string, days: Collection<int|string, Collection<int, Slot>>}>
+     */
+    public static function ateliersGroups(Event $event): Collection
+    {
+        // `toBase()` : on travaille en collections de base (Support), pas Eloquent -
+        // c'est une structure de données, pas un jeu de modèles, et le type de retour
+        // reste homogène pour les deux appelants.
+        $byTrack = $event->slots()->with(['submission', 'session'])
+            ->whereNotNull('starts_at')->orderBy('starts_at')->get()->toBase()
+            ->filter(fn (Slot $sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
+            ->groupBy(fn (Slot $sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+
+        // Ordre : axes réglés d'abord (dans leur ordre), puis les axes hors liste
+        // (ordre d'arrivée des créneaux, conservé car sortBy est stable).
+        $order = collect($event->settings['tracks'] ?? [])
+            ->map(fn ($t) => trim((string) $t))->filter()->values();
+        $keys = $byTrack->keys()
+            ->sortBy(fn ($track) => ($i = $order->search((string) $track, true)) === false ? PHP_INT_MAX : $i)
+            ->values();
+
+        // ⚠️ Accès `$byTrack[$track]` (et non `get() ?? collect()`) : chaque clé
+        // vient de `$byTrack`, donc la valeur est le groupe de créneaux typé - le
+        // repli `?? collect()` ferait perdre le type Slot à l'analyse statique.
+        $groups = [];
+        foreach ($keys as $track) {
+            $days = $byTrack[$track]
+                ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys();
+            if ($days->isEmpty()) {
+                continue;
+            }
+            $groups[] = [
+                'track' => (string) $track,
+                'axis' => self::ateliersAxisLabel((string) $track),
+                'days' => $days,
+            ];
+        }
+
+        return collect($groups);
     }
 
     /**

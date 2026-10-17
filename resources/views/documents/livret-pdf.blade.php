@@ -312,7 +312,7 @@
     @endif
     @php $n = 0; $axisNo = 0; @endphp
     @forelse ($groups as $track => $submissions)
-        @php $axisNo++; $axisClean = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) ($track ?: 'Autres'))); @endphp
+        @php $axisNo++; $axisClean = \App\Documents\LivretDocx::ateliersAxisLabel((string) ($track ?: 'Autres')); @endphp
         @if ($isGen)
             <h2 class="axis sans" style="text-align:center;font-size:14pt;">{{ $axisNo }}- {{ \Illuminate\Support\Str::upper($axisClean !== '' ? $axisClean : (string) ($track ?: 'Autres')) }}</h2>
         @else

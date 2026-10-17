@@ -3646,6 +3646,14 @@ ajoutée par la vue, elle ne se saisit pas.
     c'est ainsi que la casse des auteurs du PDF (affichée TELLE QUELLE même en `default`) divergeait du
     .docx. Garde : `LivretTest` « casse des auteurs : le .docx et le PDF concordent selon le style »
     (rend les DEUX et compare).
+    ⚠️ **La STRUCTURE du style `general` est elle aussi factorisée** (elle vivait en double dans
+    `LivretDocx` et `livretViewData`) : **`LivretDocx::committeeOrder($general)`** (ordre + libellés
+    des comités), **`LivretDocx::ateliersGroups($event)`** (communications par AXE puis par JOUR,
+    ordre des axes réglés - `->toBase()` pour rendre des collections Support homogènes) et
+    **`LivretDocx::ateliersAxisLabel($track)`** (dé-préfixage « Atelier n - »). Le .docx (`addAteliers`,
+    `addBody`), `livretViewData` et la vue PDF appellent ces trois sources ; chaque appelant ne
+    compose QUE l'intitulé « ATELIER n : … »/« n- … ». Ne pas recopier la requête de créneaux, la
+    regex de dé-préfixage ni l'ordre des comités ailleurs.
     ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes
     + la **1re ligne de données** vivent dans un même `<tbody class="prog-start">` **insécable**
     (`page-break-inside: avoid`), les lignes suivantes dans un second `<tbody>`. L'en-tête ne reste
