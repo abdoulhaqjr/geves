@@ -3579,10 +3579,13 @@ ajoutée par la vue, elle ne se saisit pas.
     C'est aussi la règle typographique française. Appliqué au titre de la communication (programme
     général) et au titre du résumé (style général), en .docx ET en PDF. ⚠️ U+00A0 n'est pas proscrit
     (seuls U+00B7/U+2013/U+2014 le sont) ; le code porte l'échappement `\u{00A0}`, pas le caractère.
-    ⚠️ **Noms d'auteurs affichés TELS QUELS, au format « NOM Prénom »** (nom de famille en capitales,
-    prénom en casse normale, comme le livre de référence) : `LivretDocx::displayName()` NE force
-    PLUS tout en majuscules, et le seeder écrit l'auteur en `authorName($first, $last)` =
-    `strtoupper($last).' '.$first` (le nom du COMPTE reste « Prénom Nom »). ⚠️ Chaque auteur de la
+    ⚠️ **Noms d'auteurs affichés au format « NOM Prénom »** (nom de famille en capitales,
+    prénom en casse normale, comme le livre de référence) - ⚠️ **uniquement pour le style
+    `general`** : `LivretDocx::displayName()` est **dépendant du style** (il rend le nom TEL QUEL
+    pour `general`, mais le met **ENTIÈREMENT en majuscules** pour `default`/`fss`, convention
+    historique du livret - cf. `DocumentsTest` « JEAN DUPONT » et l'index `AWA KODJO`). Le seeder
+    écrit l'auteur en `authorName($first, $last)` = `strtoupper($last).' '.$first` (le nom du COMPTE
+    reste « Prénom Nom »). ⚠️ Chaque auteur de la
     ligne du PDF est enveloppé dans un `<span white-space:nowrap>` : sans cela l'exposant d'affiliation
     (« 4 ») se détachait du nom et retombait seul à la ligne ; la coupure ne se fait qu'aux virgules.
     ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes

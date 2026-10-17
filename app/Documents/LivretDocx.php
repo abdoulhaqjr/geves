@@ -1467,14 +1467,18 @@ class LivretDocx
     }
 
     /**
-     * Nom d'auteur pour l'affichage : rendu TEL QU'IL EST SAISI (« NOM Prénom » dans
-     * le livre de référence, nom de famille en capitales, prénom en casse normale).
-     * ⚠️ On ne force PLUS tout en majuscules : le document de référence ne met en
-     * capitales que le nom de famille, pas le prénom.
+     * Nom d'auteur pour l'affichage. ⚠️ Dépend du STYLE :
+     *  - « general » (Document général du colloque) : rendu TEL QU'IL EST SAISI,
+     *    au format « NOM Prénom » du document de référence (nom de famille en
+     *    capitales, prénom en casse normale) - on ne force donc PAS les majuscules.
+     *  - autres styles (défaut, FSS) : nom ENTIÈREMENT en majuscules, convention
+     *    historique du livret (corps du résumé et index des auteurs).
      */
     private function displayName(string $name): string
     {
-        return trim($name);
+        $name = trim($name);
+
+        return $this->isGeneral() ? $name : mb_strtoupper($name, 'UTF-8');
     }
 
     /**
