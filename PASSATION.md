@@ -2218,3 +2218,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Ancien lien de détail d'événement (17 octobre 2026)
 
 - Un GET vers `/admin/editions/{event}` produisait une erreur 405 car seul DELETE y était déclaré. Le GET redirige maintenant vers `admin.evenements.edit` sous `edition.cap:editions_write`. DELETE conserve la suppression ; les liens de l'interface utilisent toujours la route nommée de modification.
+
+### Pages d'erreur personnalisées (17 octobre 2026)
+
+- Les vues Laravel `resources/views/errors/{400,403,404,500,503}.blade.php` utilisent un gabarit commun aux couleurs GEVES, des messages adaptés, un lien d'accueil et un contact DRI. Les pages 500/503 proposent aussi de réessayer pour les requêtes GET. Le CSS et le logo sont servis comme fichiers publics indépendants du rendu Vite et de la base, afin de ne pas masquer une panne initiale. Les textes ont une traduction anglaise dans `lang/en.json`. Avec `APP_DEBUG=true`, Laravel montre la trace des exceptions 500 plutôt que la page personnalisée ; celle-ci s'affiche lorsque le mode debug est désactivé.

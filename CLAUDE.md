@@ -4747,3 +4747,12 @@ L'ancienne URL GET `/admin/editions/{event}` redirige vers
 `admin.evenements.edit` avec la capacité `editions_write`. Le même chemin en
 DELETE reste réservé à la suppression ; les nouveaux liens doivent utiliser
 la route nommée de modification.
+
+## Pages d'erreur HTTP
+
+Les statuts 400, 403, 404, 500 et 503 ont chacun une vue dans
+`resources/views/errors/`. Elles partagent `errors/page.blade.php` et la feuille
+statique `public/error-pages.css` : les pages 500/503 ne doivent pas dépendre
+de Vite, du widget ou d'une lecture en base pour rester affichables pendant
+une panne. Laravel conserve les réponses JSON des requêtes API/fetch ; en
+développement, `APP_DEBUG=true` affiche toujours la trace des erreurs 500.
