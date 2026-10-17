@@ -489,9 +489,17 @@
                                         <div class="fields">
                                             <div class="row2">
                                                 <input type="text" :name="'{{ $inputName }}['+i+'][person_name]'" x-model="c.person_name" placeholder="Nom Prénom">
-                                                <input type="text" :name="'{{ $inputName }}['+i+'][person_title]'" x-model="c.person_title" placeholder="Fonction">
+                                                <input type="text" :name="'{{ $inputName }}['+i+'][person_title]'" x-model="c.person_title" placeholder="{{ $group === 'comOrg' ? 'Grade (PT, MC…)' : 'Fonction' }}">
                                             </div>
                                             <input type="text" :name="'{{ $inputName }}['+i+'][institution]'" x-model="c.institution" placeholder="Affiliation">
+                                            @if ($group === 'comOrg')
+                                                {{-- Contacts + qualité : tableau du comité d'organisation dans le livret « Document général du colloque ». --}}
+                                                <div class="row2">
+                                                    <input type="tel" :name="'{{ $inputName }}['+i+'][phone]'" x-model="c.phone" placeholder="Téléphone">
+                                                    <input type="email" :name="'{{ $inputName }}['+i+'][email]'" x-model="c.email" placeholder="E-mail">
+                                                </div>
+                                                <input type="text" :name="'{{ $inputName }}['+i+'][qualite]'" x-model="c.qualite" placeholder="Qualité (Président, Rapporteur…)">
+                                            @endif
                                         </div>
                                         <button type="button" class="ukc-btn--icon" @click="removeCom('{{ $group }}', i)" aria-label="Retirer">&times;</button>
                                     </div>

@@ -3544,17 +3544,97 @@ ajoutée par la vue, elle ne se saisit pas.
     sorties fidèles. Les **modèles .docx personnalisés** ne reçoivent pas ces blocs (l'admin met ce
     contenu directement dans son propre .docx).
   - **Couverture SOBRE** (plus de bandeau tricolore) dans les trois rendus (.docx, PDF, aperçu HTML).
-  - **Deux styles intégrés SÉLECTIONNABLES** (réglage `livret.template`, `LivretDocx::STYLES`,
+  - **Trois styles intégrés SÉLECTIONNABLES** (réglage `livret.template`, `LivretDocx::STYLES`,
     sélecteur « Modèle actif » de l'onglet **Modèles de document**) : **`default`** = « Modèle par
     défaut » (commissions numérotées « Différentes commissions… », **programme par jour** en tableau) ;
     **`fss`** = « Modèle 2 - Journées scientifiques » (comités en titres simples « Comités »,
     **programme par jour → salle → séance** fidèle au livret FSS 2021 : chaque séance = horaire +
     intitulé + modérateur, puis ses communications « Titre, INTERVENANT » depuis `event_sessions`/
-    `slots`). `LivretDocx` prend un paramètre `$style` ; `DocumentController::livretStyle()` le résout,
-    et `selectedLivretTemplate()` traite `default`/`base`/`fss` comme des styles intégrés (≠ modèle
-    .docx importé). ⚠️ Le style intégré n'agit que sur le **.docx** (comme les modèles personnalisés) ;
-    l'aperçu HTML et le PDF gardent la mise en page par défaut. Les deux styles partagent les sections
-    de tête génériques ci-dessus. Les titres portent `keepNext` (pas de titre orphelin en bas de page).
+    `slots`) ; **`general`** = « Modèle 3 - Document général du colloque » (voir ci-dessous).
+    `LivretDocx` prend un paramètre `$style` ; `DocumentController::livretStyle()` le résout,
+    et `selectedLivretTemplate()` traite `default`/`base` + toutes les clés de `STYLES` comme des
+    styles intégrés (≠ modèle .docx importé). ⚠️ **Ajouter un style = l'ajouter à `STYLES` ET à la
+    liste `livretBuiltins` de `DocumentHubController::livretViewExtras()`** (sinon il est généré mais
+    pas proposé dans le sélecteur). ⚠️ Les styles `default`/`fss` n'agissent que sur le **.docx** ;
+    l'aperçu HTML et le PDF gardent alors la mise en page par défaut. **EXCEPTION : `general` est
+    aussi reflété dans l'aperçu PDF** (`DocumentController::livretViewData()` branche sur
+    `livretStyle()` : comité d'organisation en tableau, ordre supervision → scientifique →
+    organisation, et « Communications en ateliers » au lieu de « Programme ») - `documents/livret-pdf.blade.php`
+    rend ces variantes. L'aperçu HTML (`documents/livret.blade.php`) reste minimal (ni comités ni
+    programme). Les styles partagent les sections de tête génériques ci-dessus. Les titres portent
+    `keepNext` (pas de titre orphelin).
+  - ⚠️ **`general` = « Document général du colloque »** (calqué sur `document_general_colloque_005.docx`
+    UK/UP) : **A) commissions et programmes** puis **B) résumés**. Comités dans l'ordre supervision →
+    scientifique → **organisation** ; le **comité d'organisation est un TABLEAU** (N° / Nom & Prénom /
+    Grade / Contacts / Qualité) via `committeeOrganisationTable()`. Puis **programme synthétique**
+    (`settings['program_synthesis']`), puis **« Communications en ateliers »** (`addAteliers()`) : un
+    atelier PAR AXE (ordre `settings['tracks']`, puis axes hors liste), chaque atelier listant ses
+    communications orales programmées, regroupées par jour - créneaux acceptés-canoniques seulement,
+    même règle que les résumés. ⚠️ **Le tableau de programme du style `general` a pour colonne de tête
+    le CODE de la communication** (`Code | Horaire | Communication | Salle`, comme la colonne « Codes »
+    du document de référence) et **n'affiche NI les auteurs NI leurs affiliations** (ils sont dans la
+    section Résumés) - les autres styles gardent `Horaire | Communication (titre + auteurs) | Salle`.
+    ⚠️ **Les titres passent par `LivretDocx::bindPunctuation()`** (espace insécable U+00A0 avant
+    `? ! : ; »`) : dans une colonne étroite, un « ? » (ou « : ») tombait seul sur la dernière ligne.
+    C'est aussi la règle typographique française. Appliqué au titre de la communication (programme
+    général) et au titre du résumé (style général), en .docx ET en PDF. ⚠️ U+00A0 n'est pas proscrit
+    (seuls U+00B7/U+2013/U+2014 le sont) ; le code porte l'échappement `\u{00A0}`, pas le caractère.
+    ⚠️ **Noms d'auteurs affichés TELS QUELS, au format « NOM Prénom »** (nom de famille en capitales,
+    prénom en casse normale, comme le livre de référence) : `LivretDocx::displayName()` NE force
+    PLUS tout en majuscules, et le seeder écrit l'auteur en `authorName($first, $last)` =
+    `strtoupper($last).' '.$first` (le nom du COMPTE reste « Prénom Nom »). ⚠️ Chaque auteur de la
+    ligne du PDF est enveloppé dans un `<span white-space:nowrap>` : sans cela l'exposant d'affiliation
+    (« 4 ») se détachait du nom et retombait seul à la ligne ; la coupure ne se fait qu'aux virgules.
+    ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes
+    + la **1re ligne de données** vivent dans un même `<tbody class="prog-start">` **insécable**
+    (`page-break-inside: avoid`), les lignes suivantes dans un second `<tbody>`. L'en-tête ne reste
+    donc JAMAIS seul en bas de page (il descend avec sa 1re ligne) et le tableau remplit la page après
+    le titre (pas de trou). ⚠️ **On n'utilise PAS `<thead>`** : dompdf le place volontiers SEUL en bas
+    de page (en-tête sans aucune ligne) - c'était le défaut constaté. ⚠️ **On n'applique PAS
+    `page-break-inside: avoid` au `<table>`** : dompdf déplace alors le tableau ENTIER à la page
+    suivante → trou avant lui. Revers assumé : un tableau de jour qui déborde sur 2 pages n'a pas
+    d'en-tête répété sur la 2e (rare : la plupart des tableaux de (atelier, jour) tiennent sur une
+    page). Le titre d'atelier porte `page-break-after: avoid`. L'en-tête du résumé (réf.→correspondant)
+    et le bloc « Résumé » + contenu portent `page-break-inside: avoid`.
+    Le préfixe « ATELIER n : » est
+    posé par le livret ; un axe déjà nommé « Atelier 2 - … » est dé-préfixé pour ne pas le doubler.
+    Les **résumés par axe** et l'**index des auteurs** sont partagés avec les autres styles (`addBody`).
+  - ⚠️ **Le .docx `general` est NAVIGABLE** (volet de navigation Word + sommaire) : les **axes
+    « n- … »** et **ateliers « ATELIER n … »** sont des **Heading1**, les **codes de communication
+    « AVD-xxx »** des **Heading2** - vrais styles de titre Word (`addTitleStyle(1|2)` enregistrés
+    par `registerGeneralHeadingStyles()`, posés par `addTitle()`, un signet par titre). ⚠️ **Seul
+    le style `general`** les enregistre (`isGeneral()` dans `build()`) : le reste du projet garde la
+    règle « titres = addText, pas addTitle » (Word numérotait sinon les titres et exigeait un TOC).
+    ⚠️ **Seulement ces trois là, PAS les sections A)/B)/comités** : un style de titre est lié à une
+    profondeur, donc à UN alignement, or A) est à gauche et B) centré. On ne retient donc que les
+    items déjà de même alignement (axes/ateliers **centrés**, codes **à droite**) → l'allure reste
+    rigoureusement identique à l'ancien addText (Heading1 = Jost 14 pt noir centré ; Heading2 = 11 pt
+    noir à droite ; la couleur **terracotta** d'un atelier reste portée par son `TextRun`, le style
+    étant noir). ⚠️ **« Email »/« Résumé » NE sont PAS des titres** (le doc de référence les y mettait,
+    ce qui encombrait le volet) : navigation par code et par axe/atelier seulement. Pas de navigabilité
+    côté **PDF** (dompdf rend le même visuel, sans volet). Garde `LivretTest` : le .docx contient
+    `w:val="Heading1"`, `w:val="Heading2"`, `<w:bookmarkStart`.
+  - ⚠️ **PALETTE EXACTE du document de référence** (fidélité « couleurs + style de titre » demandée,
+    mesurée dans le .docx fourni, appliquée au **.docx ET à l'aperçu PDF**) : sections lettrées
+    **« A) … »** gras **14 pt NOIR** à gauche / **« B) Résumés… »** gras **16 pt NOIR centré** ; comités
+    **« 1. COMITÉ … »** gras 14 pt noir, en CAPITALES ; **titres d'atelier « ATELIER n : … » en
+    TERRACOTTA `#C0504D`**, centrés, gras 14 pt (couleur signature) ; **« n. COMMUNICATIONS EN
+    ATELIERS »** gras 14 pt noir centré (item numéroté de la section A - `addCommissionsGeneral()`
+    renvoie le dernier n, passé à `addAteliers($num+1)`) ; **axes des résumés « n- AXE »** gras 14 pt
+    noir centré ; **tableau du comité d'organisation** en-tête gris **`#F2F2F2`** (texte noir), scindé
+    **COORDINATION** (président/vice/rapporteur/…) **/ MEMBRES** en lignes-groupes fusionnées ;
+    **bandeau de jour des ateliers en bleu `#95B3D7`** pleine largeur ; auteurs des résumés en **gras
+    italique 12 pt noir**, libellé **« Résumé »** (pas « RÉSUMÉ : » bleu), mots-clés noirs. Toutes ces
+    règles ne valent que pour `general` (constantes `BLACK`/`TERRACOTTA`/`REF_DAY_FILL`/`REF_HEAD_FILL`
+    dans `LivretDocx`, bloc `@if ($isGen)` de styles dans `livret-pdf.blade.php`) - `default`/`fss`
+    gardent le bleu de la charte. ⚠️ Garde `LivretTest` : le .docx doit contenir `C0504D`, `95B3D7`,
+    `F2F2F2`, `A) …`, `B) …`, `COMITÉ D'ORGANISATION` (capitales), `1- …`.
+  - ⚠️ **Le tableau du comité d'organisation a exigé deux colonnes** sur `committee_members` :
+    **`phone`** et **`qualite`** (fonction : Président, Rapporteur…), migration
+    `2026_10_16_000100_add_contact_qualite_to_committee_members` ; l'e-mail existait déjà, le grade est
+    `person_title`. Saisies dans le répéteur « Comité d'organisation » de la fiche d'événement
+    (`admin/evenements/form.blade.php`, seulement pour `comOrg`), persistées par `SaveEvent` et
+    rechargées par `EventFormController`. Gardes : `LivretTest`.
   - **Gabarits .docx personnalisés** (porté de `booklet-templates.php` `ukc_bt_render`) :
     l'admin télécharge le **modèle de base** à balises (`admin.documents.livret.base-template`
     → `LivretTemplate::downloadBase`, vrai .docx), le personnalise dans Word en gardant les

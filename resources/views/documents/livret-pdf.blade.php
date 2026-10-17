@@ -2,6 +2,7 @@
     /** @var \App\Models\Event $event */
     $primary = $opts['color_primary'];
     $muted = '#6b7280';
+    $isGen = $general ?? false;
     $hm = fn ($t) => $t ? \Illuminate\Support\Carbon::parse($t)->format('H:i') : '';
 @endphp
 <!doctype html>
@@ -37,7 +38,44 @@
         table.prog th { background: #f1f5f9; color: {{ $primary }}; }
         .idx { font-size: 10pt; margin: 0 0 3px; }
         .idx b { color: #111827; }
+        .abs-entry { margin-top: 10px; }
+        /* Blocs insécables (dompdf) : l'en-tête d'un résumé (réf. -> correspondant) ne se
+           coupe jamais ; le libellé « Résumé » reste avec le début de son contenu. */
+        .abs-head { page-break-inside: avoid; }
+        .abs-resume { page-break-inside: avoid; }
+        /* Aucune LIGNE ne se coupe en deux (bandeau de jour ou donnée). */
+        table.prog tr { page-break-inside: avoid; }
+        /* L'en-tête d'un tableau de programme (bandeau de jour + colonnes) reste
+           SOLIDAIRE de sa 1re ligne de données : ce <tbody> insécable descend ensemble
+           à la page suivante plutôt que de laisser l'en-tête seul en bas de page. Les
+           lignes suivantes (second <tbody>) se coupent librement. On n'applique PAS
+           avoid à tout le tableau (cela creusait un trou avant lui). */
+        table.prog tbody.prog-start { page-break-inside: avoid; }
+        /* Le titre d'atelier colle au début de son tableau (pas de titre seul en bas). */
+        .keep-with-next { page-break-after: avoid; }
     </style>
+    @if ($isGen)
+    {{-- Palette EXACTE du « Document général du colloque » : titres noirs,
+         ateliers terracotta, tableaux à en-tête gris et bandeau de jour bleu. --}}
+    <style>
+        h1.part { color: #000; border-bottom: none; }
+        h2.axis { color: #000; }
+        {{-- Dispositions EXACTES du document de référence : code à droite, titre /
+            auteurs / affiliations / correspondant CENTRÉS. --}}
+        .ref { color: #000; text-align: right; font-size: 10.5pt; font-weight: bold; margin: 16px 0 2px; }
+        .abs-title { color: #000; text-align: center; }
+        .authors { color: #000; font-weight: bold; font-style: italic; font-size: 11pt; text-align: center; }
+        .aff { color: #000; font-style: italic; text-align: center; }
+        .corr { color: #000; font-style: italic; text-align: center; }
+        .lbl { color: #000; }
+        .kw .muted { color: #000 !important; }
+        table.prog th { background: #f2f2f2; color: #000; }
+        table.prog th, table.prog td { border-color: #bfbfbf; }
+        .atelier-head { color: #c0504d; }
+        td.day-banner { background: #95b3d7; color: #000; font-weight: bold; text-align: center; }
+        tr.grp td { background: #f2f2f2; font-weight: bold; text-align: center; }
+    </style>
+    @endif
 </head>
 <body>
 <div class="footer"></div>
@@ -115,29 +153,65 @@
     $committeeList = collect($committeeRoles)->filter(fn ($lbl, $r) => ($committees[$r] ?? collect())->isNotEmpty());
     $synDays = collect($programSynthesis['days'] ?? [])->filter(fn ($d) => trim((string) ($d['heading'] ?? '')) !== '' || trim((string) ($d['date'] ?? '')) !== '' || collect($d['rows'] ?? [])->isNotEmpty());
     $hmp = fn ($t) => trim((string) $t) === '' ? '' : str_replace(':', 'h', substr((string) $t, 0, 5));
+    // Numéro de la rubrique « Communications en ateliers » dans la section A
+    // (comités présents + programme synthétique), pour « 5. COMMUNICATIONS… ».
+    $ateliersNo = $committeeList->count() + ($synDays->isNotEmpty() ? 1 : 0) + 1;
+    $hColor = $isGen ? '#000' : $primary;
+    $isCoord = fn ($q) => (bool) preg_match('/president|vice|rapporteur|coordinat|secretaire|tresorier/i', \Illuminate\Support\Str::ascii((string) $q));
 @endphp
 @if ($committeeList->isNotEmpty() || $synDays->isNotEmpty())
     <div class="page-break">
-        <h1 class="part sans">Différentes commissions et programmes du colloque</h1>
+        @if ($isGen)
+            <p class="sans" style="font-weight:bold;font-size:14pt;color:#000;margin:0 0 14px;">A) {{ $commissionsTitle }}</p>
+        @else
+            <h1 class="part sans">{{ $commissionsTitle ?? 'Différentes commissions et programmes du colloque' }}</h1>
+        @endif
         @php $num = 0; @endphp
         @foreach ($committeeList as $role => $roleLabel)
             @php $num++; $list = $committees[$role] ?? collect(); @endphp
-            <h3 class="sans" style="color:{{ $primary }};font-size:13pt;margin:16px 0 6px;">{{ $num }}. {{ $roleLabel }}</h3>
-            @foreach ($list as $m)
-                @php $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name)); $tail = trim((string) $m->institution); @endphp
-                <p style="margin:0 0 3px;">{{ $tail !== '' ? $lead.', '.$tail : $lead }}</p>
-            @endforeach
+            <h3 class="sans" style="color:{{ $hColor }};font-size:14pt;margin:16px 0 6px;">{{ $num }}. {{ $isGen ? \Illuminate\Support\Str::upper($roleLabel) : $roleLabel }}</h3>
+            @if ($isGen && $role === 'organisation')
+                {{-- Comité d'organisation en TABLEAU (modèle « Document général du colloque »),
+                     scindé COORDINATION / MEMBRES comme le document de référence. --}}
+                @php
+                    $coord = $list->filter(fn ($m) => $isCoord($m->qualite));
+                    $membres = $list->reject(fn ($m) => $isCoord($m->qualite));
+                    $grouped = $coord->isNotEmpty() && $membres->isNotEmpty();
+                    $ri = 0;
+                @endphp
+                <table class="prog">
+                    <tr><th style="width:6%;">N°</th><th style="width:30%;">NOM &amp; PRÉNOM(S)</th><th style="width:14%;">GRADE</th><th style="width:30%;">CONTACTS</th><th style="width:20%;">QUALITÉ</th></tr>
+                    @foreach (($grouped ? ['COORDINATION' => $coord, 'MEMBRES' => $membres] : ['' => $list]) as $grpLabel => $grpList)
+                        @if ($grpLabel !== '')<tr class="grp"><td colspan="5">{{ $grpLabel }}</td></tr>@endif
+                        @foreach ($grpList as $m)
+                            @php $ri++; $contacts = array_filter([trim((string) $m->phone), trim((string) $m->email)]); @endphp
+                            <tr>
+                                <td style="text-align:center;">{{ $ri }}</td>
+                                <td>{{ trim((string) $m->person_name) ?: '-' }}</td>
+                                <td style="text-align:center;">{{ trim((string) $m->person_title) }}</td>
+                                <td>{{ implode('  ', $contacts) }}</td>
+                                <td>{{ trim((string) $m->qualite) }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                </table>
+            @else
+                @foreach ($list as $m)
+                    @php $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name)); $tail = trim((string) $m->institution); @endphp
+                    <p style="margin:0 0 3px;text-align:justify;">{{ $tail !== '' ? $lead.', '.$tail : $lead }}</p>
+                @endforeach
+            @endif
         @endforeach
         @if ($synDays->isNotEmpty())
             @php $num++; @endphp
-            <h3 class="sans" style="color:{{ $primary }};font-size:13pt;margin:18px 0 6px;">{{ $num }}. Programme synthétique du colloque</h3>
+            <h3 class="sans" style="color:{{ $hColor }};font-size:14pt;margin:18px 0 6px;">{{ $num }}. {{ $isGen ? 'PROGRAMME SYNTHÉTIQUE DU COLLOQUE' : 'Programme synthétique du colloque' }}</h3>
             @foreach ($synDays as $day)
                 @php
                     $dayHeading = trim((string) ($day['heading'] ?? ''));
                     $dayDate = trim((string) ($day['date'] ?? ''));
                     $dLabel = trim(($dayDate !== '' ? ucfirst(\Illuminate\Support\Carbon::parse($dayDate)->translatedFormat('l d/m/Y')) : '').($dayHeading !== '' ? '  '.$dayHeading : ''));
                 @endphp
-                @if ($dLabel !== '')<p style="font-weight:bold;color:{{ $primary }};margin:10px 0 2px;">{{ $dLabel }}</p>@endif
+                @if ($dLabel !== '')<p style="font-weight:bold;color:{{ $hColor }};margin:10px 0 2px;">{{ $dLabel }}</p>@endif
                 @foreach ($day['rows'] ?? [] as $row)
                     @php
                         $rs = $hmp($row['start'] ?? ''); $re = $hmp($row['end'] ?? '');
@@ -152,48 +226,101 @@
     </div>
 @endif
 
-{{-- ===================== PROGRAMME ===================== --}}
-@if ($programme->isNotEmpty())
+{{-- ============ PROGRAMME (par jour) / COMMUNICATIONS EN ATELIERS (par axe) ============ --}}
+@if (($programmeGroups ?? collect())->isNotEmpty())
     <div class="page-break">
-        <h1 class="part sans">Programme</h1>
-        @foreach ($programme as $day => $daySlots)
-            <p class="sans" style="font-weight:bold;color:{{ $primary }};margin:12px 0 4px;">{{ $dayLabel($day) }}</p>
-            <table class="prog">
-                <tr><th style="width:16%;">Horaire</th><th style="width:58%;">Communication</th><th style="width:26%;">Salle / Session</th></tr>
-                @foreach ($daySlots as $sl)
-                    @php
-                        $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-                        $auth = collect($sl->submission?->authors ?? [])->map(function ($a) {
-                            $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
-                            $aff = trim((string) ($a['affiliation'] ?? ''));
-                            return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
-                        })->filter()->implode('; ');
-                        $room = trim((string) ($sl->room ?: $sl->session?->room));
-                        $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
-                    @endphp
-                    <tr>
-                        <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
-                        <td>{{ $title ?: '-' }}@if ($auth !== '')<br><span class="muted" style="font-style:italic;font-size:8.5pt;">{{ $auth }}</span>@endif</td>
-                        <td>{{ $room }}@if ($sessLabel !== '' && $sessLabel !== $title)<br><span class="muted" style="font-size:8.5pt;">{{ $sessLabel }}</span>@endif</td>
-                    </tr>
-                @endforeach
-            </table>
+        @if ($isGen)
+            <p class="sans" style="text-align:center;font-weight:bold;font-size:14pt;color:#000;margin:0 0 14px;">{{ $ateliersNo }}. COMMUNICATIONS EN ATELIERS</p>
+        @else
+            <h1 class="part sans">{{ $programmeTitle ?? 'Programme' }}</h1>
+        @endif
+        @foreach ($programmeGroups as $grp)
+            @if (! empty($grp['heading']))
+                {{-- keepTitle : le titre d'atelier reste avec le DÉBUT de son premier tableau
+                     (le titre d'atelier + le bandeau + l'en-tête + la 1re ligne ne se séparent
+                     pas) ; le tableau démarre juste après le titre et peut se couper plus bas,
+                     dans les DONNÉES, l'en-tête se répétant à chaque page. --}}
+                <p class="sans @if ($isGen)atelier-head @endif keep-with-next" style="text-align:center;font-weight:bold;@if (! $isGen)color:{{ $primary }};@endif font-size:14pt;margin:18px 0 8px;">{{ $grp['heading'] }}</p>
+            @endif
+            @foreach ($grp['days'] as $day => $daySlots)
+                @unless ($isGen)
+                    <p class="sans" style="font-weight:bold;color:{{ $primary }};margin:12px 0 4px;">{{ $dayLabel($day) }}</p>
+                @endunless
+                <table class="prog">
+                    @if ($isGen)
+                        {{-- Modèle « Document général » : colonne de tête = CODE de la communication
+                             (comme la colonne « Codes » du document de référence), sans auteurs ni
+                             affiliations (ils sont dans la section Résumés). Le bandeau de jour,
+                             l'en-tête de colonnes ET la 1re ligne vivent dans un même <tbody>
+                             insécable (`prog-start`) : l'en-tête ne reste donc JAMAIS seul en bas
+                             de page (il descend avec sa première ligne) ; les lignes suivantes, dans
+                             un second <tbody>, se coupent librement d'une page à l'autre. --}}
+                        <tbody class="prog-start">
+                            <tr><td class="day-banner" colspan="4">{{ $dayLabel($day) }}</td></tr>
+                            <tr><th style="width:14%;">Code</th><th style="width:16%;">Horaire</th><th style="width:48%;">Communication</th><th style="width:22%;">Salle</th></tr>
+                            @foreach ($daySlots as $sl)
+                                @if ($loop->index === 1)</tbody><tbody>@endif
+                                @php
+                                    $code = trim((string) $sl->submission?->ref_code);
+                                    $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+                                    $room = trim((string) ($sl->room ?: $sl->session?->room));
+                                @endphp
+                                <tr>
+                                    <td style="font-weight:bold;white-space:nowrap;">{{ $code ?: '-' }}</td>
+                                    <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
+                                    <td>{{ $title !== '' ? \App\Documents\LivretDocx::bindPunctuation($title) : '-' }}</td>
+                                    <td>{{ $room ?: '-' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    @else
+                    <tr><th style="width:16%;">Horaire</th><th style="width:58%;">Communication</th><th style="width:26%;">Salle / Session</th></tr>
+                    @foreach ($daySlots as $sl)
+                        @php
+                            $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a) {
+                                $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
+                                $aff = trim((string) ($a['affiliation'] ?? ''));
+                                return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
+                            })->filter()->implode('; ');
+                            $room = trim((string) ($sl->room ?: $sl->session?->room));
+                            $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
+                        @endphp
+                        <tr>
+                            <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
+                            <td>{{ $title ?: '-' }}@if ($auth !== '')<br><span class="muted" style="font-style:italic;font-size:8.5pt;">{{ $auth }}</span>@endif</td>
+                            <td>{{ $room }}@if ($sessLabel !== '' && $sessLabel !== $title)<br><span class="muted" style="font-size:8.5pt;">{{ $sessLabel }}</span>@endif</td>
+                        </tr>
+                    @endforeach
+                    @endif
+                </table>
+            @endforeach
         @endforeach
     </div>
 @endif
 
 {{-- ===================== RÉSUMÉS ===================== --}}
 <div class="page-break">
-    <h1 class="part sans">Résumés des communications</h1>
-    @php $n = 0; @endphp
+    @if ($isGen)
+        <p class="sans center" style="font-weight:bold;font-size:16pt;color:#000;margin:0 0 14px;">B) Résumés des communications</p>
+    @else
+        <h1 class="part sans">Résumés des communications</h1>
+    @endif
+    @php $n = 0; $axisNo = 0; @endphp
     @forelse ($groups as $track => $submissions)
-        <h2 class="axis sans" style="text-align:{{ $opts['align_axis'] }};">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
+        @php $axisNo++; $axisClean = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) ($track ?: 'Autres'))); @endphp
+        @if ($isGen)
+            <h2 class="axis sans" style="text-align:center;font-size:14pt;">{{ $axisNo }}- {{ \Illuminate\Support\Str::upper($axisClean !== '' ? $axisClean : (string) ($track ?: 'Autres')) }}</h2>
+        @else
+            <h2 class="axis sans" style="text-align:{{ $opts['align_axis'] }};">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
+        @endif
         @foreach ($submissions as $s)
             @php
                 $n++;
                 $ref = trim((string) $s->ref_code);
                 $people = collect($s->authors ?? [])->map(fn ($a) => [
-                    'name' => mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8'),
+                    // Nom affiché TEL QUEL (« NOM Prénom ») - pas de passage en capitales.
+                    'name' => trim((string) ($a['name'] ?? '')),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
                     'phone' => trim((string) ($a['phone'] ?? '')),
@@ -205,36 +332,49 @@
                     if ($p['aff'] !== '' && ! in_array($p['aff'], $affs, true)) { $affs[] = $p['aff']; }
                 }
                 $corr = $people->firstWhere('corr', true);
-                // Ligne des auteurs construite en PHP (exposants collés, sans espace parasite).
+                // Ligne des auteurs construite en PHP. ⚠️ Chaque auteur (nom + exposant
+                // d'affiliation + astérisque de correspondant) est enveloppé dans un
+                // <span white-space:nowrap> : sans cela l'exposant « 4 » se détachait du
+                // nom et retombait seul à la ligne. La coupure ne se fait qu'aux virgules.
                 $authorsHtml = '';
                 foreach ($people as $i => $p) {
                     if ($i > 0) { $authorsHtml .= ', '; }
-                    $authorsHtml .= e($p['name']);
-                    if ($p['aff'] !== '') { $authorsHtml .= '<sup>'.(array_search($p['aff'], $affs, true) + 1).'</sup>'; }
-                    if ($p['corr']) { $authorsHtml .= '<sup>*</sup>'; }
+                    $tok = e($p['name']);
+                    if ($p['aff'] !== '') { $tok .= '<sup>'.(array_search($p['aff'], $affs, true) + 1).'</sup>'; }
+                    if ($p['corr']) { $tok .= '<sup>*</sup>'; }
+                    $authorsHtml .= '<span style="white-space:nowrap;">'.$tok.'</span>';
                 }
             @endphp
-            <div style="margin-top:10px;">
-                @if ($ref !== '')<p class="ref">{{ $ref }}</p>@endif
-                <p class="abs-title sans" style="text-align:{{ $opts['align_titles'] }};">{{ $opts['number'] ? $n.'. ' : '' }}{{ $s->title }}</p>
-                @if ($people->isNotEmpty())
-                    <p class="authors" style="text-align:{{ $opts['align_authors'] }};">{!! $authorsHtml !!}</p>
-                    @foreach ($affs as $i => $aff)
-                        <p class="aff"><sup>{{ $i + 1 }}</sup> {{ $aff }}</p>
-                    @endforeach
-                    @php
-                        $cbits = [];
-                        if ($corr && $corr['email'] !== '') { $cbits[] = 'Email : '.$corr['email']; }
-                        if ($corr && $corr['phone'] !== '') { $cbits[] = 'Tél : '.$corr['phone']; }
-                    @endphp
-                    @if ($corr && $cbits !== [])
-                        <p class="corr">*Auteur correspondant : {{ $corr['name'] }} &nbsp; {{ implode('  ', $cbits) }}</p>
+            <div class="abs-entry">
+                {{-- Bloc insécable : réf. + titre + auteurs + affiliations + correspondant
+                     ne se coupent JAMAIS entre deux pages (pas de code seul en bas de page). --}}
+                <div class="abs-head">
+                    @if ($ref !== '')<p class="ref">{{ $ref }}</p>@endif
+                    <p class="abs-title sans" style="text-align:{{ $isGen ? 'center' : $opts['align_titles'] }};">{{ $opts['number'] ? $n.'. ' : '' }}{{ $isGen ? \App\Documents\LivretDocx::bindPunctuation((string) $s->title) : $s->title }}</p>
+                    @if ($people->isNotEmpty())
+                        <p class="authors" style="text-align:{{ $isGen ? 'center' : $opts['align_authors'] }};">{!! $authorsHtml !!}</p>
+                        @foreach ($affs as $i => $aff)
+                            <p class="aff"><sup>{{ $i + 1 }}</sup> {{ $aff }}</p>
+                        @endforeach
+                        @php
+                            $cbits = [];
+                            if ($corr && $corr['email'] !== '') { $cbits[] = 'Email : '.$corr['email']; }
+                            if ($corr && $corr['phone'] !== '') { $cbits[] = 'Tél : '.$corr['phone']; }
+                        @endphp
+                        @if ($corr && $cbits !== [])
+                            <p class="corr">*Auteur correspondant : {{ $corr['name'] }} &nbsp; {{ implode('  ', $cbits) }}</p>
+                        @endif
                     @endif
-                @endif
+                </div>
                 @php $body = trim(\App\Support\Html::render($s->abstract)); @endphp
                 @if ($body !== '')
-                    <p class="lbl sans">RÉSUMÉ :</p>
-                    <div class="abs-body ukc-rte">{!! $body !!}</div>
+                    {{-- Le libellé « Résumé » reste SOLIDAIRE de son contenu : s'ils ne tiennent
+                         pas ensemble en bas de page, le bloc entier descend à la page suivante ;
+                         si le contenu dépasse une page, c'est LUI qui se coupe, pas le libellé. --}}
+                    <div class="abs-resume">
+                        <p class="lbl sans">{{ $isGen ? 'Résumé' : 'RÉSUMÉ :' }}</p>
+                        <div class="abs-body ukc-rte">{!! $body !!}</div>
+                    </div>
                 @endif
                 @if ($kw = \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()))
                     <p class="kw"><b>Mots clés :</b> <span class="muted" style="font-style:italic;">{{ $kw }}</span></p>

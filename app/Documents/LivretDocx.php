@@ -3,6 +3,7 @@
 namespace App\Documents;
 
 use App\AI\AiManager;
+use App\Models\CommitteeMember;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Slot;
@@ -45,6 +46,19 @@ class LivretDocx
 
     private const MUTED = '6B7280';
 
+    // Palette EXACTE du document de référence « Document général du colloque »
+    // (style « general ») : titres noirs, ateliers en terracotta, tableaux à
+    // bandeau bleu et en-tête gris - mesurés dans le .docx fourni.
+    private const BLACK = '000000';
+
+    private const TERRACOTTA = 'C0504D';
+
+    private const REF_DAY_FILL = '95B3D7';
+
+    private const REF_HEAD_FILL = 'F2F2F2';
+
+    private const REF_GROUP_FILL = 'F2F2F2';
+
     /** @var array<string, string> rôle => libellé de comité (ordre d'affichage). */
     private const COMMITTEE_ROLES = [
         'organisation' => 'Comité d’organisation',
@@ -61,10 +75,11 @@ class LivretDocx
     /** @var array<string, list<string>> nom d'auteur affiché => références des résumés (index des auteurs). */
     private array $authorIndex = [];
 
-    /** Styles intégrés disponibles (modèle actif « default » ou « fss »). */
+    /** Styles intégrés disponibles (modèle actif « default », « fss » ou « general »). */
     public const STYLES = [
         'default' => 'Modèle par défaut',
         'fss' => 'Modèle 2 - Journées scientifiques',
+        'general' => 'Modèle 3 - Document général du colloque',
     ];
 
     /**
@@ -82,6 +97,12 @@ class LivretDocx
     private function isFss(): bool
     {
         return $this->style === 'fss';
+    }
+
+    /** Style « Document général du colloque » (comité d'organisation en tableau + ateliers) ? */
+    private function isGeneral(): bool
+    {
+        return $this->style === 'general';
     }
 
     /** Réponse HTTP de téléchargement du .docx. */
@@ -110,6 +131,15 @@ class LivretDocx
 
         // Les titres sont des paragraphes en gras (addText), PAS des addTitle : Word
         // ajoutait un numéro après chaque titre (style Titre indexé) et exigeait un TOC.
+        // EXCEPTION : le style « général » rend AUSSI les axes/ateliers et les codes de
+        // communication en véritables styles de titre Word (Heading1/Heading2), pour que
+        // le .docx soit navigable dans le volet de navigation et un sommaire. L'allure
+        // est identique à celle qu'avaient ces titres en addText (axes/ateliers centrés
+        // 14 pt, code à droite 11 pt) : l'alignement et les tailles sont repris dans le
+        // style de titre, la couleur terracotta d'un atelier reste portée par son TextRun.
+        if ($this->isGeneral()) {
+            $this->registerGeneralHeadingStyles($doc);
+        }
 
         $section = $doc->addSection([
             'marginTop' => Converter::cmToTwip(2.2),
@@ -148,8 +178,16 @@ class LivretDocx
             (string) EventSettings::get($this->event, 'livret.president_text', ''),
             (string) EventSettings::get($this->event, 'livret.president_signature', ''),
         );
-        $this->addCommissionsProgramme($section);
-        $this->isFss() ? $this->addProgrammeFss($section) : $this->addProgramme($section);
+        if ($this->isGeneral()) {
+            // « Document général du colloque » : commissions (comité d'organisation
+            // en TABLEAU) + programme synthétique, puis « Communications en ateliers »
+            // (planning par atelier), puis les résumés.
+            $num = $this->addCommissionsGeneral($section);
+            $this->addAteliers($section, $num + 1);
+        } else {
+            $this->addCommissionsProgramme($section);
+            $this->isFss() ? $this->addProgrammeFss($section) : $this->addProgramme($section);
+        }
         $this->addBody($section);
 
         // Index des auteurs (renvoie au numéro de résumé). Réglage `livret.author_index`.
@@ -548,6 +586,238 @@ class LivretDocx
         }
     }
 
+    /** @var array<string, string> comités du style « Document général » (ordre du document de référence). */
+    private const GENERAL_COMMITTEE_ORDER = [
+        'supervision' => 'Comité de supervision',
+        'scientifique' => 'Comité scientifique',
+        'organisation' => 'Comité d’organisation',
+    ];
+
+    /**
+     * « Les différentes commissions et programmes du colloque » (style général) :
+     * comités dans l'ordre du document de référence (supervision, scientifique,
+     * organisation), le comité d'organisation rendu en TABLEAU
+     * (N° / Nom & Prénom / Grade / Contacts / Qualité), puis le programme synthétique.
+     */
+    private function addCommissionsGeneral(Section $section): int
+    {
+        $byRole = $this->event->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
+        $committees = collect(self::GENERAL_COMMITTEE_ORDER)
+            ->filter(fn ($label, $role) => ($byRole->get($role)?->isNotEmpty() ?? false));
+
+        $synthesis = $this->event->settings['program_synthesis'] ?? null;
+        $synDays = is_array($synthesis) ? collect($synthesis['days'] ?? []) : collect();
+
+        if ($committees->isEmpty() && $synDays->isEmpty()) {
+            return 0;
+        }
+
+        // « A) LES DIFFÉRENTES COMMISSIONS ET PROGRAMMES DU COLLOQUE »
+        // (gras, 14 pt, noir, à gauche, capitales - doc de référence).
+        $this->generalSectionTitle($section, 'A) Les différentes commissions et programmes du colloque', 14, 'left');
+
+        $num = 0;
+        foreach ($committees as $role => $label) {
+            $num++;
+            // « 1. COMITÉ DE SUPERVISION » : gras 14 pt noir, en capitales.
+            $this->generalHeading($section, $num.'. '.mb_strtoupper($label, 'UTF-8'));
+
+            if ($role === 'organisation') {
+                $this->committeeOrganisationTable($section, $byRole->get($role) ?? collect());
+
+                continue;
+            }
+
+            foreach ($byRole->get($role) ?? [] as $m) {
+                $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name));
+                $tail = trim((string) $m->institution);
+                // Lignes de membres : justifiées, 11 pt noir (doc de référence).
+                $section->addText($tail !== '' ? $lead.', '.$tail : $lead,
+                    ['size' => 11, 'color' => self::BLACK], ['alignment' => 'both', 'spaceAfter' => 30]);
+            }
+        }
+
+        if ($synDays->isNotEmpty()) {
+            $num++;
+            $this->generalHeading($section, $num.'. PROGRAMME SYNTHÉTIQUE DU COLLOQUE');
+            $this->addProgrammeSynthetique($section, $synDays->all());
+        }
+
+        return $num;
+    }
+
+    /**
+     * Styles de titre Word du « Document général » (navigabilité du .docx).
+     *
+     * On ne s'en sert QUE pour les items de contenu (axes/ateliers, codes de
+     * communication), pas pour les titres de section A)/B) : ceux-ci gardent des
+     * alignements différents (A) à gauche, B) centré) qu'un style de titre, lié à
+     * une profondeur, ne saurait porter à la fois. Les deux profondeurs reprennent
+     * l'allure exacte qu'avaient ces titres en addText, donc aucune régression.
+     *  - Heading1 : axes « N- … » et ateliers « ATELIER n … » (centré, 14 pt).
+     *  - Heading2 : code de communication « AVD-xxx » (à droite, 11 pt).
+     * Word reconnaît les identifiants Heading1/Heading2 comme des titres à niveau
+     * de plan → ils peuplent le volet de navigation et alimentent un sommaire.
+     */
+    private function registerGeneralHeadingStyles(PhpWord $doc): void
+    {
+        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $doc->addTitleStyle(1,
+            ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
+            ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
+        $doc->addTitleStyle(2,
+            ['bold' => true, 'size' => 11, 'color' => self::BLACK],
+            ['alignment' => 'right', 'spaceBefore' => 220, 'spaceAfter' => 20, 'keepNext' => true]);
+    }
+
+    /** Titre de section lettré du style général (« A) … », « B) … ») : gras, noir. */
+    private function generalSectionTitle(Section $section, string $text, int $size, string $align): void
+    {
+        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $section->addText($text, ['bold' => true, 'size' => $size, 'color' => self::BLACK, 'name' => $font],
+            ['alignment' => $align, 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
+    }
+
+    /** Titre numéroté du style général (comités, programme) : gras 14 pt noir. */
+    private function generalHeading(Section $section, string $text): void
+    {
+        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $section->addText($text, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
+            ['spaceBefore' => 220, 'spaceAfter' => 80, 'keepNext' => true]);
+    }
+
+    /**
+     * Comité d'organisation en tableau (document de référence) :
+     * N° | Nom & Prénom(s) | Grade | Contacts (tél. + e-mail) | Qualité.
+     *
+     * @param  Collection<int, CommitteeMember>  $members
+     */
+    private function committeeOrganisationTable(Section $section, Collection $members): void
+    {
+        $cols = ['N°' => 1.0, 'Nom & Prénom(s)' => 5.3, 'Grade' => 2.2, 'Contacts' => 5.0, 'Qualité' => 3.8];
+        $totalTwip = (int) Converter::cmToTwip(array_sum($cols));
+
+        $table = $section->addTable(['bordercolor' => 'BFBFBF', 'borderSize' => 4, 'cellMargin' => 60]);
+        $table->addRow();
+        foreach ($cols as $head => $cm) {
+            // En-tête : fond gris F2F2F2, texte noir gras (doc de référence).
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => self::REF_HEAD_FILL])
+                ->addText(mb_strtoupper($head, 'UTF-8'), ['bold' => true, 'size' => 10, 'color' => self::BLACK],
+                    ['alignment' => 'center']);
+        }
+
+        // Le doc de référence scinde le comité d'organisation en « COORDINATION »
+        // (bureau : président, vice-présidents, rapporteurs…) puis « MEMBRES ».
+        $coordination = $members->filter(fn (CommitteeMember $m) => $this->isCoordinationQuality((string) $m->qualite));
+        $membres = $members->reject(fn (CommitteeMember $m) => $this->isCoordinationQuality((string) $m->qualite));
+        $grouped = $coordination->isNotEmpty() && $membres->isNotEmpty();
+
+        $i = 0;
+        $emitGroup = function (string $label) use ($table, $totalTwip): void {
+            $table->addRow();
+            $table->addCell($totalTwip, ['gridSpan' => 5, 'bgColor' => self::REF_GROUP_FILL])
+                ->addText($label, ['bold' => true, 'size' => 10, 'color' => self::BLACK], ['alignment' => 'center']);
+        };
+        $emitMember = function (CommitteeMember $m, int $i) use ($table, $cols): void {
+            $contacts = array_values(array_filter([trim((string) $m->phone), trim((string) $m->email)]));
+            $table->addRow();
+            $table->addCell((int) Converter::cmToTwip($cols['N°']))->addText((string) $i, ['size' => 10, 'color' => self::BLACK], ['alignment' => 'center']);
+            $table->addCell((int) Converter::cmToTwip($cols['Nom & Prénom(s)']))->addText(trim((string) $m->person_name) ?: '-', ['size' => 10, 'color' => self::BLACK]);
+            $table->addCell((int) Converter::cmToTwip($cols['Grade']))->addText(trim((string) $m->person_title), ['size' => 10, 'color' => self::BLACK], ['alignment' => 'center']);
+            $table->addCell((int) Converter::cmToTwip($cols['Contacts']))->addText(implode('  ', $contacts), ['size' => 9, 'color' => self::BLACK]);
+            $table->addCell((int) Converter::cmToTwip($cols['Qualité']))->addText(trim((string) $m->qualite), ['size' => 10, 'color' => self::BLACK]);
+        };
+
+        if ($grouped) {
+            $emitGroup('COORDINATION');
+            foreach ($coordination as $m) {
+                $emitMember($m, ++$i);
+            }
+            $emitGroup('MEMBRES');
+            foreach ($membres as $m) {
+                $emitMember($m, ++$i);
+            }
+        } else {
+            foreach ($members as $m) {
+                $emitMember($m, ++$i);
+            }
+        }
+    }
+
+    /** Qualité relevant du bureau (coordination) du comité d'organisation. */
+    private function isCoordinationQuality(string $qualite): bool
+    {
+        $q = Str::ascii(mb_strtolower(trim($qualite), 'UTF-8'));
+
+        foreach (['president', 'vice', 'rapporteur', 'coordinat', 'secretaire', 'tresorier'] as $needle) {
+            if (str_contains($q, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * « Communications en ateliers » (style général) : pour chaque axe/atelier,
+     * le planning de ses communications orales programmées (horaire, titre,
+     * intervenant), regroupé par jour. Les axes suivent l'ordre configuré de
+     * l'événement, puis les éventuels axes hors liste.
+     */
+    private function addAteliers(Section $section, int $number = 0): void
+    {
+        // Mêmes communications que les résumés (acceptées + canoniques) : une
+        // communication refusée après planification garde son créneau mais n'est
+        // pas au livre.
+        $byTrack = $this->event->slots()->with(['submission', 'session'])
+            ->whereNotNull('starts_at')->orderBy('starts_at')->get()
+            ->filter(fn (Slot $sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
+            ->groupBy(fn (Slot $sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+
+        if ($byTrack->isEmpty()) {
+            return;
+        }
+
+        // « 5. COMMUNICATIONS EN ATELIERS » : item numéroté de la section A, centré,
+        // gras 14 pt noir (doc de référence).
+        $heading = ($number > 0 ? $number.'. ' : '').'COMMUNICATIONS EN ATELIERS';
+        $font = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $section->addText($heading, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
+            ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
+
+        $tracks = collect($this->event->settings['tracks'] ?? [])
+            ->map(fn ($t) => trim((string) $t))->filter()->values();
+        $ordered = $tracks->filter(fn ($t) => $byTrack->has($t))
+            ->merge($byTrack->keys()->reject(fn ($t) => $tracks->contains($t)))
+            ->unique()->values();
+
+        $n = 0;
+        foreach ($ordered as $track) {
+            $n++;
+            // Le libellé « ATELIER n : » est posé par le livret ; si l'axe se nomme
+            // déjà « Atelier 2 - … », on retire ce préfixe pour ne pas le doubler.
+            $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $track));
+            if ($axis === '') {
+                $axis = (string) $track;
+            }
+            // Titre d'atelier en TERRACOTTA (#C0504D), centré, gras 14 pt - couleur
+            // signature du document de référence. addTitle (Heading1) → navigable ;
+            // la couleur terracotta reste portée par le TextRun (le style est noir).
+            $atelierRun = new TextRun;
+            $atelierRun->addText('ATELIER '.$n.' : '.mb_strtoupper($axis, 'UTF-8'),
+                ['bold' => true, 'size' => 14, 'color' => self::TERRACOTTA, 'name' => $font]);
+            $section->addTitle($atelierRun, 1);
+
+            $byDay = ($byTrack->get($track) ?? collect())
+                ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys();
+            foreach ($byDay as $day => $slots) {
+                $this->programmeDayTable($section, (string) $day, $slots);
+            }
+        }
+
+        $section->addPageBreak();
+    }
+
     /** Programme : sessions datées regroupées par jour (tableau Horaire / Session / Salle). */
     private function addProgramme(Section $section): void
     {
@@ -685,18 +955,49 @@ class LivretDocx
      * Tableau d'un jour du programme : Horaire | Communication (titre + auteurs) |
      * Salle / Session.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, Slot>  $slots
+     * Reçoit n'importe quelle collection de créneaux (programme par jour, ou un
+     * regroupement par atelier) : la méthode ne fait que les PARCOURIR, d'où le
+     * type `iterable` - qui accepte aussi bien un groupe Eloquent qu'un groupe de
+     * `groupBy` (Support), sans heurter l'invariance de clé des génériques.
+     *
+     * @param  iterable<int|string, Slot>  $slots
      */
-    private function programmeDayTable(Section $section, string $day, Collection $slots): void
+    private function programmeDayTable(Section $section, string $day, iterable $slots): void
     {
         $label = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
-        $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60, 'keepNext' => true]);
+        $general = $this->isGeneral();
 
-        $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
-        $table->addRow();
-        foreach (['Horaire' => 2.6, 'Communication' => 9.4, 'Salle / Session' => 4] as $head => $cm) {
-            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => 'F1F5F9'])
-                ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
+        // Style « Document général » : la colonne de tête est le CODE de la
+        // communication (comme la colonne « Codes » du document de référence) ; le
+        // programme ne répète ni les auteurs ni leurs affiliations (ils figurent
+        // dans la section Résumés). Les autres styles gardent Horaire | Communication
+        // (titre + auteurs) | Salle.
+        $cols = $general
+            ? ['Code' => 2.2, 'Horaire' => 2.6, 'Communication' => 7.4, 'Salle' => 3.8]
+            : ['Horaire' => 2.6, 'Communication' => 9.4, 'Salle / Session' => 4];
+        $headFill = $general ? self::REF_HEAD_FILL : 'F1F5F9';
+        $headColor = $general ? self::BLACK : self::BLUE;
+
+        $table = $section->addTable(['bordercolor' => $general ? 'BFBFBF' : 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
+
+        // ⚠️ Le bandeau de jour + l'en-tête du tableau sont des LIGNES D'EN-TÊTE
+        // répétées (`tblHeader`) et insécables (`cantSplit`) : Word ne les laisse
+        // jamais seuls en bas de page, le tableau démarre à la page suivante.
+        $headerRow = ['tblHeader' => true, 'cantSplit' => true];
+
+        if ($general) {
+            // Bandeau de jour en bleu 95B3D7, pleine largeur (doc de référence).
+            $table->addRow(null, $headerRow);
+            $table->addCell((int) Converter::cmToTwip(array_sum($cols)), ['gridSpan' => count($cols), 'bgColor' => self::REF_DAY_FILL])
+                ->addText($label, ['bold' => true, 'size' => 11, 'color' => self::BLACK], ['alignment' => 'center']);
+        } else {
+            $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60, 'keepNext' => true]);
+        }
+
+        $table->addRow(null, $general ? $headerRow : null);
+        foreach ($cols as $head => $cm) {
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => $headFill])
+                ->addText($head, ['bold' => true, 'size' => 10, 'color' => $headColor]);
         }
         foreach ($slots as $sl) {
             $h = $sl->starts_at?->format('H:i') ?? '-';
@@ -704,11 +1005,21 @@ class LivretDocx
                 $h .= '-'.$sl->ends_at->format('H:i');
             }
             $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-            $authors = $this->slotAuthors($sl);
             $room = trim((string) ($sl->room ?: $sl->session?->room));
             $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
 
             $table->addRow();
+            if ($general) {
+                $code = trim((string) $sl->submission?->ref_code);
+                $table->addCell((int) Converter::cmToTwip($cols['Code']))->addText($code !== '' ? $code : '-', ['size' => 10, 'bold' => true, 'color' => self::BLACK]);
+                $table->addCell((int) Converter::cmToTwip($cols['Horaire']))->addText($h, ['size' => 10, 'color' => self::BLACK]);
+                $table->addCell((int) Converter::cmToTwip($cols['Communication']))->addText($title !== '' ? self::bindPunctuation($title) : '-', ['size' => 10, 'color' => self::BLACK]);
+                $table->addCell((int) Converter::cmToTwip($cols['Salle']))->addText($room !== '' ? $room : '-', ['size' => 10, 'color' => self::BLACK]);
+
+                continue;
+            }
+
+            $authors = $this->slotAuthors($sl);
             $table->addCell((int) Converter::cmToTwip(2.6))->addText($h, ['size' => 10]);
             $cell = $table->addCell((int) Converter::cmToTwip(9.4));
             $cell->addText($title !== '' ? $title : '-', ['size' => 10]);
@@ -757,7 +1068,13 @@ class LivretDocx
     /** Résumés des communications, regroupés par axe (titres en MAJUSCULES). */
     private function addBody(Section $section): void
     {
-        $this->partTitle($section, 'Résumés des communications');
+        $general = $this->isGeneral();
+        if ($general) {
+            // « B) Résumés des communications » : gras 16 pt noir, centré (doc de référence).
+            $this->generalSectionTitle($section, 'B) Résumés des communications', 16, 'center');
+        } else {
+            $this->partTitle($section, 'Résumés des communications');
+        }
 
         if ($this->groups->isEmpty()) {
             $section->addText('Aucune communication acceptée pour le moment.', ['italic' => true, 'color' => self::MUTED]);
@@ -776,10 +1093,20 @@ class LivretDocx
         $alignAxis = $this->align('livret.align_axis');
 
         $n = 0;
+        $axisNo = 0;
         foreach ($this->groups as $track => $submissions) {
-            $section->addText(mb_strtoupper((string) $track, 'UTF-8'),
-                ['bold' => true, 'size' => $sizeAxis, 'color' => $primary, 'name' => $fontHead],
-                ['alignment' => $alignAxis, 'spaceBefore' => 320, 'spaceAfter' => 160, 'keepNext' => true]);
+            $axisNo++;
+            if ($general) {
+                // Axe « 1- DEMOGRAPHIE … » : gras 14 pt noir, centré, préfixé (doc de
+                // référence). addTitle (Heading1) → navigable (volet + sommaire) ;
+                // l'allure (Jost 14 pt noir centré) est portée par le style Heading1.
+                $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $track));
+                $section->addTitle($axisNo.'- '.mb_strtoupper($axis !== '' ? $axis : (string) $track, 'UTF-8'), 1);
+            } else {
+                $section->addText(mb_strtoupper((string) $track, 'UTF-8'),
+                    ['bold' => true, 'size' => $sizeAxis, 'color' => $primary, 'name' => $fontHead],
+                    ['alignment' => $alignAxis, 'spaceBefore' => 320, 'spaceAfter' => 160, 'keepNext' => true]);
+            }
 
             foreach ($submissions as $s) {
                 $n++;
@@ -817,10 +1144,24 @@ class LivretDocx
     private function addAbstract(Section $section, Submission $s, int $n, bool $number, int $sizeAbstract, int $sizeAuthors, int $sizeBody, string $alignBody): void
     {
         $fss = $this->isFss();
+        $general = $this->isGeneral();
         $refLabel = trim((string) $s->ref_code);
         $indexRef = $refLabel !== '' ? $refLabel : '#'.$n;
 
-        if ($fss) {
+        if ($general) {
+            // Style « Document général » : code à DROITE (gras noir), titre CENTRÉ
+            // (gras noir), auteurs/affiliations CENTRÉS - dispositions exactes du
+            // document de référence (Titre1 jc=right, Titre2/Titre4 jc=center).
+            if ($refLabel !== '') {
+                // Code de communication « AVD-xxx » : à droite, gras 11 pt noir.
+                // addTitle (Heading2) → chaque résumé est atteignable par son code
+                // dans le volet de navigation et le sommaire du .docx.
+                $section->addTitle($refLabel, 2);
+            }
+            $title = $number ? $n.'. '.$s->title : (string) $s->title;
+            $section->addText(self::bindPunctuation($title), ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLACK],
+                ['alignment' => 'center', 'spaceAfter' => 40, 'keepNext' => true]);
+        } elseif ($fss) {
             // Style FSS : « RÉF. TITRE EN MAJUSCULES » sur un seul paragraphe (comme le livret).
             $prefix = $refLabel !== '' ? $refLabel.'. ' : ($number ? $n.'. ' : '');
             $run = $section->addTextRun(['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 40, 'keepNext' => true]);
@@ -868,35 +1209,51 @@ class LivretDocx
                 }
             }
 
-            // Ligne des auteurs avec exposants (alignée selon `livret.align_authors`).
-            $run = $section->addTextRun(['alignment' => $this->align('livret.align_authors'), 'spaceAfter' => $affs === [] ? 80 : 20]);
+            // Style des auteurs : doc de référence = gras italique 12 pt noir ;
+            // sinon gris discret à la taille configurée.
+            $authColor = $general ? self::BLACK : self::MUTED;
+            $authSize = $general ? 12 : $sizeAuthors;
+            $authFmt = $general ? ['bold' => true, 'italic' => true] : [];
+            $affColor = $general ? self::BLACK : self::MUTED;
+            $affSize = $general ? 10 : 9;
+
+            // Ligne des auteurs avec exposants : CENTRÉE pour le style général (doc de
+            // référence), sinon selon `livret.align_authors`. keepNext : l'en-tête
+            // (réf. -> correspondant) reste solidaire, pas de code seul en bas de page.
+            $authAlign = $general ? 'center' : $this->align('livret.align_authors');
+            $run = $section->addTextRun(['alignment' => $authAlign, 'spaceAfter' => $affs === [] ? 80 : 20, 'keepNext' => true]);
             $first = true;
             foreach ($people as $p) {
                 if (! $first) {
-                    $run->addText(', ', ['size' => $sizeAuthors, 'color' => self::MUTED]);
+                    $run->addText(', ', ['size' => $authSize, 'color' => $authColor] + $authFmt);
                 }
                 $first = false;
-                $run->addText($p['name'], ['size' => $sizeAuthors, 'color' => self::MUTED]);
+                $run->addText($p['name'], ['size' => $authSize, 'color' => $authColor] + $authFmt);
                 if ($p['aff'] !== '') {
-                    $run->addText((string) $affIndex[mb_strtolower($p['aff'], 'UTF-8')], ['size' => $sizeAuthors, 'color' => self::MUTED, 'superScript' => true]);
+                    $run->addText((string) $affIndex[mb_strtolower($p['aff'], 'UTF-8')], ['size' => $authSize, 'color' => $authColor, 'superScript' => true]);
                 }
                 if ($p['corr']) {
-                    $run->addText('*', ['size' => $sizeAuthors, 'color' => self::MUTED, 'superScript' => true]);
+                    $run->addText('*', ['size' => $authSize, 'color' => $authColor, 'superScript' => true]);
                 }
             }
 
-            // Affiliations numérotées.
+            // Affiliations numérotées (centrées, italiques dans le style général).
+            $affPara = $general ? ['alignment' => 'center', 'spaceAfter' => 10, 'keepNext' => true] : ['spaceAfter' => 10, 'keepNext' => true];
             foreach ($affs as $i => $aff) {
-                $affRun = $section->addTextRun(['spaceAfter' => 10]);
-                $affRun->addText((string) ($i + 1).' ', ['size' => 9, 'color' => self::MUTED, 'superScript' => true]);
-                $affRun->addText($aff, ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
+                $affRun = $section->addTextRun($affPara);
+                $affRun->addText((string) ($i + 1).' ', ['size' => $affSize, 'color' => $affColor, 'superScript' => true]);
+                $affRun->addText($aff, ['size' => $affSize, 'italic' => true, 'color' => $affColor]);
             }
 
-            // Auteur correspondant : nom (e-mail : … ; Tél : …).
+            // Auteur correspondant : nom (e-mail : … ; Tél : …) - centré dans le style général.
             $corr = $people->firstWhere('corr', true);
             if ($corr && ($contact = $this->contactLine($corr)) !== '') {
+                $corrPara = ['spaceBefore' => 20, 'spaceAfter' => 60];
+                if ($general) {
+                    $corrPara['alignment'] = 'center';
+                }
                 $section->addText('*Auteur correspondant : '.$corr['name'].'   '.$contact,
-                    ['size' => 9, 'color' => self::MUTED], ['spaceBefore' => 20, 'spaceAfter' => 60]);
+                    ['size' => $general ? 10 : 9, 'italic' => $general, 'color' => $affColor], $corrPara);
             }
         }
 
@@ -904,8 +1261,13 @@ class LivretDocx
         // de libellé « RÉSUMÉ : » (le texte suit directement, comme dans le livret).
         $paragraphs = $this->paragraphs((string) $s->abstract);
         if ($paragraphs !== []) {
-            if (! $fss) {
-                $section->addText('RÉSUMÉ :', ['bold' => true, 'size' => 10, 'color' => self::BLUE], ['spaceBefore' => 40, 'spaceAfter' => 20]);
+            // keepNext : le libellé « Résumé » reste collé au début de son contenu, il
+            // ne se retrouve jamais seul en bas de page (le contenu, lui, peut se couper).
+            if ($general) {
+                // Doc de référence : libellé « Résumé » noir gras (pas « RÉSUMÉ : » bleu).
+                $section->addText('Résumé', ['bold' => true, 'size' => 11, 'color' => self::BLACK], ['spaceBefore' => 40, 'spaceAfter' => 20, 'keepNext' => true]);
+            } elseif (! $fss) {
+                $section->addText('RÉSUMÉ :', ['bold' => true, 'size' => 10, 'color' => self::BLUE], ['spaceBefore' => 40, 'spaceAfter' => 20, 'keepNext' => true]);
             }
             foreach ($paragraphs as $i => $paragraphHtml) {
                 $run = $section->addTextRun(['alignment' => $alignBody, 'spaceBefore' => ($fss && $i === 0) ? 40 : 0, 'spaceAfter' => 80]);
@@ -915,9 +1277,13 @@ class LivretDocx
 
         // Mots-clés (trait d'union dans le style FSS, conforme au livret).
         if ($keywords = SubmissionKeywords::join($s->keywords, (new SubmissionFormConfig($s->event))->keywordSeparator())) {
+            $kwLabelFmt = ['bold' => true, 'size' => $sizeBody];
+            if ($general) {
+                $kwLabelFmt['color'] = self::BLACK;
+            }
             $kwRun = $section->addTextRun(['spaceBefore' => 40, 'spaceAfter' => 40]);
-            $kwRun->addText($fss ? 'Mots-clés : ' : 'Mots clés : ', ['bold' => true, 'size' => $sizeBody]);
-            $kwRun->addText($keywords, ['italic' => true, 'size' => $sizeBody, 'color' => self::MUTED]);
+            $kwRun->addText($fss ? 'Mots-clés : ' : 'Mots clés : ', $kwLabelFmt);
+            $kwRun->addText($keywords, ['italic' => true, 'size' => $sizeBody, 'color' => $general ? self::BLACK : self::MUTED]);
         }
     }
 
@@ -1100,10 +1466,26 @@ class LivretDocx
             ['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 160, 'keepNext' => true]);
     }
 
-    /** Nom d'auteur pour l'affichage : en MAJUSCULES (convention du livret). */
+    /**
+     * Nom d'auteur pour l'affichage : rendu TEL QU'IL EST SAISI (« NOM Prénom » dans
+     * le livre de référence, nom de famille en capitales, prénom en casse normale).
+     * ⚠️ On ne force PLUS tout en majuscules : le document de référence ne met en
+     * capitales que le nom de famille, pas le prénom.
+     */
     private function displayName(string $name): string
     {
-        return mb_strtoupper(trim($name), 'UTF-8');
+        return trim($name);
+    }
+
+    /**
+     * Lie la ponctuation haute française (? ! : ; »), et la rare majuscule isolée,
+     * au mot qui précède par une ESPACE INSÉCABLE (U+00A0) : sans cela, dans une
+     * colonne étroite, un « ? » (ou « : ») se retrouve seul sur la dernière ligne.
+     * C'est aussi la règle typographique française (espace insécable avant ces signes).
+     */
+    public static function bindPunctuation(string $text): string
+    {
+        return preg_replace('/ +([?!:;»])/u', "\u{00A0}$1", $text) ?? $text;
     }
 
     /** Normalise une couleur CSS (#rrggbb) en hex Word (RRGGBB), avec repli. */

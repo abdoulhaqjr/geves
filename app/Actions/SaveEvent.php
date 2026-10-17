@@ -264,6 +264,11 @@ class SaveEvent
                 'person_name' => $c['person_name'],
                 'person_title' => $c['person_title'] ?? null,
                 'institution' => $c['institution'] ?? null,
+                // Contacts + qualité : alimentent le tableau du comité d'organisation
+                // du livret « Document général du colloque ».
+                'email' => ($c['email'] ?? null) ?: null,
+                'phone' => ($c['phone'] ?? null) ?: null,
+                'qualite' => ($c['qualite'] ?? null) ?: null,
                 'photo_url' => $c['photo_url'] ?? null,
                 'ordre' => $i,
             ]);

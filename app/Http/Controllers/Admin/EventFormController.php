@@ -558,8 +558,8 @@ class EventFormController extends Controller
 
         $committees = $event
             ? $event->committeeMembers()->orderBy('ordre')
-                ->get(['role', 'person_name', 'person_title', 'institution', 'photo_url'])
-                ->map(fn ($m) => $m->only(['role', 'person_name', 'person_title', 'institution', 'photo_url']))->all()
+                ->get(['role', 'person_name', 'person_title', 'institution', 'email', 'phone', 'qualite', 'photo_url'])
+                ->map(fn ($m) => $m->only(['role', 'person_name', 'person_title', 'institution', 'email', 'phone', 'qualite', 'photo_url']))->all()
             : [];
 
         $axes = collect($s['tracks'] ?? [])->map(fn ($t) => ['label' => (string) $t])->values()->all();

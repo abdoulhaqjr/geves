@@ -289,6 +289,7 @@ class DocumentHubController extends Controller
             'livretBuiltins' => [
                 ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre - commissions numérotées - programme par jour', 'download' => null],
                 ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre - comités simples - programme par jour, salle et séance', 'download' => null],
+                ['key' => 'general', 'name' => 'Modèle 3 - Document général du colloque', 'desc' => 'Comité d’organisation en tableau - programme synthétique - communications en ateliers - résumés par axe', 'download' => null],
                 ['key' => 'base', 'name' => 'Modèle de base '.config('app.name'), 'desc' => 'Document .docx à balises de fusion, à personnaliser dans Word', 'download' => route('admin.documents.livret.base-template')],
             ],
         ];

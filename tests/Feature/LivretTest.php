@@ -41,7 +41,7 @@ it('génère le livret .docx avec les résumés et l’index des auteurs', funct
     expect($xml)->toContain('Résumés des communications')
         ->toContain('Innovation durable')   // titre de la communication acceptée
         ->toContain('Index des auteurs')     // la nouvelle section
-        ->toContain('AWA KODJO')             // l'auteur indexé (nom en MAJUSCULES)
+        ->toContain('Awa Kodjo')             // l'auteur indexé (nom TEL QUEL, plus de MAJUSCULES forcées)
         ->toContain('26-001');               // la référence (renvoi de l'index)
 });
 
@@ -110,6 +110,69 @@ it('applique le style intégré sélectionné (Journées scientifiques / FSS)', 
         ->not->toContain('Différentes commissions et programmes du colloque');
 });
 
+it('applique le style « Document général du colloque » (comité en tableau + ateliers)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $event = $submission->event;
+
+    // Comité d'organisation avec grade, contacts et qualité → tableau du livret.
+    CommitteeMember::create([
+        'event_id' => $event->id,
+        'person_name' => 'Tchaa PALI',
+        'person_title' => 'PT',
+        'role' => 'organisation',
+        'phone' => '+22890060576',
+        'qualite' => 'Président',
+        'ordre' => 1,
+    ]);
+
+    // Une communication programmée (créneau horodaté) → planning par atelier.
+    $session = $event->sessions()->create([
+        'label' => 'Atelier 1 - séance 1', 'type' => 'atelier',
+        'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 12:00',
+    ]);
+    Slot::create([
+        'event_id' => $event->id, 'session_id' => $session->id,
+        'submission_id' => $submission->id, 'participant_id' => $submission->participant_id,
+        'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 09:30',
+    ]);
+
+    EventSettings::set($event, 'livret.template', 'general');
+
+    $xml = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
+            ->streamedContent()
+    );
+
+    expect($xml)
+        // Section lettrée « A) … » (gras, noir), comités en CAPITALES (doc de référence).
+        ->toContain('A) Les différentes commissions et programmes du colloque')
+        ->toContain('COMITÉ D’ORGANISATION')
+        ->toContain('Tchaa PALI')
+        ->toContain('+22890060576')
+        ->toContain('Président')
+        // Communications en ateliers : rubrique numérotée, un atelier par axe.
+        ->toContain('COMMUNICATIONS EN ATELIERS')
+        ->toContain('ATELIER 1 : SCIENCES')
+        ->toContain('Innovation durable')
+        // Résumés : section lettrée « B) … » et axe préfixé « 1- … ».
+        ->toContain('B) Résumés des communications')
+        ->toContain('1- SCIENCES')
+        ->toContain('Index des auteurs')
+        // ⚠️ COULEURS EXACTES du document de référence : ateliers en terracotta,
+        // bandeau de jour bleu, en-tête de tableau gris (fidélité demandée).
+        ->toContain('C0504D')   // titre d'atelier en terracotta
+        ->toContain('95B3D7')   // bandeau de jour bleu
+        ->toContain('F2F2F2')   // en-tête de tableau gris
+        // ⚠️ NAVIGABLE : axes/ateliers (Heading1) et codes de communication
+        // (Heading2) sont de vrais styles de titre Word → volet de navigation
+        // et sommaire. Bookmarks posés par addTitle.
+        ->toContain('w:val="Heading1"')
+        ->toContain('w:val="Heading2"')
+        ->toContain('<w:bookmarkStart');
+});
+
 it('génère le livret en PDF', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
@@ -119,6 +182,35 @@ it('génère le livret en PDF', function () {
 
     $res->assertOk();
     expect($res->headers->get('content-type'))->toContain('pdf');
+    expect(substr((string) $res->getContent(), 0, 5))->toBe('%PDF-');
+});
+
+it('reflète le style « Document général » dans l’aperçu PDF (comité en tableau + ateliers)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $event = $submission->event;
+
+    CommitteeMember::create([
+        'event_id' => $event->id, 'person_name' => 'Tchaa PALI', 'person_title' => 'PT',
+        'role' => 'organisation', 'phone' => '+22890060576', 'qualite' => 'Président', 'ordre' => 1,
+    ]);
+    $session = $event->sessions()->create([
+        'label' => 'Atelier 1 - séance 1', 'type' => 'atelier',
+        'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 12:00',
+    ]);
+    Slot::create([
+        'event_id' => $event->id, 'session_id' => $session->id,
+        'submission_id' => $submission->id, 'participant_id' => $submission->participant_id,
+        'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 09:30',
+    ]);
+
+    EventSettings::set($event, 'livret.template', 'general');
+
+    // Le PDF se génère sans erreur avec le style general (branche dédiée de livretViewData).
+    $res = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'pdf']));
+
+    $res->assertOk();
     expect(substr((string) $res->getContent(), 0, 5))->toBe('%PDF-');
 });
 

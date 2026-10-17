@@ -152,12 +152,54 @@ class DocumentController extends Controller
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
 
-        // Ordre de référence UK/UP : supervision, organisation, scientifique.
-        $committeeRoles = [
-            'supervision' => 'Comité de supervision',
-            'organisation' => 'Comité d’organisation',
-            'scientifique' => 'Comité scientifique',
-        ];
+        // ⚠️ Le style intégré sélectionné pilote AUSSI l'aperçu PDF pour « general »
+        // (comité d'organisation en tableau + « Communications en ateliers »), afin
+        // que l'aperçu reflète fidèlement le .docx. Les autres styles gardent la
+        // mise en page par défaut dans le PDF.
+        $general = $this->livretStyle($event) === 'general';
+
+        // Ordre des comités : « general » suit le document de référence
+        // (supervision → scientifique → organisation), sinon l'ordre UK/UP par défaut.
+        $committeeRoles = $general
+            ? [
+                'supervision' => 'Comité de supervision',
+                'scientifique' => 'Comité scientifique',
+                'organisation' => 'Comité d’organisation',
+            ]
+            : [
+                'supervision' => 'Comité de supervision',
+                'organisation' => 'Comité d’organisation',
+                'scientifique' => 'Comité scientifique',
+            ];
+
+        // Programme : « Communications en ateliers » (par axe) pour le style general,
+        // sinon « Programme » par jour. Même source de créneaux que les résumés.
+        if ($general) {
+            $byTrack = $event->slots()->with(['submission', 'session'])
+                ->whereNotNull('starts_at')->orderBy('starts_at')->get()
+                ->filter(fn ($sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
+                ->groupBy(fn ($sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+            $tracks = collect($event->settings['tracks'] ?? [])->map(fn ($t) => trim((string) $t))->filter()->values();
+            $ordered = $tracks->filter(fn ($t) => $byTrack->has($t))
+                ->merge($byTrack->keys()->reject(fn ($t) => $tracks->contains($t)))
+                ->unique()->values();
+
+            $programmeTitle = 'Communications en ateliers';
+            $programmeGroups = $ordered->map(function ($t, $i) use ($byTrack) {
+                $axis = trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $t));
+
+                return [
+                    'heading' => 'ATELIER '.($i + 1).' : '.mb_strtoupper($axis !== '' ? $axis : (string) $t, 'UTF-8'),
+                    'days' => ($byTrack->get($t) ?? collect())
+                        ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
+                ];
+            })->filter(fn ($g) => collect($g['days'])->isNotEmpty())->values();
+        } else {
+            $programmeTitle = 'Programme';
+            $programmeGroups = $programme->isNotEmpty()
+                ? collect([['heading' => null, 'days' => $programme]])
+                : collect();
+        }
 
         $synthesis = $event->settings['program_synthesis'] ?? null;
 
@@ -165,7 +207,15 @@ class DocumentController extends Controller
             'event' => $event,
             'groups' => $groups,
             'authorIndex' => $authorIndex,
+            // Programme par jour (défaut) : conservé pour la garde « hors livre »
+            // qui vérifie que le programme n'annonce pas de communication refusée.
             'programme' => $programme,
+            'general' => $general,
+            'commissionsTitle' => $general
+                ? 'Les différentes commissions et programmes du colloque'
+                : 'Différentes commissions et programmes du colloque',
+            'programmeTitle' => $programmeTitle,
+            'programmeGroups' => $programmeGroups,
             'programSynthesis' => is_array($synthesis) ? $synthesis : ['title' => '', 'days' => []],
             'committees' => $event->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
             'committeeRoles' => $committeeRoles,
