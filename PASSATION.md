@@ -13,6 +13,41 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
+
+Le payeur ne quitte plus GEVES. Le formulaire du prestataire (CheckoutJS de
+FedaPay) s'affiche dans une fenêtre de la page, montant et colloque sous les
+yeux.
+
+⚠️⚠️ **Le navigateur ne dit jamais qu'un paiement a réussi**, et c'est ici qu'on
+pourrait l'oublier : le rappel de fin s'exécute chez le payeur. La route
+`payment.verify` ne lit aucun statut de la requête - elle interroge le
+prestataire. Le navigateur ne fait que donner l'heure, « regardez maintenant ».
+
+⚠️ Si ce rappel n'arrive jamais (onglet fermé, réseau coupé), le paiement se
+confirme quand même : `payments:reconcile` repasse toutes les 10 minutes. La
+route accélère, elle ne décide pas.
+
+⚠️ **La transaction est créée côté serveur** ; le formulaire la reprend par son
+identifiant. Le montant est le nôtre - le laisser composer la transaction
+reviendrait à laisser le payeur fixer ce qu'il règle.
+
+⚠️ **La clé publique décide, et seule** : renseignée, le formulaire s'ouvre chez
+nous ; vide, on repart en redirection. Pas d'interrupteur de plus, qui pourrait
+dire « activé » sans clé. La clé **secrète** ne doit jamais atteindre la page -
+un cas le garde.
+
+⚠️ **La page hébergée reste accessible** en pied de fenêtre : si le script du
+prestataire ne charge pas, le payeur doit pouvoir finir. Un formulaire embarqué
+sans porte de sortie est un paiement perdu.
+
+⚠️ **Rien n'a été éprouvé contre un vrai compte marchand** : aucune clé n'est
+renseignée, la validation au bac à sable reste à faire (§8). Les cas portent sur
+ce que NOUS décidons - ce qui part dans la requête, ce qui atteint la page, ce
+qu'on croit du navigateur.
+
+**Garde** : cinq cas dans `PaymentGatewayTest`, trois sabotages vérifiés.
+
 ### La carte bancaire est enfin PROPOSÉE (2026-10-18)
 
 Régler par carte marchait déjà : en ne choisissant aucun opérateur, la page
@@ -756,7 +791,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 ## 7. Ce qui reste à faire
 
 ### Priorité haute
-1. **Validation des paiements en ligne au sandbox** - FedaPay est **implémentée** (voir §6 module 11 ; ⚠️ CashPay/SEMOA a été retirée le 2026-10-18 sans avoir jamais encaissé). Reste à : renseigner les identifiants (`.env` : `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`). Puis exposer les webhooks publiquement et **déclarer l'URL côté marchand** - de préférence l'URL **dédiée à l'édition** affichée dans l'onglet Paiement (`/webhooks/paiement/{gateway}/{edition}`). ⚠️ En dev local, aucun webhook ne peut arriver : c'est la **réconciliation** (`payments:reconcile`, module 11ter) qui confirmera le paiement - vérifier que le scheduler tourne (`php artisan schedule:work`).
+1. **Validation des paiements en ligne au sandbox** - FedaPay est **implémentée** (voir §6 module 11 ; ⚠️ CashPay/SEMOA a été retirée le 2026-10-18 sans avoir jamais encaissé). Reste à : renseigner les identifiants (`.env` : `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`). ⚠️ **Et éprouver le FORMULAIRE EMBARQUÉ** (`FEDAPAY_PUBLIC_KEY`) : il n'a jamais rencontré un vrai compte marchand - confirmer que `FedaPay.init({ container })` accepte bien une transaction déjà créée par son `id`, et que la **carte** apparaît si la couverture est ouverte. Puis exposer les webhooks publiquement et **déclarer l'URL côté marchand** - de préférence l'URL **dédiée à l'édition** affichée dans l'onglet Paiement (`/webhooks/paiement/{gateway}/{edition}`). ⚠️ En dev local, aucun webhook ne peut arriver : c'est la **réconciliation** (`payments:reconcile`, module 11ter) qui confirmera le paiement - vérifier que le scheduler tourne (`php artisan schedule:work`).
 2. ~~**Livret .docx « vrai »** via `phpoffice/phpword`~~ **fait** - `App\Documents\LivretDocx` (page de garde charte + résumés acceptés groupés par axe : titre/auteurs/résumé) ; téléchargement via `?format=docx` sur les routes livret **admin** (`admin.documents.livret`) et **participant** (`account.documents.livret`, contrôle de propriété conservé), bouton « Word (.docx) » dans la vue `documents.livret`. ⚠️ phpword veut des **twips entiers** (`(int) Converter::cmToTwip(...)`). Tests : le `.docx` est dézippé (`word/document.xml`) pour vérifier titre/axe/communication.
 
 ### Ensuite

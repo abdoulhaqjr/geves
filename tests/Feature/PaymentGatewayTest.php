@@ -150,6 +150,135 @@ it('offre la carte sur la page de paiement du participant', function () {
         ->assertDontSee('Choisir mon opérateur');
 });
 
+/* ---------------------- Formulaire embarqué (sans redirection) ------------- */
+
+/** La même configuration, plus la clé PUBLIQUE qui ouvre le formulaire chez nous. */
+function configureFedapayEmbarque(): void
+{
+    configureFedapay();
+    config(['services.fedapay.public_key' => 'pk_sandbox_abc123']);
+}
+
+/** Un paiement en attente, prêt à être engagé. */
+function paiementEnAttente($event, $participant)
+{
+    return $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 15000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+}
+
+/**
+ * ⚠️ **La clé publique décide, et elle décide SEULE.** Pas de réglage « activer
+ * le formulaire embarqué » à tenir d'accord avec la réalité : qui renseigne la
+ * clé publique veut le formulaire sur sa page, qui ne la renseigne pas ne peut
+ * pas l'avoir. Un interrupteur de plus aurait pu dire « activé » sans clé.
+ */
+it('ouvre le formulaire sur notre page dès qu’une clé publique est renseignée', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 51]], 201),
+    ]);
+
+    $resultat = (new FedaPayGateway)->initiate($payment);
+
+    expect($resultat['type'])->toBe('embed');
+    expect($resultat['public_key'])->toBe('pk_sandbox_abc123');
+    // ⚠️ Le formulaire reprend la transaction CRÉÉE CÔTÉ SERVEUR : son montant est
+    // le nôtre. Le laisser composer la sienne reviendrait à laisser le payeur
+    // fixer ce qu'il règle.
+    expect($resultat['transaction_id'])->toBe('51');
+    // ⚠️ Porte de sortie : si le script du prestataire ne charge pas, le payeur
+    // doit pouvoir finir. Un formulaire embarqué sans issue est un paiement perdu.
+    expect($resultat['url'])->toBe('https://paiement.exemple/abc');
+});
+
+it('repart en redirection quand aucune clé publique n’est renseignée', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 52]], 201),
+    ]);
+
+    expect((new FedaPayGateway)->initiate($payment)['type'])->toBe('redirect');
+});
+
+/**
+ * ⚠️⚠️ **LE NAVIGATEUR NE DIT JAMAIS QU'UN PAIEMENT A RÉUSSI.** C'est la règle
+ * du projet, et le formulaire embarqué est exactement l'endroit où on pourrait
+ * l'oublier : son rappel s'exécute chez le payeur. La route ne lit aucun statut
+ * de la requête - elle interroge le prestataire. Le navigateur ne fait que
+ * donner l'heure, « regardez maintenant ».
+ */
+it('ne confirme rien sur la parole du navigateur', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+    $payment->update(['gateway_ref' => 'REF-51']);
+
+    // Le prestataire, lui, dit que rien n'est réglé.
+    Http::fake(['*/transactions/*' => Http::response(['v1/transaction' => ['status' => 'pending']])]);
+
+    $this->postJson(route('payment.verify', ['gateway' => 'fedapay']), [
+        'payment' => $payment->id,
+        // Ce que le navigateur prétend - et qui ne doit peser RIEN.
+        'status' => 'paid',
+        'transaction' => ['status' => 'approved'],
+    ])->assertOk()->assertJsonPath('status', 'pending');
+
+    expect($payment->fresh()->status)->toBe('pending');
+});
+
+it('confirme le paiement quand le prestataire le dit', function () {
+    Mail::fake();
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+    $payment->update(['gateway_ref' => 'REF-53']);
+
+    Http::fake(['*/transactions/*' => Http::response(['v1/transaction' => ['status' => 'approved']])]);
+
+    $this->postJson(route('payment.verify', ['gateway' => 'fedapay']), ['payment' => $payment->id])
+        ->assertOk()->assertJsonPath('status', 'paid');
+
+    expect($payment->fresh()->status)->toBe('paid');
+});
+
+/**
+ * ⚠️ **La clé SECRÈTE ne doit jamais atteindre le navigateur.** La page porte la
+ * clé publique, c'est son rôle ; la secrète signe les appels serveur. Les deux
+ * voyagent côte à côte dans la configuration, et c'est précisément pour cela
+ * qu'on le vérifie.
+ */
+it('pose la fenêtre de paiement sur la page, avec la clé publique et JAMAIS la secrète', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 54]], 201),
+    ]);
+
+    // ⚠️ `back()` retombe sur l'accueil quand la requête n'a pas de référent :
+    // dans un test il faut le poser, sinon on éprouve la page d'accueil.
+    $page = $this->actingAs($account, 'account')
+        ->from(route('account.payment', $event->id))
+        ->followingRedirects()
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay'])
+        ->assertOk();
+
+    $page->assertSee('data-pay-embed', false)
+        ->assertSee('pk_sandbox_abc123', false)
+        ->assertDontSee('sk_test', false);
+});
+
 /* ------------------------------- FedaPay ---------------------------------- */
 
 it('FedaPay : initie une transaction et redirige vers l’URL hébergée', function () {

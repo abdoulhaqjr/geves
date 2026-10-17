@@ -151,8 +151,29 @@ class FedaPayGateway implements OnlineGateway
         $payment->update(['gateway_ref' => $id]);
 
         $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
+        $url = (string) ($token['url'] ?? '');
 
-        return ['type' => 'redirect', 'url' => (string) ($token['url'] ?? '')];
+        // ⚠️ **Sans clé PUBLIQUE, pas de formulaire embarqué** : on repart en
+        // redirection. C'est la seule règle - pas de réglage de plus à tenir
+        // d'accord avec la réalité. Qui renseigne la clé publique veut le
+        // formulaire sur sa page ; qui ne la renseigne pas ne peut pas l'avoir.
+        $publique = (string) config('services.fedapay.public_key');
+        if ($publique === '') {
+            return ['type' => 'redirect', 'url' => $url];
+        }
+
+        return [
+            'type' => 'embed',
+            'public_key' => $publique,
+            'environment' => config('services.fedapay.mode') === 'live' ? 'live' : 'sandbox',
+            'transaction_id' => (string) $id,
+            // ⚠️ **La page hébergée reste accessible**, et ce n'est pas un luxe : si
+            // le script du prestataire ne charge pas - réseau, blocage, coupure de
+            // son CDN - le payeur doit pouvoir finir quand même. Un formulaire
+            // embarqué qui ne s'affiche pas sans porte de sortie, c'est un paiement
+            // perdu.
+            'url' => $url,
+        ];
     }
 
     /**

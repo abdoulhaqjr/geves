@@ -10,6 +10,7 @@ use App\Payments\GatewayRegistry;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
 use App\Support\Fees;
+use App\Support\PaymentEmbed;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -109,6 +110,11 @@ class PaymentController extends Controller
             report($e);
 
             return back()->withErrors(['pay' => 'Le service de paiement est momentanément indisponible. Réessayez plus tard.']);
+        }
+
+        // Formulaire embarqué : on RESTE sur la page, le prestataire s'y affiche.
+        if ($result['type'] === 'embed') {
+            return back()->with('ukc_pay_embed', PaymentEmbed::payload($result, $payment, $gateway->key()));
         }
 
         if ($result['type'] === 'redirect' && ! empty($result['url'])) {

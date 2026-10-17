@@ -275,6 +275,11 @@
                         </div>
                         <div class="ukc-field full"><label for="fedapay_webhook_secret">Secret de webhook</label><input type="password" id="fedapay_webhook_secret" name="fedapay_webhook_secret" value="{{ $v('fedapay_webhook_secret') }}" autocomplete="new-password"></div>
                         <div class="ukc-field full">
+                            <label for="fedapay_public_key">Clé publique (formulaire sur notre page)</label>
+                            <input type="text" id="fedapay_public_key" name="fedapay_public_key" value="{{ $v('fedapay_public_key') }}" autocomplete="off" placeholder="pk_live_… / pk_sandbox_…">
+                            <span class="hint">Renseignée, le formulaire de paiement s’ouvre <strong>sur la page du participant</strong> au lieu de l’envoyer ailleurs. Laissée vide, le règlement se fait par redirection. ⚠️ C’est la clé <strong>publique</strong> : elle part dans le navigateur, et ce n’est pas la clé secrète ci-dessus.</span>
+                        </div>
+                        <div class="ukc-field full">
                             <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:400;">
                                 <input type="checkbox" name="fedapay_card" value="1" @checked(old('fedapay_card', $values['fedapay_card']))> Proposer la carte bancaire (Visa / Mastercard)
                             </label>

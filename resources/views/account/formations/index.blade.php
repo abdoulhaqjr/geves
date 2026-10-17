@@ -1,4 +1,7 @@
 <x-layouts.participant :title="__('Formations')">
+    {{-- ⚠️ UNE SEULE fenêtre par page : la poser dans une boucle en afficherait
+         autant que de lignes, toutes empilées sur la même transaction. --}}
+    <x-ukc.pay-embed :embed="session('ukc_pay_embed')" />
     @php
         $me = auth('account')->user();
         $currency = config('payments.currency', 'XOF');

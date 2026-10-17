@@ -1474,3 +1474,61 @@ body.ukc-overlay-open { overflow: hidden; }
   .ukc-shell .tdb-ag__row { flex-wrap: wrap; }
   .ukc-shell .tdb-ag__row .a { align-self: flex-start; }
 }
+
+/* ---- Formulaire de paiement embarqué (prestataire en ligne) ----
+   ⚠️ Rang 100 : c'est une surface MODALE, au-dessus du chatbot (55) et des
+   slideovers (60). Un formulaire de paiement à moitié recouvert, c'est un
+   paiement abandonné. */
+.ukc-pay-embed {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(15, 23, 42, .55);
+  overflow-y: auto;
+}
+/* ⚠️ **La fenêtre TIENT dans l'écran.** Mesuré sur une fenêtre de 422px de haut :
+   la zone du formulaire (420px) plus l'en-tête et le pied débordaient, et le pied
+   - qui porte la porte de sortie - tombait hors champ. C'est la ZONE qui défile,
+   pas la fenêtre : l'en-tête et le pied restent visibles. */
+.ukc-pay-embed__panel {
+  width: 100%; max-width: 520px; background: #fff;
+  border-radius: var(--ukc-radius-lg); box-shadow: var(--ukc-shadow-lg);
+  overflow: hidden;
+  display: flex; flex-direction: column; max-height: calc(100dvh - 40px);
+}
+.ukc-pay-embed__head, .ukc-pay-embed__fallback { flex: none; }
+.ukc-pay-embed__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--ukc-border);
+}
+.ukc-pay-embed__head h2 { margin: 0; font-size: 1.02rem; font-weight: 800; color: var(--ukc-text); }
+.ukc-pay-embed__close {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--ukc-bg); border: 1px solid var(--ukc-border); color: var(--ukc-muted);
+  cursor: pointer;
+}
+.ukc-pay-embed__close:hover { color: var(--ukc-text); border-color: var(--ukc-light); }
+/* Le prestataire pose son formulaire ici. Une hauteur minimale évite que le
+   panneau ne s'effondre à une barre de titre pendant le chargement. */
+.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: min(420px, 50dvh); padding: 6px; }
+/* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
+   le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
+.ukc-pay-embed__failed { display: none; }
+.ukc-pay-embed[data-failed] .ukc-pay-embed__failed {
+  display: block; margin: 0; padding: 28px 18px; text-align: center;
+  color: var(--ukc-muted); font-size: 14px;
+}
+.ukc-pay-embed[data-failed] .ukc-pay-embed__box { min-height: 0; }
+.ukc-pay-embed__fallback {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin: 0; padding: 13px 18px; border-top: 1px solid var(--ukc-border);
+  background: var(--ukc-bg); color: var(--ukc-muted); font-size: 12.5px;
+}
+.ukc-pay-embed__fallback a { color: var(--ukc-blue); font-weight: 700; }
+/* La page derrière ne défile plus : deux zones de défilement imbriquées font
+   perdre le formulaire sous les doigts. */
+body.ukc-pay-embed-open { overflow: hidden; }
+@media (max-width: 560px) {
+  .ukc-pay-embed { padding: 0; }
+  .ukc-pay-embed__panel { max-width: none; min-height: 100dvh; max-height: 100dvh; border-radius: 0; }
+}

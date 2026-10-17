@@ -855,6 +855,11 @@
                                     <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
                                     <p class="ukc-hint">Copié depuis le tableau de bord FedaPay (section Webhooks). <strong>Indispensable</strong> : sans lui, une notification de paiement ne peut pas être authentifiée et le règlement resterait « en attente ».</p>
                                 </div>
+                                <div class="ukc-field full">
+                                    <label for="fp-pk">Clé publique (formulaire sur notre page)</label>
+                                    <input type="text" id="fp-pk" name="fedapay[public_key]" value="{{ $pay['fedapay']['public_key'] ?? '' }}" autocomplete="off" placeholder="pk_… (laisser vide = défaut)">
+                                    <p class="ukc-hint">Renseignée, le formulaire s’ouvre <strong>sur la page du participant</strong> au lieu de l’envoyer ailleurs. C’est la clé <strong>publique</strong>, pas la secrète.</p>
+                                </div>
                                 <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'event' => $event])"
                                                    label="URL du webhook FedaPay à déclarer" />
 

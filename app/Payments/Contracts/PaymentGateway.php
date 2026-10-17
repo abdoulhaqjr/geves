@@ -3,6 +3,7 @@
 namespace App\Payments\Contracts;
 
 use App\Models\Payment;
+use App\Support\PaymentEmbed;
 
 /**
  * Contrat commun aux passerelles de paiement. Une passerelle s'annonce
@@ -18,9 +19,22 @@ interface PaymentGateway
     public function isAvailable(): bool;
 
     /**
-     * Initie le paiement.
+     * Initie le paiement. Trois formes, et c'est l'appelant qui les distingue :
      *
-     * @return array{type: 'redirect'|'instructions', url?: string, message?: string}
+     * - `redirect` : on envoie le payeur sur la page du prestataire (`url`) ;
+     * - `embed` : le formulaire du prestataire s'ouvre SUR notre page
+     *   ({@see PaymentEmbed}) ; `url` reste la porte de sortie si
+     *   son script ne charge pas ;
+     * - `instructions` : rien en ligne, on affiche la marche à suivre (`message`).
+     *
+     * @return array{
+     *     type: 'redirect'|'embed'|'instructions',
+     *     url?: string,
+     *     message?: string,
+     *     public_key?: string,
+     *     environment?: string,
+     *     transaction_id?: string,
+     * }
      */
     public function initiate(Payment $payment): array;
 }

@@ -4459,6 +4459,64 @@ leur clé dans `lang/en.json`. Les intitulés de catégorie et les noms de grade
 restent en français : ce sont des **données** saisies par l'organisation, pas
 des chaînes d'interface.
 
+### Paiement SANS REDIRECTION : le formulaire s'ouvre sur notre page (2026-10-18)
+
+Le payeur ne quitte plus GEVES : le formulaire du prestataire s'affiche dans une
+fenêtre de la page, avec le montant et le colloque toujours sous les yeux. C'est
+le **CheckoutJS** de FedaPay (`cdn.fedapay.com/checkout.js`), posé dans un
+conteneur (`FedaPay.init({ container })`).
+
+⚠️⚠️ **LE NAVIGATEUR NE DIT JAMAIS QU'UN PAIEMENT A RÉUSSI**, et c'est ici qu'on
+pourrait l'oublier : le rappel de fin (`onComplete`) s'exécute **chez le
+payeur**. La route **`payment.verify`** ne lit aucun statut de la requête - elle
+interroge le prestataire, exactement comme le retour navigateur. Le navigateur
+ne fait que **donner l'heure** (« regardez maintenant »), et c'est tout ce qu'on
+lui accorde. Lire son verdict reviendrait à laisser le payeur écrire lui-même
+qu'il a payé.
+
+⚠️ **Si ce rappel n'arrive jamais** (onglet fermé, réseau coupé), le paiement se
+confirme quand même : `payments:reconcile` repasse toutes les 10 minutes. Cette
+route **accélère, elle ne décide pas** - ne jamais en faire le seul chemin.
+
+⚠️ **La transaction est créée CÔTÉ SERVEUR**, et le formulaire ne fait que la
+reprendre par son identifiant (`transaction: { id }`). Le montant et l'objet
+sont les nôtres : laisser le formulaire les composer reviendrait à laisser le
+payeur fixer ce qu'il règle.
+
+⚠️ **La clé PUBLIQUE décide, et elle décide seule.** Renseignée
+(`services.fedapay.public_key`, Réglages › Paiement, ou par événement), le
+formulaire s'ouvre sur notre page ; vide, on repart en redirection. **Pas
+d'interrupteur de plus** : il pourrait dire « activé » sans clé, et il faudrait
+le tenir d'accord avec la réalité. ⚠️ C'est la clé **publique** - elle part dans
+le navigateur, c'est son rôle ; la **secrète** signe les appels serveur et ne
+doit jamais atteindre la page (un cas le garde).
+
+⚠️ **La page hébergée reste accessible**, en pied de fenêtre. Si le script du
+prestataire ne charge pas - réseau, blocage, coupure de son CDN - le payeur doit
+pouvoir finir quand même. Un formulaire embarqué sans porte de sortie, c'est un
+paiement perdu. Le message d'échec est **écrit dans la page** (donc traduit), pas
+posé en `content:` dans la feuille de style.
+
+⚠️ **UNE SEULE fenêtre par page** : `<x-ukc.pay-embed>` est posée une fois sur
+`account/payment/pay` et une fois sur `account/formations/index` - jamais dans la
+boucle des formations, qui en afficherait autant que de lignes, toutes sur la
+même transaction. La charge est construite par **`App\Support\PaymentEmbed`**,
+source unique des deux parcours.
+
+⚠️ **La fenêtre tient dans l'écran** : mesuré sur 422px de haut, la zone du
+formulaire (420px) plus l'en-tête et le pied débordaient, et le pied - qui porte
+la porte de sortie - tombait hors champ. C'est la **zone** qui défile, pas la
+fenêtre. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
+abandonné.
+
+⚠️ **Rien de tout cela n'a été éprouvé contre un vrai compte marchand** : aucune
+clé n'est renseignée, et la validation au bac à sable reste à faire (cf. §8 de
+PASSATION.md). Les cas Pest portent sur ce que NOUS décidons - ce qui part dans
+la requête, ce qui atteint la page, ce qu'on croit du navigateur.
+
+Cinq cas dans `PaymentGatewayTest`, trois sabotages vérifiés.
+
 ### Carte bancaire : acceptée depuis toujours, proposée depuis le 2026-10-18
 
 Régler par carte **marchait déjà** - en ne choisissant aucun opérateur, la page

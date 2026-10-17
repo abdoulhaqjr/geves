@@ -3090,3 +3090,96 @@ document.addEventListener('submit', (e) => {
 
     ukcAiVeil.show(ukcAiVeilOptions(form));
 }, true);
+
+/* ------------------------------------------------------------------ *
+ * Formulaire de paiement EMBARQUÉ (prestataire en ligne)
+ *
+ * ⚠️ **Le navigateur ne dit JAMAIS qu'un paiement a réussi.** Quand le
+ * prestataire annonce la fin, on ne lit pas son verdict : on demande au serveur
+ * de vérifier auprès de lui (`payment.verify`). Le navigateur ne fait que
+ * donner l'heure - « regardez maintenant ». Et si cet appel n'arrive jamais
+ * (onglet fermé, réseau coupé), `payments:reconcile` confirmera de son côté :
+ * ce script accélère, il ne décide pas.
+ * ------------------------------------------------------------------ */
+const UKC_FEDAPAY_CHECKOUT = 'https://cdn.fedapay.com/checkout.js?v=1.1.7';
+
+function ukcPayEmbedScript(src) {
+    // Une seule balise par adresse : rouvrir le formulaire ne doit pas
+    // réinjecter le script, qui redéfinirait l'objet global en pleine saisie.
+    const deja = document.querySelector(`script[data-ukc-pay-embed="${src}"]`);
+    if (deja) return deja.__ukcReady;
+
+    const el = document.createElement('script');
+    el.src = src;
+    el.async = true;
+    el.dataset.ukcPayEmbed = src;
+    el.__ukcReady = new Promise((ok, ko) => {
+        el.addEventListener('load', () => ok());
+        el.addEventListener('error', () => ko(new Error('script indisponible')));
+    });
+    document.head.appendChild(el);
+
+    return el.__ukcReady;
+}
+
+function initPayEmbed(root = document) {
+    root.querySelectorAll('[data-pay-embed]:not([data-pay-embed-ready])').forEach((wrap) => {
+        wrap.dataset.payEmbedReady = '1';
+
+        let cfg;
+        try {
+            cfg = JSON.parse(wrap.dataset.payEmbed);
+        } catch {
+            return;
+        }
+
+        const box = wrap.querySelector('[data-pay-embed-box]');
+        const fermer = () => {
+            wrap.remove();
+            document.body.classList.remove('ukc-pay-embed-open');
+        };
+
+        wrap.querySelector('[data-pay-embed-close]')?.addEventListener('click', fermer);
+        // ⚠️ Échap ferme la fenêtre, comme toute surface modale du projet - mais
+        // il n'annule rien : la transaction vit déjà chez le prestataire.
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.body.contains(wrap)) fermer();
+        });
+
+        document.body.classList.add('ukc-pay-embed-open');
+
+        const verifier = () => fetch(cfg.verify_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            },
+            body: JSON.stringify({ payment: cfg.payment }),
+        }).catch(() => {}).then(() => window.location.reload());
+
+        ukcPayEmbedScript(UKC_FEDAPAY_CHECKOUT).then(() => {
+            if (typeof window.FedaPay === 'undefined') return;
+
+            window.FedaPay.init({
+                public_key: cfg.public_key,
+                environment: cfg.environment,
+                container: box,
+                // ⚠️ On reprend la transaction CRÉÉE CÔTÉ SERVEUR : son montant et
+                // son objet sont les nôtres. Laisser le formulaire les composer
+                // reviendrait à laisser le payeur fixer ce qu'il règle.
+                transaction: { id: cfg.transaction_id },
+                onComplete(resp) {
+                    if (resp?.reason === window.FedaPay.DIALOG_DISMISSED) return;
+                    verifier();
+                },
+            });
+        }).catch(() => {
+            // Le script n'a pas chargé : la porte de sortie reste à l'écran, et on
+            // le DIT - un cadre vide sans un mot se lit comme une panne de GEVES.
+            wrap.dataset.failed = '1';
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => initPayEmbed());

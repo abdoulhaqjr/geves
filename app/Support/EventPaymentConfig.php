@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Config;
 class EventPaymentConfig
 {
     /** Clés d'identifiants par passerelle (mêmes que la config globale). */
-    public const FEDAPAY_KEYS = ['secret', 'mode', 'webhook_secret'];
+    public const FEDAPAY_KEYS = ['secret', 'mode', 'webhook_secret', 'public_key'];
 
     /** Réglages de paiement propres à un événement, ou null. @return array<string, mixed>|null */
     public static function settings(?Event $event): ?array

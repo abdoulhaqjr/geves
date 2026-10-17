@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
 use App\Payments\GatewayRegistry;
 use App\Support\EventPaymentConfig;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -59,6 +60,34 @@ class PaymentController extends Controller
         }
 
         return redirect()->route('account.payment', $payment->event_id)->with($flash);
+    }
+
+    /**
+     * Fin du formulaire EMBARQUÉ : le navigateur annonce que le payeur a terminé.
+     *
+     * ⚠️ **On ne le croit pas.** Cette route ne lit aucun statut de la requête :
+     * elle interroge le prestataire, exactement comme le retour navigateur. Le
+     * navigateur ne fait que DONNER L'HEURE - « regardez maintenant » - et c'est
+     * tout ce qu'on lui accorde. Croire son verdict reviendrait à laisser le
+     * payeur écrire lui-même qu'il a payé.
+     *
+     * ⚠️ Et si cet appel n'arrive jamais (onglet fermé, réseau coupé), le paiement
+     * se confirme quand même : `payments:reconcile` repasse toutes les 10 minutes.
+     * Cette route accélère, elle ne décide pas.
+     */
+    public function verify(Request $request, string $gateway): JsonResponse
+    {
+        $gw = $this->registry->get($gateway);
+        $payment = Payment::find($request->input('payment'));
+
+        if (! $gw instanceof OnlineGateway || ! $payment) {
+            return response()->json(['status' => 'unknown'], 404);
+        }
+
+        EventPaymentConfig::apply($payment->event);
+        $this->settle($payment, $gw->verify($payment));
+
+        return response()->json(['status' => $payment->fresh()->status]);
     }
 
     /**

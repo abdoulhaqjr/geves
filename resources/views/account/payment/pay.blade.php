@@ -7,6 +7,10 @@
 
 <x-layouts.participant title="Inscription & paiement" subtitle="Suivez votre participation et réglez vos frais">
 <div class="account-payment">
+    {{-- ⚠️ UNE SEULE fenêtre par page : la poser dans une boucle en afficherait
+         autant que de lignes, toutes empilées sur la même transaction. --}}
+    <x-ukc.pay-embed :embed="session('ukc_pay_embed')" />
+
     {{-- ===== Parcours d'inscription ===== --}}
     <div class="payment-overview">
         <div class="payment-overview__top">

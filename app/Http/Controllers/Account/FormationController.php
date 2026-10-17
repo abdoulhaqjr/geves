@@ -13,6 +13,7 @@ use App\Support\CurrentEvent;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
 use App\Support\Notifier;
+use App\Support\PaymentEmbed;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -134,6 +135,11 @@ class FormationController extends Controller
             $result = $gateway->initiate($payment);
         } catch (\Throwable) {
             return $back->withErrors(['pay' => 'Le service de paiement est momentanément indisponible. Réessayez plus tard.']);
+        }
+
+        // Formulaire embarqué : on RESTE sur la page, le prestataire s'y affiche.
+        if ($result['type'] === 'embed') {
+            return $back->with('ukc_pay_embed', PaymentEmbed::payload($result, $payment, $gateway->key()));
         }
 
         if ($result['type'] === 'redirect' && ! empty($result['url'])) {

@@ -1111,5 +1111,14 @@
     "Erreur :status": "Error :status",
     "Retour à l’accueil": "Return to the home page",
     "Réessayer": "Try again",
-    "Besoin d’aide ?": "Need help?"
+    "Besoin d’aide ?": "Need help?",
+    "Régler en ligne": "Pay online",
+    "Le formulaire ne s’affiche pas ?": "Form not showing?",
+    "Ouvrir la page de paiement sécurisée": "Open the secure payment page",
+    "Fermez cette fenêtre et réessayez.": "Close this window and try again.",
+    "Le service de paiement ne répond pas pour le moment.": "The payment service is not responding right now.",
+    "Je choisis sur la page de paiement": "I will choose on the payment page",
+    "Mobile money": "Mobile money",
+    "Mobile money - autres pays": "Mobile money - other countries",
+    "Carte bancaire (Visa / Mastercard)": "Bank card (Visa / Mastercard)"
 }

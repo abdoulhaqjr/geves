@@ -401,6 +401,7 @@ class EventFormController extends Controller
             'fedapay.secret' => ['nullable', 'string', 'max:255'],
             'fedapay.mode' => ['nullable', 'in:test,live'],
             'fedapay.webhook_secret' => ['nullable', 'string', 'max:255'],
+            'fedapay.public_key' => ['nullable', 'string', 'max:255'],
         ]);
 
         // On ne conserve que les valeurs renseignées (les vides = repli global).
