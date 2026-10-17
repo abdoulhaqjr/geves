@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 /**
- * FedaPay - mobile money (MTN, Moov, Togocom…) et cartes via page hébergée.
+ * FedaPay - mobile money (MTN, Moov, Togocom…) et carte bancaire via page hébergée.
  *
  * Flux : POST /transactions → POST /transactions/{id}/token (URL hébergée) →
  * GET /transactions/{id} (status « approved ») ; webhook signé HMAC-SHA256
@@ -19,6 +19,13 @@ use Illuminate\Support\Facades\Http;
  */
 class FedaPayGateway implements OnlineGateway
 {
+    /**
+     * Le payeur annonce qu'il règlera par carte. ⚠️ **Ce code ne quitte jamais la
+     * plateforme** : aucun code carte n'est documenté côté prestataire, le champ
+     * `mode` ne désignant que des opérateurs mobile money. Voir `initiate()`.
+     */
+    public const CARD = 'card';
+
     public function key(): string
     {
         return 'fedapay';
@@ -51,6 +58,25 @@ class FedaPayGateway implements OnlineGateway
             'free_sn' => 'Free (Sénégal)',
             'airtel_ne' => 'Airtel (Niger)',
         ];
+    }
+
+    /**
+     * Mobile money **et carte bancaire**, quand le compte marchand l'accepte
+     * (réglage `services.fedapay.card`).
+     *
+     * ⚠️ La carte est en TÊTE : c'est le seul moyen qui ne se devine pas depuis un
+     * numéro de téléphone, et il était jusqu'ici invisible - la liste ne portait
+     * que des opérateurs, si bien qu'on croyait devoir en choisir un.
+     *
+     * @return array<string, string>
+     */
+    public function paymentMethods(): array
+    {
+        $carte = config('services.fedapay.card', true)
+            ? [self::CARD => 'Carte bancaire (Visa / Mastercard)']
+            : [];
+
+        return $carte + $this->mobileOperators();
     }
 
     public function isAvailable(): bool
@@ -103,7 +129,17 @@ class FedaPayGateway implements OnlineGateway
             'customer' => $customer,
         ];
 
-        // Opérateur choisi chez nous : la page du prestataire arrive pré-sélectionnée.
+        // Moyen choisi chez nous : la page du prestataire arrive pré-sélectionnée.
+        //
+        // ⚠️ **La CARTE ne se transmet PAS en `mode`.** Ce champ ne désigne que des
+        // opérateurs mobile money ; aucun code carte n'est documenté. Omis, il laisse
+        // la page hébergée proposer tout ce que le compte marchand accepte - carte
+        // comprise, ce qui est précisément ce qu'on veut. Inventer un code ferait
+        // échouer la création de la transaction, donc le paiement ENTIER.
+        //
+        // ⚠️ Le filtre porte sur `mobileOperators()`, pas sur `paymentMethods()` :
+        // c'est la liste de ce qui est TRANSMISSIBLE. Les confondre enverrait
+        // « card » au prestataire.
         $operator = (string) ($payment->meta['operator'] ?? '');
         if ($operator !== '' && array_key_exists($operator, $this->mobileOperators())) {
             $body['mode'] = $operator;

@@ -4311,11 +4311,14 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   et un **filtre par nature** (Participation englobe les co-auteurs) ;
   les moyens sont regroupés (`Payment::methodGroups()`) pour ne plus mélanger
   encaissement manuel et parcours en ligne.
-- **Opérateur mobile money** : choisi **chez nous** avant la redirection
-  (`<x-ukc.pay-operator :gateways="…" />` → `Payment::setOperator()` →
-  `meta['operator']` → `mode` chez le prestataire), pour que sa page arrive
-  pré-sélectionnée. `OnlineGateway::mobileOperators()` liste les codes ciblables
-  (vide si la passerelle ne sait pas le faire).
+- **Moyen de paiement** : choisi **chez nous** avant la redirection
+  (`<x-ukc.pay-method :gateways="…" />` → `Payment::setOperator()` →
+  `meta['operator']`), pour que la page du prestataire arrive pré-sélectionnée.
+  ⚠️ **Deux listes, et il ne faut pas les confondre** :
+  `OnlineGateway::mobileOperators()` = ce qui est **transmissible** en `mode` ;
+  `OnlineGateway::paymentMethods()` = ce qui est **proposable** au payeur, carte
+  comprise. Un code présent dans la seconde et absent de la première ne doit
+  **jamais** partir dans la requête (cf. la section sur la carte bancaire).
 - **Téléphone obligatoire à l'inscription ET au profil** (`account.register.store`,
   `account.profile.update`) : il sert
   d'identifiant fort pour le rapprochement (auteurs, formateurs) et pré-remplit la
@@ -4441,6 +4444,62 @@ dont six dans le seul barème. Un cas Pest lit les `__()` de la vue et exige
 leur clé dans `lang/en.json`. Les intitulés de catégorie et les noms de grades
 restent en français : ce sont des **données** saisies par l'organisation, pas
 des chaînes d'interface.
+
+### Carte bancaire : acceptée depuis toujours, proposée depuis le 2026-10-18
+
+Régler par carte **marchait déjà** - en ne choisissant aucun opérateur, la page
+hébergée du prestataire propose tout ce que le compte marchand accepte, Visa et
+Mastercard compris. Mais rien ne le disait : la liste ne portait que des
+opérateurs mobile money, sous l'intitulé « Choisir mon opérateur ». Tout
+invitait à en prendre un, donc à croire la carte refusée.
+
+⚠️ **Le code « carte » ne quitte JAMAIS la plateforme.** Le champ `mode` de la
+requête ne désigne que des opérateurs mobile money ; **aucun code carte n'est
+documenté** côté prestataire. En l'omettant, on obtient exactement ce qu'on
+veut. En inventer un ferait échouer la **création de la transaction**, donc le
+paiement entier : le payeur n'aurait pas une page sans carte, il n'aurait pas
+de page du tout.
+
+D'où **deux listes distinctes** sur `OnlineGateway`, à ne pas confondre :
+
+- **`mobileOperators()`** - ce qui est **transmissible** en `mode`. C'est elle
+  que `FedaPayGateway::initiate()` interroge avant de remplir le champ.
+- **`paymentMethods()`** - ce qui est **proposable** au payeur : les opérateurs,
+  plus la carte. C'est elle qu'affiche le composant, et elle qui **valide** le
+  code reçu.
+
+⚠️ **La validation vit dans `Payment::setOperator()`, pas dans les écrans.** Le
+code vient d'un formulaire, donc de n'importe où, et **deux parcours**
+l'enregistrent (frais de participation et formation). Un code que la passerelle
+du paiement ne propose pas est **écarté** - y compris un opérateur mobile money
+posé sur un paiement **manuel**, où l'on règle au guichet et où il ne veut plus
+rien dire.
+
+⚠️ **C'est le COMPTE MARCHAND qui accepte la carte, pas nous.** Elle demande une
+couverture (UEMOA ou monde) accordée sur demande. D'où le réglage
+**`services.fedapay.card`** (Réglages › Paiement, défaut **ouvert**) : décoché,
+la carte disparaît de la liste. Sans lui, on annoncerait un moyen que la page de
+paiement ne proposera pas. ⚠️ Le réglage est **au niveau plateforme** : un
+événement qui encaisse sur son propre compte marchand ne peut pas le contredire.
+
+⚠️ **Une case à cocher ne passe pas par `filled()`** : décochée elle vaut
+`false`, que `filled()` rejette - le réglage « ne pas proposer la carte »
+n'aurait alors jamais été appliqué. `AppServiceProvider` regarde donc si la clé
+**existe**, comme pour `hal.enabled`.
+
+Le composant s'appelle **`<x-ukc.pay-method>`** (ex-`pay-operator`) : il ne
+propose plus seulement des opérateurs. Son premier choix est « Je choisis sur la
+page de paiement » - le choix n'est pas obligatoire, et l'intitulé doit le dire.
+
+⚠️ **Piège Pest trouvé ici par le sabotage** : `Http::assertSent` réussit dès
+qu'**UNE** requête satisfait le rappel. Un rappel qui laisse passer les autres
+appels (la demande de jeton) est donc **toujours** satisfait, et le cas ne mord
+jamais - mesuré : en envoyant « card » dans `mode`, la garde restait verte. On
+**lit** la requête de création (`corpsDeCreation()`, via `Http::recorded()`) et
+on l'éprouve, au lieu de la faire valider par un rappel.
+
+Cinq cas dans `PaymentGatewayTest` et trois dans `PaymentOperatorTest`, quatre
+sabotages vérifiés.
 
 ### ⚠️ CashPay (SEMOA) a été RETIRÉE des moyens de paiement (2026-10-18)
 

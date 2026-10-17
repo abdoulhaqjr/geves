@@ -126,6 +126,7 @@ class SettingController extends Controller
             'payments_default' => $g('payments.default', (string) config('payments.default', 'manual')),
             'fedapay_secret' => $g('fedapay.secret'),
             'fedapay_mode' => $g('fedapay.mode', 'test'),
+            'fedapay_card' => (bool) Settings::get('fedapay.card', (bool) config('services.fedapay.card', true)),
             'fedapay_webhook_secret' => $g('fedapay.webhook_secret'),
             'turnstile_site_key' => $g('turnstile.site_key', (string) config('services.turnstile.site_key')),
             'ai_default' => $g('ai.default', (string) config('services.ai.default', 'claude')),
@@ -220,6 +221,7 @@ class SettingController extends Controller
             $payload[$key] = (string) $request->input($field, '');
         }
         $payload['hal.enabled'] = $request->boolean('hal_enabled');
+        $payload['fedapay.card'] = $request->boolean('fedapay_card');
 
         // Tolère le collage d'une ligne d'.env entière (« LIVEKIT_API_KEY=xxx »)
         // dans un champ d'identifiant : on ne conserve que la valeur.

@@ -13,6 +13,45 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### La carte bancaire est enfin PROPOSÉE (2026-10-18)
+
+Régler par carte marchait déjà : en ne choisissant aucun opérateur, la page
+hébergée du prestataire propose tout ce que le compte marchand accepte, Visa et
+Mastercard compris. Mais rien ne le disait - la liste ne portait que des
+opérateurs mobile money, sous l'intitulé « Choisir mon opérateur ». Tout
+invitait à en prendre un, donc à croire la carte refusée.
+
+⚠️ **Le code « carte » ne quitte jamais la plateforme.** Le champ `mode` de la
+requête ne désigne que des opérateurs mobile money, et aucun code carte n'est
+documenté côté prestataire. L'omettre donne exactement ce qu'on veut ; en
+inventer un ferait échouer la création de la transaction, donc le paiement
+entier - le payeur n'aurait pas une page sans carte, il n'aurait pas de page.
+
+D'où **deux listes distinctes** sur `OnlineGateway` : `mobileOperators()` = ce
+qui est **transmissible** en `mode` ; `paymentMethods()` = ce qui est
+**proposable** au payeur, carte comprise.
+
+⚠️ **La validation du code vit dans `Payment::setOperator()`, pas dans les
+écrans** : il vient d'un formulaire, et deux parcours l'enregistrent (frais de
+participation et formation). Un code que la passerelle du paiement ne propose
+pas est écarté - y compris un opérateur mobile money posé sur un paiement
+**manuel**, où l'on règle au guichet.
+
+⚠️ **C'est le compte marchand qui accepte la carte, pas nous** : elle demande
+une couverture accordée sur demande. Réglage `services.fedapay.card` (Réglages ›
+Paiement, défaut ouvert), au niveau **plateforme**.
+
+Le composant s'appelle désormais `<x-ukc.pay-method>` (ex-`pay-operator`), et
+son premier choix est « Je choisis sur la page de paiement ».
+
+**Garde** : cinq cas dans `PaymentGatewayTest`, trois dans
+`PaymentOperatorTest`, quatre sabotages vérifiés.
+
+⚠️ **Un des cas était décoratif, et seul le sabotage l'a montré** :
+`Http::assertSent` réussit dès qu'UNE requête satisfait le rappel, donc un
+rappel qui laisse passer la demande de jeton est toujours satisfait. On lit la
+requête de création et on l'éprouve.
+
 ### CashPay (SEMOA) retirée des moyens de paiement (2026-10-18)
 
 Il ne reste que **Paiement manuel** (encaissement hors ligne) et **FedaPay**.

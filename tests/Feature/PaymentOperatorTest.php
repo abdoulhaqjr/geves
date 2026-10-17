@@ -5,6 +5,7 @@ use App\Payments\GatewayRegistry;
 use App\Payments\Gateways\FedaPayGateway;
 use App\Support\Settings;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
@@ -137,6 +138,49 @@ it('filtre les paiements par nature sur la page admin', function () {
         ->assertOk()->assertSee('111')->assertDontSee('222');
 });
 
+/**
+ * ⚠️ **Le moyen choisi n'a de sens que pour la passerelle qui le propose.** Ce
+ * cas postait un opérateur mobile money sur un paiement MANUEL - on règle alors
+ * au guichet ou par virement, et l'opérateur ne veut plus rien dire. Le code est
+ * désormais validé contre les moyens de la passerelle du paiement
+ * ({@see Payment::setOperator()}), donc l'un est gardé et l'autre écarté.
+ *
+ * ⚠️ La validation vit dans le MODÈLE, pas dans les écrans : deux parcours
+ * enregistrent ce champ (frais de participation et formation), et un troisième
+ * viendra.
+ */
+it('garde le moyen choisi sur un paiement en ligne, et l’écarte sur un paiement manuel', function () {
+    $event = openEdition();
+
+    $enLigne = Payment::create([
+        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
+    ]);
+    $enLigne->setOperator('moov_tg');
+    expect($enLigne->fresh()->meta['operator'])->toBe('moov_tg');
+
+    // La carte est un moyen proposable, elle se retient aussi.
+    $enLigne->setOperator('card');
+    expect($enLigne->fresh()->meta['operator'])->toBe('card');
+
+    $manuel = Payment::create([
+        'event_id' => $event->id, 'amount' => 5000, 'method' => 'cash', 'gateway' => 'manual',
+    ]);
+    $manuel->setOperator('moov_tg');
+    expect($manuel->fresh()->meta)->not->toHaveKey('operator');
+});
+
+/** ⚠️ Le code vient d'un formulaire, donc de n'importe où. */
+it('n’enregistre pas un moyen de paiement inconnu', function () {
+    $event = openEdition();
+    $payment = Payment::create([
+        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
+    ]);
+
+    $payment->setOperator('<script>alert(1)</script>');
+
+    expect($payment->fresh()->meta ?? [])->not->toHaveKey('operator');
+});
+
 it('enregistre l’opérateur choisi lors de l’inscription payante à une formation', function () {
     $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
@@ -145,8 +189,17 @@ it('enregistre l’opérateur choisi lors de l’inscription payante à une form
     ]);
     $formation = publishedFormation($event, 10000);
 
+    // ⚠️ La passerelle doit être CONFIGURÉE pour être proposée, et la création de
+    // la transaction est simulée : ce cas porte sur ce qu'on enregistre, pas sur
+    // l'échange avec le prestataire.
+    config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec', 'card' => true]]);
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 77]], 201),
+    ]);
+
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation), [
-        'gateway' => 'manual', 'operator' => 'moov_tg',
+        'gateway' => 'fedapay', 'operator' => 'moov_tg',
     ]);
 
     expect(Payment::first()->meta['operator'])->toBe('moov_tg');

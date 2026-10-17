@@ -27,6 +27,129 @@ function configureFedapay(): void
     config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec']]);
 }
 
+/* ------------------------- Moyens de paiement ----------------------------- */
+
+/**
+ * Le corps de la requête de CRÉATION de transaction, ou null.
+ *
+ * ⚠️ **On lit la requête, on ne la fait pas valider par un rappel.**
+ * `Http::assertSent` réussit dès qu'UNE requête satisfait le rappel : un rappel
+ * qui laisse passer les autres appels (ici la demande de jeton) est donc
+ * toujours satisfait, et le cas ne mord jamais. Mesuré : en envoyant « card »
+ * dans `mode`, la garde restait verte.
+ *
+ * @return array<string, mixed>|null
+ */
+function corpsDeCreation(): ?array
+{
+    foreach (Http::recorded() as [$request, $response]) {
+        if (str_ends_with($request->url(), '/transactions')) {
+            return $request->data();
+        }
+    }
+
+    return null;
+}
+
+/**
+ * ⚠️ **La carte bancaire était acceptée sans être proposée.** La page de
+ * paiement ne listait que des opérateurs mobile money, sous l'intitulé
+ * « Choisir mon opérateur » : rien ne disait qu'on pouvait régler par carte, et
+ * tout laissait croire qu'il fallait prendre un opérateur. Elle fonctionnait
+ * pourtant - en ne choisissant rien, la page du prestataire propose tout ce que
+ * le compte marchand accepte.
+ */
+it('propose la carte bancaire en plus du mobile money', function () {
+    $moyens = (new FedaPayGateway)->paymentMethods();
+
+    expect($moyens)->toHaveKey('card');
+    expect($moyens['card'])->toContain('Carte');
+    // ⚠️ Convention du projet : jamais le nom de l'agrégateur devant le payeur.
+    expect($moyens['card'])->not->toContain('FedaPay');
+    // Les opérateurs restent proposés à côté.
+    expect($moyens)->toHaveKey('togocel');
+});
+
+/**
+ * ⚠️ **Le code « carte » ne quitte JAMAIS la plateforme.** Le champ `mode` de la
+ * requête ne désigne que des opérateurs mobile money ; aucun code carte n'est
+ * documenté. En l'omettant, la page hébergée propose tout ce que le compte
+ * marchand accepte - carte comprise, ce qu'on veut. Un code inventé ferait
+ * échouer la création de la transaction, donc le paiement ENTIER : le payeur
+ * n'aurait pas une page sans carte, il n'aurait pas de page du tout.
+ */
+it('n’envoie aucun mode au prestataire quand le payeur annonce la carte', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 15000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+    $payment->setOperator('card');
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 42]], 201),
+    ]);
+
+    (new FedaPayGateway)->initiate($payment);
+
+    $corps = corpsDeCreation();
+
+    expect($corps)->not->toBeNull('aucune transaction créée');
+    expect($corps)->not->toHaveKey('mode');
+});
+
+/** Un opérateur mobile money, lui, EST transmis : c'est tout son intérêt. */
+it('transmet l’opérateur mobile money choisi', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 15000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+    $payment->setOperator('moov_tg');
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 43]], 201),
+    ]);
+
+    (new FedaPayGateway)->initiate($payment);
+
+    expect(corpsDeCreation()['mode'] ?? null)->toBe('moov_tg');
+});
+
+/**
+ * ⚠️ **C'est le compte marchand qui accepte la carte, pas nous.** Elle demande
+ * une couverture accordée sur demande ; sans elle, l'annoncer enverrait le
+ * payeur sur une page qui ne la propose pas. D'où le réglage.
+ */
+it('retire la carte des moyens proposés quand le réglage la ferme', function () {
+    configureFedapay();
+    config(['services.fedapay.card' => false]);
+
+    $moyens = (new FedaPayGateway)->paymentMethods();
+
+    expect($moyens)->not->toHaveKey('card');
+    expect($moyens)->toHaveKey('togocel'); // le mobile money n'est pas touché
+});
+
+/** La page de paiement du participant doit la MONTRER, pas seulement l'accepter. */
+it('offre la carte sur la page de paiement du participant', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event->id))
+        ->assertOk()
+        ->assertSee('Carte bancaire (Visa / Mastercard)')
+        // ⚠️ Le choix n'est pas obligatoire, et l'intitulé doit le dire : « Choisir
+        // mon opérateur » laissait croire le contraire.
+        ->assertSee('Je choisis sur la page de paiement')
+        ->assertDontSee('Choisir mon opérateur');
+});
+
 /* ------------------------------- FedaPay ---------------------------------- */
 
 it('FedaPay : initie une transaction et redirige vers l’URL hébergée', function () {

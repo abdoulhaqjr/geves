@@ -46,6 +46,11 @@ return [
         'secret' => env('FEDAPAY_SECRET'),
         'mode' => env('FEDAPAY_MODE', 'test'), // test (sandbox) | live
         'webhook_secret' => env('FEDAPAY_WEBHOOK_SECRET'),
+        // Proposer la CARTE BANCAIRE au payeur. ⚠️ C'est le compte marchand qui
+        // décide vraiment : la carte demande une couverture (UEMOA ou monde) qui
+        // s'accorde sur demande. Décocher ici si elle n'est pas ouverte, sinon on
+        // annonce un moyen que la page du prestataire ne proposera pas.
+        'card' => (bool) env('FEDAPAY_CARD', true),
     ],
 
     // Fournisseurs d'IA (paramétrage assisté, génération badges/attestations à venir).

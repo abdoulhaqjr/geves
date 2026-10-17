@@ -127,7 +127,7 @@
                             @endforeach
                         </div>
                     </fieldset>
-                    <x-ukc.pay-operator :gateways="$gateways" gateway-expr="gw" id="operator" class="ukc-field" wrapper-style="max-width:340px;margin-top:14px;" style="width:100%;" />
+                    <x-ukc.pay-method :gateways="$gateways" gateway-expr="gw" id="operator" class="ukc-field" wrapper-style="max-width:340px;margin-top:14px;" style="width:100%;" />
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--ukc-border);padding-top:18px;margin-top:20px;">
                         <p style="display:inline-flex;align-items:center;gap:7px;margin:0;color:var(--ukc-muted);font-size:12px;"><x-ukc.icon name="shield" :size="16" /> Vous serez guidé jusqu’à la confirmation du règlement.</p>
                         <button type="submit" class="ukc-btn ukc-btn--green">Continuer pour régler <strong>&nbsp;{{ number_format((float) $amount, 0, ',', ' ') }} FCFA</strong></button>

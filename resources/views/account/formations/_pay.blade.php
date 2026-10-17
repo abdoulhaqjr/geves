@@ -15,7 +15,7 @@
         @else
             <input type="hidden" name="gateway" value="{{ $gateways[0]->key() }}">
         @endif
-        <x-ukc.pay-operator :gateways="$gateways" gateway-expr="gw" style="{{ $ctl }}" />
+        <x-ukc.pay-method :gateways="$gateways" gateway-expr="gw" style="{{ $ctl }}" />
         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">
             <x-ukc.icon name="card" :size="14" /> {{ $label }}
         </button>

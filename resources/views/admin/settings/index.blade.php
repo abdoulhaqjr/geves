@@ -274,6 +274,12 @@
                             @error('fedapay_mode') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <div class="ukc-field full"><label for="fedapay_webhook_secret">Secret de webhook</label><input type="password" id="fedapay_webhook_secret" name="fedapay_webhook_secret" value="{{ $v('fedapay_webhook_secret') }}" autocomplete="new-password"></div>
+                        <div class="ukc-field full">
+                            <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:400;">
+                                <input type="checkbox" name="fedapay_card" value="1" @checked(old('fedapay_card', $values['fedapay_card']))> Proposer la carte bancaire (Visa / Mastercard)
+                            </label>
+                            <span class="hint">C’est le compte marchand qui décide vraiment : la carte demande une couverture (UEMOA ou monde) accordée sur demande. Décochez si elle n’est pas ouverte - sinon la plateforme annonce un moyen que la page de paiement ne proposera pas.</span>
+                        </div>
                     </div>
                 </div>
             </div>
