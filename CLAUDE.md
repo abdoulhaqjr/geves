@@ -4251,6 +4251,14 @@ Sources, pour ne pas les redéclarer à chaque fois :
   qu'on a su que l'exemption des séances d'horloge n'avait pas affaibli la garde des
   dates du seeder, et que le tri **naturel** des versions WinGet était bien couvert
   (trié comme des chaînes, le résolveur servait `7.0` au lieu de `10.0`).
+  - ⚠️ **Restaurer par une COPIE du fichier, jamais par `git checkout --`.** Le
+    sabotage porte par définition sur du travail **pas encore commité** :
+    `git checkout --` ne remet pas le fichier d'avant le sabotage, il le remet au
+    dernier commit - donc il efface la correction qu'on est en train d'éprouver.
+    Vu ici, sur la mise en page du parcours : le sabotage suivant s'est exécuté
+    contre l'ancien code et a « réussi » pour la mauvaise raison. Copier le
+    fichier de côté avant, le recopier après, et **vérifier la restauration au
+    md5** - sans quoi on ne sait pas ce qu'on a repoussé.
 
 ## Pièges fréquents
 
