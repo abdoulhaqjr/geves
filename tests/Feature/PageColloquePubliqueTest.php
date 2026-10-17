@@ -135,6 +135,23 @@ it('accroche le filet du parcours aux pastilles, pas aux bords du conteneur', fu
 });
 
 /**
+ * ⚠️ **La pastille passe DEVANT le filet, et `position: relative` n'y suffit
+ * pas.** Le filet appartient à l'étape de DROITE et déborde sur celle de
+ * gauche : à rang égal, c'est l'ordre du document qui tranche, donc il se
+ * peignait par-dessus la moitié droite de la pastille précédente - un trait en
+ * travers de chacun des cinq chiffres. Il faut un rang EXPLICITE de part et
+ * d'autre. Les étapes ne créant pas de contexte d'empilement (`position:
+ * relative` sans `z-index`), les deux rangs se comparent bien d'une étape à
+ * l'autre.
+ */
+it('tient le filet du parcours derrière les pastilles', function () {
+    $css = cssPublic();
+
+    expect(regleCss($css, '.ukc-stepper .ukc-step .circle'))->toContain('z-index: 1');
+    expect(regleCss($css, '.ukc-stepper .ukc-step + .ukc-step::before'))->toContain('z-index: 0');
+});
+
+/**
  * ⚠️ **Une page publique ne sait pas qui la lit.** La première étape portait la
  * pastille pleine de l'étape EN COURS : elle annonçait « vous en êtes là » à
  * quelqu'un qui n'a peut-être rien commencé, ou qui a déjà tout terminé. Les

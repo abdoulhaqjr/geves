@@ -986,11 +986,17 @@ input[data-uppercase] { text-transform: uppercase; }
    tenait pour acquis qu'elles soient exactement cinq - en ajouter ou en retirer
    une le laissait flotter à côté des pastilles. */
 .ukc-stepper .ukc-step + .ukc-step::before {
-  content: ''; position: absolute; top: 27px; left: -50%; right: 50%;
+  content: ''; position: absolute; z-index: 0; top: 27px; left: -50%; right: 50%;
   height: 2px; background: var(--ukc-border);
 }
+/* ⚠️ **Le cercle passe DEVANT le filet, et `position: relative` n'y suffit pas.**
+   Le filet appartient à l'étape de DROITE et déborde sur celle de gauche : à
+   rang égal, c'est l'ordre du document qui tranche, donc le filet se peignait
+   par-dessus la moitié droite du cercle précédent. Il faut un rang explicite.
+   Les étapes ne créant pas de contexte d'empilement (`position: relative` sans
+   `z-index`), les deux rangs se comparent bien d'une étape à l'autre. */
 .ukc-stepper .ukc-step .circle {
-  position: relative; /* au-dessus du filet, que son fond interrompt */
+  position: relative; z-index: 1; /* devant le filet, que son fond interrompt */
   width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px;
   display: flex; align-items: center; justify-content: center;
   background: #fff; border: 2px solid rgba(34, 62, 164, .22);

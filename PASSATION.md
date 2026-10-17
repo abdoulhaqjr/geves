@@ -30,6 +30,10 @@ Repris du même geste :
 - ⚠️ **Le filet relie deux pastilles voisines** au lieu de se tendre d'un bord à
   l'autre du conteneur. `left: 10%; right: 10%` ne tombait sur le centre des
   pastilles extrêmes que pour **cinq** étapes exactement.
+- ⚠️ **La pastille passe devant le filet** : `position: relative` n'y suffisait
+  pas. Le filet appartient à l'étape de droite et déborde sur celle de gauche ;
+  à rang égal, l'ordre du document tranche, et il se peignait en travers de
+  chacun des cinq chiffres. Rang explicite de part et d'autre.
 - ⚠️ **Sur mobile, le jalon est une grille**, pas une ligne flex : en flex, la
   pastille, le titre et la précision sont trois frères de rang égal, donc trois
   colonnes - le même travers, en plus serré. Et le filet s'y **redresse** au lieu

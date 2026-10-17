@@ -4450,6 +4450,15 @@ conteneur. `left: 10%; right: 10%` ne tombait sur le centre des pastilles
 extrêmes que pour **cinq** étapes exactement : en ajouter ou en retirer une le
 laissait flotter à côté d'elles.
 
+⚠️ **La pastille passe devant le filet, et `position: relative` n'y suffit pas.**
+Le filet appartient à l'étape de DROITE et déborde sur celle de gauche : à rang
+égal, c'est l'ordre du document qui tranche, donc il se peignait par-dessus la
+moitié droite de la pastille précédente - un trait en travers de chacun des cinq
+chiffres. D'où un rang **explicite** de part et d'autre (`z-index: 1` sur la
+pastille, `0` sur le filet). Les étapes ne créant pas de contexte d'empilement
+(`position: relative` sans `z-index`), les deux rangs se comparent bien d'une
+étape à l'autre.
+
 ⚠️ **Sur mobile, le jalon est une GRILLE, pas une ligne flex** : en flex, la
 pastille, le titre et la précision sont trois frères de rang égal, donc trois
 colonnes - le même travers qu'en plein écran, en plus serré. La grille
