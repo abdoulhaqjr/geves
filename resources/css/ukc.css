@@ -1495,12 +1495,28 @@ body.ukc-overlay-open { overflow: hidden; }
   overflow: hidden;
   display: flex; flex-direction: column; max-height: calc(100dvh - 40px);
 }
-.ukc-pay-embed__head, .ukc-pay-embed__fallback { flex: none; }
-.ukc-pay-embed__head {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 16px 18px; border-bottom: 1px solid var(--ukc-border);
+.ukc-pay-embed__head { flex: none; }
+.ukc-pay-embed__head { padding: 14px 18px 15px; border-bottom: 1px solid var(--ukc-border); }
+.ukc-pay-embed__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ukc-pay-embed__eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--ukc-green); font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
 }
-.ukc-pay-embed__head h2 { margin: 0; font-size: 1.02rem; font-weight: 800; color: var(--ukc-text); }
+/* ⚠️ L'objet et le montant se lisent d'un seul regard, et le montant ne se
+   coupe JAMAIS : c'est le chiffre qu'on vient vérifier avant de s'engager. */
+.ukc-pay-embed__what {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 14px; margin-top: 7px;
+}
+.ukc-pay-embed__head h2 {
+  margin: 0; font-size: 1rem; font-weight: 800; color: var(--ukc-text);
+  line-height: 1.3; min-width: 0;
+}
+.ukc-pay-embed__amount {
+  flex: none; color: var(--ukc-blue); font-size: 1.22rem; font-weight: 800;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
 .ukc-pay-embed__close {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; border-radius: 10px;
@@ -1525,12 +1541,13 @@ body.ukc-overlay-open { overflow: hidden; }
   color: var(--ukc-muted); font-size: 14px;
 }
 .ukc-pay-embed[data-failed] .ukc-pay-embed__box { min-height: 0; }
-.ukc-pay-embed__fallback {
-  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
-  margin: 0; padding: 13px 18px; border-top: 1px solid var(--ukc-border);
-  background: var(--ukc-bg); color: var(--ukc-muted); font-size: 12.5px;
+.ukc-pay-embed__foot {
+  flex: none; padding: 11px 18px 12px; border-top: 1px solid var(--ukc-border);
+  background: var(--ukc-bg); color: var(--ukc-light); font-size: 12px; line-height: 1.5;
 }
-.ukc-pay-embed__fallback a { color: var(--ukc-blue); font-weight: 700; }
+.ukc-pay-embed__foot p { margin: 0; }
+.ukc-pay-embed__foot p + p { margin-top: 3px; }
+.ukc-pay-embed__foot a { color: var(--ukc-blue); font-weight: 700; }
 /* La page derrière ne défile plus : deux zones de défilement imbriquées font
    perdre le formulaire sous les doigts. */
 body.ukc-pay-embed-open { overflow: hidden; }

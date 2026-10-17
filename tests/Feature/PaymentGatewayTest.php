@@ -277,6 +277,14 @@ it('pose la fenêtre de paiement sur la page, avec la clé publique et JAMAIS la
     $page->assertSee('data-pay-embed', false)
         ->assertSee('pk_sandbox_abc123', false)
         ->assertDontSee('sk_test', false);
+
+    // ⚠️ **La fenêtre DIT ce qu'on règle et combien.** Elle ne portait que
+    // « Régler en ligne » : le payeur arrivait devant un formulaire venu
+    // d'ailleurs sans savoir ce qu'il engageait, au moment du parcours où l'on
+    // doute le plus.
+    $page->assertSee('Paiement sécurisé')
+        ->assertSee('Frais de participation')
+        ->assertSee('15 000 FCFA');
 });
 
 /* ------------------------------- FedaPay ---------------------------------- */

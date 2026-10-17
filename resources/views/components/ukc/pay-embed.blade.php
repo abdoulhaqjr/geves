@@ -13,14 +13,26 @@
          data-pay-embed="{{ json_encode($embed, JSON_THROW_ON_ERROR) }}">
         <div class="ukc-pay-embed__panel">
             <div class="ukc-pay-embed__head">
-                <h2 id="ukc-pay-embed-title">{{ __('Régler en ligne') }}</h2>
-                {{-- ⚠️ Pas de croix qui ANNULE : la transaction existe déjà côté
-                     prestataire, et elle se confirmera d'elle-même si le payeur la
-                     termine ailleurs. On ferme la fenêtre, on n'annule rien. --}}
-                <button type="button" class="ukc-pay-embed__close" data-pay-embed-close
-                        aria-label="{{ __('Fermer') }}">
-                    <x-ukc.icon name="close" :size="18" />
-                </button>
+                <div class="ukc-pay-embed__top">
+                    <span class="ukc-pay-embed__eyebrow">
+                        <x-ukc.icon name="shield" :size="14" /> {{ __('Paiement sécurisé') }}
+                    </span>
+                    {{-- ⚠️ Pas de croix qui ANNULE : la transaction existe déjà côté
+                         prestataire, et elle se confirmera d'elle-même si le payeur la
+                         termine ailleurs. On ferme la fenêtre, on n'annule rien. --}}
+                    <button type="button" class="ukc-pay-embed__close" data-pay-embed-close
+                            aria-label="{{ __('Fermer') }}">
+                        <x-ukc.icon name="close" :size="18" />
+                    </button>
+                </div>
+                {{-- ⚠️ **Ce qu'on règle, et combien.** Le bandeau ne disait que
+                     « Régler en ligne » : le payeur arrivait devant un formulaire venu
+                     d'ailleurs sans savoir ce qu'il engageait. C'est le moment du
+                     parcours où l'on doute le plus. --}}
+                <div class="ukc-pay-embed__what">
+                    <h2 id="ukc-pay-embed-title">{{ $embed['title'] ?? __('Frais de participation') }}</h2>
+                    <strong class="ukc-pay-embed__amount">{{ $embed['amount'] ?? '' }}</strong>
+                </div>
             </div>
 
             <div class="ukc-pay-embed__box" data-pay-embed-box></div>
@@ -30,15 +42,17 @@
                  prestataire ne charge pas - réseau, blocage, coupure de son CDN -
                  le payeur doit pouvoir finir quand même. Un formulaire embarqué
                  sans issue, c'est un paiement perdu. --}}
-            <p class="ukc-pay-embed__fallback">
-                <x-ukc.icon name="shield" :size="15" />
-                {{ __('Le formulaire ne s’affiche pas ?') }}
-                @if (($embed['url'] ?? '') !== '')
-                    <a href="{{ $embed['url'] }}">{{ __('Ouvrir la page de paiement sécurisée') }}</a>
-                @else
-                    {{ __('Fermez cette fenêtre et réessayez.') }}
-                @endif
-            </p>
+            <div class="ukc-pay-embed__foot">
+                <p>{{ __('Vous ne quittez pas :app : le règlement est traité par notre prestataire de paiement.', ['app' => config('app.name')]) }}</p>
+                <p>
+                    {{ __('Le formulaire ne s’affiche pas ?') }}
+                    @if (($embed['url'] ?? '') !== '')
+                        <a href="{{ $embed['url'] }}">{{ __('Ouvrir la page de paiement') }}</a>
+                    @else
+                        {{ __('Fermez cette fenêtre et réessayez.') }}
+                    @endif
+                </p>
+            </div>
         </div>
     </div>
 @endif

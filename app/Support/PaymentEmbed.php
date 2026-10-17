@@ -30,6 +30,12 @@ final class PaymentEmbed
         return [
             'gateway' => $gateway,
             'payment' => $payment->id,
+            // ⚠️ **Une fenêtre de paiement DIT ce qu'on règle et combien.** Elle
+            // ne portait que « Régler en ligne » : le payeur y arrivait sans
+            // savoir ce qu'il engageait, et devait faire confiance à un cadre
+            // venu d'ailleurs. C'est le moment du parcours où l'on doute le plus.
+            'title' => self::objet($payment),
+            'amount' => self::montant($payment),
             'public_key' => (string) ($result['public_key'] ?? ''),
             'environment' => (string) ($result['environment'] ?? 'sandbox'),
             'transaction_id' => (string) ($result['transaction_id'] ?? ''),
@@ -38,5 +44,28 @@ final class PaymentEmbed
             'url' => (string) ($result['url'] ?? ''),
             'verify_url' => route('payment.verify', ['gateway' => $gateway]),
         ];
+    }
+
+    /** Ce que le payeur règle, dit en clair. */
+    private static function objet(Payment $payment): string
+    {
+        $detail = $payment->flow() === 'formation' ? (string) $payment->flowDetail() : '';
+
+        return $detail !== '' ? $detail : __('Frais de participation');
+    }
+
+    /**
+     * Le montant, écrit comme partout ailleurs sur la plateforme.
+     *
+     * ⚠️ La devise **stockée** a le dernier mot : `XOF` s'affiche « FCFA »
+     * comme dans le reste du projet, mais une autre devise se nomme elle-même
+     * plutôt que de passer pour des francs CFA.
+     */
+    private static function montant(Payment $payment): string
+    {
+        $devise = mb_strtoupper((string) ($payment->currency ?: 'XOF'));
+        $devise = in_array($devise, ['XOF', 'FCFA'], true) ? 'FCFA' : $devise;
+
+        return number_format((float) $payment->amount, 0, ',', ' ').' '.$devise;
     }
 }

@@ -4510,6 +4510,16 @@ fenêtre. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 
+⚠️ **La fenêtre DIT ce qu'on règle et combien.** Elle ne portait que « Régler en
+ligne » : le payeur arrivait devant un formulaire venu d'ailleurs sans savoir ce
+qu'il engageait, au moment du parcours où l'on doute le plus. Elle annonce
+désormais **Paiement sécurisé**, l'objet (frais de participation, ou l'intitulé
+de la formation) et le **montant**, qui ne se coupe jamais - c'est le chiffre
+qu'on vient vérifier avant de s'engager. Le pied dit qu'on ne quitte pas la
+plateforme, et garde la porte de sortie. ⚠️ Le nom de la plateforme passe par le
+placeholder `:app`, jamais en dur ; et l'objet comme le montant viennent de
+`PaymentEmbed`, pas de la vue - la devise **stockée** a le dernier mot.
+
 ⚠️ **ÉPROUVÉ EN CONDITIONS RÉELLES le 2026-10-18** (compte marchand en
 production, clés `live`) : le formulaire s'ouvre bien sur `/compte/paiement/{id}`
 sans aucune redirection, il porte le bon marchand, notre identifiant de
