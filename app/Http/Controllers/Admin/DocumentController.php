@@ -36,7 +36,7 @@ class DocumentController extends Controller
     {
         if ($request->query('format') === 'pdf' && $request->boolean('inline') && ! $request->boolean('raw')) {
             return view('documents.pdf-preview', [
-                'title' => 'Livre des résumés · '.$event->title,
+                'title' => 'Livre des résumés - '.$event->title,
                 'pdfUrl' => route('admin.documents.livret', ['event' => $event, 'format' => 'pdf', 'inline' => 1, 'raw' => 1]),
                 'downloadUrl' => route('admin.documents.livret', ['event' => $event, 'format' => 'pdf']),
             ]);
@@ -66,7 +66,7 @@ class DocumentController extends Controller
         if ($request->query('format') === 'pdf') {
             $pdf = BrandedPdf::stamp(
                 Pdf::loadView('documents.livret-pdf', $this->livretViewData($event, $groups))->setPaper('a4'),
-                'Livre des résumés · '.$event->title,
+                'Livre des résumés - '.$event->title,
             );
             $file = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf';
 

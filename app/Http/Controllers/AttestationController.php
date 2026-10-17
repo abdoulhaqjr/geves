@@ -127,7 +127,7 @@ class AttestationController extends Controller
         return BrandedPdf::stamp(Pdf::loadView('pdf.attestation-template', [
             'attestation' => $attestation,
             'canvas' => $canvas,
-        ])->setPaper([0, 0, $w * 0.75, $h * 0.75]), 'Attestation · '.$attestation->recipient_name)
+        ])->setPaper([0, 0, $w * 0.75, $h * 0.75]), 'Attestation - '.$attestation->recipient_name)
             ->download('attestation-'.$attestation->uuid.'.pdf');
     }
 

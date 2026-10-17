@@ -90,7 +90,7 @@ class AttestationExportController extends Controller
 
         return BrandedPdf::stamp(
             Pdf::loadView('pdf.attestations-lot', ['pages' => $pages])->setPaper([0, 0, $w * 0.75, $h * 0.75]),
-            'Lot d’attestations · '.$event->title,
+            'Lot d’attestations - '.$event->title,
         )
             ->download('attestations-'.$type.'-lot'.$lot.'.pdf');
     }
@@ -124,7 +124,7 @@ class AttestationExportController extends Controller
             'event' => $event,
             'attestations' => $attestations,
             'typeLabel' => Attestation::TYPES[(string) $request->query('type', '')] ?? 'Tous types',
-        ])->setPaper('a4', 'portrait'), 'Liste d’émargement · '.$event->title)
+        ])->setPaper('a4', 'portrait'), 'Liste d’émargement - '.$event->title)
             ->download('emargement-attestations.pdf');
     }
 

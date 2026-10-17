@@ -12,8 +12,8 @@ final class BrandedPdf
         $platform = (string) config('app.name', 'GEVES');
 
         return $pdf->addInfo([
-            'Title' => $title.' · '.$platform,
-            'Author' => $platform.' · Université de Kara',
+            'Title' => $title.' - '.$platform,
+            'Author' => $platform.' - Université de Kara',
             'Creator' => $platform,
             'Subject' => $title,
         ]);

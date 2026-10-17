@@ -56,7 +56,7 @@ class ReceiptController extends Controller
         abort_unless($payment->status === 'paid', 404);
 
         if ($request->boolean('pdf')) {
-            return BrandedPdf::stamp(Pdf::loadView('pdf.receipt', ['payment' => $payment]), 'Reçu de paiement · '.$payment->receipt_no)
+            return BrandedPdf::stamp(Pdf::loadView('pdf.receipt', ['payment' => $payment]), 'Reçu de paiement - '.$payment->receipt_no)
                 ->download('recu-'.$payment->receipt_no.'.pdf');
         }
 
