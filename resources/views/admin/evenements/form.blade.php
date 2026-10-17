@@ -1091,7 +1091,7 @@
                         <h2><span class="ai-panel-icon" aria-hidden="true">✦</span> Paramétrage assisté (IA)</h2>
                         <div class="desc">Proposer des champs à partir de documents (appel, affiche, programme…) ou d’une description. Vérifiez les propositions avant de les appliquer.</div>
                         <div class="ai-source-summary" x-show="aiSuggestions" x-cloak>
-                            <span><strong>Analyse terminée</strong> · <span x-text="aiFiles.length ? aiFiles.length + ' document(s)' : 'description'"></span></span>
+                            <span><strong>Analyse terminée</strong> · <span x-text="aiFiles.length ? aiFiles.length + (aiFiles.length === 1 ? ' document' : ' documents') : 'description'"></span></span>
                             <button type="button" @click="aiSourcesOpen = !aiSourcesOpen" x-text="aiSourcesOpen ? 'Masquer les sources' : 'Modifier les sources'"></button>
                         </div>
                         <div x-show="!aiSuggestions || aiSourcesOpen">
@@ -1125,32 +1125,9 @@
                             Champs remplis. <strong>Rien n’est encore enregistré</strong> : relisez les onglets, puis cliquez sur <em>Enregistrer</em>.
                         </div>
                         <span class="ai-message" role="status" aria-live="polite" x-text="aiMsg" x-show="aiMsg" style="display:block;margin-top:8px;"></span>
-                        <div class="ai-suggestions" x-show="aiSuggestions" style="display:none;">
-                            <div class="ai-results-toolbar">
-                                <div class="ai-results-head">
-                                    <strong><span x-text="suggestionList().length"></span> propositions</strong>
-                                    <span class="ai-selected-count"><span x-text="selectedSuggestionCount()"></span> sélectionnée(s)</span>
-                                </div>
-                                <div class="ai-select-tools">
-                                    <button type="button" @click="selectAllAi()">Tout sélectionner</button>
-                                    <button type="button" @click="clearAiSelection()">Tout désélectionner</button>
-                                </div>
-                                <button type="button" class="ukc-btn ukc-btn--ai ai-apply-button" @click="applyAi()" :disabled="!selectedSuggestionCount()">Appliquer la sélection</button>
-                                <small>Les champs déjà renseignés sont décochés. Vérifiez les remplacements avant d’enregistrer.</small>
-                            </div>
-                            <template x-for="item in suggestionList()" :key="item.key">
-                                <div class="ai-sug-item" :class="{ 'is-selected': aiSelection[item.key] }">
-                                    <label class="ai-sug-choice">
-                                        <input type="checkbox" :checked="!!aiSelection[item.key]" @change="aiSelection[item.key] = $event.target.checked">
-                                        <span class="ai-sug-body">
-                                            <strong x-text="item.label"></strong>
-                                            <span class="ai-sug-preview" :class="{ 'is-clamped': item.long && !aiExpanded[item.key] }" x-text="item.value"></span>
-                                            <small x-show="item.hasCurrent">Déjà renseigné</small>
-                                        </span>
-                                    </label>
-                                    <button type="button" class="ai-sug-expand" x-show="item.long" @click="aiExpanded[item.key] = !aiExpanded[item.key]" x-text="aiExpanded[item.key] ? 'Réduire' : 'Voir tout'"></button>
-                                </div>
-                            </template>
+                        <div class="ai-result-link" x-show="aiSuggestions" x-cloak>
+                            <span><strong x-text="suggestionCountLabel() + ' à examiner'"></strong><small x-text="selectedCountLabel()"></small></span>
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-ref="aiReviewButton" @click="openAiModal()">Voir les propositions</button>
                         </div>
                     </div>
                 @endif
@@ -1172,6 +1149,51 @@
                 </div>
             </div>
         </div>
+        @if ($aiAvailable)
+            <div class="ukc-modal ai-results-modal" x-show="aiModalOpen && aiSuggestions" x-cloak style="display:none;"
+                 @click.self="closeAiModal()" @keydown.escape.window="closeAiModal()" @keydown.tab="trapAiModalFocus($event)">
+                <div class="box" role="dialog" aria-modal="true" aria-labelledby="ai-results-title" x-ref="aiModalBox">
+                    <div class="box-head">
+                        <div>
+                            <h2 id="ai-results-title">Propositions du paramétrage assisté</h2>
+                            <p>Choisissez les informations à reprendre dans l’événement.</p>
+                        </div>
+                        <button type="button" class="ai-modal-close" x-ref="aiModalClose" @click="closeAiModal()" aria-label="Fermer les propositions">&times;</button>
+                    </div>
+                    <div class="box-body">
+                        <div class="ai-modal-tools">
+                            <span class="ai-modal-total" x-text="suggestionCountLabel()"></span>
+                            <span class="ai-selected-count" x-text="selectedCountLabel()"></span>
+                            <span class="ai-modal-selection">
+                                <button type="button" @click="selectAllAi()">Tout sélectionner</button>
+                                <button type="button" @click="clearAiSelection()">Tout désélectionner</button>
+                            </span>
+                        </div>
+                        <p class="ai-modal-note">Les champs déjà renseignés sont décochés. Sélectionner un tel champ remplacera sa valeur actuelle.</p>
+                        <div class="ai-suggestion-grid">
+                            <template x-for="item in suggestionList()" :key="item.key">
+                                <div class="ai-sug-item" :class="{ 'is-selected': aiSelection[item.key] }">
+                                    <label class="ai-sug-choice">
+                                        <input type="checkbox" :checked="!!aiSelection[item.key]" @change="aiSelection[item.key] = $event.target.checked">
+                                        <span class="ai-sug-body">
+                                            <strong x-text="item.label"></strong>
+                                            <span class="ai-sug-preview" :class="{ 'is-clamped': item.long && !aiExpanded[item.key] }" x-text="item.value"></span>
+                                            <small x-show="item.hasCurrent">Déjà renseigné</small>
+                                        </span>
+                                    </label>
+                                    <button type="button" class="ai-sug-expand" x-show="item.long" @click="aiExpanded[item.key] = !aiExpanded[item.key]" x-text="aiExpanded[item.key] ? 'Réduire' : 'Voir tout'"></button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="box-foot">
+                        <span>Vous pourrez relire les champs avant d’enregistrer l’événement.</span>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="closeAiModal()">Fermer</button>
+                        <button type="button" class="ukc-btn ukc-btn--blue" @click="applyAi()" :disabled="!selectedSuggestionCount()">Appliquer la sélection</button>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     @push('scripts')
@@ -1214,7 +1236,7 @@
                 refMode: @js($v('ref_prefix_mode')),
                 refAxes: @js(old('ref_axes', $refAxes)),
                 aiUrl: cfg.aiUrl, csrf: cfg.csrf,
-                aiPrompt: '', aiBusy: false, aiMsg: '', aiSuggestions: null, aiSelection: {}, aiExpanded: {}, aiSourcesOpen: false, aiFiles: [],
+                aiPrompt: '', aiBusy: false, aiMsg: '', aiSuggestions: null, aiSelection: {}, aiExpanded: {}, aiSourcesOpen: false, aiModalOpen: false, aiFiles: [],
                 aiOver: false, aiApplied: false,
                 comOrg: cfg.arrays.comOrg || [],
                 comSci: cfg.arrays.comSci || [],
@@ -1265,7 +1287,25 @@
                 onFiles(e) { this.addFiles(e.target.files); this.$refs.aiFile.value = ''; },
                 onDrop(e) { this.aiOver = false; this.addFiles(e.dataTransfer?.files); },
                 removeFile(i) { if (!this.aiBusy) { this.aiFiles.splice(i, 1); this.clearAiSuggestions(); } },
-                clearAiSuggestions() { this.aiSuggestions = null; this.aiSelection = {}; this.aiExpanded = {}; },
+                clearAiSuggestions() { this.aiSuggestions = null; this.aiSelection = {}; this.aiExpanded = {}; this.aiModalOpen = false; },
+                openAiModal() {
+                    if (!this.aiSuggestions) return;
+                    this.aiModalOpen = true;
+                    this.$nextTick(() => this.$refs.aiModalClose?.focus());
+                },
+                closeAiModal() {
+                    if (!this.aiModalOpen) return;
+                    this.aiModalOpen = false;
+                    this.$nextTick(() => this.$refs.aiReviewButton?.focus());
+                },
+                trapAiModalFocus(event) {
+                    const controls = Array.from(this.$refs.aiModalBox?.querySelectorAll('button:not(:disabled), input:not(:disabled)') || [])
+                        .filter(el => el.getClientRects().length);
+                    if (!controls.length) return;
+                    const first = controls[0], last = controls[controls.length - 1];
+                    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+                },
                 suggestionList() {
                     const s = this.aiSuggestions || {}, labels = { title:'Nom', event_label:'Libellé', theme:'Thème', subtitle:'Accroche', location:'Lieu', year:'Année', date_start:'Début', date_end:'Fin', submission_deadline:'Limite', intro:'Présentation' }, out = [];
                     Object.keys(labels).forEach(k => { if (s[k]) out.push({ key:k, label:labels[k], value:String(s[k]), hasCurrent:!!String(this.f[k] ?? '').trim() }); });
@@ -1277,6 +1317,8 @@
                     return out.map(item => ({ ...item, long: item.value.length > 65 }));
                 },
                 selectedSuggestionCount() { return Object.values(this.aiSelection).filter(Boolean).length; },
+                suggestionCountLabel() { const n = this.suggestionList().length; return n + (n === 1 ? ' proposition' : ' propositions'); },
+                selectedCountLabel() { const n = this.selectedSuggestionCount(); return n + (n === 1 ? ' sélectionnée' : ' sélectionnées'); },
                 selectAllAi() { this.suggestionList().forEach(item => { this.aiSelection[item.key] = true; }); },
                 clearAiSelection() { this.suggestionList().forEach(item => { this.aiSelection[item.key] = false; }); },
                 async analyze() {
@@ -1312,7 +1354,12 @@
                         window.ukcAiVeil?.done('Échec de l’analyse.', false);
                     }
                     // Le message final reste lisible un instant avant la fermeture.
-                    setTimeout(() => window.ukcAiVeil?.hide(), 900);
+                    setTimeout(() => {
+                        window.ukcAiVeil?.hide();
+                        if (this.aiSuggestions) {
+                            setTimeout(() => { if (this.aiSuggestions) this.openAiModal(); }, 300);
+                        }
+                    }, 900);
                     this.aiBusy = false;
                 },
                 applyAi() {

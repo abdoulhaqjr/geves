@@ -4361,10 +4361,11 @@ suivant, tandis que les réponses transitoires 429/5xx restent réessayées.
 Si tous les replis échouent, `AiManager` signale quels fournisseurs ont refusé
 leur clé (401/403) pour guider la correction des réglages.
 
-Après l'analyse, le panneau replie les sources et présente les propositions sous
-forme de lignes compactes. Les longs aperçus restent consultables via « Voir tout » ;
-le compteur, la sélection globale et « Appliquer la sélection » restent en tête de
-liste. Le panneau emploie le bleu et le vert de `--ukc-blue`/`--ukc-green`.
+Après l'analyse, le panneau replie les sources et ouvre une modale de revue.
+Elle regroupe les propositions en deux colonnes, les aperçus longs via « Voir tout »,
+la sélection globale et « Appliquer la sélection » dans un pied toujours visible.
+Fermer la modale conserve le résultat ; le panneau permet de la rouvrir sans relancer
+l'analyse. Le panneau emploie le bleu et le vert de `--ukc-blue`/`--ukc-green`.
 
 En local, `AppServiceProvider` privilégie le manifeste Vite compilé s'il existe :
 un `public/hot` abandonné ne doit plus casser le style. Pour utiliser le HMR,

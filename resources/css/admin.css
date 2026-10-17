@@ -1101,27 +1101,32 @@
   .admin-edition-detail .prog-head { display: none; }
 }
 
-/* Suggestions IA : sélection et action visibles pendant la lecture des résultats. */
-.admin-edition-detail .ai-suggestions { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--ukc-border); }
-.admin-edition-detail .ai-results-toolbar {
-  position: sticky; top: 76px; z-index: 3; margin-bottom: 10px; padding: 10px;
-  background: #fff; border: 1px solid #dbe3f3; border-radius: 10px;
-  box-shadow: 0 5px 18px rgba(27, 49, 104, .08);
-}
-.admin-edition-detail .ai-results-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ukc-blue); }
-.admin-edition-detail .ai-results-head strong { font-weight: 800; }
+/* Résultat compact dans la colonne, revue détaillée dans la modale. */
+.admin-edition-detail .ai-result-link { display: grid; gap: 9px; margin-top: 12px; padding: 11px; border: 1px solid #dbe3f3; border-radius: 10px; background: #fff; }
+.admin-edition-detail .ai-result-link strong { display: block; color: var(--ukc-blue); font-size: 13px; }
+.admin-edition-detail .ai-result-link small { display: block; margin-top: 2px; color: var(--ukc-muted); font-size: 11px; }
+.admin-edition-detail .ai-result-link .ukc-btn { justify-content: center; }
+.admin-edition-detail .ai-results-modal { z-index: 120; }
+.admin-edition-detail .ai-results-modal .box { max-width: 900px; max-height: min(90vh, 820px); display: flex; flex-direction: column; overflow: hidden; }
+.admin-edition-detail .ai-results-modal .box-head { flex: none; position: static; padding: 18px 22px; }
+.admin-edition-detail .ai-results-modal .box-head h2 { margin: 0; color: var(--ukc-blue); font-size: 18px; line-height: 1.3; }
+.admin-edition-detail .ai-results-modal .box-head p { margin: 4px 0 0; color: var(--ukc-muted); font-size: 13px; font-weight: 400; }
+.admin-edition-detail .ai-modal-close { flex: none; border: 0; background: #f1f4fa; border-radius: 8px; width: 34px; height: 34px; color: var(--ukc-muted); cursor: pointer; font-size: 23px; line-height: 1; }
+.admin-edition-detail .ai-modal-close:hover { color: var(--ukc-blue); background: #e9eefb; }
+.admin-edition-detail .ai-results-modal .box-body { min-height: 0; overflow-y: auto; padding: 18px 22px 22px; }
+.admin-edition-detail .ai-modal-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.admin-edition-detail .ai-modal-total { color: var(--ukc-blue); font-size: 14px; font-weight: 700; }
 .admin-edition-detail .ai-selected-count { flex: none; padding: 3px 7px; border-radius: 20px; background: #e7f6eb; color: #08783a; font-size: 11px; font-weight: 700; }
-.admin-edition-detail .ai-select-tools { display: flex; flex-wrap: wrap; gap: 7px 12px; margin: 8px 0; }
-.admin-edition-detail .ai-select-tools button, .admin-edition-detail .ai-sug-expand {
+.admin-edition-detail .ai-modal-selection { display: flex; flex-wrap: wrap; gap: 10px; margin-left: auto; }
+.admin-edition-detail .ai-modal-selection button, .admin-edition-detail .ai-sug-expand {
   border: 0; background: none; padding: 0; color: var(--ukc-blue); cursor: pointer; font-size: 11.5px; font-weight: 700; text-decoration: underline;
 }
-.admin-edition-detail .ai-select-tools button:hover, .admin-edition-detail .ai-sug-expand:hover { color: #172f88; }
-.admin-edition-detail .ai-apply-button { width: 100%; justify-content: center; }
-.admin-edition-detail .ai-apply-button:disabled { background: #e9edf5; color: #8792a5; cursor: not-allowed; }
-.admin-edition-detail .ai-results-toolbar small { display: block; margin-top: 7px; color: var(--ukc-muted); font-size: 11px; line-height: 1.35; }
+.admin-edition-detail .ai-modal-selection button:hover, .admin-edition-detail .ai-sug-expand:hover { color: #172f88; }
+.admin-edition-detail .ai-modal-note { margin: 9px 0 15px; color: var(--ukc-muted); font-size: 12px; line-height: 1.4; }
+.admin-edition-detail .ai-suggestion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; align-items: start; }
 .admin-edition-detail .ai-sug-item {
   background: #fff; border: 1px solid var(--ukc-border); border-radius: 9px;
-  padding: 9px 10px; margin-bottom: 7px; font-size: 12.5px; transition: border-color .15s, background-color .15s;
+  padding: 11px 12px; font-size: 12.5px; transition: border-color .15s, background-color .15s;
 }
 .admin-edition-detail .ai-sug-item.is-selected { border-color: #8ed3a4; background: #f5fbf6; }
 .admin-edition-detail .ai-sug-choice { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
@@ -1132,6 +1137,16 @@
 .admin-edition-detail .ai-sug-preview.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .admin-edition-detail .ai-sug-body small { display: block; margin-top: 2px; color: #66758b; font-size: 10.5px; }
 .admin-edition-detail .ai-sug-expand { margin: 5px 0 0 24px; }
+.admin-edition-detail .ai-results-modal .box-foot { flex: none; align-items: center; padding: 14px 22px; margin: 0; border-top: 1px solid var(--ukc-border); }
+.admin-edition-detail .ai-results-modal .box-foot span { flex: 1 1 200px; margin-right: auto; color: var(--ukc-muted); font-size: 11.5px; }
+.admin-edition-detail .ai-results-modal .box-foot .ukc-btn:disabled { background: #e9edf5; color: #8792a5; cursor: not-allowed; }
+@media (max-width: 650px) {
+  .admin-edition-detail .ai-results-modal { padding: 10px; }
+  .admin-edition-detail .ai-results-modal .box { max-height: calc(100dvh - 20px); }
+  .admin-edition-detail .ai-results-modal .box-head, .admin-edition-detail .ai-results-modal .box-body, .admin-edition-detail .ai-results-modal .box-foot { padding-left: 14px; padding-right: 14px; }
+  .admin-edition-detail .ai-suggestion-grid { grid-template-columns: 1fr; }
+  .admin-edition-detail .ai-modal-selection { margin-left: 0; width: 100%; }
+}
 .admin-edition-detail .ai-message { display: block; color: var(--ukc-muted); font-size: 12px; line-height: 1.45; }
 .admin-edition-detail .ai-panel textarea {
   width: 100%; border: 1px solid #aebde7; border-radius: 10px;
