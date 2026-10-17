@@ -36,10 +36,21 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
     expect(collect($layout['elements'])->firstWhere('type', 'qr'))->not->toBeNull();
 
-    // ⚠️ Les filets verts sont CUITS DANS LE CADRE de l'image de fond (soudés au contour,
-    // sans fente), donc PAS d'élément `rect` dans la mise en page. Ne pas les repasser en
-    // rect : un filet-élément laissait un jour contre le cadre dans le concepteur.
-    expect(collect($layout['elements'])->where('type', 'rect'))->toHaveCount(0);
+    // ⚠️ **Les filets verts restent CUITS DANS LE CADRE** de l'image de fond (soudés
+    // au contour, sans fente) : un filet posé en élément laissait un jour contre le
+    // cadre dans le concepteur. Aucun `rect` ne doit reprendre leur vert ni leur
+    // bande d'en-tête.
+    $rects = collect($layout['elements'])->where('type', 'rect');
+    expect($rects->where('color', '#00be62'))->toHaveCount(0);
+    expect($rects->filter(fn (array $r) => (int) $r['y'] < 120))->toHaveCount(0);
+
+    // ⚠️ Le SÉPARATEUR, lui, EST un élément - « Rendre le séparateur et les
+    // pictogrammes du badge éditables » l'a voulu ainsi pour que son épaisseur se
+    // règle dans le concepteur, ce qu'un trait cuit dans l'image interdit. Le cas
+    // exigeait zéro `rect` et tombait donc sur lui : il n'en reste qu'un, et c'est
+    // bien le séparateur.
+    expect($rects)->toHaveCount(1);
+    expect($rects->first()['shape'])->toBe('line-h');
 });
 
 it('a un modèle « Participant avec photo » : même maquette + une photo entre l’événement et le nom', function () {

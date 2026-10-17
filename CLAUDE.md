@@ -407,7 +407,11 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
     `ListSort::resolve()` prennent des noms de paramètres personnalisés (`param`/`dirParam`/
     `pageParam`). Le board Planning garde les collections **complètes** ; les onglets liste
     filtrent/trient/paginent ces collections **en mémoire** via `ProgramController::sessionsTable()`
-    / `slotsTable()` + `paginateCollection()` (pas de requête dédiée). ⚠️ Larastan croit les
+    / `slotsTable()` + `paginateCollection()` (pas de requête dédiée).
+    ⚠️ **`Collection::get()` est typé NON-NUL** par l'extension, alors qu'il rend
+    bien `null` pour une clé absente : `?->prop ?? …` y déclenche
+    `nullsafe.neverNull`. Passer par **`data_get()`** (cf. `BadgeCatalog`).
+    ⚠️ Larastan croit les
     dates castées et relations **non-nulles** : dans un `sortBy` par clé, passer par
     `optional()`/`data_get()` (elles sont bien nullables au runtime : séance sans horaire,
     plénière sans atelier, créneau libre) - sinon `?->prop ?? …` déclenche `nullsafe.neverNull`.
@@ -3665,6 +3669,25 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     badge). Le badge délivré prend la vraie photo de profil (`recipient.photo`).
     Sans photo, `BadgeLayout` utilise la maquette sans image dans l'espace
     participant comme sur la planche administrative.
+- ⚠️ **Un destinataire de badge porte TOUJOURS `photo` ET `photo_mode`**
+  (`BadgeCatalog::recipients()`), chaîne vide et « with » à défaut. La forme
+  annoncée les taisait (`photo?`) alors que la planche les lit : l'analyse en
+  déduisait que `photo_mode` n'existe pas, donc que le comparer à « without »
+  est **toujours vrai** - soit, sur le papier, un choix « badge sans ma photo »
+  jamais respecté. Les poser partout vaut mieux que les tester à chaque lecture.
+  - ⚠️ **Et les deux aides (`withCurrentAccountNames`, `unique`) travaillent sur
+    des TABLEAUX, pas des collections** : `Collection` n'est pas covariant pour
+    l'analyse statique, donc une liste dont l'institution est la chaîne vide ne
+    « vaut » pas une liste dont l'institution est une chaîne. Les tableaux, eux,
+    le sont. C'est le même remède que pour `UserController::roleUsageLines` -
+    types array dans l'aide, `->all()` au point d'appel, `collect()` à la fin.
+- ⚠️ **Le SÉPARATEUR du badge est un élément `rect`, les filets verts NON.** Les
+  deux filets d'en-tête sont cuits dans l'image de fond, soudés au contour (posés
+  en élément, ils laissaient un jour à gauche dans le concepteur) ; le séparateur,
+  lui, est redevenu un élément pour que son **épaisseur soit réglable**. Un cas qui
+  exigeait « aucun `rect` » tombait donc sur lui : la garde distingue désormais les
+  deux (aucun `rect` vert, aucun dans la bande d'en-tête, et exactement un
+  séparateur `line-h`).
 - **Badges de fonction distincts** : `BadgeCatalog` définit les types et leurs
   destinataires réels (modérateurs et rapporteurs des séances ; équipe d'appui et
   accueil via `event_user` ; comités de supervision, d'organisation et scientifique

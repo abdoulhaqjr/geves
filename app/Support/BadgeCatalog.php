@@ -87,7 +87,21 @@ class BadgeCatalog
      * les badges de fonction. Les comités mêlent la liste publique et l'équipe
      * affectée au back-office ; les séances portent leurs propres désignations.
      *
-     * @return Collection<int, array{name: string, email: string, institution: string, ref: string, photo?: string}>
+     * ⚠️ **La photo et son mode font partie du destinataire.** Le badge
+     * « Participant avec photo » lit `photo`, et `photo_mode` dit si la personne
+     * a demandé un badge SANS sa photo (préférence portée par son inscription).
+     * Les annoncer ici n'est pas une formalité : la planche les lit
+     * (`DocumentController`), et une forme qui les tait fait croire à l'analyse
+     * que `photo_mode` n'existe pas - donc que la comparer à « without » est
+     * toujours vraie, et que le choix de la personne n'est jamais respecté.
+     *
+     * ⚠️ **Les deux clés sont TOUJOURS là**, et c'est volontaire : `Collection`
+     * n'est pas covariant pour l'analyse statique, donc une branche qui les pose
+     * et une autre qui les omet ne rendent pas le même type. Les poser partout -
+     * chaîne vide et « with » à défaut - évite d'avoir à les tester à chaque
+     * lecture, et c'est bien ce que fait déjà la planche.
+     *
+     * @return Collection<int, array{name: string, email: string, institution: string, ref: string, photo: string, photo_mode: string}>
      */
     public static function recipients(Event $event, string $type): Collection
     {
@@ -107,19 +121,25 @@ class BadgeCatalog
                     'ref' => self::reference($event->id.'-'.$person->id),
                     // Le calque photo est facultatif dans le modèle du designer.
                     'photo' => ($u = $person->user) && $u->photo_path ? Storage::url($u->photo_path) : '',
-                    'photo_mode' => ((array) (($person->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with',
+                    // ⚠️ La préférence vient d'une colonne JSON : elle n'a aucun type
+                    // garanti. On la ramène à une chaîne ici, là où elle entre dans le
+                    // destinataire - sinon « sans photo » se comparerait à une valeur
+                    // dont personne ne sait la forme.
+                    'photo_mode' => (string) (((array) (($person->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with'),
                 ])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
         }
 
         if (in_array($type, ['moderation', 'rapporteur'], true)) {
             $prefix = $type === 'moderation' ? 'moderator' : 'rapporteur';
 
-            return self::unique(self::withCurrentAccountNames($event, $type, $event->sessions()->get()->map(fn ($session) => [
+            $people = $event->sessions()->get()->map(fn ($session) => [
                 'name' => trim((string) $session->{$prefix.'_name'}),
                 'email' => trim((string) $session->{$prefix.'_email'}),
-                'institution' => '',
+                'institution' => (string) '',
                 'ref' => self::reference($event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) ($session->{$prefix.'_email'} ?: $session->{$prefix.'_name'}))))),
-            ])));
+            ])->all();
+
+            return collect(self::unique(self::withCurrentAccountNames($event, $type, $people)));
         }
 
         $teamRoles = match ($type) {
@@ -128,10 +148,16 @@ class BadgeCatalog
             'comite_supervision' => ['comite_supervision'],
             'comite_organisation' => ['comite_organisation'],
             'comite_scientifique' => ['scientific'],
+            // ⚠️ `valid()` a déjà écarté les types inconnus, et les trois autres
+            // sont partis plus haut : cette branche ne se produit pas. Elle existe
+            // pour qu'un type AJOUTÉ à TYPES sans fonction d'équipe rende une liste
+            // vide - aucun destinataire - plutôt qu'une erreur de correspondance en
+            // pleine impression de planche.
+            default => [],
         };
 
         $people = $event->team()->wherePivotIn('role', $teamRoles)->get()
-            ->map(fn ($user) => [
+            ->map(fn ($user): array => [
                 'name' => trim((string) $user->first_name.' '.(string) $user->last_name) ?: (string) $user->name,
                 'email' => (string) $user->email,
                 'institution' => (string) $user->affiliation,
@@ -154,18 +180,33 @@ class BadgeCatalog
                 ]));
         }
 
-        return self::unique(self::withCurrentAccountNames($event, $type, $people));
+        return collect(self::unique(self::withCurrentAccountNames($event, $type, $people->all())));
     }
 
-    /** Une affectation garde son nom historique ; le badge lit l'identité actuelle du compte lié. */
-    private static function withCurrentAccountNames(Event $event, string $type, Collection $people): Collection
+    /**
+     * Une affectation garde son nom historique ; le badge lit l'identité actuelle
+     * du compte lié - et chaque destinataire ressort avec sa photo et son mode,
+     * même sans compte rattaché (cf. {@see recipients()}).
+     *
+     * ⚠️ **Tableaux et non collections** : `Collection` n'est pas covariant pour
+     * l'analyse statique, donc une liste de destinataires dont l'institution est
+     * la chaîne vide ne « vaut » pas une liste dont l'institution est une chaîne.
+     * Les tableaux, eux, le sont - c'est le remède déjà retenu ailleurs dans le
+     * projet (cf. CLAUDE.md), et les appelants rendent une collection à la fin.
+     *
+     * @param  list<array{name: string, email: string, institution: string, ref: string}>  $people
+     * @return list<array{name: string, email: string, institution: string, ref: string, photo: string, photo_mode: string}>
+     */
+    private static function withCurrentAccountNames(Event $event, string $type, array $people): array
     {
-        $emails = $people->pluck('email')
+        $emails = collect($people)->pluck('email')
             ->map(fn ($email) => mb_strtolower(trim((string) $email)))
             ->filter()->unique()->values();
 
+        $sansCompte = fn (array $person): array => $person + ['photo' => '', 'photo_mode' => 'with'];
+
         if ($emails->isEmpty()) {
-            return $people;
+            return array_map($sansCompte, $people);
         }
 
         $accounts = User::query()->whereIn(DB::raw('LOWER(email)'), $emails->all())
@@ -174,17 +215,22 @@ class BadgeCatalog
             ->whereIn('user_id', $accounts->pluck('id'))
             ->get()->keyBy('user_id');
 
-        return $people->map(function (array $person) use ($accounts, $participants, $type) {
+        return array_map(function (array $person) use ($accounts, $participants, $type, $sansCompte) {
+            $person = $sansCompte($person);
             $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
             if ($account) {
                 $person['name'] = self::accountName($account);
                 $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
-                $participation = $participants->get($account->id);
-                $person['photo_mode'] = ((array) (($participation?->meta ?? [])['badge_photo_preferences'] ?? []))[$type] ?? 'with';
+                // ⚠️ `data_get` plutôt que `?->meta` : la collection d'inscriptions rend
+                // bien `null` pour un compte sans inscription à CET événement, mais
+                // l'analyse statique type `Collection::get()` comme non-nul et refuse
+                // alors l'opérateur de sûreté (cf. CLAUDE.md, pièges Larastan).
+                $preferences = (array) data_get($participants->get($account->id), 'meta.badge_photo_preferences', []);
+                $person['photo_mode'] = (string) ($preferences[$type] ?? 'with');
             }
 
             return $person;
-        });
+        }, $people);
     }
 
     public static function accountName(User $account): string
@@ -201,13 +247,16 @@ class BadgeCatalog
         return 'BDG-'.implode('-', str_split($hex, 4));
     }
 
-    /** @param Collection<int, array{name: string, email: string, institution: string, ref: string}> $people */
-    private static function unique(Collection $people): Collection
+    /**
+     * @param  list<array{name: string, email: string, institution: string, ref: string, photo: string, photo_mode: string}>  $people
+     * @return list<array{name: string, email: string, institution: string, ref: string, photo: string, photo_mode: string}>
+     */
+    private static function unique(array $people): array
     {
         $seenEmails = [];
         $seenNames = [];
 
-        return $people->filter(fn (array $person) => $person['name'] !== '' || $person['email'] !== '')
+        return collect($people)->filter(fn (array $person) => $person['name'] !== '' || $person['email'] !== '')
             ->filter(function (array $person) use (&$seenEmails, &$seenNames) {
                 $email = mb_strtolower(trim($person['email']));
                 $name = mb_strtolower(trim($person['name']));
@@ -232,6 +281,7 @@ class BadgeCatalog
                 return $person;
             })
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
-            ->values();
+            ->values()
+            ->all();
     }
 }

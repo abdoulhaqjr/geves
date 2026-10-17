@@ -324,7 +324,11 @@ class DocumentController extends Controller
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
-        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, (string) ($person['photo'] ?? ''), ($person['photo_mode'] ?? 'with') !== 'without'), [
+        // ⚠️ Plus de valeur de repli : `BadgeCatalog::recipients()` pose TOUJOURS
+        // la photo (chaîne vide à défaut) et son mode (« with » à défaut). Un `??`
+        // ici laisserait croire que la préférence peut manquer - et c'est en la
+        // croyant absente qu'on finit par ne jamais la respecter.
+        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, $person['photo'], $person['photo_mode'] !== 'without'), [
             'org' => $event->series?->name ?? '',
             'event' => $event->title ?? '',
             'year' => (string) ($event->year ?: ''),
@@ -337,7 +341,7 @@ class DocumentController extends Controller
             'ref' => $person['ref'],
             'verify_url' => url('/verifier?ref='.urlencode($person['ref']).'&ed='.$event->id),
             // Photo de profil pour le modèle « Participant avec photo » (élément photo).
-            'recipient.photo' => $person['photo'] ?? '',
+            'recipient.photo' => $person['photo'],
         ], badge: true));
 
         return view('documents.badges-template', [

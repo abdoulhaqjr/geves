@@ -48,7 +48,9 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
     $this->actingAs($account, 'account')
         ->get(route('account.documents'))
         ->assertOk()
-        ->assertSee('Mon badge participant')
+        // ⚠️ « Mon badge » / « Mes badges » : l'intitulé s'accorde depuis qu'une
+        // personne peut cumuler plusieurs badges de fonction.
+        ->assertSee('Mon badge')
         ->assertSee('Mes documents')
         ->assertSee('Attestation de participation')
         ->assertSee('Livret (Word)')

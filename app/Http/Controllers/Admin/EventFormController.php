@@ -500,8 +500,10 @@ class EventFormController extends Controller
             'location' => (string) ($event?->location ?? ''),
             'status' => (string) ($event?->status ?? 'draft'),
             'slug' => (string) ($event?->slug ?? ''),
+            // ⚠️ Pas d'opérateur de sûreté à droite du `&&` : si l'événement est nul,
+            // la gauche vaut déjà `false` et la droite n'est jamais évaluée.
             'submission_open' => (bool) ($event?->submission_open ?? false)
-                && ($event?->submission_deadline === null || $event->submission_deadline->isFuture()),
+                && ($event->submission_deadline === null || $event->submission_deadline->isFuture()),
             'submission_deadline' => $event?->submission_deadline?->format('Y-m-d\TH:i') ?? '',
             'max_communications' => (int) ($s['max_communications'] ?? 3),
             'intro' => (string) ($s['intro'] ?? ''),

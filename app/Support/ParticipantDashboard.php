@@ -497,11 +497,12 @@ class ParticipantDashboard
         // Une personne peut porter plusieurs fonctions et donc plusieurs badges.
         // La pastille pointe vers leur aperçu, y compris avant paiement lorsque
         // les badges de fonction sont déjà disponibles.
-        $participant = $this->event
+        $event = $this->event;
+        $participant = $event
             ? Participant::whereIn('id', $this->participantIds())->first()
             : null;
-        if ($participant && $this->event) {
-            $badgeCount = BadgeCatalog::forAccount($this->event, $this->account, $participant)->count();
+        if ($event !== null && $participant !== null) {
+            $badgeCount = BadgeCatalog::forAccount($event, $this->account, $participant)->count();
             $out[] = [
                 'libelle' => $badgeCount === 1 ? __('Mon badge') : __('Mes badges'),
                 'detail' => __('À présenter à l’accueil'),

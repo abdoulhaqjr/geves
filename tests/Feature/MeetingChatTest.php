@@ -58,7 +58,11 @@ it('ne résout que les types de salle connus', function () {
 it('signe le message côté serveur et conserve la citation', function () {
     $event = openEdition();
     $session = liveSession($event, 'public');
-    $compte = User::factory()->create(['name' => 'Kossi Mensah']);
+    // ⚠️ **Le nom d'affichage se déduit du PROFIL** : `User::saving()` recalcule
+    // `name` à partir du prénom et du nom dès qu'ils changent. Poser `name` seul
+    // ne tient pas - la fabrique tire alors un prénom et un nom au hasard, qui
+    // l'emportent.
+    $compte = User::factory()->create(['first_name' => 'Kossi', 'last_name' => 'Mensah']);
 
     $this->actingAs($compte, 'account')
         ->postJson(route('meeting.chat.post', ['session', $session->id]), [

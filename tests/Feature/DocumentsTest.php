@@ -4,7 +4,9 @@ use App\Actions\IssueAttestation;
 use App\Documents\LivretDocx;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
+use App\Models\Event;
 use App\Models\Formation;
+use App\Models\Participant;
 use App\Models\User;
 use App\Support\EventSettings;
 use App\Support\Settings;
@@ -12,6 +14,28 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest ; seededSubmission() -> idem
+
+/**
+ * Un participant dont les frais sont RÉGLÉS.
+ *
+ * ⚠️ Le badge participant suit le paiement de participation (« Inscriptions
+ * réglées ») : une inscription sans règlement ne paraît ni sur la planche, ni
+ * dans « Badges prêts ». Un jeu d'essai qui l'oublie ne constate pas un défaut,
+ * il décrit une règle.
+ */
+function participantRegle(Event $event, string $prenom, string $nom, string $email): Participant
+{
+    $participant = $event->participants()->create([
+        'first_name' => $prenom, 'last_name' => $nom, 'email' => $email, 'role' => 'author',
+    ]);
+
+    $event->payments()->create([
+        'participant_id' => $participant->id,
+        'amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-'.$participant->id,
+    ]);
+
+    return $participant;
+}
 
 /** Extrait word/document.xml d'un .docx (contenu binaire) pour assertions de contenu. */
 function docxDocumentXml(string $binary): string
@@ -213,7 +237,9 @@ it('refuse le livret .docx à un compte non participant', function () {
 it('génère la planche de badges', function () {
     $staff = adminStaff();
     $event = openEdition();
-    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    // ⚠️ **Le badge participant suit le PAIEMENT** (« Inscriptions réglées ») :
+    // sans règlement, la planche est vide - et c'est la règle, pas un défaut.
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
 
     // Badge de PARTICIPATION : un communicant est d'abord un participant. Quel que
     // soit son rôle de fonction, le badge porte « Participant ».
@@ -229,7 +255,7 @@ it('génère la planche de badges', function () {
 it('la planche de badges utilise le modèle enregistré', function () {
     $staff = adminStaff();
     $event = openEdition();
-    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
 
     // Modèle de badge personnalisé avec un texte distinctif substitué.
     DocumentTemplate::create([
@@ -552,7 +578,10 @@ it('retient le format choisi pour un modèle de badge', function () {
 
     $tpl = DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->first();
     expect($tpl->format)->toBe('cr80');
-    expect($tpl->title)->toBe('Badge');
+    // ⚠️ « Badge » tout court a été renommé « Badge participant » quand le modèle
+    // unique a été aligné sur les participants réglés - `DocumentTemplate` remonte
+    // même les anciens titres.
+    expect($tpl->title)->toBe('Badge participant');
 });
 
 it('ne supprime un modèle que si le code de confirmation est exact', function () {
@@ -586,12 +615,19 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
     ]);
     $base = ['event_id' => $event->id, 'tab' => 'badges'];
 
-    // Prêts : par défaut seules les inscriptions réglées (aucune ici).
+    // Prêts : seules les inscriptions réglées, et celle-ci ne l'est pas encore.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
         ->assertOk()->assertSee('Badges prêts')->assertDontSee('Awa Kodjo');
 
-    // Tous les participants.
-    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets', 'paid' => '0']))
+    // ⚠️ **Il n'y a plus de « tous les participants »** : la liste a été alignée sur
+    // les participants réglés, comme la planche. Une fois les frais réglés, la
+    // personne y entre - c'est le règlement qui la fait apparaître, pas un filtre.
+    $event->payments()->create([
+        'participant_id' => $event->participants()->first()->id,
+        'amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-BADGE-1',
+    ]);
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
         ->assertOk()->assertSee('Awa Kodjo');
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
@@ -610,8 +646,10 @@ it('sert chaque onglet principal de Documents par son URL (?tab=)', function () 
         ->assertSee('tab=badges', false)
         ->assertSee('tab=livre', false);
 
+    // ⚠️ Plus de bouton « Nouveau modèle de badge » : il n'y a qu'UN modèle par
+    // catégorie, provisionné d'office. On vise ce que l'onglet dit vraiment.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
-        ->assertOk()->assertSee('Nouveau modèle de badge');
+        ->assertOk()->assertSee('Un modèle par catégorie');
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre']))
         ->assertOk()->assertSee('Livre des résumés');

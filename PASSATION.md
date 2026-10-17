@@ -13,6 +13,62 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Remise au vert : 8 erreurs d'analyse et 9 cas rouges (2026-10-17)
+
+`composer check` était rouge depuis une série de commits sur les badges. Rien
+n'était cassé en production : ce sont des **gardes et des types** qui ne disaient
+plus la vérité. Détail de ce qui a été repris.
+
+**Le destinataire d'un badge porte toujours sa photo et son mode.**
+`BadgeCatalog::recipients()` annonçait `photo?` / `photo_mode?` alors que la
+planche les lit sans condition. L'analyse en déduisait que `photo_mode` n'existe
+pas - donc que le comparer à « without » est **toujours vrai**, soit un choix
+« badge sans ma photo » jamais respecté. Les deux clés sont désormais posées
+partout (chaîne vide, « with »), et les valeurs de repli des lecteurs ont été
+retirées : un `??` sur une clé garantie laisse croire qu'elle peut manquer.
+
+⚠️ **`Collection` n'est pas covariant**, et c'est ce qui rendait la forme
+impossible à déclarer : une liste dont l'institution est la chaîne vide ne
+« vaut » pas une liste dont l'institution est une chaîne. Les deux aides du
+catalogue travaillent donc sur des **tableaux** - le remède déjà retenu pour
+`UserController::roleUsageLines`.
+
+⚠️ **`Collection::get()` est typé non-nul** par l'extension alors qu'il rend bien
+`null` : l'opérateur de sûreté y est refusé. Remplacé par `data_get()`.
+
+⚠️ **`WindowsSafeFilesystem::hasSameContent()` est déclarée impure**, et ce n'est
+pas une mise sous silence : elle lit le disque, que d'autres processus
+réécrivent entre deux appels - c'est exactement ce que la boucle de reprise
+attend - et elle repousse l'horodatage au passage. Sans l'annotation, l'analyse
+retenait le `false` du premier appel et tenait le second pour toujours faux : la
+reprise paraissait morte alors qu'elle est la seule sortie quand un autre
+processus a déjà écrit la vue compilée.
+
+**Côté cas rouges, aucun ne signalait un défaut : tous décrivaient un état
+périmé.**
+
+- ⚠️ **Le badge participant suit le PAIEMENT** (« Inscriptions réglées ») depuis
+  que la planche et « Badges prêts » ont été alignées sur les participants
+  réglés. Cinq cas créaient une inscription sans règlement et s'étonnaient d'une
+  planche vide. Et le filtre « tous les participants » (`?paid=0`) n'existe plus :
+  c'est le règlement qui fait entrer la personne dans la liste, pas un filtre.
+- ⚠️ **Le séparateur du badge est un élément `rect`** depuis qu'on a rendu son
+  épaisseur réglable ; les **filets verts**, eux, restent cuits dans le cadre. Un
+  cas exigeait « aucun `rect` » et tombait sur le séparateur. La garde distingue
+  maintenant les deux.
+- « Badge » est devenu **« Badge participant »**, « Mon badge participant » est
+  devenu **« Mon badge »** (accordé au pluriel depuis le cumul de fonctions), et
+  le bouton « Nouveau modèle de badge » a disparu avec le modèle unique.
+- ⚠️ **`User::saving()` recalcule `name` à partir du prénom et du nom** : un cas
+  qui posait `name` seul se voyait attribuer l'identité tirée au hasard par la
+  fabrique.
+
+**Garde** : les cas repris, plus **deux sabotages vérifiés** - un filet vert
+remis en élément dans la bande d'en-tête, et le paiement retiré de la sélection
+des destinataires.
+
+**1271 tests**, Pint et PHPStan sans erreur.
+
 ### Le Secrétariat s'ouvre sur l'onglet Documents (2026-10-17)
 
 `/admin/secretariat` arrivait sur **Rapports de séance**. C'est l'onglet qui

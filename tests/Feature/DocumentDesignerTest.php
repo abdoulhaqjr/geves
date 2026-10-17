@@ -150,7 +150,17 @@ it('rend la planche de badges via le modèle si présent', function () {
     $staff = adminStaff();
     $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
     $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
-    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $participant = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+
+    // ⚠️ **Le badge participant suit le PAIEMENT** (« Inscriptions réglées ») :
+    // sans règlement, la planche est vide - c'est la règle, pas un défaut. Le
+    // paiement est posé ici plutôt que par une aide d'un autre fichier : une aide
+    // Pest est globale, mais un cas lancé seul ne charge pas le fichier qui la
+    // déclare.
+    $event->payments()->create([
+        'participant_id' => $participant->id,
+        'amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-CARTE-1',
+    ]);
 
     DocumentTemplate::create([
         'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default',

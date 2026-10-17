@@ -71,6 +71,17 @@ class WindowsSafeFilesystem extends Filesystem
         }
     }
 
+    /**
+     * ⚠️ **Impure, et c'est tout l'intérêt** : elle lit le DISQUE, que les autres
+     * processus réécrivent entre deux appels - c'est précisément ce que la boucle
+     * de reprise attend (d'où le `clearstatcache` qui la précède) - et elle
+     * repousse l'horodatage du fichier au passage. Sans cette annotation,
+     * l'analyse statique retient le `false` du premier appel et tient le second
+     * pour toujours faux : la reprise paraîtrait morte alors qu'elle est la seule
+     * sortie quand un autre processus a déjà écrit la vue compilée.
+     *
+     * @phpstan-impure
+     */
     private function hasSameContent(string $path, string $contentHash): bool
     {
         if (! is_file($path) || @hash_file('xxh128', $path) !== $contentHash) {
