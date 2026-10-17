@@ -366,6 +366,9 @@ Route::prefix('admin')->group(function () {
             Route::delete('/editions/{event}', [EventController::class, 'destroy'])->name('admin.evenements.destroy');
             Route::get('/editions/creer', [EventFormController::class, 'create'])->name('admin.evenements.create');
             Route::post('/editions/creer', [EventFormController::class, 'store'])->name('admin.evenements.store');
+            // Anciennes URL de détail : ouvrir la page de modification sans exposer la route DELETE au navigateur.
+            Route::get('/editions/{event}', fn (\App\Models\Event $event) => redirect()->route('admin.evenements.edit', $event))
+                ->name('admin.evenements.show');
             Route::post('/editions/ia-assist', [EventFormController::class, 'aiAssist'])->name('admin.evenements.ai-assist');
             Route::post('/editions/ia-assist-json', [EventFormController::class, 'aiAssistJson'])->name('admin.evenements.ai-assist-json');
             Route::get('/editions/{event}/modifier', [EventFormController::class, 'edit'])->name('admin.evenements.edit');

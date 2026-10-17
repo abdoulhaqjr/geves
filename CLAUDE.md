@@ -4703,3 +4703,8 @@ l'analyse. Le panneau emploie le bleu et le vert de `--ukc-blue`/`--ukc-green`.
 En local, `AppServiceProvider` privilégie le manifeste Vite compilé s'il existe :
 un `public/hot` abandonné ne doit plus casser le style. Pour utiliser le HMR,
 définir `VITE_USE_DEV_SERVER=true` dans `.env`, puis lancer `npm run dev`.
+
+L'ancienne URL GET `/admin/editions/{event}` redirige vers
+`admin.evenements.edit` avec la capacité `editions_write`. Le même chemin en
+DELETE reste réservé à la suppression ; les nouveaux liens doivent utiliser
+la route nommée de modification.
