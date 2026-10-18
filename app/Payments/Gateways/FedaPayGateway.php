@@ -194,6 +194,30 @@ class FedaPayGateway implements OnlineGateway
         $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
         $url = (string) ($token['url'] ?? '');
 
+        // ⚠️⚠️ **LE PAIEMENT DIRECT : aucun formulaire, la demande part sur le
+        // téléphone.** C'est le seul endroit où `mode` sert vraiment - sur la page
+        // de paiement il n'a aucun effet, mesuré trois fois en conditions réelles.
+        // On supprime ainsi les deux écrans que nous ne maîtrisons pas : le
+        // sélecteur d'opérateur (qui retombait sur « Mtn Bénin ») et la case
+        // « Je veux recevoir mon reçu par mail », tous deux chez le prestataire.
+        // ⚠️ Pas de garde sur `$operator` ici : c'est `pousseSurLeTelephone()` qui
+        // la porte, et une seule fois. Doublée, elle devient une condition qu'aucun
+        // sabotage ne fait tomber - donc une ligne qu'on croit protectrice et qui
+        // ne protège rien. Mesuré : le cas restait vert sans elle.
+        if (filled($payer['phone']) && $this->pousseSurLeTelephone((string) ($token['token'] ?? ''), $operator)) {
+            return [
+                'type' => 'push',
+                'transaction_id' => (string) $id,
+                'operator' => $operator,
+                'phone' => (string) $payer['phone'],
+                // ⚠️ **La porte de sortie reste ouverte**, et elle l'est encore plus
+                // ici : une demande poussée peut ne jamais arriver (réseau de
+                // l'opérateur, téléphone éteint), et le payeur n'aurait alors
+                // RIEN - ni formulaire, ni message. La page hébergée le rattrape.
+                'url' => $url,
+            ];
+        }
+
         // ⚠️ **Sans clé PUBLIQUE, pas de formulaire embarqué** : on repart en
         // redirection. C'est la seule règle - pas de réglage de plus à tenir
         // d'accord avec la réalité. Qui renseigne la clé publique veut le
@@ -234,6 +258,39 @@ class FedaPayGateway implements OnlineGateway
             // perdu.
             'url' => $url,
         ];
+    }
+
+    /**
+     * Envoie la demande de paiement **sur le téléphone du payeur**, sans aucune
+     * page : `POST /v1/{mode}` avec le jeton de la transaction (c'est le
+     * `sendNowWithToken($mode, $token)` de leur SDK).
+     *
+     * ⚠️ **Fail-open, et c'est voulu** : si cet appel échoue - opérateur qui ne
+     * répond pas, méthode fermée sur le compte marchand, réseau - on rend `false`
+     * et l'appelant repart sur le formulaire. Laisser l'exception remonter
+     * priverait le payeur de TOUT moyen de régler, pour un canal qui n'est qu'un
+     * raccourci. Le reste du projet est fail-closed sur les STATUTS ; ici on ne
+     * décide d'aucun statut, on sonne à une porte.
+     *
+     * ⚠️ Et cet appel ne dit **jamais** qu'un paiement a réussi : il dit qu'une
+     * demande est partie. Le verdict vient de `verify()`, comme partout ailleurs.
+     */
+    protected function pousseSurLeTelephone(string $token, string $mode): bool
+    {
+        if ($token === '' || ! array_key_exists($mode, $this->mobileOperators())) {
+            return false;
+        }
+
+        try {
+            return $this->http()
+                ->timeout(20)
+                ->post($this->baseUrl().'/'.$mode, ['token' => $token])
+                ->successful();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 
     /**

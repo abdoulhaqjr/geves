@@ -50,10 +50,21 @@ togolais arrivait sur « Mtn Bénin ». On lui passe le `customer` de la transac
 ⚠️⚠️ **`mode` ne pré-sélectionne RIEN sur la page de paiement** - établi en trois
 essais réels. Il est bien envoyé (mesuré en base), et la page affiche quand même
 son sélecteur sur « Mtn Bénin ». Il ne sert qu'au **paiement direct**
-(`POST /v1/{mode}` avec le jeton), qui se passe entièrement de page : le payeur
-approuve sur son téléphone. Ce parcours **n'est pas implémenté** - c'est une
-décision de produit (§8). Le sélecteur d'opérateur et la case « reçu par mail »
-appartiennent à la page du prestataire et nous sont inaccessibles.
+(`POST /v1/{mode}` avec le jeton), qui se passe entièrement de page.
+
+**Le paiement direct est en place (2026-10-18)** : dès que le payeur a un
+opérateur et un numéro, aucun formulaire ne s'ouvre - son téléphone sonne, il
+compose son code. Cela emporte les deux écrans que nous ne maîtrisions pas (le
+sélecteur d'opérateur et la case « reçu par mail », tous deux chez le
+prestataire).
+
+⚠️ **Fail-open, seule exception du module** : si la demande directe échoue, on
+repart sur le formulaire - laisser l'échec remonter priverait le payeur de tout
+moyen de régler. ⚠️ Le navigateur ne décide toujours de rien : la page demande au
+serveur d'interroger, toutes les six secondes, pendant quatre minutes au plus -
+ensuite on le DIT, sans jamais annoncer un échec (`payments:reconcile` repasse).
+⚠️ La vérification se compte **par personne**, jamais par IP : un campus règle
+depuis une poignée d'adresses.
 
 ⚠️ **Quatre codes d'opérateur étaient faux** (`mtn_open_ci` au lieu de `mtn_ci`,
 plus `bmo`, `coris_money`, `wave_direct_ci` inexistants) : écrits d'après l'API
@@ -70,8 +81,8 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et neuf cas de `PaymentGatewayTest`,
-quinze sabotages vérifiés.
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et quinze cas de `PaymentGatewayTest`,
+dix-neuf sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

@@ -137,8 +137,9 @@ class FormationController extends Controller
             return $back->withErrors(['pay' => 'Le service de paiement est momentanément indisponible. Réessayez plus tard.']);
         }
 
-        // Formulaire embarqué : on RESTE sur la page, le prestataire s'y affiche.
-        if ($result['type'] === 'embed') {
+        // On RESTE sur la page : soit le formulaire du prestataire s'y affiche,
+        // soit la demande est partie sur le téléphone et l'on attend le verdict.
+        if (in_array($result['type'], ['embed', 'push'], true)) {
             return $back->with('ukc_pay_embed', PaymentEmbed::payload($result, $payment, $gateway->key()));
         }
 

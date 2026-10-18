@@ -173,6 +173,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Réagir : le geste est plus léger, et se pose puis se retire.
         RateLimiter::for('visio-reaction', fn (Request $request) => Limit::perMinute(60)->by('vreac:'.$qui($request)));
+
+        // ⚠️ **Vérifier un paiement se compte PAR PERSONNE, jamais par IP** - même
+        // raison qu'au-dessus, et la conséquence est pire : le parcours direct
+        // interroge toutes les six secondes pendant que le payeur compose son
+        // code, et un campus règle ses frais depuis une poignée d'adresses. Par
+        // IP, le deuxième payeur verrait sa confirmation refusée, sans comprendre.
+        RateLimiter::for('paiement-verif', fn (Request $request) => Limit::perMinute(30)->by('pverif:'.$qui($request)));
     }
 
     private function applySettingsToConfig(): void

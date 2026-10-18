@@ -182,7 +182,7 @@ Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->
 // Fin du formulaire embarqué. ⚠️ Bridée : elle appelle le prestataire à
 // chaque requête, et n'importe qui peut la viser (comme le retour navigateur).
 Route::post('/paiement/verifier/{gateway}', [PaymentController::class, 'verify'])
-    ->middleware('throttle:20,1')->name('payment.verify');
+    ->middleware('throttle:paiement-verif')->name('payment.verify');
 Route::post('/webhooks/paiement/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
 // Variante dédiée à un événement : à déclarer chez le marchand quand l'événement
 // utilise son PROPRE compte passerelle (évite d'essayer toutes les signatures).

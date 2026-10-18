@@ -4590,8 +4590,56 @@ page : `POST /v1/{mode}` avec le jeton rendu par `POST /transactions/{id}/token`
 la demande d'approbation **sur son téléphone**, sans formulaire - donc sans
 sélecteur d'opérateur et sans case « Je veux recevoir mon reçu par mail », qui
 appartiennent tous deux à la page du prestataire et nous sont inaccessibles
-(cadre d'un autre domaine). ⚠️ **Ce parcours n'est pas implémenté** : c'est une
-décision de produit, pas un détail - voir §8 de PASSATION.md.
+(cadre d'un autre domaine).
+
+### Le PAIEMENT DIRECT : aucun formulaire, la demande part sur le téléphone
+
+Quand le payeur a un **opérateur** et un **numéro**, on ne lui ouvre plus aucun
+formulaire : `POST /v1/{mode}` avec le jeton, et son téléphone sonne. Il compose
+son code, et c'est réglé. La fenêtre de GEVES n'affiche alors qu'un message - le
+numéro visé, l'opérateur **nommé comme il le connaît** (« Togocel T-Money »,
+jamais `togocel`), et ce qu'on attend.
+
+⚠️⚠️ **FAIL-OPEN, et c'est la seule exception du module.** Si la demande directe
+échoue - opérateur muet, méthode fermée sur le compte marchand, réseau -
+`pousseSurLeTelephone()` rend `false` et l'on **repart sur le formulaire**.
+Laisser l'échec remonter priverait le payeur de TOUT moyen de régler, pour un
+canal qui n'est qu'un raccourci. Le projet reste fail-closed sur les **statuts** ;
+ici on ne décide d'aucun statut, on sonne à une porte.
+
+⚠️⚠️ **Et le navigateur ne décide toujours de RIEN.** La page n'écoute aucun
+signal du prestataire : elle demande au **serveur** d'interroger
+(`payment.verify`), toutes les six secondes. Ce qui défile n'est qu'une horloge.
+
+⚠️ **L'attente a une FIN** : quatre minutes, puis on le DIT. Une demande poussée
+peut n'arriver jamais (téléphone éteint, réseau de l'opérateur), et un ruban qui
+tourne indéfiniment devant quelqu'un qui a sorti sa carte, c'est un paiement
+perdu. ⚠️ Ni le refus ni l'expiration ne sont un **verdict** : `payments:reconcile`
+repasse toutes les dix minutes, et le message ne dit donc jamais « échec » - il
+dit ce qu'on sait, et ce qu'on ne sait pas encore. La **porte de sortie** (page
+hébergée) reste en pied de fenêtre, reformulée : « Vous n'avez rien reçu sur
+votre téléphone ? »
+
+⚠️ **UNE SEULE fenêtre pour les deux parcours** (`journey` = `push` | `form`,
+posé par `PaymentEmbed`) : deux composants se décaleraient, et le défaut ne se
+verrait que d'un côté - sur un écran de paiement. Seule la **largeur** diffère :
+940px pour le formulaire du prestataire (qui a besoin de ses deux colonnes),
+560px pour un message, qui se perdrait dans la première.
+
+⚠️ **Vérifier un paiement se compte PAR PERSONNE, jamais par IP**
+(`RateLimiter::for('paiement-verif')`, même clé que le fil de visio). Le parcours
+direct interroge toutes les six secondes pendant que le payeur compose son code,
+et un campus règle ses frais depuis une poignée d'adresses : par IP, le deuxième
+payeur aurait vu sa **confirmation** refusée, sans rien y comprendre.
+
+⚠️ **La carte bancaire n'a pas de paiement direct** : elle garde le formulaire,
+comme « je choisis sur la page de paiement ».
+
+Six cas dans `PaymentGatewayTest`, quatre sabotages vérifiés. ⚠️ Un cinquième ne
+mordait pas - une garde `$operator !== ''` **doublait** celle de
+`pousseSurLeTelephone()` : retirée, le cas restait vert. Une condition qu'aucun
+sabotage ne fait tomber est une ligne qu'on croit protectrice et qui ne protège
+rien ; elle a été supprimée, pas commentée.
 
 ⚠️ **Les codes d'opérateur sont CEUX DU PRESTATAIRE, et quatre étaient faux** :
 `mtn_open_ci` (le code documenté est **`mtn_ci`**), plus `bmo`, `coris_money` et

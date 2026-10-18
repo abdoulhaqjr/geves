@@ -3164,6 +3164,72 @@ function ukcPayEmbedReveal(wrap, box) {
     obs.observe(box, { childList: true, subtree: true });
 }
 
+/**
+ * Parcours DIRECT : la demande est partie sur le téléphone, et l'on attend.
+ *
+ * ⚠️⚠️ **LE NAVIGATEUR NE DÉCIDE DE RIEN, ICI MOINS QUE PARTOUT AILLEURS.** On
+ * ne guette aucun signal du prestataire : on demande au SERVEUR de l'interroger
+ * (`payment.verify`), exactement comme au retour navigateur. Ce qui défile ici
+ * n'est qu'une horloge.
+ *
+ * ⚠️ **Et l'attente a une FIN.** Une demande poussée peut n'arriver jamais -
+ * téléphone éteint, réseau de l'opérateur, méthode fermée. Au bout de quatre
+ * minutes on le DIT, et on laisse la porte de sortie : un ruban qui tourne
+ * indéfiniment devant quelqu'un qui a sorti sa carte bancaire, c'est un paiement
+ * perdu.
+ *
+ * ⚠️ **Ni refus ni expiration ne sont un verdict définitif** : `payments:reconcile`
+ * repasse toutes les dix minutes. Le message ne dit donc jamais « échec », il dit
+ * ce que nous savons - et ce que nous ne savons pas encore.
+ */
+function ukcPayEmbedAttente(wrap, cfg) {
+    const etat = wrap.querySelector('[data-pay-embed-state]');
+    // ⚠️ Les textes viennent de la PAGE (`data-refuse`, `data-timeout`) : écrits
+    // ici, ils échapperaient à la traduction, et le site est bilingue.
+    const dire = (cle) => { if (etat && etat.dataset[cle]) etat.textContent = etat.dataset[cle]; };
+    const MAX = 40; // 40 x 6 s = quatre minutes
+    let essais = 0;
+
+    const demander = () => fetch(cfg.verify_url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        },
+        body: JSON.stringify({ payment: cfg.payment }),
+    }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+    const tour = async () => {
+        essais += 1;
+
+        const reponse = await demander();
+        if (reponse?.status === 'paid') {
+            window.location.reload();
+
+            return;
+        }
+
+        if (reponse?.status === 'failed') {
+            wrap.dataset.refused = '1';
+            dire('refuse');
+
+            return;
+        }
+
+        if (essais >= MAX) {
+            wrap.dataset.timeout = '1';
+            dire('timeout');
+
+            return;
+        }
+
+        window.setTimeout(tour, 6000);
+    };
+
+    window.setTimeout(tour, 6000);
+}
+
 function initPayEmbed(root = document) {
     root.querySelectorAll('[data-pay-embed]:not([data-pay-embed-ready])').forEach((wrap) => {
         wrap.dataset.payEmbedReady = '1';
@@ -3199,6 +3265,16 @@ function initPayEmbed(root = document) {
             },
             body: JSON.stringify({ payment: cfg.payment }),
         }).catch(() => {}).then(() => window.location.reload());
+
+        // ⚠️ **Parcours direct : rien à charger.** Pas de script du prestataire,
+        // pas de cadre à attendre - la fenêtre s'ouvre tout de suite, parce
+        // qu'elle porte un message et non un formulaire.
+        if (cfg.journey === 'push') {
+            wrap.dataset.ready = '1';
+            ukcPayEmbedAttente(wrap, cfg);
+
+            return;
+        }
 
         ukcPayEmbedScript(UKC_FEDAPAY_CHECKOUT).then(() => {
             // ⚠️ On LÈVE l'erreur au lieu de rendre la main en silence : sinon la

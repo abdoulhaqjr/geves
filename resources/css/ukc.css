@@ -1578,6 +1578,39 @@ body.ukc-overlay-open { overflow: hidden; }
    projet s'interdit ailleurs. Le plancher ne sert plus qu'aux écrans trop
    courts, où c'est alors notre zone qui rend la main. */
 .ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: min(560px, 68dvh); border: 0; }
+/* ⚠️ **La largeur du formulaire ne vaut pas pour un MESSAGE.** 940px sont la
+   place qu'il faut au prestataire pour ses deux colonnes ; une phrase et un
+   numéro de téléphone s'y perdent, et une fenêtre vide aux trois quarts se
+   lit comme un écran qui n'a pas fini de charger. */
+.ukc-pay-embed[data-journey="push"] .ukc-pay-embed__panel { max-width: 560px; }
+
+/* ---- Parcours DIRECT : la demande est partie sur le téléphone ----
+   Aucun formulaire à charger, donc aucune hauteur à réserver : c'est un message,
+   et il se lit d'un regard. */
+.ukc-pay-embed__push {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 9px; padding: 30px 24px 34px; text-align: center;
+}
+.ukc-pay-embed__phone {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #e8f6ee; color: var(--ukc-green); margin-bottom: 3px;
+}
+.ukc-pay-embed__push h3 { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--ukc-text); }
+.ukc-pay-embed__push p { margin: 0; color: var(--ukc-muted); font-size: 14px; line-height: 1.55; max-width: 420px; }
+/* Le numéro ne se coupe jamais : c'est lui que le payeur vient reconnaître. */
+.ukc-pay-embed__to { color: var(--ukc-text) !important; font-weight: 700; }
+.ukc-pay-embed__op { display: block; font-weight: 600; color: var(--ukc-muted); font-size: 13px; }
+.ukc-pay-embed__state { margin-top: 10px !important; font-weight: 700; color: var(--ukc-blue) !important; }
+.ukc-pay-embed__push .ukc-pay-embed__bar { background: rgba(34, 62, 164, .16); }
+.ukc-pay-embed__push .ukc-pay-embed__bar span { background: var(--ukc-blue); }
+/* ⚠️ L'attente FINIE n'anime plus rien : un ruban qui tourne sous un message
+   d'échec promet une suite qui ne viendra pas. */
+.ukc-pay-embed[data-refused] .ukc-pay-embed__bar,
+.ukc-pay-embed[data-timeout] .ukc-pay-embed__bar { display: none; }
+.ukc-pay-embed[data-refused] .ukc-pay-embed__state { color: var(--ukc-muted) !important; }
+.ukc-pay-embed[data-timeout] .ukc-pay-embed__state { color: var(--ukc-muted) !important; }
+
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
 .ukc-pay-embed__failed { display: none; }
