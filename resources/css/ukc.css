@@ -1519,7 +1519,13 @@ body.ukc-overlay-open { overflow: hidden; }
    - qui porte la porte de sortie - tombait hors champ. C'est la ZONE qui défile,
    pas la fenêtre : l'en-tête et le pied restent visibles. */
 .ukc-pay-embed__panel {
-  width: 100%; max-width: 520px; background: #fff;
+  /* ⚠️ **La largeur décide de la MISE EN PAGE du prestataire.** À 520px son
+     formulaire se replie sur une colonne : le choix du moyen, le formulaire et
+     le bouton « Payer » s'empilent, et le bouton tombe sous la ligne de
+     flottaison. Au large, il rend ses deux colonnes - moyens à gauche, saisie et
+     bouton à droite, tout visible d'un regard. C'est la forme de sa page
+     hébergée, et c'est celle qu'on veut sur la nôtre. */
+  width: 100%; max-width: 940px; background: #fff;
   border-radius: var(--ukc-radius-lg); box-shadow: var(--ukc-shadow-lg);
   overflow: hidden;
   display: flex; flex-direction: column; max-height: calc(100dvh - 24px);

@@ -42,6 +42,18 @@ class FedaPayGateway implements OnlineGateway
      * Opérateurs mobile money ciblables (codes `mode` du prestataire). Sélectionner
      * l'opérateur ici évite au payeur de le rechercher sur la page suivante.
      *
+     * ⚠️⚠️ **CETTE LISTE EST CELLE DU PRESTATAIRE, PAS LA NÔTRE.** Elle portait
+     * `mtn_open_ci` pour MTN Côte d'Ivoire - le code documenté est **`mtn_ci`** -
+     * ainsi que `bmo`, `coris_money` et `wave_direct_ci`, qui ne figurent dans
+     * aucune liste officielle. Les quatre ont été écrits d'après l'API publique
+     * sans jamais rencontrer un vrai compte marchand (cf. l'avertissement en
+     * tête de classe), et un code inconnu est **ignoré en silence** : le payeur
+     * croyait choisir, et rien ne partait.
+     *
+     * ⚠️ N'ajouter ici qu'un code **documenté** par le prestataire. Ce qu'il
+     * n'accepte pas ne se transmet pas : mieux vaut laisser le payeur choisir
+     * sur la page du prestataire que lui promettre un ciblage qui n'a pas lieu.
+     *
      * @return array<string, string>
      */
     public function mobileOperators(): array
@@ -52,10 +64,7 @@ class FedaPayGateway implements OnlineGateway
             'mtn_open' => 'MTN (Bénin)',
             'moov' => 'Moov (Bénin)',
             'sbin' => 'Celtiis Cash (Bénin)',
-            'bmo' => 'BESTCASH Money (Bénin)',
-            'coris_money' => 'Coris Money',
-            'mtn_open_ci' => 'MTN (Côte d’Ivoire)',
-            'wave_direct_ci' => 'Wave (Côte d’Ivoire)',
+            'mtn_ci' => 'MTN (Côte d’Ivoire)',
             'free_sn' => 'Free (Sénégal)',
             'airtel_ne' => 'Airtel (Niger)',
         ];
@@ -102,7 +111,7 @@ class FedaPayGateway implements OnlineGateway
             'mtn-bj' => 'mtn_open',
             'moov-bj' => 'moov',
             'celtiis-bj' => 'sbin',
-            'mtn-ci' => 'mtn_open_ci',
+            'mtn-ci' => 'mtn_ci',
             'free-sn' => 'free_sn',
             'airtel-ne' => 'airtel_ne',
             default => null,

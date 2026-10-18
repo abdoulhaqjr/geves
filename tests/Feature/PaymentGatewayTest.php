@@ -121,6 +121,26 @@ it('transmet l’opérateur mobile money choisi', function () {
 });
 
 /**
+ * ⚠️⚠️ **LA LISTE DES OPÉRATEURS EST CELLE DU PRESTATAIRE, PAS LA NÔTRE.** Elle
+ * portait `mtn_open_ci` pour MTN Côte d'Ivoire - le code documenté est
+ * **`mtn_ci`** - ainsi que `bmo`, `coris_money` et `wave_direct_ci`, qui ne
+ * figurent dans aucune liste officielle. Les quatre avaient été écrits d'après
+ * l'API publique sans jamais rencontrer un vrai compte marchand.
+ *
+ * ⚠️ Et un code inconnu est **ignoré en silence** : le payeur croyait choisir,
+ * et rien ne partait. C'est le pire des échecs - celui qui ne se voit pas.
+ */
+it('ne propose que des codes opérateur documentés par le prestataire', function () {
+    // Les codes publiés par le prestataire pour le mobile money.
+    $documentes = ['mtn_open', 'moov', 'sbin', 'mtn_ci', 'moov_tg', 'togocel',
+        'free_sn', 'airtel_ne', 'mtn_open_gn'];
+
+    $inconnus = array_values(array_diff(array_keys((new FedaPayGateway)->mobileOperators()), $documentes));
+
+    expect($inconnus)->toBe([]);
+});
+
+/**
  * ⚠️ **C'est le compte marchand qui accepte la carte, pas nous.** Elle demande
  * une couverture accordée sur demande ; sans elle, l'annoncer enverrait le
  * payeur sur une page qui ne la propose pas. D'où le réglage.
@@ -355,6 +375,12 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
     expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 6px; }');
     expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: min(560px, 68dvh); border: 0; }');
     expect($css)->toContain('max-height: calc(100dvh - 24px);');
+
+    // ⚠️ **La largeur décide de la MISE EN PAGE du prestataire** : à 520px son
+    // formulaire se replie sur une colonne et le bouton « Payer » tombe sous la
+    // ligne de flottaison ; au large il rend ses deux colonnes, moyens à gauche
+    // et saisie à droite, tout visible d'un regard.
+    expect($css)->toContain('width: 100%; max-width: 940px; background: #fff;');
 });
 
 /**

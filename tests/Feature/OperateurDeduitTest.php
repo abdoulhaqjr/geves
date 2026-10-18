@@ -83,7 +83,10 @@ it('traduit le réseau dans les codes du prestataire', function () {
     expect($gw->operatorFromPhone('+22897000000'))->toBe('moov_tg');
     expect($gw->operatorFromPhone('+2290196123456'))->toBe('mtn_open');
     expect($gw->operatorFromPhone('+2290120123456'))->toBe('sbin');
-    expect($gw->operatorFromPhone('+2250502030405'))->toBe('mtn_open_ci');
+    // ⚠️ `mtn_ci`, et non `mtn_open_ci` : c'est le code DOCUMENTÉ par le
+    // prestataire. L'ancien n'existait pas chez lui, et un code inconnu est
+    // ignoré en silence - le payeur croyait choisir, et rien ne partait.
+    expect($gw->operatorFromPhone('+2250502030405'))->toBe('mtn_ci');
     expect($gw->operatorFromPhone('+221761234567'))->toBe('free_sn');
 });
 

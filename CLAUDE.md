@@ -4519,6 +4519,13 @@ ans d'intervalle de code : d'abord sur 422px de haut, puis sur 800x460, où un
 plancher de 62dvh posé sur la zone laissait 151px à un en-tête et un pied qui en
 réclament 164. C'est la **zone** qui défile, pas la fenêtre.
 
+⚠️ **La LARGEUR décide de la mise en page du prestataire.** À 520px son
+formulaire se replie sur une colonne : le choix du moyen, la saisie et le bouton
+« Payer » s'empilent, et le bouton tombe sous la ligne de flottaison. À **940px**
+il rend ses deux colonnes - moyens à gauche, saisie et bouton à droite, tout
+visible d'un regard. C'est la forme de sa page hébergée, et c'est celle qu'on
+veut sur la nôtre.
+
 ⚠️ **Le plancher appartient au CADRE, pas à la zone** (`iframe { height: 100%;
 min-height: min(560px, 68dvh) }`) : c'est lui qui donne sa hauteur à la fenêtre
 quand l'écran est confortable - mesuré à 800x650, **618px de fenêtre contre 501**
@@ -4571,12 +4578,29 @@ savions déjà. On lui passe donc le **`customer`**, pays compris
 `initiate()`, pas une seconde construction : deux assemblages se décaleraient, et
 le formulaire finirait par contredire la transaction qu'il règle.
 
-⚠️ **L'opérateur part par DEUX canaux** : la transaction (`mode`, l'API
-documentée) et les options du formulaire. Le second n'est **pas documenté** -
-`checkout.js` transmet toutes ses options, et `mode` est le nom que le
-prestataire emploie lui-même pour cela ; s'il est ignoré, rien ne change. ⚠️ Un
-`mode` **vide** ne part jamais : il vaudrait peut-être « aucun opérateur
-acceptable ».
+⚠️⚠️ **`mode` NE PRÉ-SÉLECTIONNE RIEN SUR LA PAGE DE PAIEMENT**, et c'est la
+leçon la plus coûteuse de ce module - trois essais en conditions réelles pour
+l'établir. Le champ est bien envoyé (mesuré en base : `meta.operator` posé,
+`mode` dans la requête de création), et la page du prestataire affiche quand
+même son sélecteur, sur **« Mtn Bénin »** par défaut.
+
+⚠️ **`mode` ne sert qu'au PAIEMENT DIRECT**, celui qui se passe entièrement de
+page : `POST /v1/{mode}` avec le jeton rendu par `POST /transactions/{id}/token`
+(c'est le `sendNowWithToken($mode, $token)` de leur SDK). Le payeur reçoit alors
+la demande d'approbation **sur son téléphone**, sans formulaire - donc sans
+sélecteur d'opérateur et sans case « Je veux recevoir mon reçu par mail », qui
+appartiennent tous deux à la page du prestataire et nous sont inaccessibles
+(cadre d'un autre domaine). ⚠️ **Ce parcours n'est pas implémenté** : c'est une
+décision de produit, pas un détail - voir §8 de PASSATION.md.
+
+⚠️ **Les codes d'opérateur sont CEUX DU PRESTATAIRE, et quatre étaient faux** :
+`mtn_open_ci` (le code documenté est **`mtn_ci`**), plus `bmo`, `coris_money` et
+`wave_direct_ci`, absents de toute liste officielle. Écrits d'après l'API
+publique sans jamais rencontrer un vrai compte marchand, et **ignorés en
+silence** : le payeur croyait choisir, et rien ne partait. La liste documentée
+est `mtn_open`, `moov`, `sbin`, `mtn_ci`, `moov_tg`, `togocel`, `free_sn`,
+`airtel_ne`, `mtn_open_gn` - un cas de `PaymentGatewayTest` interdit d'en
+proposer un autre.
 
 ⚠️ **« Je choisis sur la page de paiement » reste un choix du PAYEUR** : aucun
 opérateur ne lui est imposé, même déduit de son numéro - la portabilité peut
