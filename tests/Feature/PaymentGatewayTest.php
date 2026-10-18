@@ -394,7 +394,7 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
     $css = cssUkc();
 
     expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 0; }');
-    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 542px; border: 0; }');
+    expect($css)->toContain('display: block; width: 100%; height: 542px; border: 0;');
     expect($css)->toContain('max-height: calc(100dvh - 24px);');
 
     // ⚠️ **La hauteur du cadre ne suit PAS celle de l'écran.** Exprimée en `dvh`,
@@ -416,6 +416,43 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
     // On lit la valeur, pas la ligne - l'élargir d'un chiffre rouvrirait le défaut.
     preg_match('/\.ukc-pay-embed__panel \{[^}]*max-width: (\d+)px;/', $css, $l);
     expect((int) ($l[1] ?? 0))->toBeGreaterThan(0)->toBeLessThan(768);
+});
+
+/**
+ * ⚠️⚠️ **DEUX MORCEAUX DE LA PAGE DU PRESTATAIRE N'ONT RIEN À FAIRE CHEZ NOUS.**
+ *
+ * ⚠️ **Sa croix** (`.modal-close`, 32px, posée à `top: -15px; right: -15px`)
+ * appartient à SA fenêtre modale. Embarquée, elle dépasse de sa carte : il en
+ * restait un quart de pastille blanche collé dans le coin, juste sous notre
+ * propre croix - deux croix pour une fenêtre, dont une qui n'est pas à nous.
+ *
+ * ⚠️ **Sa bande du bas** (`.secured-by`, 22px) laisse voir le voile de sa page,
+ * `body { background: rgba(0,0,0,.6) }` : une barre grise sous un formulaire
+ * blanc partout ailleurs.
+ *
+ * ⚠️⚠️ **LA DÉCOUPE PORTE SUR LE CADRE, PAS SUR UN CACHE POSÉ DESSUS**, et c'est
+ * ce que ce cas tient. Les pourcentages d'un `clip-path` se comptent sur la
+ * largeur RÉELLE du cadre, qui perd 17px dès que notre zone sort sa barre de
+ * défilement : un cache ancré à droite se décalerait d'autant et découvrirait la
+ * croix. ⚠️ Et un élément posé DANS la zone ne survivrait pas - leur script y
+ * écrit `innerHTML`.
+ *
+ * ⚠️ Les 17x17 du coin sont la marge droite de sa carte : son texte « MARCHAND »
+ * s'arrête à 684px sur 700, mesuré au pixel près. Rien d'utile n'y passe.
+ */
+it('ne laisse entrer ni la croix du prestataire ni sa bande grise', function () {
+    $css = cssUkc();
+
+    expect($css)->toContain('clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 22px), 0 calc(100% - 22px));');
+
+    // ⚠️ En plein écran, sa bande du bas suit le bas de SON contenu et non celui
+    // du cadre : découper le bas rognerait le formulaire. On ne retire que la croix.
+    expect($css)->toContain('clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);');
+
+    // ⚠️ La découpe vit sur le CADRE. Posée sur la zone, elle rognerait aussi notre
+    // barre de défilement, et le coin découpé ne suivrait plus le bord du cadre.
+    preg_match('/\.ukc-pay-embed__box iframe \{([^}]*)\}/', $css, $m);
+    expect($m[1] ?? '')->toContain('clip-path');
 });
 
 /**

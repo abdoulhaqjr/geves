@@ -4578,7 +4578,27 @@ large, **562px** à 620 et en dessous, le texte se repliant. En plein écran
 ⚠️ **Ses deux colonnes tiennent bien plus bas qu'on ne l'a cru** : mesurées côte à
 côte à 686, 620, 575 et 520px. Ce qui tombait sous la ligne de flottaison tenait
 à la HAUTEUR du cadre, pas à sa largeur - l'arbitrage « 790px entre deux écueils »
-reposait sur une prémisse fausse. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+reposait sur une prémisse fausse.
+
+⚠️⚠️ **DEUX MORCEAUX DE SA PAGE SONT DÉCOUPÉS DU CADRE** (`clip-path` sur
+l'`iframe`). **Sa croix** (`.modal-close`, 32px posée à `top: -15px;
+right: -15px`) appartient à SA fenêtre modale : embarquée, elle dépasse de sa
+carte et laissait un quart de pastille blanche collé dans le coin, juste sous la
+nôtre - deux croix pour une fenêtre, dont une qui n'est pas à nous. **Sa bande du
+bas** (`.secured-by`, 22px) laisse voir le voile de sa page
+(`body { background: rgba(0,0,0,.6) }`) : une barre grise sous un formulaire blanc
+partout ailleurs.
+
+⚠️⚠️ **ON DÉCOUPE LE CADRE, ON NE POSE PAS UN CACHE DESSUS.** Les pourcentages
+d'un `clip-path` se comptent sur la largeur RÉELLE du cadre, qui perd 17px dès que
+la zone sort sa barre de défilement : un cache ancré à droite se décalerait
+d'autant et découvrirait la croix. ⚠️ Et un élément posé DANS la zone ne
+survivrait pas - leur script y écrit `innerHTML`. ⚠️ Les 17x17 du coin sont la
+marge droite de sa carte : son texte « MARCHAND » s'arrête à 684px sur 700, mesuré
+au pixel près. ⚠️ **On ne raccourcit pas le cadre** pour supprimer sa bande : un
+cadre plus court que sa carte lui ferait sortir sa propre barre de défilement. En
+plein écran, seule la croix part - sa bande y suit le bas de SON contenu, et
+découper le bas rognerait le formulaire. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 

@@ -1576,7 +1576,27 @@ body.ukc-overlay-open { overflow: hidden; }
    768px (où la fenêtre se tient désormais), sa page repasse en `display: block`
    et le haut ne se perd plus : si sa carte grandit - un message d'erreur - elle
    défile, elle ne se rogne pas. */
-.ukc-pay-embed__box iframe { display: block; width: 100%; height: 542px; border: 0; }
+/* ⚠️⚠️ **DEUX MORCEAUX DE SA PAGE N'ONT RIEN À FAIRE DANS NOTRE FENÊTRE**, et on
+   les retire en DÉCOUPANT LE CADRE, pas en posant un cache dessus : les
+   pourcentages d'un `clip-path` se comptent sur la largeur RÉELLE du cadre, qui
+   perd 17px dès que notre zone sort sa barre de défilement. Un cache ancré à
+   droite se décalerait d'autant ; la découpe, elle, suit. ⚠️ Et un élément posé
+   DANS la zone ne survivrait pas : leur script y écrit `innerHTML`.
+   ⚠️ **Sa croix** (`.modal-close`, 32px, posée à `top: -15px; right: -15px`)
+   appartient à SA fenêtre modale : embarquée, elle dépasse de sa carte et il en
+   restait un quart de pastille blanche collé dans le coin, juste sous notre
+   propre croix. Les 17x17 découpés sont la marge droite de sa carte - son texte
+   « MARCHAND » s'arrête à 684px sur 700, mesuré au pixel près : rien d'utile n'y
+   passe.
+   ⚠️ **Sa bande du bas** (`.secured-by`, 22px) laisse voir le VOILE de sa page
+   (`body { background: rgba(0,0,0,.6) }`) : une barre grise sous un formulaire
+   blanc partout ailleurs. ⚠️ On ne raccourcit PAS le cadre pour l'éviter - 542px
+   est la hauteur de sa carte, et un cadre plus court lui ferait sortir sa propre
+   barre de défilement. On découpe, et le blanc du panneau prend la place. */
+.ukc-pay-embed__box iframe {
+  display: block; width: 100%; height: 542px; border: 0;
+  clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 22px), 0 calc(100% - 22px));
+}
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
 .ukc-pay-embed__failed { display: none; }
@@ -1599,6 +1619,11 @@ body.ukc-pay-embed-open { overflow: hidden; }
   .ukc-pay-embed__panel { max-width: none; min-height: 100dvh; max-height: 100dvh; border-radius: 0; }
   /* ⚠️ En plein écran, le cadre prend toute la hauteur : sa carte y est plus
      haute (562px mesurés à 375px de large) et c'est sa page qui défile, depuis
-     le haut. Une hauteur fixe laisserait du blanc sous elle. */
-  .ukc-pay-embed__box iframe { height: 100%; }
+     le haut. Une hauteur fixe laisserait du blanc sous elle.
+     ⚠️ Sa bande du bas suit alors le bas de SON contenu, pas celui du cadre :
+     découper le bas rognerait le formulaire. On ne retire que sa croix. */
+  .ukc-pay-embed__box iframe {
+    height: 100%;
+    clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);
+  }
 }

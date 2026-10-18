@@ -74,7 +74,10 @@ publique, ignorés en silence. La liste est désormais tenue par un cas.
 
 ⚠️ **La fenêtre fait exactement la taille de sa carte : 700x542.** Sa carte est
 figée à `max-width: 700px` et il comble en gris tout ce qu'on prend au-delà ;
-le cadre fait donc 542px de haut, fixes. ⚠️ **Son bandeau ne répète plus l'objet
+le cadre fait donc 542px de haut, fixes. ⚠️ **Sa croix et sa bande grise du bas
+sont DÉCOUPÉES du cadre** (`clip-path`), jamais masquées par un cache : le cadre
+perd 17px quand la zone sort sa barre de défilement, et un cache ancré à droite
+se décalerait d'autant. ⚠️ **Son bandeau ne répète plus l'objet
 ni le montant** : le formulaire du
 prestataire les annonce déjà, en y ajoutant ses frais - deux chiffres différents
 sur le même écran valent moins qu'un seul. La fenêtre se nomme donc par
