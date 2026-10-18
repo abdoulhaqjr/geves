@@ -66,6 +66,17 @@ passe sur `GET /v1/transactions/fees`), l'opérateur aussi ; la dernière somme
 encaissée date du **02/09/2026** (togocel, 100 F, `transferred`) et plus rien
 n'aboutit depuis le 26/09.
 
+⚠️⚠️ **REMBOURSER NE RENVOIE PAS L'ARGENT.** Le prestataire ne rembourse que
+depuis son tableau de bord, et seulement pour MTN : son API n'a pas d'adresse de
+remboursement. Le bouton du back-office reprend donc les droits et marque la
+ligne - en le DISANT, avant et après le clic - et laisse une trace (qui, quand).
+Le virement reste à faire à la main.
+
+⚠️ **Ce que le prestataire a enregistré est désormais gardé** : opérateur employé,
+référence opérateur, numéro qui a payé, somme réellement débitée, frais. Le payeur
+n'est pas toujours le participant (mesuré : réglé depuis un autre numéro, chez un
+autre opérateur), et c'est la seule prise sur un paiement contesté.
+
 ⚠️⚠️ **LE COUPABLE EST L'OPÉRATEUR TOGOCEL, LUI SEUL** (essai réel du 18/10 à
 18h29 : transaction 113761896, `moov_tg`, 100 F, **`approved`**, même compte et
 même clé ; GEVES l'a enregistrée, puis elle a été remboursée à la main). Ni la

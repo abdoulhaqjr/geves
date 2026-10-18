@@ -67,7 +67,7 @@ class ReconcilePayments
                 continue;
             }
 
-            $this->settle($payment, $status);
+            $this->settle($payment, $status, $gw);
 
             if ($status === 'paid') {
                 $report['paid']++;
@@ -88,9 +88,15 @@ class ReconcilePayments
      * Source unique partagée par le retour navigateur, le webhook et la
      * réconciliation.
      */
-    public function settle(Payment $payment, string $status): void
+    public function settle(Payment $payment, string $status, ?OnlineGateway $gw = null): void
     {
         if ($status === 'paid') {
+            // ⚠️ **Le détail AVANT la confirmation** : c'est elle qui émet le reçu,
+            // et un reçu vaut mieux avec la référence de l'opérateur dessus.
+            if ($gw !== null) {
+                $this->noteDetail($payment, $gw);
+            }
+
             try {
                 $this->confirm->handle($payment);
             } catch (\DomainException) {
@@ -99,5 +105,42 @@ class ReconcilePayments
         } elseif ($status === 'failed' && $payment->status === 'pending') {
             $payment->update(['status' => 'failed']);
         }
+    }
+
+    /**
+     * Relève chez le prestataire ce qu'il a enregistré de l'encaissement - opérateur
+     * employé, référence, numéro débité - et le range dans `meta['passerelle']`.
+     *
+     * ⚠️⚠️ **UN DÉTAIL ILLISIBLE NE DOIT JAMAIS EMPÊCHER UNE CONFIRMATION.** Le
+     * participant a payé ; si cet appel d'agrément échoue - réseau, adresse
+     * changée, champ disparu - il perdrait son inscription pour une ligne de
+     * confort. On note l'incident et on confirme quand même.
+     *
+     * ⚠️ Idempotent : on n'écrase pas un relevé déjà pris, le prestataire pouvant
+     * purger ses vieilles transactions.
+     */
+    protected function noteDetail(Payment $payment, OnlineGateway $gw): void
+    {
+        if (filled($payment->meta['gateway_detail'] ?? null)) {
+            return;
+        }
+
+        try {
+            $detail = EventPaymentConfig::using($payment->event, fn () => $gw->details($payment));
+        } catch (\Throwable $e) {
+            Log::channel('payments')->warning('Détail d’encaissement illisible.', [
+                'payment' => $payment->id,
+                'gateway' => $payment->gateway,
+                'erreur' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        if ($detail === []) {
+            return;
+        }
+
+        $payment->update(['meta' => [...(array) $payment->meta, 'gateway_detail' => $detail]]);
     }
 }

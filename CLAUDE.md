@@ -3757,6 +3757,37 @@ ajoutée par la vue, elle ne se saisit pas.
   faite `formation_id` par `formation_id`). L'attestation *formation_animation* n'est
   jamais concernée : un formateur ne paie pas. Le remboursement remet aussi
   l'inscription à la formation en « registered ».
+- ⚠️⚠️ **REMBOURSER DANS GEVES NE RENVOIE PAS L'ARGENT, ET NE LE PEUT PAS.**
+  Le prestataire **ne rembourse que depuis son tableau de bord**, et seulement
+  **pour un opérateur (MTN)** - c'est écrit dans son assistance, et son API le
+  confirme : aucune adresse de remboursement (`/refunds` répond 401 à nos clés,
+  `/transactions/{id}/refunds` n'existe pas, `/payouts` répond 403). Le geste est
+  donc **comptable** : il reprend les droits ouverts (attestations, inscription
+  formation) et marque la ligne, pendant qu'un humain fait le virement ailleurs.
+  ⚠️ **L'écran le dit deux fois** - dans la confirmation avant le clic, et dans le
+  message après - parce qu'un gestionnaire qui croit l'argent reparti laisse un
+  participant attendre. ⚠️ Et il en reste une **trace** (`meta.refunded_at`,
+  `meta.refunded_by_name`, journal `payments`) : « remboursé » chez nous contre
+  « approuvé » chez le prestataire, sans savoir qui demander, c'est une enquête
+  pour rien.
+- ⚠️⚠️ **CE QUE LE PRESTATAIRE A ENREGISTRÉ EST RELEVÉ ET GARDÉ**
+  (`OnlineGateway::details()` → `meta.gateway_detail`, posé par
+  `ReconcilePayments::settle()` au passage à « payé », donc par les trois chemins
+  à la fois - retour navigateur, webhook, réconciliation). On y garde l'opérateur
+  **employé**, son libellé, la **référence opérateur**, le **numéro qui a payé**,
+  la somme **réellement débitée**, les frais, l'heure du paiement et la date de
+  transfert prévue. **Pourquoi** : mesuré en production le 18/10/2026, le payeur
+  n'est pas toujours le participant - inscription au nom d'un numéro togolais,
+  règlement depuis un AUTRE numéro, chez un AUTRE opérateur que celui déduit. Sans
+  ces lignes, un paiement contesté ne se raccroche à rien. Le back-office les
+  affiche sous le moyen et sous le montant (⚠️ le payeur a vu passer une autre
+  somme : le prestataire ajoute ses frais, et c'est ce chiffre-là qu'il cite).
+  ⚠️ **`include=payment_method` n'est pas facultatif** : sans lui le numéro qui a
+  payé n'est pas dans la réponse, et `/payment_methods/{id}` répond 404.
+  ⚠️ **Ni le jeton ni l'URL du reçu n'entrent en base** (la seconde porte un jeton
+  dans son adresse), et ⚠️ **un relevé illisible ne bloque JAMAIS la
+  confirmation** : le participant a payé, il ne perdra pas sa place pour une ligne
+  de confort.
 - **Certification cryptographique des attestations** (identité vérifiable) : chaque
   attestation est scellée à l'émission par une **signature EdDSA (Ed25519)** de
   l'émetteur, sous forme de **Verifiable Credential W3C sécurisé en JWS compact**

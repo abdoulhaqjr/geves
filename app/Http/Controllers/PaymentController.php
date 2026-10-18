@@ -40,7 +40,7 @@ class PaymentController extends Controller
         // ceux utilisés à l'initiation du paiement.
         EventPaymentConfig::apply($payment->event);
 
-        $this->settle($payment, $gw->verify($payment));
+        $this->settle($payment, $gw->verify($payment), $gw);
 
         $flash = $payment->fresh()->status === 'paid'
             ? ['ukc_status' => 'Paiement confirmé. Votre reçu vous a été envoyé par e-mail.']
@@ -85,7 +85,7 @@ class PaymentController extends Controller
         }
 
         EventPaymentConfig::apply($payment->event);
-        $this->settle($payment, $gw->verify($payment));
+        $this->settle($payment, $gw->verify($payment), $gw);
 
         return response()->json(['status' => $payment->fresh()->status]);
     }
@@ -147,7 +147,7 @@ class PaymentController extends Controller
                 return response('OK', 200);
             }
 
-            $this->settle($payment, $event['status']);
+            $this->settle($payment, $event['status'], $gw);
 
             Log::channel('payments')->info('Webhook paiement traité.', [
                 'gateway' => $gateway,
@@ -169,9 +169,15 @@ class PaymentController extends Controller
         return response('OK', 200);
     }
 
-    /** Applique le statut vérifié au paiement (idempotent, anti-double-paiement). */
-    protected function settle(Payment $payment, string $status): void
+    /**
+     * Applique le statut vérifié au paiement (idempotent, anti-double-paiement).
+     *
+     * ⚠️ La passerelle suit le statut : c'est elle qui sait relever le détail de
+     * l'encaissement - opérateur employé, référence, numéro débité - et ces
+     * lignes-là sont les seules qui rattachent un paiement contesté à un téléphone.
+     */
+    protected function settle(Payment $payment, string $status, ?OnlineGateway $gw = null): void
     {
-        $this->reconciler->settle($payment, $status);
+        $this->reconciler->settle($payment, $status, $gw);
     }
 }

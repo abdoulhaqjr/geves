@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -315,9 +316,36 @@ class PaymentController extends Controller
         };
     }
 
+    /**
+     * ⚠️⚠️ **GEVES NE RENVOIE PAS L'ARGENT, ET NE PEUT PAS LE FAIRE.** Le
+     * prestataire **ne rembourse que depuis son tableau de bord**, et seulement
+     * pour un opérateur (MTN) - son API n'expose aucune adresse de remboursement
+     * (`/refunds` répond 401 à nos clés, `/transactions/{id}/refunds` n'existe
+     * pas). Ce geste-ci est donc **comptable** : il reprend les droits ouverts par
+     * le paiement et marque la ligne, pendant qu'un humain fait le virement
+     * ailleurs.
+     *
+     * ⚠️ D'où la trace : qui a remboursé, et quand. Sans elle, « remboursé » dans
+     * GEVES et « approuvé » chez le prestataire se contredisent sans que personne
+     * ne sache lequel croire ni qui demander.
+     */
     public function refund(Payment $payment, RevokeAttestationsOnRefund $revoke): RedirectResponse
     {
-        $payment->update(['status' => 'refunded']);
+        $enLigne = $payment->gateway !== 'manual' && filled($payment->gateway_ref);
+
+        $payment->update([
+            'status' => 'refunded',
+            'meta' => [...(array) $payment->meta, 'refunded_at' => now()->toIso8601String(),
+                'refunded_by_name' => Auth::user()?->name],
+        ]);
+
+        Log::channel('payments')->info('Paiement marqué remboursé.', [
+            'payment' => $payment->id,
+            'gateway' => $payment->gateway,
+            'reference_passerelle' => (string) $payment->gateway_ref,
+            'par' => Auth::user()?->name,
+            'argent_renvoye_par_geves' => false,
+        ]);
 
         // Rembourser doit RETIRER les droits acquis, sinon le participant garde une
         // « inscription réglée » et l'accès à la visio après remboursement.
@@ -332,8 +360,16 @@ class PaymentController extends Controller
         // autre paiement réglé couvre encore le même droit.
         $revoked = $revoke->handle($payment);
 
-        return back()->with('ukc_status', $revoked > 0
-            ? 'Paiement remboursé - '.$revoked.' attestation(s) révoquée(s).'
-            : 'Paiement remboursé.');
+        $dit = $revoked > 0
+            ? 'Paiement marqué remboursé - '.$revoked.' attestation(s) révoquée(s).'
+            : 'Paiement marqué remboursé.';
+
+        // ⚠️ Le dire ICI, pas seulement dans la documentation : sans cette phrase,
+        // un gestionnaire croit l'argent reparti et le participant attend.
+        if ($enLigne) {
+            $dit .= ' L’argent n’a PAS été renvoyé : le remboursement se fait depuis le tableau de bord du prestataire.';
+        }
+
+        return back()->with('ukc_status', $dit);
     }
 }

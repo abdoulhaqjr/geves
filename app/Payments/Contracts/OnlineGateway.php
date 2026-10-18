@@ -57,6 +57,25 @@ interface OnlineGateway extends PaymentGateway
     public function verify(Payment $payment): string;
 
     /**
+     * Ce que le prestataire a ENREGISTRÉ pour un encaissement abouti : l'opérateur
+     * réellement employé, sa référence, le numéro qui a payé, ce qui a été débité.
+     * Tableau vide si la passerelle n'en sait rien.
+     *
+     * ⚠️⚠️ **CE N'EST PAS DE LA DÉCORATION.** Le payeur n'est pas toujours le
+     * participant - mesuré en production : inscription au nom d'un numéro Togocel,
+     * règlement effectué depuis un autre numéro, chez Moov. Sans ces lignes, un
+     * paiement contesté ne se raccroche à rien : ni à l'opérateur, ni au téléphone
+     * qui a été débité, ni à la référence que le payeur lit sur son relevé.
+     *
+     * ⚠️ **Rien de secret n'en sort** : ni le jeton de paiement, ni l'URL du reçu
+     * du prestataire, qui en porte un. Ce tableau finit en base et sous les yeux
+     * d'un gestionnaire.
+     *
+     * @return array<string, scalar>
+     */
+    public function details(Payment $payment): array;
+
+    /**
      * Vérifie l'authenticité d'une notification et en extrait la référence et le
      * statut. Retourne null si la signature est invalide (fail-closed).
      *

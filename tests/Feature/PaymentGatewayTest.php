@@ -804,3 +804,122 @@ it('Back-office : « Revérifier » confirme un paiement réellement réglé', f
 
     expect($payment->fresh()->status)->toBe('paid');
 });
+
+/* ------------------- Ce que le prestataire a enregistré -------------------- */
+
+/**
+ * ⚠️⚠️ **LE PAYEUR N'EST PAS TOUJOURS LE PARTICIPANT.** Mesuré en production le
+ * 18/10/2026 : inscription au nom d'un numéro togolais, règlement effectué
+ * **depuis un autre numéro, chez un autre opérateur** (Moov, alors qu'on avait
+ * déduit Togocel). Sans ce relevé, un paiement contesté ne se raccroche à rien -
+ * ni à l'opérateur employé, ni au téléphone débité, ni à la référence que le
+ * payeur lit sur son relevé.
+ *
+ * ⚠️ `include=payment_method` n'est pas décoratif : sans lui, le numéro qui a
+ * payé n'est pas dans la réponse, et l'adresse `/payment_methods/{id}` répond
+ * 404.
+ */
+it('garde ce que le prestataire a enregistré de l’encaissement', function () {
+    Mail::fake();
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
+        'gateway' => 'fedapay', 'gateway_ref' => '7777', 'status' => 'pending']);
+
+    Http::fake([
+        '*/transactions/7777?include=payment_method' => Http::response(['v1/transaction' => [
+            'status' => 'approved',
+            'mode' => 'moov_tg',
+            'transaction_key' => '040977964356',
+            'amount_debited' => 15300,
+            'fees' => 300,
+            'approved_at' => '2026-10-18T18:30:07.371+00:00',
+            'to_be_transferred_at' => '2026-10-21T18:30:06.920+00:00',
+            'payment_method' => ['brand' => 'moov_tg', 'country' => 'TG', 'number' => '22896886551'],
+            'payment_token' => 'JETON-QUI-NE-DOIT-JAMAIS-ETRE-EN-BASE',
+            'receipt_url' => 'https://api.exemple/receipt?token=JETON-QUI-NE-DOIT-JAMAIS-ETRE-EN-BASE',
+        ]]),
+        '*/transactions/7777' => Http::response(['v1/transaction' => ['status' => 'approved']]),
+    ]);
+
+    app(ReconcilePayments::class)->handle();
+
+    $detail = $payment->fresh()->gatewayDetail();
+
+    expect($detail['operator'] ?? null)->toBe('moov_tg');
+    expect($detail['operator_label'] ?? null)->toBe('Moov (Togo)');
+    expect($detail['operator_ref'] ?? null)->toBe('040977964356');
+    expect($detail['payer_phone'] ?? null)->toBe('22896886551');
+    expect($detail['amount_debited'] ?? null)->toBe(15300);
+    expect($detail['fees'] ?? null)->toBe(300);
+
+    // ⚠️⚠️ **RIEN DE SECRET N'ENTRE EN BASE.** Le jeton autorise le règlement, et
+    // l'URL du reçu en porte un dans son adresse : ce relevé finit sous les yeux
+    // d'un gestionnaire, et dans une sauvegarde.
+    expect(json_encode($payment->fresh()->meta, JSON_THROW_ON_ERROR))
+        ->not->toContain('JETON-QUI-NE-DOIT-JAMAIS-ETRE-EN-BASE');
+});
+
+/**
+ * ⚠️⚠️ **UN DÉTAIL ILLISIBLE NE DOIT JAMAIS COÛTER UNE INSCRIPTION.** Le
+ * participant a payé ; si l'appel d'agrément échoue - réseau, adresse changée,
+ * champ disparu - il perdrait sa place pour une ligne de confort.
+ */
+it('confirme le paiement même quand le détail est illisible', function () {
+    Mail::fake();
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
+        'gateway' => 'fedapay', 'gateway_ref' => '8888', 'status' => 'pending']);
+
+    Http::fake([
+        '*/transactions/8888?include=payment_method' => Http::response(['message' => 'en panne'], 500),
+        '*/transactions/8888' => Http::response(['v1/transaction' => ['status' => 'approved']]),
+    ]);
+
+    app(ReconcilePayments::class)->handle();
+
+    expect($payment->fresh()->status)->toBe('paid');
+    expect($payment->fresh()->gatewayDetail())->toBe([]);
+});
+
+/**
+ * ⚠️⚠️ **GEVES NE RENVOIE PAS L'ARGENT, ET DOIT LE DIRE.** Le prestataire ne
+ * rembourse que depuis son tableau de bord, et seulement pour un opérateur : son
+ * API n'expose aucune adresse de remboursement. Le geste est donc comptable -
+ * il reprend les droits et marque la ligne - pendant qu'un humain fait le
+ * virement ailleurs. Sans cette phrase, un gestionnaire croit l'argent reparti
+ * et le participant attend.
+ */
+it('Back-office : rembourser dit que l’argent n’est pas renvoyé, et laisse une trace', function () {
+    Mail::fake();
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
+        'gateway' => 'fedapay', 'gateway_ref' => '9999', 'status' => 'paid']);
+
+    $this->actingAs(adminStaff())
+        ->post(route('admin.payments.refund', $payment))
+        ->assertRedirect();
+
+    $frais = $payment->fresh();
+
+    expect($frais->status)->toBe('refunded');
+    expect(session('ukc_status'))->toContain('n’a PAS été renvoyé');
+    // La trace : qui, et quand. « Remboursé » chez nous contre « approuvé » chez
+    // le prestataire, sans savoir qui demander, c'est une enquête pour rien.
+    expect($frais->meta['refunded_at'] ?? null)->not->toBeNull();
+    expect($frais->meta['refunded_by_name'] ?? null)->not->toBeNull();
+});
+
+/** ⚠️ Et il le dit AVANT le clic, pas seulement après. */
+it('Back-office : la confirmation de remboursement prévient avant le clic', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
+        'gateway' => 'fedapay', 'gateway_ref' => '9191', 'status' => 'paid']);
+
+    $this->actingAs(adminStaff())
+        ->get(route('admin.payments.index'))
+        ->assertSee('le virement se fait depuis le tableau de bord du prestataire', false);
+});

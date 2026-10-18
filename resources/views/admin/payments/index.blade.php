@@ -79,6 +79,7 @@
                         </thead>
                         <tbody>
                             @foreach ($payments as $p)
+                                @php($gw = $p->gatewayDetail())
                                 <tr>
                                     <td style="font-family:var(--ukc-mono);">
                                         {{ $p->reference ?: '-' }}
@@ -96,8 +97,32 @@
                                             <div class="meta" style="margin-top:3px;">{{ $p->participant->title }}</div>
                                         @endif
                                     </td>
-                                    <td style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</td>
-                                    <td>{{ $p->methodLabel() }}</td>
+                                    <td style="font-weight:700;">
+                                        {{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}
+                                        {{-- ⚠️ Le payeur, lui, a vu PASSER une autre somme : le prestataire
+                                             ajoute ses frais. C'est ce chiffre-là qu'il cite en réclamation. --}}
+                                        @if (($gw['amount_debited'] ?? null) && (float) $gw['amount_debited'] !== (float) $p->amount)
+                                            <div class="meta" style="font-weight:500;">
+                                                {{ number_format((float) $gw['amount_debited'], 0, ',', ' ') }} débités
+                                                @if (($gw['fees'] ?? null) !== null)(frais {{ number_format((float) $gw['fees'], 0, ',', ' ') }})@endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        {{ $p->methodLabel() }}
+                                        {{-- ⚠️ L'opérateur EMPLOYÉ et le numéro DÉBITÉ, qui démentent parfois
+                                             celui de l'inscription : c'est par là qu'on retrouve un paiement
+                                             contesté. --}}
+                                        @if (($gw['operator_label'] ?? '') !== '')
+                                            <div class="meta">{{ $gw['operator_label'] }}</div>
+                                        @endif
+                                        @if (($gw['payer_phone'] ?? '') !== '')
+                                            <div class="meta">payé depuis {{ $gw['payer_phone'] }}</div>
+                                        @endif
+                                        @if (($gw['operator_ref'] ?? '') !== '')
+                                            <div class="meta" style="font-family:var(--ukc-mono);">réf. {{ $gw['operator_ref'] }}</div>
+                                        @endif
+                                    </td>
                                     <td style="white-space:nowrap;">{{ $p->created_at?->format('d/m/Y') }}</td>
                                     <td><span class="ukc-pill ukc-pill--{{ $p->statusPill() }}">{{ $p->statusLabel() }}</span></td>
                                     <td style="text-align:right;white-space:nowrap;">
@@ -124,9 +149,12 @@
                                                 <a href="{{ route('admin.payments.receipt', $p) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                                     <x-ukc.icon name="receipt" :size="14" /> Reçu
                                                 </a>
+                                                {{-- ⚠️ Le dire AVANT le clic : pour un paiement en ligne, GEVES ne
+                                                     renvoie pas l'argent - le prestataire ne rembourse que depuis
+                                                     son tableau de bord. --}}
                                                 <form method="POST" action="{{ route('admin.payments.refund', $p) }}"
-                                                      data-ajax data-ajax-msg="Paiement remboursé."
-                                                      data-confirm="Rembourser ce paiement ?">
+                                                      data-ajax data-ajax-msg="Paiement marqué remboursé."
+                                                      data-confirm="@if ($p->gateway !== 'manual' && filled($p->gateway_ref))Marquer ce paiement remboursé ? GEVES ne renvoie pas l'argent : le virement se fait depuis le tableau de bord du prestataire.@else Rembourser ce paiement ? @endif">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Rembourser</button>
                                                 </form>

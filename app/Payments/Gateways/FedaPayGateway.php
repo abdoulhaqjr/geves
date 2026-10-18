@@ -273,6 +273,45 @@ class FedaPayGateway implements OnlineGateway
         return $this->mapStatus($this->unwrap($res)['status'] ?? '');
     }
 
+    /**
+     * Le détail de l'encaissement, relevé sur la transaction du prestataire.
+     *
+     * ⚠️ **`include=payment_method` n'est pas facultatif** : sans lui, le numéro
+     * qui a réellement payé n'est pas dans la réponse - seul son identifiant
+     * l'est, et l'adresse `/payment_methods/{id}` répond 404. C'est pourtant la
+     * seule ligne qui rattache un paiement contesté à un téléphone.
+     *
+     * ⚠️ **On ne garde NI le jeton NI l'URL du reçu** : le premier autorise le
+     * règlement, la seconde en porte un dans son adresse. Ce tableau est écrit
+     * en base et lu par un gestionnaire.
+     *
+     * @return array<string, scalar>
+     */
+    public function details(Payment $payment): array
+    {
+        if (blank($payment->gateway_ref)) {
+            return [];
+        }
+
+        $t = $this->unwrap($this->http()
+            ->get($this->baseUrl().'/transactions/'.$payment->gateway_ref, ['include' => 'payment_method'])
+            ->throw()->json());
+
+        $moyen = is_array($t['payment_method'] ?? null) ? $t['payment_method'] : [];
+
+        return array_filter([
+            // L'opérateur EMPLOYÉ, qui dément parfois celui qu'on avait déduit.
+            'operator' => (string) ($t['mode'] ?? $moyen['brand'] ?? ''),
+            'operator_label' => $this->mobileOperators()[(string) ($t['mode'] ?? '')] ?? '',
+            'operator_ref' => (string) ($t['transaction_key'] ?? ''),
+            'payer_phone' => (string) ($moyen['number'] ?? ''),
+            'amount_debited' => $t['amount_debited'] ?? '',
+            'fees' => $t['fees'] ?? '',
+            'paid_at' => (string) ($t['approved_at'] ?? ''),
+            'transfer_due_at' => (string) ($t['to_be_transferred_at'] ?? ''),
+        ], fn ($v) => filled($v));
+    }
+
     public function parseWebhook(Request $request): ?array
     {
         $secret = (string) config('services.fedapay.webhook_secret');

@@ -156,6 +156,26 @@ class Payment extends Model
     }
 
     /**
+     * Ce que le prestataire a enregistré de l'encaissement : opérateur employé,
+     * référence, numéro débité, somme réellement prélevée. Vide pour un paiement
+     * manuel, et pour tous ceux d'avant ce relevé.
+     *
+     * ⚠️⚠️ **LE PAYEUR N'EST PAS TOUJOURS LE PARTICIPANT** - mesuré en production :
+     * inscription au nom d'un numéro togolais, règlement effectué depuis un autre
+     * numéro, chez un autre opérateur. Ces lignes sont les seules qui rattachent
+     * un paiement contesté à un téléphone et à une référence que le payeur peut
+     * lire sur son relevé.
+     *
+     * @return array<string, scalar>
+     */
+    public function gatewayDetail(): array
+    {
+        $detail = $this->meta['gateway_detail'] ?? null;
+
+        return is_array($detail) ? $detail : [];
+    }
+
+    /**
      * Restreint aux paiements qui ouvrent les **droits de participation** à
      * l'événement (badge, attestations, accès) : tout sauf les formations.
      *
