@@ -64,10 +64,15 @@ propre page appelle `POST /v1/{mode}` quand le payeur presse PAYER, et affiche l
 formulaire **est la même réponse** que notre essai serveur. Le jeton est bon (il
 passe sur `GET /v1/transactions/fees`), l'opérateur aussi ; la dernière somme
 encaissée date du **02/09/2026** (togocel, 100 F, `transferred`) et plus rien
-n'aboutit depuis le 26/09. **À faire, hors code** : vérifier que la clé
-`sk_live_` du `.env` n'est pas une clé restreinte (elle se voit refuser
-`GET /v1/payouts`), sinon demander à leur support la réouverture de
-l'encaissement. Détail des sondes dans `CLAUDE.md`.
+n'aboutit depuis le 26/09.
+
+⚠️⚠️ **LE COUPABLE EST L'OPÉRATEUR TOGOCEL, LUI SEUL** (essai réel du 18/10 à
+18h29 : transaction 113761896, `moov_tg`, 100 F, **`approved`**, même compte et
+même clé ; GEVES l'a enregistrée, puis elle a été remboursée à la main). Ni la
+clé ni le compte ne sont en cause, et toute la chaîne fonctionne. **À faire,
+hors code** : demander au prestataire la réouverture de Togocel T-Money.
+⚠️ En attendant, un payeur Togocel ne peut pas régler, et notre déduction
+d'opérateur l'y conduit (préfixes togolais 70-73 et 90-93).
 
 ⚠️ **Le sélecteur d'opérateur et la case « reçu par mail » restent donc ceux du
 prestataire**, dans un cadre d'un autre domaine, hors de portée. Aucune de ses

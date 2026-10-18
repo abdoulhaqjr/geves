@@ -4734,13 +4734,22 @@ engagé) :
   mais `GET /v1/payouts` répond **403 « Opération non autorisée »** et
   `/accounts`, `/api_keys`, `/settings` répondent 401.
 
-⚠️⚠️ **DEUX PISTES, TOUTES DEUX HORS DU CODE.** Soit la **clé** `sk_live_` du
-`.env` est une clé **restreinte** - le jeton hérite de ses droits, ce qui
-expliquerait que la page hébergée échoue elle aussi - et il faut en générer une
-complète depuis leur tableau de bord ; soit l'**encaissement du compte** n'est
-plus autorisé depuis fin septembre, et c'est à leur support de le rouvrir. Dans
-les deux cas, **rien à corriger chez nous** : le jour où l'autorisation revient,
-le paiement repart sans qu'une ligne change.
+⚠️⚠️ **ET LE COUPABLE EST L'OPÉRATEUR : `togocel`, LUI SEUL.** Deux pistes
+avaient été avancées le même jour - une clé `sk_live_` restreinte, ou
+l'encaissement du compte fermé - et **un essai réel les a réfutées toutes les
+deux** : le 18/10/2026 à 18h29, transaction **113761896, `moov_tg`, 100 F,
+`approved`**, même compte, même clé, même intégration, même montant. GEVES l'a
+enregistrée (paiement 196 passé à `paid`, puis remboursé à la main depuis le
+back-office) : **toute la chaîne fonctionne**, jusqu'au retour de vérification.
+
+⚠️ Ce qui reste refusé, c'est **Togocel T-Money** (`togocel`), et il l'était déjà
+le 02/09/2026 - la dernière somme encaissée par ce canal. Rien à corriger chez
+nous : c'est une réouverture à demander au prestataire. ⚠️ **Mais la portée est
+lourde** : l'université est à Kara, et un payeur Togocel ne peut pas régler du
+tout. Notre déduction d'opérateur (`MobileNetwork`) envoie précisément les
+préfixes 70-73 et 90-93 sur `togocel` : ce sont des payeurs qu'on conduit droit
+au mur, avec pour seule explication un « Opération non autorisée » en rouge, dans
+un cadre qui n'est pas à nous.
 
 ⚠️ **Deux écrans resteront donc ceux du prestataire** tant que l'activation n'est
 pas accordée : son **sélecteur d'opérateur** et sa case **« Je veux recevoir mon
