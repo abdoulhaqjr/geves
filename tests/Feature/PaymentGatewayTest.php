@@ -336,6 +336,96 @@ it('montre une attente animée avant d’ouvrir la fenêtre', function () {
 });
 
 /**
+ * ⚠️⚠️ **LE FORMULAIRE EMBARQUÉ NE DEVINE PAS LE PAYS.** Il s'ouvre sur le
+ * prestataire avec les options qu'on lui donne, et sans pays il retombe sur
+ * celui du prestataire - **le Bénin**. Mesuré en production : un numéro togolais
+ * (+228 90…) arrivait sur « Mtn Bénin », drapeau béninois compris, et le payeur
+ * devait corriger à la main ce que nous savions déjà.
+ *
+ * ⚠️ C'est le MÊME `customer` que celui de la transaction, pas une seconde
+ * construction : deux assemblages se décaleraient, et le formulaire
+ * contredirait la transaction qu'il règle.
+ */
+it('donne au formulaire embarqué le pays du payeur et l’opérateur choisi', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+    $payment->setOperator('togocel');
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 56]], 201),
+    ]);
+
+    $resultat = (new FedaPayGateway)->initiate($payment->fresh());
+
+    // Le participant de `onlineSetup()` porte un numéro togolais.
+    expect($resultat['customer']['phone_number']['country'])->toBe('tg');
+    expect($resultat['customer']['phone_number']['number'])->toBe('+22890000000');
+    expect($resultat['mode'])->toBe('togocel');
+
+    // ⚠️ Et c'est bien le même bloc que celui envoyé à la CRÉATION : le
+    // formulaire ne doit pas contredire la transaction qu'il règle.
+    expect(corpsDeCreation()['customer'])->toBe($resultat['customer']);
+    expect(corpsDeCreation()['mode'])->toBe('togocel');
+});
+
+/**
+ * ⚠️ **« Je choisis sur la page de paiement » reste un choix du PAYEUR.** Il a
+ * dit qu'il trancherait là-bas : lui imposer quand même l'opérateur déduit de
+ * son numéro lui retirerait la main, et la portabilité peut avoir démenti cette
+ * déduction. Le **pays**, lui, part toujours - il ne décide de rien, il évite
+ * seulement qu'on propose le Bénin à un Togolais.
+ */
+it('n’impose aucun opérateur quand le payeur a voulu choisir sur place', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 57]], 201),
+    ]);
+
+    $resultat = (new FedaPayGateway)->initiate($payment);
+
+    expect($resultat['mode'])->toBe('');
+    expect(corpsDeCreation())->not->toHaveKey('mode');
+    expect($resultat['customer']['phone_number']['country'])->toBe('tg');
+});
+
+/**
+ * Ce que le serveur sait doit ATTEINDRE le formulaire : la charge voyage dans
+ * `data-pay-embed`, et c'est elle que le script relit.
+ *
+ * ⚠️ Un `mode` **vide** ne part pas : il vaudrait peut-être, chez le
+ * prestataire, « aucun opérateur acceptable ».
+ */
+it('porte le pays et l’opérateur jusque dans la page', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 58]], 201),
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->from(route('account.payment', $event->id))
+        ->followingRedirects()
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay', 'operator' => 'togocel'])
+        ->assertOk()
+        // ⚠️ Blade échappe les guillemets du JSON dans l'attribut.
+        ->assertSee('&quot;country&quot;:&quot;tg&quot;', false)
+        ->assertSee('&quot;mode&quot;:&quot;togocel&quot;', false);
+
+    $js = (string) file_get_contents(resource_path('js/app.js'));
+
+    expect($js)->toContain('{ customer: cfg.customer }');
+    expect($js)->toContain('...(cfg.mode ? { mode: cfg.mode } : {})');
+});
+
+/**
  * ⚠️⚠️ **L'ATTENTE A UN PLANCHER, et la fenêtre s'ouvre même en cas d'échec.**
  * C'est la contrepartie indispensable de la fenêtre qui attend : le signal peut
  * ne jamais venir (cadre déjà chargé, script absent, CDN coupé), et sans issue

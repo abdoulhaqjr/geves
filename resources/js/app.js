@@ -3215,6 +3215,16 @@ function initPayEmbed(root = document) {
                 // son objet sont les nôtres. Laisser le formulaire les composer
                 // reviendrait à laisser le payeur fixer ce qu'il règle.
                 transaction: { id: cfg.transaction_id },
+                // ⚠️ **Sans pays, le formulaire propose les opérateurs du Bénin**,
+                // quel que soit l'indicatif du numéro - mesuré en production sur
+                // un numéro togolais. Ce bloc vient du serveur, et c'est le même
+                // que celui de la transaction.
+                ...(cfg.customer && Object.keys(cfg.customer).length ? { customer: cfg.customer } : {}),
+                // L'opérateur choisi chez nous. ⚠️ La transaction le porte déjà ;
+                // ce canal-ci n'est pas documenté, et s'il est ignoré rien ne
+                // change. On ne l'envoie jamais vide : un `mode` vide vaudrait
+                // peut-être « aucun opérateur acceptable ».
+                ...(cfg.mode ? { mode: cfg.mode } : {}),
                 onComplete(resp) {
                     if (resp?.reason === window.FedaPay.DIALOG_DISMISSED) return;
                     verifier();

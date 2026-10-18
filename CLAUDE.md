@@ -4520,6 +4520,31 @@ plateforme, et garde la porte de sortie. ⚠️ Le nom de la plateforme passe pa
 placeholder `:app`, jamais en dur ; et l'objet comme le montant viennent de
 `PaymentEmbed`, pas de la vue - la devise **stockée** a le dernier mot.
 
+⚠️⚠️ **LE FORMULAIRE EMBARQUÉ NE DEVINE PAS LE PAYS, ET IL RETOMBE SUR LE
+BÉNIN.** Il ne s'ouvre pas sur la page hébergée : `checkout.js` POSTE ses
+options à `checkout.fedapay.com` et c'est tout ce qu'il sait. Mesuré en
+production : un numéro **togolais** (+228 90…) arrivait sur « Mtn Bénin »,
+drapeau béninois compris - le payeur devait corriger à la main ce que nous
+savions déjà. On lui passe donc le **`customer`**, pays compris
+(`phone_number.country`, option documentée de `FedaPay.init`).
+
+⚠️ **C'est le MÊME `customer` que celui de la transaction**, rendu par
+`initiate()`, pas une seconde construction : deux assemblages se décaleraient, et
+le formulaire finirait par contredire la transaction qu'il règle.
+
+⚠️ **L'opérateur part par DEUX canaux** : la transaction (`mode`, l'API
+documentée) et les options du formulaire. Le second n'est **pas documenté** -
+`checkout.js` transmet toutes ses options, et `mode` est le nom que le
+prestataire emploie lui-même pour cela ; s'il est ignoré, rien ne change. ⚠️ Un
+`mode` **vide** ne part jamais : il vaudrait peut-être « aucun opérateur
+acceptable ».
+
+⚠️ **« Je choisis sur la page de paiement » reste un choix du PAYEUR** : aucun
+opérateur ne lui est imposé, même déduit de son numéro - la portabilité peut
+avoir démenti la déduction, et il a dit qu'il trancherait là-bas. Le **pays**,
+lui, part toujours : il ne décide de rien, il évite seulement qu'on propose le
+Bénin à un Togolais.
+
 ⚠️ **LA FENÊTRE N'APPARAÎT QUE LORSQUE LE FORMULAIRE EST LÀ.** Elle s'ouvrait
 vide, et le payeur regardait un cadre blanc se remplir pendant une à deux
 secondes - au moment du parcours où l'on doute le plus, sur un écran où une page

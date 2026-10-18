@@ -34,13 +34,23 @@ base porte les deux formes.
 confondre remettrait son opérateur au payeur contre sa volonté, au retour d'une
 erreur de formulaire.
 
+**Le formulaire embarqué ne devine pas le pays** : il POSTE ses options au
+prestataire et, sans pays, retombe sur le Bénin. Mesuré en production - un numéro
+togolais arrivait sur « Mtn Bénin ». On lui passe le `customer` de la transaction
+(pays compris) et l'opérateur choisi.
+
+⚠️ L'opérateur part par deux canaux : la transaction (`mode`, documenté) et les
+options du formulaire (non documenté, ignoré sans dommage). ⚠️ « Je choisis sur
+la page de paiement » reste un choix du payeur : aucun opérateur ne lui est
+imposé, seul le pays part.
+
 **La fenêtre de paiement n'apparaît que lorsque le formulaire est là.** Elle
 s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et deux cas de `PaymentGatewayTest`,
-sept sabotages vérifiés.
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et cinq cas de `PaymentGatewayTest`,
+onze sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

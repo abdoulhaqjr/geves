@@ -197,6 +197,25 @@ class FedaPayGateway implements OnlineGateway
         return [
             'type' => 'embed',
             'public_key' => $publique,
+            // ⚠️ **Le formulaire EMBARQUÉ ne reçoit pas la page hébergée** : il
+            // s'ouvre sur checkout.fedapay.com avec les options qu'on lui donne,
+            // et sans pays il retombe sur celui du prestataire - **le Bénin**.
+            // Mesuré en production : un numéro togolais (+228 90…) arrivait sur
+            // « Mtn Bénin », avec le drapeau béninois. Le payeur devait corriger
+            // à la main ce que nous savions déjà.
+            //
+            // ⚠️ C'est le MÊME `customer` que celui de la transaction, pas une
+            // seconde construction : deux assemblages se décaleraient, et le
+            // formulaire contredirait la transaction qu'il règle.
+            'customer' => $customer,
+            // ⚠️ Et l'opérateur, quand le payeur en a choisi un. Il est déjà sur
+            // la **transaction** (`$body['mode']`), mais rien ne dit que le
+            // formulaire embarqué la relise jusque-là : on le lui donne aussi en
+            // clair. `checkout.js` transmet toutes ses options au formulaire, et
+            // `mode` est le nom que le prestataire emploie lui-même pour cela.
+            // ⚠️ Ce second canal n'est pas documenté : s'il est ignoré, rien ne
+            // change - la transaction, elle, porte toujours le choix.
+            'mode' => (string) ($body['mode'] ?? ''),
             'environment' => config('services.fedapay.mode') === 'live' ? 'live' : 'sandbox',
             'transaction_id' => (string) $id,
             // ⚠️ **La page hébergée reste accessible**, et ce n'est pas un luxe : si

@@ -34,6 +34,8 @@ interface PaymentGateway
      *     public_key?: string,
      *     environment?: string,
      *     transaction_id?: string,
+     *     customer?: array<string, mixed>,
+     *     mode?: string,
      * }
      */
     public function initiate(Payment $payment): array;
