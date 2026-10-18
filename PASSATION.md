@@ -72,7 +72,10 @@ même clé ; GEVES l'a enregistrée, puis elle a été remboursée à la main). 
 clé ni le compte ne sont en cause, et toute la chaîne fonctionne. **À faire,
 hors code** : demander au prestataire la réouverture de Togocel T-Money.
 ⚠️ En attendant, un payeur Togocel ne peut pas régler, et notre déduction
-d'opérateur l'y conduit (préfixes togolais 70-73 et 90-93).
+d'opérateur l'y conduit (préfixes togolais 70-73 et 90-93). **Décision de
+l'équipe du 18/10 : on n'avertit pas le payeur et on ne touche pas à la
+déduction** - le défaut est chez le prestataire, et un message à poser puis à
+retirer coûterait plus que l'attente. À rouvrir si la réouverture traîne.
 
 ⚠️ **Le sélecteur d'opérateur et la case « reçu par mail » restent donc ceux du
 prestataire**, dans un cadre d'un autre domaine, hors de portée. Aucune de ses
