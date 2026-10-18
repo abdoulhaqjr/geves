@@ -13,6 +13,12 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Candidatures spontanées des évaluateurs (2026-10-18)
+
+Dans **Soumissions → Options**, le gestionnaire active, par édition, les candidatures et choisit les grades autorisés. L'option est désactivée par défaut. Le tableau de bord participant n'affiche « Me proposer comme évaluateur » que si le compte possède une fiche de participant liée à cette édition et si son grade d'édition (`participants.title`, avec repli sur `users.grade`) est autorisé. Le POST revalide ces conditions. Les demandes sont uniques par compte/édition dans `reviewer_applications` et restent hors du vivier d'attribution tant qu'elles sont en attente.
+
+**Soumissions → Évaluateurs & expertise** affiche les demandes « Non confirmé · en attente d'acceptation » et permet au gestionnaire de les accepter. Cette action promeut la fiche de participant au rôle `reviewer`, marque la demande acceptée et émet `reviewer_application_accepted` sur les canaux in-app/e-mail selon les préférences. L'ajout manuel d'un candidat existant clôt aussi sa demande. Désactiver l'option retire immédiatement l'appel à candidature du tableau de bord, sans effacer les demandes déjà reçues.
+
 ### Un créneau prend le cadre de sa séance (2026-10-18)
 
 **La séance dit déjà tout cela.** Le formulaire « Nouveau créneau » demandait le

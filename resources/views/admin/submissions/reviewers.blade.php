@@ -83,6 +83,37 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Charge moyenne</div><div class="val">{{ number_format($avgLoad, 1, ',', ' ') }}</div></div>
             </div>
 
+            @if ($pendingApplications->isNotEmpty())
+                <div class="ukc-card" style="margin:18px 0;">
+                    <h2>Demandes d’évaluateurs <span class="ukc-pill">{{ $pendingApplications->count() }} en attente</span></h2>
+                    <p class="desc">Ces participants ne peuvent pas encore recevoir de soumissions à évaluer.</p>
+                    <div class="ukc-table-wrap">
+                        <table class="ukc-table">
+                            <thead><tr><th>Participant</th><th>Grade</th><th>Statut</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @foreach ($pendingApplications as $application)
+                                    <tr>
+                                        <td><strong>{{ $application->user?->name }}</strong><div style="color:var(--ukc-muted);font-size:12px;">{{ $application->user?->email }}</div></td>
+                                        <td>{{ $application->grade }}</td>
+                                        <td><span class="ukc-pill">Non confirmé · en attente d’acceptation</span></td>
+                                        <td>
+                                            @if ($canWrite)
+                                                <form method="POST" action="{{ route('admin.evenements.reviewers.applications.accept', [$event, $application]) }}">
+                                                    @csrf
+                                                    <button class="ukc-btn ukc-btn--blue ukc-btn--sm" type="submit">Accepter</button>
+                                                </form>
+                                            @else
+                                                <span style="color:var(--ukc-muted);">Lecture seule</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
             @if (count($uncoveredAxes))
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
@@ -122,7 +153,7 @@
                         @endif
                         <div class="ukc-table-wrap">
                             <table class="ukc-table">
-                                <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th></tr></thead>
+                                <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th>Statut</th><th style="text-align:center;">Charge</th></tr></thead>
                                 <tbody>
                                     @foreach ($reviewers as $rev)
                                         <tr>
@@ -148,6 +179,7 @@
                                                     </div>
                                                 @endif
                                             </td>
+                                            <td><span class="ukc-pill">Confirmé</span></td>
                                             <td style="text-align:center;font-weight:700;">{{ $rev['load'] }}</td>
                                         </tr>
                                     @endforeach

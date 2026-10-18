@@ -24,7 +24,9 @@ class RegisterEventReviewer
         $matches = Participant::where('event_id', $event->id)
             ->whereRaw('LOWER(email) = ?', [$email])
             ->get();
-        $participant = $matches->firstWhere('role', 'reviewer') ?? $matches->first();
+        $participant = $matches->firstWhere('role', 'reviewer')
+            ?? $matches->first()
+            ?? ($account ? Participant::where('event_id', $event->id)->where('user_id', $account->id)->first() : null);
 
         if ($participant?->role === 'reviewer') {
             throw ValidationException::withMessages(['reviewerEmail' => 'Cet évaluateur est déjà enregistré pour cet événement.']);

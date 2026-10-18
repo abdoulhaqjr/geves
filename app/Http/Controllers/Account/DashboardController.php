@@ -6,10 +6,12 @@ use App\Enums\EventPhase;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Participant;
+use App\Models\ReviewerApplication;
 use App\Models\Submission;
 use App\Support\AccountActivity;
 use App\Support\CurrentEvent;
 use App\Support\ParticipantDashboard;
+use App\Support\ReviewerVolunteering;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -43,6 +45,9 @@ class DashboardController extends Controller
 
         $context = $current ?? $openEvent;
         $tdb = new ParticipantDashboard($account, $context);
+        $reviewerApplication = $context
+            ? ReviewerApplication::where('event_id', $context->id)->where('user_id', $account->id)->first()
+            : null;
 
         // On soumet TOUJOURS dans le colloque sélectionné ; contrôle de la place
         // restante en amont, avant même d'ouvrir le formulaire.
@@ -104,6 +109,8 @@ class DashboardController extends Controller
             'committees' => $activity->committees(),
             'isReviewer' => $activity->isReviewer(),
             'pendingReviews' => $tdb->relecturesEnAttente(),
+            'canVolunteerAsReviewer' => $reviewerApplication === null && ReviewerVolunteering::eligible($context, $account),
+            'reviewerApplication' => $reviewerApplication,
 
             // Un compte sans aucune participation, ni appel ouvert, ni fonction :
             // l'espace est vide, et le dire vaut mieux que des cartes à zéro.

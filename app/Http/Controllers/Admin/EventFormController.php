@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Support\EventMeetingConfig;
 use App\Support\EventPaymentConfig;
 use App\Support\Locales;
+use App\Support\ParticipantTypes;
 use App\Support\ReviewerExpertise;
 use App\Support\ReviewGrid;
 use App\Support\StaffRoles;
@@ -24,6 +25,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -386,6 +389,31 @@ class EventFormController extends Controller
 
         return redirect()->route('admin.submissions.options', ['event_id' => $event->id])
             ->with('ukc_status', 'Règles d’évaluation mises à jour.');
+    }
+
+    /** Autorise les candidatures spontanées uniquement pour les grades choisis. */
+    public function saveReviewerVolunteering(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['nullable', 'boolean'],
+            'grades' => ['array'],
+            'grades.*' => ['string', Rule::in(ParticipantTypes::all())],
+        ]);
+
+        $enabled = $request->boolean('enabled');
+        $grades = array_values(array_unique($data['grades'] ?? []));
+        if ($enabled && $grades === []) {
+            throw ValidationException::withMessages([
+                'grades' => 'Sélectionnez au moins un grade pour ouvrir les candidatures.',
+            ]);
+        }
+
+        $settings = $event->settings ?? [];
+        $settings['reviewer_volunteering'] = ['enabled' => $enabled, 'grades' => $grades];
+        $event->update(['settings' => $settings]);
+
+        return redirect()->route('admin.submissions.options', ['event_id' => $event->id])
+            ->with('ukc_status', $enabled ? 'Candidatures des évaluateurs activées.' : 'Candidatures des évaluateurs désactivées.');
     }
 
     /**

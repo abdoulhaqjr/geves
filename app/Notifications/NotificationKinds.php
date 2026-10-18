@@ -21,6 +21,7 @@ class NotificationKinds
         return [
             'submission_status' => ['label' => 'Décisions sur mes communications', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'review_assigned' => ['label' => 'Évaluations qui me sont assignées', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
+            'reviewer_application_accepted' => ['label' => 'Acceptation de ma candidature d’évaluateur', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'session_role' => ['label' => 'Désignations (modérateur / rapporteur)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'schedule_change' => ['label' => 'Changement d’horaire de mon passage', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'report_reminder' => ['label' => 'Relances de rapport de séance', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],

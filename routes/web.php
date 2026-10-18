@@ -17,6 +17,7 @@ use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
 use App\Http\Controllers\Account\PreferencesController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\RegisterController;
+use App\Http\Controllers\Account\ReviewerApplicationController;
 use App\Http\Controllers\Account\ReviewWorkspaceController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\SessionAttendanceController;
@@ -216,6 +217,7 @@ Route::permanentRedirect('/notifications', '/compte/notifications');
 
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
     Route::get('/compte', DashboardController::class)->name('account.dashboard');
+    Route::post('/compte/evaluateur/candidature/{event}', [ReviewerApplicationController::class, 'store'])->name('account.reviewer-applications.store');
     Route::get('/prise-en-main', AccountOnboardingController::class)->name('account.onboarding');
     Route::get('/compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
     Route::post('/compte/colloque', [EventContextController::class, 'switch'])->name('account.colloque.switch');
@@ -379,8 +381,10 @@ Route::prefix('admin')->group(function () {
             Route::put('/editions/{event}/modifier', [EventFormController::class, 'update'])->name('admin.evenements.update');
             Route::post('/editions/{event}/relecteurs/expertise', [EventFormController::class, 'saveReviewerExpertise'])->name('admin.evenements.reviewers.expertise');
             Route::post('/editions/{event}/relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'storeReviewer'])->name('admin.evenements.reviewers.store');
+            Route::post('/editions/{event}/relecteurs/candidatures/{application}/accepter', [App\Http\Controllers\Admin\SubmissionController::class, 'acceptReviewerApplication'])->name('admin.evenements.reviewers.applications.accept');
             Route::get('/editions/{event}/relecteurs/personnes', [App\Http\Controllers\Admin\SubmissionController::class, 'reviewerPeople'])->name('admin.evenements.reviewers.people');
             Route::post('/editions/{event}/relecteurs/grille', [EventFormController::class, 'saveReviewGrid'])->name('admin.evenements.reviewers.criteria');
+            Route::post('/editions/{event}/relecteurs/candidatures/options', [EventFormController::class, 'saveReviewerVolunteering'])->name('admin.evenements.reviewers.volunteering');
             Route::post('/editions/{event}/paiement', [EventFormController::class, 'savePayment'])->name('admin.evenements.payment');
             Route::post('/editions/{event}/visio', [EventFormController::class, 'saveMeetings'])->name('admin.evenements.meetings');
             Route::post('/editions/{event}/traductions', [EventFormController::class, 'saveTranslations'])->name('admin.evenements.translations');

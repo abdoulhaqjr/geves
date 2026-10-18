@@ -52,6 +52,7 @@ class ReseedColloques extends Command
         'session_attendances',
         'session_reports',
         'reviews',
+        'reviewer_applications',
         'reviewer_bids',
         'slots',
         'submission_authors',

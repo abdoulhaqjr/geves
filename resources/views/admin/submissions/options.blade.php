@@ -82,6 +82,27 @@
                     @endif
                 </div>
             </form>
+            <form method="POST" action="{{ route('admin.evenements.reviewers.volunteering', $event) }}">
+                @csrf
+                <div class="ukc-card" style="margin-top:18px;">
+                    <h2><span><x-ukc.icon name="users" :size="18" /> Candidatures spontanées des évaluateurs</span></h2>
+                    <p class="desc">Les participants des grades sélectionnés peuvent se proposer depuis leur tableau de bord. Leur candidature attend votre acceptation dans « Évaluateurs &amp; expertise ».</p>
+                    <label class="ukc-check"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $volunteeringEnabled)) @disabled(! $canWrite)> Autoriser les candidatures pour cet événement</label>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin-top:16px;">
+                        @foreach ($participantGrades as $grade)
+                            <label class="ukc-check"><input type="checkbox" name="grades[]" value="{{ $grade }}" @checked(in_array($grade, old('grades', $volunteeringGrades), true)) @disabled(! $canWrite)> {{ $grade }}</label>
+                        @endforeach
+                    </div>
+                    @error('grades') <p class="error">{{ $message }}</p> @enderror
+                    @error('grades.*') <p class="error">{{ $message }}</p> @enderror
+                    @if ($canWrite)
+                        <div class="ukc-form-actions" style="margin-top:16px;text-align:right;">
+                            <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les candidatures</button>
+                        </div>
+                    @endif
+                </div>
+            </form>
+
             {{-- Un seul formulaire : les quatre règles se lisent et s'enregistrent
                  ensemble (elles étaient éclatées entre paramètres d'URL de la page
                  d'attribution et fiche d'événement). --}}

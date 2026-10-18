@@ -461,6 +461,21 @@
                 @endforelse
             </section>
 
+            @if (\App\Support\ReviewerVolunteering::enabled($event) && ($canVolunteerAsReviewer || $reviewerApplication?->status === 'pending'))
+                <section class="ukc-card tdb-roles">
+                    <h3><x-ukc.icon name="award" :size="20" /> {{ __('Devenir évaluateur') }}</h3>
+                    @if ($reviewerApplication?->status === 'pending')
+                        <p class="tdb-sub">{{ __('Votre candidature pour cet événement est en attente de validation par le gestionnaire.') }}</p>
+                    @else
+                        <p class="tdb-sub">{{ __('Votre grade vous permet de proposer votre aide pour évaluer des communications de cet événement.') }}</p>
+                        <form method="POST" action="{{ route('account.reviewer-applications.store', $event) }}">
+                            @csrf
+                            <button type="submit" class="ukc-btn ukc-btn--blue">{{ __('Me proposer comme évaluateur') }}</button>
+                        </form>
+                    @endif
+                </section>
+            @endif
+
             {{-- Mes fonctions : ce que le colloque vous a confié. --}}
             @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $isReviewer || $committees->isNotEmpty())
                 <section class="ukc-card tdb-roles">

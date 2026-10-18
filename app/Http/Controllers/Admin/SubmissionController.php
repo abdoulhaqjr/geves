@@ -15,6 +15,7 @@ use App\Mail\ReviewerInvitationMail;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Review;
+use App\Models\ReviewerApplication;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Models\User;
@@ -22,8 +23,10 @@ use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
 use App\Support\ListSort;
 use App\Support\Notifier;
+use App\Support\ParticipantTypes;
 use App\Support\Plagiarism\PlagiarismRegistry;
 use App\Support\ReviewerExpertise;
+use App\Support\ReviewerVolunteering;
 use App\Support\ReviewGrid;
 use App\Support\SimilarityChecker;
 use App\Support\SubmissionFormConfig;
@@ -37,6 +40,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -616,6 +620,7 @@ class SubmissionController extends Controller
             'event' => $event,
             'event_id' => $editionId,
             'reviewers' => $reviewers,
+            'pendingApplications' => $event ? ReviewerApplication::with('user')->where('event_id', $event->id)->where('status', 'pending')->oldest()->get() : collect(),
             'reviewerAxes' => $axes,
             'uncoveredAxes' => $uncovered,
             'avgLoad' => $reviewers->isEmpty() ? 0.0 : round($reviewers->avg('load'), 1),
@@ -641,18 +646,88 @@ class SubmissionController extends Controller
             throw ValidationException::withMessages(['reviewerEmail' => 'Sélectionnez à nouveau le compte correspondant à cet e-mail.']);
         }
 
-        $action->handle(
-            $event,
-            trim($data['reviewerFirstName']),
-            trim($data['reviewerLastName']),
-            $data['reviewerEmail'],
-            trim($data['reviewerInstitution'] ?? ''),
-            $data['reviewerTracks'] ?? [],
-            $selectedAccount,
-        );
+        // L'ajout manuel d'un candidat vaut acceptation de sa demande.
+        $account = $selectedAccount ?? User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($data['reviewerEmail']))])->first();
+        $acceptedApplication = DB::transaction(function () use ($action, $event, $data, $selectedAccount, $account): ?ReviewerApplication {
+            $application = $account
+                ? ReviewerApplication::where('event_id', $event->id)->where('user_id', $account->id)->where('status', 'pending')->lockForUpdate()->first()
+                : null;
+            $action->handle(
+                $event,
+                trim($data['reviewerFirstName']),
+                trim($data['reviewerLastName']),
+                $data['reviewerEmail'],
+                trim($data['reviewerInstitution'] ?? ''),
+                $data['reviewerTracks'] ?? [],
+                $selectedAccount,
+            );
+            if ($application) {
+                $this->markReviewerApplicationAccepted($application);
+            }
+
+            return $application;
+        });
+        if ($acceptedApplication) {
+            $this->notifyReviewerApplicationAccepted($acceptedApplication);
+        }
 
         return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
             ->with('ukc_status', 'Évaluateur ajouté à cet événement. Il est disponible pour les attributions.');
+    }
+
+    public function acceptReviewerApplication(Event $event, ReviewerApplication $application, RegisterEventReviewer $action): RedirectResponse
+    {
+        abort_unless($application->event_id === $event->id, 404);
+
+        $acceptedApplication = DB::transaction(function () use ($event, $application, $action): ?ReviewerApplication {
+            $application = ReviewerApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
+            if ($application->status !== 'pending') {
+                return null;
+            }
+
+            $account = $application->user;
+            abort_if($account === null, 422, 'Le compte de ce candidat n’est plus disponible.');
+            $participant = Participant::where('event_id', $event->id)->where('user_id', $account->id)->first();
+            $action->handle(
+                $event,
+                (string) ($account->first_name ?: $participant?->first_name ?: $account->name),
+                (string) ($account->last_name ?: $participant?->last_name ?: ''),
+                (string) $account->email,
+                (string) ($participant?->institution ?: $account->affiliation ?: ''),
+                [],
+                $account,
+            );
+            $this->markReviewerApplicationAccepted($application);
+
+            return $application;
+        });
+        if ($acceptedApplication) {
+            $this->notifyReviewerApplicationAccepted($acceptedApplication);
+        }
+
+        return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
+            ->with('ukc_status', 'Candidature acceptée. Le participant a été informé.');
+    }
+
+    private function markReviewerApplicationAccepted(ReviewerApplication $application): void
+    {
+        $application->update([
+            'status' => 'accepted',
+            'approved_by' => Auth::guard('web')->id(),
+            'approved_at' => now(),
+        ]);
+    }
+
+    private function notifyReviewerApplicationAccepted(ReviewerApplication $application): void
+    {
+        Notifier::account(
+            $application->user,
+            'reviewer_application_accepted',
+            'Candidature d’évaluateur acceptée',
+            'Votre candidature pour « '.$application->event->title.' » est acceptée. Vous pouvez désormais être sollicité pour des évaluations.',
+            route('account.dashboard'),
+            'check-circle',
+        );
     }
 
     /** Suggestions de comptes pour le panneau d'ajout d'un évaluateur. */
@@ -712,6 +787,9 @@ class SubmissionController extends Controller
             'reviewDueDays' => ReviewGrid::dueDays($event),
             'target' => ReviewGrid::target($event),
             'maxLoad' => ReviewGrid::maxLoad($event),
+            'volunteeringEnabled' => ReviewerVolunteering::enabled($event),
+            'volunteeringGrades' => ReviewerVolunteering::grades($event),
+            'participantGrades' => ParticipantTypes::all(),
             'formRules' => (new SubmissionFormConfig($event ?? new Event))->rules(),
             'canWrite' => $this->canWriteEdition($event),
         ]);
