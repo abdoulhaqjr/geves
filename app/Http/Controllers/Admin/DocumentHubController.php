@@ -162,10 +162,11 @@ class DocumentHubController extends Controller
         $allowed = match ($tab) {
             'badges' => ['modeles', 'prets', 'options'],
             'attestations' => ['modeles', 'delivrees', 'options'],
-            default => ['modeles'],
+            'livre' => ['main', 'modeles', 'apparence'],
         };
-        $stab = (string) $request->query('stab', 'modeles');
-        $stab = in_array($stab, $allowed, true) ? $stab : 'modeles';
+        $defaultStab = $tab === 'livre' ? 'main' : 'modeles';
+        $stab = (string) $request->query('stab', $defaultStab);
+        $stab = in_array($stab, $allowed, true) ? $stab : $defaultStab;
 
         return view('admin.documents.attestations', [
             'events' => $this->accessibleEditions($request, 'documents'),

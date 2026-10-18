@@ -2370,3 +2370,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - L'aperçu du livre (`format=pdf&inline=1`) est une page HTML GEVES avec favicon, monogramme, titre du document et bouton de téléchargement. Elle intègre le même PDF final via `raw=1`, sans modifier la route de téléchargement direct.
 - `public/favicon.ico`, auparavant vide, contient les favicons UK en 16 et 32 px pour les accès sans page HTML. `App\Documents\BrandedPdf` ajoute le titre, l'auteur et le créateur GEVES aux PDF serveur (livre, attestations, lots, émargement et reçus). Un PDF brut reste affiché par le lecteur propre au navigateur ; seule une page HTML d'aperçu peut imposer un favicon d'onglet.
+
+### Sous-onglets Documents dans l'URL (18 octobre 2026)
+
+- Les trois sous-onglets du livre utilisent `?tab=livre&stab=main|modeles|apparence`, comme ceux des attestations et badges. Le contrôleur valide la valeur et ouvre `main` par défaut ; les liens directs et le rechargement conservent ainsi le sous-onglet. Le sélecteur d'événement conserve l'onglet et le sous-onglet courants.

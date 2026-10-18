@@ -1,10 +1,10 @@
 <x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active - '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, del: null, typed: '' }">
+    <div class="admin-page admin-documents" x-data="{ newAtt: false, del: null, typed: '' }">
         {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
                 <label>Événement</label>
-                <select onchange="window.location='{{ route('admin.documents.attestations') }}?event_id='+this.value">
+                <select onchange="const url = new URL(window.location.href); url.searchParams.set('event_id', this.value); window.location.href = url.toString();">
                     <option value="">- Choisir -</option>
                     @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
@@ -22,7 +22,7 @@
             <div class="ukc-nav-docs">
                 <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'attestations'])>Attestations</a>
                 <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'badges'])>Badges</a>
-                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre']) }}" @class(['active' => $tab === 'livre'])>Livre des résumés</a>
+                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre', 'stab' => 'main']) }}" @class(['active' => $tab === 'livre'])>Livre des résumés</a>
             </div>
 
             {{-- ======================= ATTESTATIONS ======================= --}}
@@ -337,15 +337,16 @@
 
             {{-- ======================= LIVRE DES RÉSUMÉS ======================= --}}
             <div @if ($tab !== 'livre') style="display:none;" @endif>
+                @php($livreBase = ['event_id' => $event->id, 'tab' => 'livre'])
                 <div class="ukc-tabs">
-                    <button type="button" @click="livre='main'" :class="{ active: livre==='main' }">Livre des résumés</button>
-                    <button type="button" @click="livre='modeles'" :class="{ active: livre==='modeles' }">Modèles de document</button>
-                    <button type="button" @click="livre='apparence'" :class="{ active: livre==='apparence' }">Apparence du livre</button>
+                    <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'main']) }}" @class(['active' => $stab === 'main'])>Livre des résumés</a>
+                    <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'modeles']) }}" @class(['active' => $stab === 'modeles'])>Modèles de document</a>
+                    <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'apparence']) }}" @class(['active' => $stab === 'apparence'])>Apparence du livre</a>
                 </div>
 
                 {{-- ---------- Livre : génération + état + contenu ---------- --}}
                 @php($secBox = 'border:1px solid var(--ukc-border);border-radius:12px;padding:16px;margin-bottom:14px;')
-                <div x-show="livre==='main'">
+                <div @if ($stab !== 'main') style="display:none;" @endif>
                     {{-- Panneau de génération : action principale + modèle actif --}}
                     <div class="ukc-card">
                         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;">
@@ -493,7 +494,7 @@
                 </div>
 
                 {{-- ---------- Modèles de document ---------- --}}
-                <div x-show="livre==='modeles'" x-cloak>
+                <div @if ($stab !== 'modeles') style="display:none;" @endif>
                     <div class="ukc-card">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <div>
@@ -582,7 +583,7 @@
                 </div>
 
                 {{-- ---------- Apparence du livre ---------- --}}
-                <div x-show="livre==='apparence'" x-cloak>
+                <div @if ($stab !== 'apparence') style="display:none;" @endif>
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
                         <input type="hidden" name="event_id" value="{{ $event->id }}">
                         <input type="hidden" name="livretModel" value="{{ $opts['livretTemplate'] }}">
