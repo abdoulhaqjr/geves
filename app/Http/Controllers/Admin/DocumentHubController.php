@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
+use App\Documents\BadgeLayout;
+use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
@@ -149,10 +151,26 @@ class DocumentHubController extends Controller
                     },
                     'count' => BadgeCatalog::recipients($event, $type)->count(),
                     'qr' => collect($layout['elements'] ?? [])->contains(fn ($element) => ($element['type'] ?? null) === 'qr'),
+                    // Vignette d'aperçu réelle du modèle (mêmes moteur et jetons que
+                    // la planche délivrée, variante sans photo) : la table du hub
+                    // montre enfin à quoi ressemble chaque badge, sans ouvrir un onglet.
+                    'preview' => LayoutRenderer::render(
+                        BadgeLayout::forRecipient($layout, $type, '', false),
+                        $this->badgePreviewVars($event, $type),
+                        badge: true,
+                    ),
+                    'w' => (int) $layout['width'],
+                    'h' => (int) $layout['height'],
                 ];
             }
         }
         $badgeReadyCount = array_sum(array_column($badgeRows, 'count'));
+        $badgeStats = [
+            'types' => count($badgeRows),
+            'recipients' => $badgeReadyCount,
+            'ready' => count(array_filter($badgeRows, fn ($b) => $b['count'] > 0)),
+            'qr' => count(array_filter($badgeRows, fn ($b) => $b['qr'])),
+        ];
 
         // Onglet et sous-onglet portés par l'URL (?tab=&stab=) pour que chaque
         // onglet ait son lien. Le jeu de sous-onglets dépend de l'onglet.
@@ -251,12 +269,38 @@ class DocumentHubController extends Controller
             // en ligne : y ajouter un bloc @php casse la compilation Blade).
             ...$this->livretViewExtras($event),
             'badgeRows' => $badgeRows,
+            'badgeStats' => $badgeStats,
             'livreState' => [
                 'lastGen' => EventSettings::get($event, 'livret.last_generated_at'),
                 'file' => (string) EventSettings::get($event, 'livret.last_file', ''),
             ],
             'aiAvailable' => app(AiManager::class)->available() !== [],
         ]);
+    }
+
+    /**
+     * Jetons d'exemple pour l'aperçu d'un modèle de badge dans le hub : vraies
+     * données de l'événement (thème, lieu, dates) + un destinataire fictif, pour
+     * une vignette représentative sans ouvrir la planche.
+     *
+     * @return array<string, string>
+     */
+    private function badgePreviewVars(Event $event, string $type): array
+    {
+        return [
+            'org' => $event->series?->name ?? '',
+            'event' => (string) ($event->title ?? ''),
+            'year' => (string) ($event->year ?: ''),
+            'theme' => (string) ($event->theme ?? ''),
+            'dates' => $event->dateRangeLabel() ?? '',
+            'location' => (string) ($event->location ?? ''),
+            'name' => 'Awa KODJO',
+            'role' => BadgeCatalog::role($type),
+            'institution' => 'Université de Kara',
+            'ref' => 'BDG-0000-0000-0000-0000',
+            'verify_url' => url('/verifier'),
+            'recipient.photo' => '',
+        ];
     }
 
     /**

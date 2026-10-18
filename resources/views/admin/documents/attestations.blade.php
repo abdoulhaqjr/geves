@@ -263,27 +263,52 @@
                 @endif
 
                 <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif>
-                    <div class="ukc-toolbar">
-                        <span style="font-size:13px;color:var(--ukc-muted);">Un modèle par catégorie : participant après paiement ; badges de fonction selon les affectations de l’événement. Un communicant réglé utilise le badge participant.</span>
+                    {{-- Vue d'ensemble, comme les onglets Attestations et Livre. --}}
+                    <div class="ukc-stats" style="margin-bottom:16px;">
+                        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Catégories</div><div class="val blue">{{ $badgeStats['types'] }}</div></div>
+                        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Destinataires prêts</div><div class="val green">{{ $badgeStats['recipients'] }}</div></div>
+                        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Catégories prêtes</div><div class="val">{{ $badgeStats['ready'] }}</div></div>
+                        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="grid" :size="20" /></div><div class="lbl">Avec QR</div><div class="val">{{ $badgeStats['qr'] }}</div></div>
+                    </div>
+
+                    <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--ukc-border);border-radius:10px;background:#f7f9fc;margin-bottom:14px;">
+                        <span style="color:var(--ukc-blue);flex:none;margin-top:1px;"><x-ukc.icon name="info" :size="18" /></span>
+                        <span style="font-size:13px;color:var(--ukc-muted);line-height:1.5;">Un modèle par catégorie : le badge <strong>participant</strong> se débloque après paiement ; les badges de <strong>fonction</strong> suivent les affectations de l’événement. Un communicant réglé utilise le badge participant.</span>
+                    </div>
+
+                    <div class="ukc-toolbar" style="justify-content:flex-end;">
+                        @if ($badgeStats['recipients'] > 0)
+                            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges.all', ['event' => $event]) }}" target="_blank" rel="noopener">
+                                <x-ukc.icon name="download" :size="16" /> Imprimer tous les badges prêts ({{ $badgeStats['recipients'] }})
+                            </a>
+                        @else
+                            <span style="font-size:12.5px;color:var(--ukc-muted);">Aucun badge prêt : les planches s’activent dès qu’une catégorie a des destinataires.</span>
+                        @endif
                     </div>
 
                     <div class="ukc-table-wrap">
-                        <table class="ukc-table">
-                            <thead><tr><th>Type</th><th>Libellé</th><th>Format</th><th>Destinataires</th><th>QR</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
+                        <table class="ukc-table ukc-table--badges">
+                            <thead><tr><th>Aperçu</th><th>Type</th><th>Libellé</th><th>Format</th><th>Destinataires</th><th>QR</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
                             <tbody>
                                 @foreach ($badgeRows as $b)
                                     <tr>
+                                        <td>
+                                            {{-- Vignette réelle du modèle, réduite à l'échelle (moteur et jetons de la planche). --}}
+                                            <div class="badge-mini" style="width:86px;height:{{ (int) round(86 * $b['h'] / $b['w']) }}px;">
+                                                <div style="position:absolute;top:0;left:0;width:{{ $b['w'] }}px;height:{{ $b['h'] }}px;transform:scale({{ round(86 / $b['w'], 4) }});transform-origin:top left;">{!! $b['preview'] !!}</div>
+                                            </div>
+                                        </td>
                                         <td><span class="ukc-pill ukc-pill--info">{{ $b['type'] }}</span></td>
                                         <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['sub'] }}</div></td>
                                         <td>{{ $b['format'] }}</td>
                                         <td><a class="ukc-stat" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}" title="Voir les destinataires">{{ $b['count'] }}</a></td>
-                                        <td>{{ $b['qr'] ? 'Oui' : 'Non' }}</td>
+                                        <td>@if ($b['qr'])<span class="ukc-pill ukc-pill--ok" title="Code QR de vérification présent"><x-ukc.icon name="check" :size="12" /> QR</span>@else<span class="ukc-pill ukc-pill--muted" title="Pas de code QR sur ce modèle">Sans QR</span>@endif</td>
                                         <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire dans cette catégorie pour cet événement.">Sans destinataire</span>@endif</td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
-                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Imprimer les badges {{ mb_strtolower($b['type']) }}" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>@endif
-                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Imprimer les badges {{ mb_strtolower($b['type']) }}" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}" target="_blank" rel="noopener"><x-ukc.icon name="download" :size="18" /></a>@endif
+                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="18" /></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="eye" :size="18" /></a>
                                             </div>
                                         </td>
                                     </tr>

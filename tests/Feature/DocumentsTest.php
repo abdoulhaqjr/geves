@@ -253,6 +253,38 @@ it('génère la planche de badges', function () {
         ->assertSee('par page A4');
 });
 
+it('imprime TOUS les badges prêts en une planche, groupés par format', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+
+    // La planche globale réunit toutes les catégories ayant des destinataires,
+    // chaque format sur son propre bloc tuilé (« par page A4 »).
+    $this->actingAs($staff, 'web')->get(route('admin.documents.badges.all', $event))
+        ->assertOk()
+        ->assertSee('Tous les badges prêts')
+        ->assertSee('Awa Kodjo')
+        ->assertSee('par page A4');
+});
+
+it('le studio badges montre les KPI, un aperçu par modèle et l’impression groupée', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
+        ->assertOk()
+        // Bandeau KPI (parité avec Attestations et Livre).
+        ->assertSee('Destinataires prêts')
+        ->assertSee('Catégories prêtes')
+        // Vignette d'aperçu réelle de chaque modèle.
+        ->assertSee('badge-mini', false)
+        // Action groupée dès qu'une catégorie a des destinataires.
+        ->assertSee('Imprimer tous les badges prêts')
+        ->assertSee('badges-tous', false);
+});
+
 it('la planche de badges utilise le modèle enregistré', function () {
     $staff = adminStaff();
     $event = openEdition();

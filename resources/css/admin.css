@@ -512,6 +512,9 @@
 .admin-documents table.ukc-table th { background: #f8fafc; }
 .admin-documents table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
 .admin-documents .ukc-stat { font-size: 13px; font-weight: 800; color: var(--ukc-blue); }
+/* Vignette d'aperçu réelle d'un modèle de badge (table « Modèles »). */
+.admin-documents .badge-mini { position: relative; overflow: hidden; border: 1px solid var(--ukc-border); border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+.admin-documents table.ukc-table.ukc-table--badges td { vertical-align: middle; }
 .admin-documents .ukc-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .admin-documents .ukc-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .admin-documents .ukc-check input { width: auto; }

@@ -3954,6 +3954,28 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   pointillé) sur chaque cellule. ⚠️ Ne pas revenir à `gap:0` / `margin:0` « pour cramer plus de
   badges » : le modèle veut l'espace. Le contrôleur passe `width` **et** `height`. Garde :
   `DocumentsTest` (voit « par page A4 »).
+  - ⚠️ **Le tuilage est factorisé dans `documents/_badge-sheet.blade.php`** (une planche d'UN
+    format : légende + grille + styles d'impression scopés `.badge-sheet--g{i}`), partagé par la
+    planche d'une catégorie (`badges-template.blade.php`) **et** la planche de tous les badges
+    prêts (`badges-all.blade.php`). Y toucher corrige les deux. La légende porte « … par page A4 ».
+  - **Planche « tous les badges prêts »** (`admin.documents.badges.all`, `DocumentController::badgesAll`) :
+    réunit toutes les catégories ayant des destinataires, **groupées par format**, un bloc tuilé par
+    format avec **saut de page entre groupes** (`break-before:page` sur `.badge-group--g{i}`, qui
+    englobe légende + planche pour ne pas séparer l'une de l'autre). ⚠️ **On ne mêle jamais deux
+    formats sur une même feuille** (même règle que le lot d'attestations : la taille de page vient
+    de la mise en page du modèle). `badges()` et `badgesAll()` partagent `renderBadges($event,$type)`
+    (source unique du rendu par catégorie).
+
+- ⚠️ **Le hub Badges (`?tab=badges&stab=modeles`) est un STUDIO, pas une table nue** : bandeau KPI
+  `tw-stat` (catégories, destinataires prêts, catégories prêtes, avec QR) pour la **parité** avec
+  les onglets Attestations et Livre ; **vignette d'aperçu RÉELLE** de chaque modèle dans la table
+  (`DocumentHubController::badgePreviewVars()` + `LayoutRenderer::render(..., badge:true)`, variante
+  sans photo, réduite par `transform:scale` dans `.badge-mini`) ; QR en **pastille** (`ukc-pill--ok`
+  « QR » / `ukc-pill--muted` « Sans QR »), plus en « Oui/Non » ; icônes via **`<x-ukc.icon>`**
+  (`download`/`pen`/`eye`), plus de `<svg>` bruts ; bouton **« Imprimer tous les badges prêts »**
+  (→ `badges.all`) visible dès qu'une catégorie a des destinataires. ⚠️ L'aperçu ne charge pas
+  `documents/_fonts` (Jost est déjà la police de l'admin) ; une attestation, elle, l'exigerait.
+  Gardes : `DocumentsTest` (KPI, `badge-mini`, « Imprimer tous les badges prêts », planche groupée).
 
 L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
 salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les

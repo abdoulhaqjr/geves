@@ -405,13 +405,65 @@ class DocumentController extends Controller
             $type = 'default'; // Ancien lien : un seul modèle participant désormais.
         }
         abort_unless(BadgeCatalog::valid($type), 404);
+
+        $rendered = $this->renderBadges($event, $type);
+
+        return view('documents.badges-template', [
+            'event' => $event,
+            'badges' => $rendered['badges'],
+            'badgeType' => BadgeCatalog::label($type),
+            'width' => $rendered['layout']['width'],
+            'height' => $rendered['layout']['height'],
+        ]);
+    }
+
+    /**
+     * Planche de TOUS les badges prêts, toutes catégories confondues, groupés par
+     * format : un bloc de tuilage A4 par format (saut de page entre groupes). On
+     * ne mélange pas deux formats sur une même feuille (cf. le lot d'attestations).
+     */
+    public function badgesAll(Event $event): View
+    {
+        $groups = [];
+        foreach (array_keys(BadgeCatalog::TYPES) as $type) {
+            $rendered = $this->renderBadges($event, $type);
+            if ($rendered['badges']->isEmpty()) {
+                continue;
+            }
+            $key = $rendered['layout']['width'].'×'.$rendered['layout']['height'];
+            $groups[$key] ??= [
+                'width' => (int) $rendered['layout']['width'],
+                'height' => (int) $rendered['layout']['height'],
+                'labels' => [],
+                'badges' => collect(),
+            ];
+            $groups[$key]['labels'][] = BadgeCatalog::label($type);
+            $groups[$key]['badges'] = $groups[$key]['badges']->concat($rendered['badges']);
+        }
+
+        return view('documents.badges-all', [
+            'event' => $event,
+            'groups' => array_values($groups),
+            'totalBadges' => array_sum(array_map(fn ($g) => $g['badges']->count(), $groups)),
+        ]);
+    }
+
+    /**
+     * Rend chaque destinataire d'une catégorie de badge en HTML, depuis le modèle
+     * enregistré (créé au besoin). Source unique de la planche par catégorie et de
+     * la planche « tous les badges prêts ».
+     *
+     * @return array{layout: array<string, mixed>, badges: Collection<int, string>}
+     */
+    private function renderBadges(Event $event, string $type): array
+    {
         $people = BadgeCatalog::recipients($event, $type);
 
         // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
         // que l'admin ne pouvait ni voir ni modifier.
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
-
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
+
         // ⚠️ Plus de valeur de repli : `BadgeCatalog::recipients()` pose TOUJOURS
         // la photo (chaîne vide à défaut) et son mode (« with » à défaut). Un `??`
         // ici laisserait croire que la préférence peut manquer - et c'est en la
@@ -432,12 +484,6 @@ class DocumentController extends Controller
             'recipient.photo' => $person['photo'],
         ], badge: true));
 
-        return view('documents.badges-template', [
-            'event' => $event,
-            'badges' => $badges,
-            'badgeType' => BadgeCatalog::label($type),
-            'width' => $layout['width'],
-            'height' => $layout['height'],
-        ]);
+        return ['layout' => $layout, 'badges' => $badges];
     }
 }

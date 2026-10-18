@@ -592,6 +592,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/modeles/image', [TemplateDesignerController::class, 'upload'])->name('admin.documents.templates.upload');
             Route::get('/editions/{event}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
             Route::get('/editions/{event}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
+            Route::get('/editions/{event}/badges-tous', [DocumentController::class, 'badgesAll'])->name('admin.documents.badges.all');
             Route::get('/editions/{event}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
             Route::get('/editions/{event}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
             Route::get('/editions/{event}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
