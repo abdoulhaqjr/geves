@@ -5,6 +5,14 @@ import intlTelInput from 'intl-tel-input/intlTelInputWithUtils';
 import 'intl-tel-input/styles';
 import PerfectScrollbar from 'perfect-scrollbar';
 import 'perfect-scrollbar/css/perfect-scrollbar.css';
+// Règles du formulaire « créneau », sorties du DOM pour être testées
+// (`program-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
+import {
+    cadreDeLaSeance,
+    communicationsChoisissables,
+    fenetreHoraire,
+    seanceDe,
+} from './program-pure.js';
 
 // Alpine est désormais une dépendance autonome (Livewire retiré du projet).
 window.Alpine = Alpine;
@@ -836,6 +844,23 @@ document.addEventListener('alpine:init', () => {
             const [r] = rows.splice(j, 1);
             rows.splice(k, 0, r);
         },
+    }));
+
+    // Formulaire « créneau » du module Programme : un créneau se range DANS une
+    // séance, dont il prend le jour, la salle et la fenêtre horaire, et qui dit
+    // quelles communications on peut encore y placer. Les règles sont dans
+    // `program-pure.js` ; ici on ne fait que les brancher sur le formulaire.
+    //
+    // ⚠️ Les méthodes reçoivent `form` EN ARGUMENT : il appartient à la portée
+    // Alpine du module (le composant est imbriqué dedans), et `this` d'un
+    // composant ne voit que ses propres données - pas celles du parent.
+    window.Alpine.data('ukcSlotForm', (meta = {}) => ({
+        slotMeta: meta,
+        slotSeance(id) { return seanceDe(this.slotMeta, id); },
+        /** Applique au formulaire ce que la séance choisie impose. */
+        appliqueSeance(form) { Object.assign(form, cadreDeLaSeance(this.slotMeta, form)); },
+        slotChoix(sessionId, choisie) { return communicationsChoisissables(this.slotMeta, sessionId, choisie); },
+        slotFenetre(id) { return fenetreHoraire(seanceDe(this.slotMeta, id)); },
     }));
 
     // Comparateur de similarité : ouvre une modale montrant la soumission courante

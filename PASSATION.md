@@ -13,6 +13,46 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Un créneau prend le cadre de sa séance (2026-10-18)
+
+**La séance dit déjà tout cela.** Le formulaire « Nouveau créneau » demandait le
+jour, la salle et l'heure à la main alors que la séance choisie juste au-dessus
+les porte : on pouvait donc la contredire - un créneau de l'atelier 1 posé un
+autre jour, dans une autre salle, à une heure où personne n'est en salle. Et il
+proposait **les 137 communications acceptées**, déjà placées comprises, sans
+égard pour les axes de la séance.
+
+Le créneau prend désormais le **jour**, la **salle** et une **heure de la
+fenêtre** de sa séance, et n'accueille que les communications **encore à placer
+dans ses axes**. ⚠️ **Le formulaire propose, le serveur décide**
+(`ProgramController::slotFrame()`) : un champ en lecture seule se retire en deux
+clics. Les règles de saisie vivent dans `resources/js/program-pure.js`
+(`program-pure.test.js`, 16 cas).
+
+⚠️ **L'heure doit tomber DANS la séance, mais le créneau n'a pas à y tenir en
+entier** : un poster dure 90 minutes par défaut, bien plus que la séance qui
+l'accueille - exiger que la fin y entre refuserait des placements normaux.
+
+⚠️ **Le choix courant reste toujours proposé**, même déjà placé (on modifie le
+créneau qui le porte) ou hors axe (on vient du vivier « Assigner »,
+communication d'abord, séance ensuite) : il est **marqué**, jamais supprimé en
+silence. Hors axe n'est d'ailleurs pas interdit - l'affectation automatique s'y
+replie elle aussi.
+
+⚠️ **Trouvé en chemin** : l'exclusivité des plénières refusait un créneau rangé
+dans **sa propre** plénière. Invisible tant que l'heure se saisissait à la main,
+fatal dès qu'elle en hérite. Un créneau rangé dans une plénière EST son contenu,
+pas une activité concurrente : `blockingSession()` reçoit désormais
+`ignoreSessionId`.
+
+⚠️ **Une séance sans axes n'en filtre aucun** (une plénière ne porte pas
+d'atelier) : filtrer sur une liste vide ne laisserait rien à choisir, et le
+formulaire paraîtrait cassé.
+
+9 cas Pest (`CreneauDansSaSeanceTest`) et 16 cas Vitest, **six sabotages
+vérifiés** - fenêtre horaire, jour imposé, salle imposée, exception de la
+plénière, filtre des placées, borne haute du champ heure.
+
 ### L'opérateur se déduit du numéro, et la fenêtre attend le formulaire (2026-10-18)
 
 **Le numéro dit déjà l'opérateur.** La liste en portait onze, du Togo au Niger :

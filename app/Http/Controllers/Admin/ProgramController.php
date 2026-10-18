@@ -27,6 +27,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -377,7 +378,10 @@ class ProgramController extends Controller
             'slotDir' => $slotsView['dir'],
             'slotFilters' => $slotsView['filters'],
             'slotActive' => $slotsView['active'],
-            'accepted' => $accepted,
+            // ⚠️ La liste brute des acceptées n'est plus passée à la vue : le
+            // formulaire « créneau » était son seul lecteur, et il ne propose
+            // plus TOUTES les acceptées mais celles que la séance autorise.
+            'slotMeta' => $this->slotFormMeta($sessions, $slots, $accepted),
             'unplaced' => $unplaced,
             'days' => $days,
             'tracks' => $event ? ($event->settings['tracks'] ?? []) : [],
@@ -779,6 +783,98 @@ class ProgramController extends Controller
             : 'Lieu dissocié de l’atelier.');
     }
 
+    /**
+     * Ce que le formulaire « créneau » doit savoir pour DÉDUIRE au lieu de faire
+     * saisir : le cadre de chaque séance (jour, salle, fenêtre horaire, axes de
+     * son atelier) et, pour chaque communication acceptée, son axe et le créneau
+     * qui la porte déjà. Le formulaire s'en sert pour remplir le jour et la salle
+     * dès qu'une séance est choisie, borner l'heure, et n'offrir que les
+     * communications encore à placer dans les axes de la séance.
+     *
+     * ⚠️ C'est une AIDE À LA SAISIE, pas la règle : la règle se décide au serveur
+     * ({@see slotFrame()}), un champ en lecture seule se retirant en deux clics.
+     *
+     * ⚠️ La clé d'une séance est son identifiant, et **PHP la ramène en entier** :
+     * `(string) 7` redevient `7` une fois posé en clé de tableau. Sans incidence
+     * ici - les identifiants commencent à 1, donc le tableau n'est jamais une
+     * liste et `json_encode` en rend bien un objet, que le formulaire interroge
+     * par `String(id)`. Mais la forme annoncée doit le dire.
+     *
+     * @param  Collection<int, EventSession>  $sessions
+     * @param  Collection<int, Slot>  $slots
+     * @param  Collection<int, Submission>  $accepted
+     * @return array{sessions: array<int|string, array{label: string, day: string, start: string, end: string, room: string, tracks: list<string>}>, submissions: list<array{id: string, label: string, track: string, slot: string}>}
+     */
+    private function slotFormMeta(Collection $sessions, Collection $slots, Collection $accepted): array
+    {
+        // Communication => créneau qui la porte (une communication n'occupe qu'un
+        // seul créneau : c'est ce qui rend « déjà placée » lisible au formulaire).
+        $placed = $slots->where('submission_id', '>', 0)->pluck('id', 'submission_id');
+
+        return [
+            'sessions' => $sessions->mapWithKeys(fn (EventSession $s) => [(string) $s->id => [
+                'label' => (string) $s->label,
+                // Le jour vient de `starts_at` quand il existe : c'est LUI que la
+                // fenêtre horaire compare, les deux champs étant écrits ensemble.
+                'day' => ($s->starts_at ?? $s->session_day)?->format('Y-m-d') ?? '',
+                'start' => $s->starts_at?->format('H:i') ?? '',
+                'end' => $s->ends_at?->format('H:i') ?? '',
+                'room' => (string) ($s->room ?? ''),
+                // ⚠️ `data_get` plutôt que `$s->atelier?->tracks` : l'analyse tient
+                // la relation pour non-nulle (elle ne l'est pas - une plénière n'a
+                // pas d'atelier) et refuse le `?->`. Les axes sont du texte libre
+                // venu des réglages, d'où la conversion.
+                'tracks' => array_values(array_map('strval', (array) data_get($s, 'atelier.tracks', []))),
+            ]])->all(),
+            'submissions' => $accepted->map(fn (Submission $sub) => [
+                'id' => (string) $sub->id,
+                'label' => trim((($sub->ref_code ?? '') !== '' ? $sub->ref_code.' - ' : '').Str::limit((string) $sub->title, 45)),
+                'track' => (string) ($sub->track ?? ''),
+                'slot' => (string) ($placed[$sub->id] ?? ''),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Le CADRE qu'une séance impose au créneau qu'on y range : son jour, sa salle,
+     * et une heure de début prise dans sa fenêtre.
+     *
+     * ⚠️ **L'heure doit tomber DANS la séance, mais le créneau n'a pas à y tenir
+     * en entier** : un poster dure 90 minutes par défaut, bien plus que la séance
+     * qui l'accueille - exiger que la fin y entre refuserait des placements
+     * parfaitement normaux.
+     *
+     * Priorités : le jour et la salle viennent de la séance dès qu'elle en porte
+     * (le formulaire les affiche en lecture seule, mais c'est ici que ça se
+     * décide) ; l'heure vient de la saisie, sinon du début de la séance, sinon de
+     * l'heure que le créneau portait déjà.
+     *
+     * @return array{start: ?Carbon, room: ?string, error: ?string}
+     */
+    private function slotFrame(?EventSession $session, ?string $day, ?string $time, ?string $room, ?Carbon $current = null): array
+    {
+        // ⚠️ Le `if` plutôt qu'un `$session?->starts_at ?? …` : l'analyse refuse
+        // un accès nullsafe à gauche d'un `??`, tenant la date castée pour
+        // non-nulle. Elle est pourtant bien nulle pour une séance sans horaires.
+        $sessionDay = $session ? ($session->starts_at ?? $session->session_day)?->format('Y-m-d') : null;
+        $jour = $sessionDay ?: (($day ?: null) ?: $current?->format('Y-m-d'));
+        $heure = ($time ?: null) ?: ($session?->starts_at?->format('H:i') ?: $current?->format('H:i'));
+        $start = ($jour && $heure) ? Carbon::parse($jour.' '.$heure) : null;
+
+        if ($start && $session?->starts_at && $session->ends_at
+            && ($start->lt($session->starts_at) || $start->gte($session->ends_at))) {
+            return ['start' => null, 'room' => null, 'error' => 'Le créneau suit sa séance « '.$session->label.' » : '
+                .$session->starts_at->translatedFormat('j F Y').', entre '.$session->starts_at->format('H:i')
+                .' et '.$session->ends_at->format('H:i').' (heure demandée : '.$start->format('H:i').').'];
+        }
+
+        return [
+            'start' => $start,
+            'room' => ($session?->room ?: null) ?: ($room ?: null),
+            'error' => null,
+        ];
+    }
+
     public function storeSlot(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -793,11 +889,21 @@ class ProgramController extends Controller
 
         $session = ! empty($data['slSessionId']) ? EventSession::find($data['slSessionId']) : null;
 
+        // Le créneau prend le CADRE de sa séance : jour, salle, heure dans la fenêtre.
+        $frame = $this->slotFrame($session, $data['slDay'] ?? null, $data['slStart'] ?? null, $data['slRoom'] ?? null);
+        if ($frame['error'] !== null) {
+            return back()->withInput()->with('ukc_error', $frame['error']);
+        }
+
         // Exclusivité des plénières : un créneau ne peut pas tomber dans une plénière.
+        // ⚠️ Sauf dans la SIENNE : un créneau rangé dans une plénière EST son
+        // contenu, pas une activité concurrente. Sans cette exception, choisir une
+        // plénière dans le formulaire devenait impossible dès que le créneau en
+        // prenait l'horaire - c'est-à-dire toujours, depuis qu'il en hérite.
         $event = Event::find($data['event_id']);
-        $start = (! empty($data['slDay']) && ! empty($data['slStart'])) ? Carbon::parse($data['slDay'].' '.$data['slStart']) : null;
+        $start = $frame['start'];
         if ($event && $start && ($conflict = ProgramConflicts::blockingSession(
-            $event, $start, $start->copy()->addMinutes($this->oralMinutes($event)), false
+            $event, $start, $start->copy()->addMinutes($this->oralMinutes($event)), false, $session?->id
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
@@ -819,7 +925,7 @@ class ProgramController extends Controller
             'event_id' => $data['event_id'],
             'session_id' => $session?->id ?? 0,
             'session_label' => ($data['slTitle'] ?? null) ?: $session?->label,
-            'room' => ($data['slRoom'] ?? null) ?: $session?->room,
+            'room' => $frame['room'],
             'starts_at' => $start?->toDateTimeString(),
             // L'heure de fin découle de la durée présumée (orale/poster) : on la
             // fige à la création pour que la liste des créneaux l'affiche.
@@ -959,12 +1065,18 @@ class ProgramController extends Controller
 
         $session = ! empty($data['slSessionId']) ? EventSession::find($data['slSessionId']) : null;
 
-        // Exclusivité des plénières : un créneau ne peut pas tomber dans une plénière.
-        $newStart = (! empty($data['slDay']) && ! empty($data['slStart']))
-            ? Carbon::parse($data['slDay'].' '.$data['slStart'])
-            : $slot->starts_at;
+        // Le créneau prend le CADRE de sa séance (cf. slotFrame) ; à défaut de
+        // séance et de saisie, il garde l'horaire qu'il portait.
+        $frame = $this->slotFrame($session, $data['slDay'] ?? null, $data['slStart'] ?? null, $data['slRoom'] ?? null, $slot->starts_at);
+        if ($frame['error'] !== null) {
+            return back()->withInput()->with('ukc_error', $frame['error']);
+        }
+
+        // Exclusivité des plénières : un créneau ne peut pas tomber dans une
+        // plénière - sauf dans la sienne, dont il est le contenu.
+        $newStart = $frame['start'] ?? $slot->starts_at;
         if ($slot->event && $newStart && ($conflict = ProgramConflicts::blockingSession(
-            $slot->event, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->event)), false
+            $slot->event, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->event)), false, $session?->id
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
@@ -985,7 +1097,7 @@ class ProgramController extends Controller
         $slot->update([
             'session_id' => $session?->id ?? 0,
             'session_label' => ($data['slTitle'] ?? null) ?: $session?->label,
-            'room' => ($data['slRoom'] ?? null) ?: $session?->room,
+            'room' => $frame['room'],
             'starts_at' => $newStart?->toDateTimeString(),
             // Recalcul de l'heure de fin sur la nouvelle durée présumée.
             'ends_at' => ($slot->event && $newStart) ? $newStart->copy()->addMinutes($this->slotMinutes($slot->event, $submission))->toDateTimeString() : $slot->ends_at,

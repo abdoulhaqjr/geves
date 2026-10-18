@@ -4168,6 +4168,37 @@ lecture/édition-session (le placement des communications reste en Jour).
   affiche sa salle dans sa ligne meta (`📍 room`). Les **cartes d'atelier** n'affichent
   **pas** la salle (⚠️ ne pas la remettre) : la colonne du board porte déjà le nom de salle
   (en-tête collant), donc c'est redondant.
+- ⚠️⚠️ **UN CRÉNEAU PREND LE CADRE DE SA SÉANCE** : son **jour**, sa **salle** et une
+  **heure de sa fenêtre**, et il n'accueille que les communications **encore à placer
+  dans les axes de son atelier**. Tout cela se saisissait à la main, donc tout cela
+  pouvait contredire la séance choisie juste au-dessus.
+  - **Le formulaire propose** (`resources/js/program-pure.js`, règles pures couvertes
+    par `program-pure.test.js` ; composant Alpine `ukcSlotForm` ; données servies par
+    `ProgramController::slotFormMeta()`) : jour et salle remplis **en lecture seule**,
+    `min`/`max` sur l'heure, liste des communications restreinte, et un indice qui dit
+    combien sont masquées et pourquoi.
+  - ⚠️ **Le serveur décide** (`ProgramController::slotFrame()`, appelé par `storeSlot`
+    **et** `updateSlot`) : un champ en lecture seule se retire en deux clics. Le jour et
+    la salle viennent de la séance dès qu'elle en porte, et une heure hors fenêtre est
+    **refusée** (`ukc_error`), pas rognée en silence.
+  - ⚠️ **L'heure doit tomber DANS la séance, mais le créneau n'a pas à y tenir en
+    entier** : un poster dure `poster_min` (90 min par défaut), bien plus que la séance
+    qui l'accueille - exiger que la fin y entre refuserait des placements normaux.
+  - ⚠️ **Le choix courant reste TOUJOURS proposé**, même déjà placé (on modifie le
+    créneau qui le porte) ou **hors axe** (on vient du vivier « Assigner » :
+    communication d'abord, séance ensuite). Il est **marqué « hors axe »**, jamais
+    supprimé en silence - et hors axe n'est pas interdit, l'affectation automatique s'y
+    replie elle aussi.
+  - ⚠️ **Une séance sans axes ne filtre rien** (une plénière ne porte pas d'atelier) :
+    filtrer sur une liste vide ne laisserait rien à choisir.
+  - ⚠️ **Un créneau peut être rangé dans SA PROPRE plénière** : il en est le contenu,
+    pas une activité concurrente. `blockingSession()` reçoit donc `ignoreSessionId`.
+    Sans cela, choisir une plénière devenait impossible dès que le créneau en prenait
+    l'horaire - c'est-à-dire toujours, depuis qu'il en hérite.
+  - ⚠️ **La liste brute des acceptées n'est plus passée à la vue** (`$accepted`) : le
+    formulaire était son seul lecteur, et il ne propose plus toutes les acceptées.
+  - Gardes : `CreneauDansSaSeanceTest` (9 cas, 4 sabotages vérifiés) + `program-pure.test.js`
+    (16 cas, 2 sabotages vérifiés).
 - **Tous les formulaires du Programme = panneau latéral (slideover)**, plus de `.ukc-modal` :
   `openAtelier/openSession/openSlot/openSpace/openRoom` posent `modal='…'` et
   `_modals.blade.php` rend un `<x-ukc.slideover open="modal==='…'">` par cas (atelier, session,

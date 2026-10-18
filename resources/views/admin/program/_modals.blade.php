@@ -117,6 +117,12 @@
 </x-ukc.slideover>
 
 {{-- ===== Panneau latéral Créneau (slideover) ===== --}}
+{{-- Un créneau se range DANS une séance : il en prend le jour, la salle et une
+     heure de sa fenêtre, et n'accueille que des communications encore à placer
+     dans les axes de cette séance. Règles dans `resources/js/program-pure.js`.
+     ⚠️ Aide à la saisie seulement - c'est `ProgramController::slotFrame()` qui
+     décide, un champ en lecture seule se retirant en deux clics. --}}
+<div x-data="ukcSlotForm(@js($slotMeta))">
 <x-ukc.slideover open="modal==='slot'" onClose="modal=null" width="460px">
     <x-slot:header><span x-text="form.id ? 'Modifier le créneau' : 'Nouveau créneau'"></span></x-slot:header>
 
@@ -126,26 +132,47 @@
         <input type="hidden" name="event_id" value="{{ $event_id }}">
         <div class="ukc-form-row">
             <label>Session</label>
-            <select name="slSessionId" x-model="form.session_id">
+            <select name="slSessionId" x-model="form.session_id" @change="appliqueSeance(form)">
                 <option value="">- Aucune -</option>
                 @foreach ($sessions as $s)
                     <option value="{{ $s->id }}">{{ $s->atelier?->title ? $s->atelier->title.' - ' : '' }}{{ $s->label }}</option>
                 @endforeach
             </select>
+            <p class="ukc-hint" x-show="slotSeance(form.session_id)" x-cloak>
+                Jour, salle et heure sont ceux de la séance.
+                <span x-show="slotChoix(form.session_id, form.submission_id).axes.length"
+                      x-text="'Axes : ' + slotChoix(form.session_id, form.submission_id).axes.join(', ') + '.'"></span>
+            </p>
         </div>
         <div class="ukc-form-grid">
-            <div class="ukc-form-row"><label>Jour</label><input type="date" name="slDay" x-model="form.day"></div>
-            <div class="ukc-form-row"><label>Heure début</label><input type="time" name="slStart" x-model="form.start"></div>
+            <div class="ukc-form-row">
+                <label>Jour</label>
+                <input type="date" name="slDay" x-model="form.day"
+                       :readonly="!! (slotSeance(form.session_id) || {}).day">
+            </div>
+            <div class="ukc-form-row">
+                <label>Heure début</label>
+                <input type="time" name="slStart" x-model="form.start"
+                       :min="slotFenetre(form.session_id).min" :max="slotFenetre(form.session_id).max">
+                <p class="ukc-hint" x-show="slotFenetre(form.session_id).min" x-cloak
+                   x-text="'Entre ' + slotFenetre(form.session_id).min + ' et ' + ((slotSeance(form.session_id) || {}).end || '-') + '.'"></p>
+            </div>
         </div>
-        <div class="ukc-form-row"><label>Salle</label><input type="text" name="slRoom" x-model="form.room" list="roomsList"></div>
+        <div class="ukc-form-row">
+            <label>Salle</label>
+            <input type="text" name="slRoom" x-model="form.room" list="roomsList"
+                   :readonly="!! (slotSeance(form.session_id) || {}).room">
+        </div>
         <div class="ukc-form-row">
             <label>Communication (optionnel)</label>
             <select name="submission_id" x-model="form.submission_id">
                 <option value="">- Créneau libre -</option>
-                @foreach ($accepted as $sub)
-                    <option value="{{ $sub->id }}">{{ $sub->ref_code }} - {{ \Illuminate\Support\Str::limit($sub->title, 45) }}</option>
-                @endforeach
+                <template x-for="c in slotChoix(form.session_id, form.submission_id).options" :key="c.id">
+                    <option :value="c.id" x-text="c.label + (c.horsAxe ? ' (hors axe)' : '')"></option>
+                </template>
             </select>
+            <p class="ukc-hint" x-show="slotChoix(form.session_id, form.submission_id).masquees" x-cloak
+               x-text="slotChoix(form.session_id, form.submission_id).masquees + ' communication(s) non proposée(s) : déjà placées sur un créneau, ou hors des axes de la séance.'"></p>
         </div>
         <div class="ukc-form-row"><label>Intitulé libre (si pas de communication)</label><input type="text" name="slTitle" x-model="form.title" placeholder="Ex. Pause-café"></div>
     </form>
@@ -156,6 +183,7 @@
         <button type="submit" form="slotForm" class="ukc-btn ukc-btn--blue">Enregistrer</button>
     </x-slot:footer>
 </x-ukc.slideover>
+</div>
 
 {{-- ===== Panneau latéral « Associer une salle » à un atelier (slideover) ===== --}}
 <x-ukc.slideover open="modal==='room'" onClose="modal=null" width="420px">
