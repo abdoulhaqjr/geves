@@ -4700,12 +4700,47 @@ production, le prestataire répond :
  "reponse":"{\"message\":\"Opération non autorisée\",\"errors\":{},\"model\":null}"}
 ```
 
-**400 « Opération non autorisée »** : le paiement direct demande une
-**activation sur le compte marchand**, exactement comme la carte bancaire. Le
-refus porte sur l'**autorisation**, pas sur la requête - l'adresse, le verbe et
-le corps sont ceux de leur propre SDK. C'est une demande à leur adresser, pas un
-correctif à écrire. Retiré à la demande de l'équipe plutôt que laissé dormant :
-du code qu'aucun chemin n'emprunte se périme sans qu'on s'en aperçoive.
+**400 « Opération non autorisée »**. Le refus porte sur l'**autorisation**, pas
+sur la requête - l'adresse, le verbe et le corps sont ceux de leur propre SDK.
+C'est une demande à leur adresser, pas un correctif à écrire. Retiré à la demande
+de l'équipe plutôt que laissé dormant : du code qu'aucun chemin n'emprunte se
+périme sans qu'on s'en aperçoive.
+
+⚠️⚠️ **CORRECTION DU 18/10/2026 : `POST /v1/{mode}` N'EST PAS UNE OPTION, C'EST
+LE PAIEMENT.** On a cru un temps qu'il s'agissait d'un parcours « direct » en
+supplément, à faire activer comme la carte, et que la page hébergée, elle,
+fonctionnait. **C'est faux** : la lecture de leur propre `bundle` de paiement
+montre que le bouton PAYER de leur page appelle exactement
+`POST /v1/{mode}` avec `{token, phone_number, customer}` - et qu'il affiche en
+rouge le `message` de l'API, mot pour mot. Le « Opération non autorisée » que
+voit le payeur **est la même réponse** que celle de notre essai serveur. Aucune
+de nos clés n'entre dans cet appel : il ne porte que le jeton.
+
+⚠️ **Ce que les sondes établissent** (toutes en lecture seule, aucun paiement
+engagé) :
+
+- un **jeton invalide** donne « Le jeton de transaction est invalide » sur tous
+  les modes, et un mode inventé donne 404 : le refus vient donc **après** le
+  jeton, sur l'opération elle-même ;
+- le **même jeton et le même mode** passent sans broncher sur
+  `GET /v1/transactions/fees` (200, 4 F de frais, commission 3,5 %) : ni le
+  jeton ni l'opérateur ne sont en cause ;
+- l'historique (`GET /v1/transactions/search` - ⚠️ `GET /v1/transactions` est
+  **obsolète** et répond 400) compte 63 transactions : la dernière encaissée est
+  **112910339, togocel, 100 F, `transferred`, le 02/09/2026**, et `GET /v1/balances`
+  porte toujours ce `togocel=100`. Depuis le 26/09/2026, **plus rien n'a abouti** -
+  que du `pending` et de l'`expired` ;
+- la clé lit `transactions`, `balances`, `customers`, `webhooks`, `currencies`,
+  mais `GET /v1/payouts` répond **403 « Opération non autorisée »** et
+  `/accounts`, `/api_keys`, `/settings` répondent 401.
+
+⚠️⚠️ **DEUX PISTES, TOUTES DEUX HORS DU CODE.** Soit la **clé** `sk_live_` du
+`.env` est une clé **restreinte** - le jeton hérite de ses droits, ce qui
+expliquerait que la page hébergée échoue elle aussi - et il faut en générer une
+complète depuis leur tableau de bord ; soit l'**encaissement du compte** n'est
+plus autorisé depuis fin septembre, et c'est à leur support de le rouvrir. Dans
+les deux cas, **rien à corriger chez nous** : le jour où l'autorisation revient,
+le paiement repart sans qu'une ligne change.
 
 ⚠️ **Deux écrans resteront donc ceux du prestataire** tant que l'activation n'est
 pas accordée : son **sélecteur d'opérateur** et sa case **« Je veux recevoir mon

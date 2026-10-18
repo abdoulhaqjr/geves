@@ -54,11 +54,20 @@ son sélecteur sur « Mtn Bénin ». Il ne sert qu'au **paiement direct**
 
 ⚠️⚠️ **Ce parcours a été écrit, éprouvé, puis RETIRÉ** (commits `eb74b470`,
 `b4940f95`, `5d35acca` - à reprendre là si besoin). Le compte marchand le
-refuse : **400 « Opération non autorisée »**. Il demande une activation, comme la
-carte bancaire, et le refus porte sur l'**autorisation**, pas sur la requête -
-l'adresse, le verbe et le corps sont ceux de leur propre SDK. C'est une demande à
-leur adresser, pas un correctif à écrire. Retiré plutôt que laissé dormant : du
-code qu'aucun chemin n'emprunte se périme sans qu'on s'en aperçoive.
+refuse : **400 « Opération non autorisée »**, sur l'**autorisation** et non sur
+la requête. Retiré plutôt que laissé dormant : du code qu'aucun chemin n'emprunte
+se périme sans qu'on s'en aperçoive.
+
+⚠️⚠️ **MAIS CE N'ÉTAIT PAS UNE OPTION : C'EST LE PAIEMENT** (18/10/2026). Leur
+propre page appelle `POST /v1/{mode}` quand le payeur presse PAYER, et affiche le
+`message` de l'API mot pour mot - le « Opération non autorisée » en rouge sur le
+formulaire **est la même réponse** que notre essai serveur. Le jeton est bon (il
+passe sur `GET /v1/transactions/fees`), l'opérateur aussi ; la dernière somme
+encaissée date du **02/09/2026** (togocel, 100 F, `transferred`) et plus rien
+n'aboutit depuis le 26/09. **À faire, hors code** : vérifier que la clé
+`sk_live_` du `.env` n'est pas une clé restreinte (elle se voit refuser
+`GET /v1/payouts`), sinon demander à leur support la réouverture de
+l'encaissement. Détail des sondes dans `CLAUDE.md`.
 
 ⚠️ **Le sélecteur d'opérateur et la case « reçu par mail » restent donc ceux du
 prestataire**, dans un cadre d'un autre domaine, hors de portée. Aucune de ses
