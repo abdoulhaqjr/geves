@@ -1,5 +1,6 @@
 <?php
 
+use App\Documents\LivretView;
 use App\Models\Media;
 use App\Models\Participant;
 use App\Models\User;
@@ -88,16 +89,33 @@ it('ne montre pas le livret sans communication acceptée', function () {
         ->assertDontSee('Livret des résumés');
 });
 
-it('donne accès au livret d’un événement à laquelle le participant a participé', function () {
+/**
+ * ⚠️⚠️ **LE LIVRE QU'ON LAISSE AU PARTICIPANT EST LE PDF.** Il recevait une vue
+ * HTML propre à son espace - plus pauvre que le livre du back-office, sans les
+ * comités ni le programme - et un .docx, qui est un **gabarit à retoucher**, pas
+ * le document qu'on remet.
+ *
+ * ⚠️ Le contenu s'éprouve sur la **donnée partagée**, pas sur les octets du PDF :
+ * dompdf comprime ses flux, donc y chercher un titre absent rendrait un cas qui
+ * passe sans rien prouver.
+ */
+it('donne au participant le livre en PDF, le même que celui du back-office', function () {
     $event = openEdition();
     $account = verifiedAccount();
     $participant = participantFor($account, $event);
     $event->submissions()->create(['participant_id' => $participant->id, 'title' => 'Ma communication', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
 
-    $this->actingAs($account, 'account')
-        ->get(route('account.documents.livret', $event))
-        ->assertOk()
-        ->assertSee('Ma communication');
+    $reponse = $this->actingAs($account, 'account')
+        ->get(route('account.documents.livret', $event));
+
+    $reponse->assertOk();
+    expect($reponse->headers->get('content-type'))->toContain('application/pdf');
+
+    $groupes = $event->submissions()->acceptedCanonical()->orderBy('track')->get()
+        ->groupBy(fn ($x) => $x->track ?: 'Autres');
+    $html = view('documents.livret-pdf', LivretView::data($event, $groupes))->render();
+
+    expect($html)->toContain('Ma communication');
 });
 
 it('refuse le livret à un compte non participant', function () {

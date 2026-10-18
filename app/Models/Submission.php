@@ -29,14 +29,6 @@ class Submission extends Model
 
     protected $guarded = ['id'];
 
-    /** Points à confirmer par l'auteur au dépôt de la version définitive (camera-ready). */
-    public const CAMERA_READY_CHECKLIST = [
-        'template' => 'Le document respecte le gabarit officiel (format, marges, police).',
-        'final_authors' => 'La liste et l’ordre des auteurs sont définitifs.',
-        'clean' => 'Le document ne contient ni commentaires ni marques de révision.',
-        'final_content' => 'Le titre et le résumé correspondent à la version finale.',
-    ];
-
     /** @return array<string, string> valeur => libellé (filtres/affichage). */
     public static function statuses(): array
     {
@@ -51,23 +43,6 @@ class Submission extends Model
             'onsite' => 'En présentiel',
             default => null,
         };
-    }
-
-    /**
-     * Version définitive (camera-ready) déposée par l'auteur, ou null.
-     *
-     * @return array<string, mixed>|null
-     */
-    public function cameraReady(): ?array
-    {
-        $cr = $this->meta['camera_ready'] ?? null;
-
-        return is_array($cr) ? $cr : null;
-    }
-
-    public function hasCameraReady(): bool
-    {
-        return $this->cameraReady() !== null;
     }
 
     /**
@@ -239,15 +214,17 @@ class Submission extends Model
     /**
      * L'auteur peut encore corriger librement sa communication (titre/résumé/
      * mots-clés) TANT QU'aucun relecteur, membre du comité ou gestionnaire n'y a
-     * touché : statut initial « déposée », aucune relecture créée, pas de version
-     * définitive déposée. Après la première intervention du staff, la correction
-     * passe par le circuit officiel de resoumission ({@see canBeRevised()}).
+     * touché : statut initial « déposée » et aucune relecture créée. Après la
+     * première intervention du staff, la correction passe par le circuit officiel
+     * de resoumission ({@see canBeRevised()}).
+     *
+     * ⚠️ Une troisième condition portait sur la **version définitive**, retirée du
+     * processus : la demande de correction la remplace.
      */
     public function isAuthorEditable(): bool
     {
         return (int) $this->revision_of === 0
             && $this->status === 'submitted'
-            && ! $this->hasCameraReady()
             && ! $this->reviews()->exists();
     }
 }

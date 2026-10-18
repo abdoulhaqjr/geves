@@ -11,7 +11,7 @@ use App\Models\Event;
  * `closed`. `closed` signifie « soumissions closes » - c'est précisément la
  * période où les relecteurs travaillent, les geler alors bloquerait le colloque.
  * De même, un événement dont les dates sont passées mais que l'organisation n'a
- * pas archivée peut encore recevoir des relectures ou une version définitive.
+ * pas archivée peut encore recevoir des relectures ou une correction.
  * L'archivage est donc la décision explicite qui fige le dossier.
  *
  * Le back-office n'est PAS concerné : l'admin et les gestionnaires gardent la

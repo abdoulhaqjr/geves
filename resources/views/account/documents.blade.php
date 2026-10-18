@@ -89,8 +89,9 @@
                     @include('account._doc-row', [
                         'name' => __('Livret des résumés'),
                         'sub' => __('Compilation des résumés acceptés'),
-                        'links' => '<a href="'.route('account.documents.livret', $event).'" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">'.__('Livret (imprimable)').'</a>'
-                            .'<a href="'.route('account.documents.livret', [$event, 'format' => 'docx']).'" class="ukc-btn ukc-btn--ghost ukc-btn--sm">'.__('Livret (Word)').'</a>',
+                        {{-- ⚠️ Le PDF, et lui seul : le .docx est un gabarit du
+                             back-office, pas le document qu'on remet. --}}
+                        'links' => '<a href="'.route('account.documents.livret', $event).'" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">'.__('Livret (PDF)').'</a>',
                     ])
                 @endif
                 @foreach ($media as $m)

@@ -140,25 +140,6 @@ it('dépose la pièce jointe d’une communication sous le nom de l’événemen
     Storage::disk('public')->assertExists(storagePath($submission->file_url));
 });
 
-it('dépose la version définitive dans le sous-dossier de l’événement', function () {
-    Storage::fake('public');
-    $event = evenementSansAnnee();
-    [$account, $submission] = communicationDeposee($event);
-
-    $this->actingAs($account, 'account')
-        ->post(route('account.submissions.camera-ready', $submission), [
-            'file' => UploadedFile::fake()->create('final.pdf', 90, 'application/pdf'),
-            'checklist' => collect(array_keys(Submission::CAMERA_READY_CHECKLIST))
-                ->mapWithKeys(fn ($k) => [$k => '1'])->all(),
-        ])
-        ->assertSessionHasNoErrors();
-
-    $url = $submission->fresh()->cameraReady()['file_url'];
-
-    expect($url)->toContain('submissions/journees-recherche-2027/camera-ready/');
-    Storage::disk('public')->assertExists(storagePath($url));
-});
-
 it('téléverse l’habillage sous le nom de l’événement', function () {
     Storage::fake('public');
     $event = evenementSansAnnee();
@@ -199,6 +180,10 @@ it('déplace les fichiers existants et réécrit les URL enregistrées', functio
     [, $submission] = communicationDeposee($event);
 
     // L'ancienne forme : sous l'identifiant, avec un sous-dossier redondant.
+    // ⚠️ La « version définitive » est sortie du processus (la demande de
+    // correction la remplace), mais la migration doit CONTINUER à déplacer
+    // celles déjà déposées : un fichier qu'on cesse de suivre est un fichier
+    // perdu, et c'est en production qu'on s'en apercevrait.
     $disque->put('submissions/'.$event->id.'/import-2027/26-CL.docx', 'resume');
     $disque->put('submissions/'.$event->id.'/camera-ready/final.pdf', 'definitive');
     $disque->put('events/'.$event->id.'/import-2027/affiche.jpeg', 'affiche');

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Account;
 
 use App\Documents\BadgeLayout;
+use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
-use App\Documents\LivretDocx;
+use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
@@ -18,6 +19,7 @@ use App\Support\AttestationPolicy;
 use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -261,6 +263,19 @@ class DocumentController extends Controller
             ->with('ukc_status', 'Présentation du badge enregistrée.');
     }
 
+    /**
+     * Le livre des résumés du participant : **le PDF**, et rien d'autre.
+     *
+     * ⚠️⚠️ **LE .DOCX N'EST PAS LE DOCUMENT QU'ON REMET.** C'est un gabarit, fait
+     * pour être retouché dans Word puis réimporté - il appartient au back-office.
+     * Proposé au participant, il donnait à croire que le livre se modifie, et il
+     * s'ouvre différemment d'une machine à l'autre. Le PDF se lit partout de la
+     * même façon, et c'est lui qu'on laisse.
+     *
+     * ⚠️ **C'est le MÊME livre que celui du back-office** ({@see LivretView}) :
+     * l'espace participant rendait sa propre vue HTML, plus pauvre - sans les
+     * comités ni le programme - sans que rien ne le signale.
+     */
     public function livret(Event $event, Request $request): View|Response
     {
         $account = Auth::guard('account')->user();
@@ -271,21 +286,21 @@ class DocumentController extends Controller
 
         abort_unless($participates, 403);
 
+        // ⚠️ **UNE SEULE règle pour « ce que le livre contient »** : le scope,
+        // jamais ses conditions recopiées - c'est ainsi que le programme avait
+        // fini par annoncer des communications absentes des résumés.
         $groups = $event->submissions()
-            ->where('revision_of', 0)
-            ->where('status', 'accepted')
+            ->acceptedCanonical()
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
-        if ($request->query('format') === 'docx') {
-            return (new LivretDocx($event, $groups))
-                ->download('livret-'.($event->slug ?: 'edition-'.$event->id).'.docx');
-        }
+        $pdf = BrandedPdf::stamp(
+            Pdf::loadView('documents.livret-pdf', LivretView::data($event, $groups))->setPaper('a4'),
+            'Livre des résumés - '.$event->title,
+        );
 
-        return view('documents.livret', [
-            'event' => $event,
-            'groups' => $groups,
-        ]);
+        // Ouvert dans l'onglet : le lecteur du navigateur sait l'enregistrer.
+        return $pdf->stream('livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf');
     }
 }

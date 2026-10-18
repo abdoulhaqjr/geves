@@ -213,17 +213,23 @@ it('génère le livret des résumés au format Word (.docx)', function () {
         ->toContain('SCIENCES');
 });
 
-it('permet au participant de télécharger le livret .docx de son événement', function () {
+/**
+ * ⚠️⚠️ **LE .DOCX NE DESCEND PAS JUSQU'AU PARTICIPANT**, même s'il le demande :
+ * c'est un **gabarit**, fait pour être retouché dans Word puis réimporté, et il
+ * appartient au back-office. Proposé à un participant, il donne à croire que le
+ * livre se modifie - et il s'ouvre différemment d'une machine à l'autre.
+ */
+it('ne donne jamais le livret .docx au participant, même sur demande', function () {
     $submission = seededSubmission('accepted');
     $event = $submission->event;
     $account = $submission->participant->user;
 
-    $response = $this->actingAs($account, 'account')
+    $reponse = $this->actingAs($account, 'account')
         ->get(route('account.documents.livret', [$event, 'format' => 'docx']));
 
-    $response->assertOk();
-    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    expect(docxDocumentXml($response->streamedContent()))->toContain('Innovation durable');
+    $reponse->assertOk();
+    // Un lien ancien ne tombe pas en erreur : il rend le livre, en PDF.
+    expect($reponse->headers->get('content-type'))->toContain('application/pdf');
 });
 
 it('refuse le livret .docx à un compte non participant', function () {

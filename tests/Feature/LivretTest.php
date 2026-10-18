@@ -1,7 +1,7 @@
 <?php
 
 use App\Documents\LivretTemplate;
-use App\Http\Controllers\Admin\DocumentController;
+use App\Documents\LivretView;
 use App\Models\CommitteeMember;
 use App\Models\Event;
 use App\Models\Slot;
@@ -235,7 +235,7 @@ it('reflète le style « Document général » dans l’aperçu PDF (comité en 
 
     EventSettings::set($event, 'livret.template', 'general');
 
-    // Le PDF se génère sans erreur avec le style general (branche dédiée de livretViewData).
+    // Le PDF se génère sans erreur avec le style general (branche dédiée de LivretView::data).
     $res = $this->actingAs($staff, 'web')
         ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'pdf']));
 
@@ -384,17 +384,15 @@ it('écarte aussi les communications hors livre du programme servi au PDF', func
         'starts_at' => '2026-09-03 09:30', 'ends_at' => '2026-09-03 10:00',
     ]);
 
-    // ⚠️ Le PDF construit SON programme de son côté (`livretViewData`), et c'est
+    // ⚠️ Le PDF construit SON programme de son côté (`LivretView::data`), et c'est
     // là tout l'enjeu : le .docx corrigé ne dit rien de ce chemin-là. On lit la
     // donnée plutôt que les octets du PDF - dompdf comprime ses flux, donc y
     // chercher un titre absent rendrait un cas qui passe sans rien prouver.
-    $donnees = (new ReflectionMethod(DocumentController::class, 'livretViewData'));
-    $donnees->setAccessible(true);
 
     // ⚠️ Groupes VIDES à dessein : ils n'alimentent que les résumés et l'index.
     // Le programme, lui, est interrogé à l'intérieur - c'est lui qu'on éprouve,
     // et le cas ne doit pas dépendre de la requête des résumés pour le dire.
-    $vue = $donnees->invoke(app(DocumentController::class), $event, collect());
+    $vue = LivretView::data($event, collect());
 
     $titres = collect($vue['programme'])->flatten(1)
         ->map(fn ($slot) => (string) ($slot->submission?->title ?? ''))
@@ -415,9 +413,7 @@ function livretPdfHtml(Event $event): string
 {
     $groups = $event->submissions()->acceptedCanonical()->orderBy('track')->get()
         ->groupBy(fn ($s) => $s->track ?: 'Autres');
-    $m = new ReflectionMethod(DocumentController::class, 'livretViewData');
-    $m->setAccessible(true);
-    $data = $m->invoke(app(DocumentController::class), $event, $groups);
+    $data = LivretView::data($event, $groups);
 
     return view('documents.livret-pdf', $data)->render();
 }

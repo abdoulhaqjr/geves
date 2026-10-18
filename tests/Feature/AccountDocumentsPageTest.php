@@ -53,8 +53,10 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
         ->assertSee('Mon badge')
         ->assertSee('Mes documents')
         ->assertSee('Attestation de participation')
-        ->assertSee('Livret (Word)')
-        ->assertSee('Livret (imprimable)')
+        // ⚠️ Le PDF, et lui seul : le .docx est un gabarit du back-office, pas le
+        // document qu'on remet au participant.
+        ->assertSee('Livret (PDF)')
+        ->assertDontSee('Livret (Word)')
         ->assertSee('Reçu');
 });
 

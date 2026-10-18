@@ -636,8 +636,21 @@ de l'habillage à plat dans `events/` : un dossier nommé `2` n'apprend rien à 
 ouvre le disque, et deux événements mêlaient leurs visuels dans le même
 répertoire.
 
+⚠️⚠️ **LA « VERSION DÉFINITIVE » (camera-ready) EST SORTIE DU PROCESSUS**
+(18/10/2026) : la **demande de correction** la remplace, et l'équipe ne dépose
+plus de « prête à publier ». Le dépôt, sa liste de contrôle, sa route, son action,
+ses accesseurs de modèle et ses deux encarts - côté participant **et** côté
+back-office - ont été retirés, plutôt que laissés dormants : du code qu'aucun
+chemin n'emprunte se périme sans qu'on s'en aperçoive.
+⚠️ **Mais la migration continue de déplacer les fichiers `camera-ready/` déjà
+déposés**, et le dossier reste décrit ci-dessous : un fichier qu'on cesse de
+suivre est un fichier perdu, et c'est en production qu'on s'en apercevrait.
+⚠️ `Submission::isAuthorEditable()` ne regarde donc plus que deux conditions -
+statut initial et aucune relecture.
+
 **Cinq racines sont rangées par événement** (`EventStorage::ROOTS`) :
-`submissions/` (pièces jointes, plus `camera-ready/` en dessous), `events/`
+`submissions/` (pièces jointes, plus `camera-ready/` en dessous - **plus alimenté**,
+conservé pour l'existant), `events/`
 (bandeau, bannière, vidéo de fond, logos de partenaires), `formations/` (flyer),
 `livret/` (logo de couverture) et `livret-templates/` (gabarits .docx importés).
 
@@ -1137,7 +1150,7 @@ paiement (`pay`), inscription à une formation.
 - ⚠️ **Le déclencheur est `archived`, pas `closed` ni la date de fin.** `closed`
   signifie « dépôts clos » : c'est précisément la période où les relecteurs
   travaillent. Une édition dont les dates sont passées mais non archivée peut
-  encore recevoir une relecture ou une version définitive. L'archivage est la
+  encore recevoir une relecture ou une correction. L'archivage est la
   décision explicite qui fige le dossier.
 - ⚠️ **Le gel n'enlève jamais la LECTURE** : le relecteur consulte l'évaluation
   qu'il a rendue (bouton « Consulter », panneau `inert`, pas d'enregistrement),
@@ -3560,6 +3573,16 @@ ajoutée par la vue, elle ne se saisit pas.
   des deux autres. ⚠️ Un créneau dont la communication n'est pas au livre est **écarté**,
   pas replié sur l'intitulé de sa séance : la ligne n'existait que pour elle, et les autres
   créneaux de la même séance représentent déjà la séance. Tests : `LivretTest`.
+- ⚠️⚠️ **LE LIVRE QU'ON LAISSE AU PARTICIPANT EST LE PDF** (`account.documents.livret`),
+  et c'est **le même** que celui du back-office : les données du livre sont
+  assemblées une seule fois par **`App\Documents\LivretView::data()`**. Elles
+  vivaient dans le contrôleur de l'administration, hors d'atteinte de l'espace
+  participant, qui rendait donc une version appauvrie - **sans les comités ni le
+  programme** - sans que rien ne le signale. ⚠️ **Et le `.docx` ne descend pas
+  jusqu'au participant** : c'est un **gabarit**, fait pour être retouché dans Word
+  puis réimporté ; proposé à un lecteur, il donne à croire que le livre se modifie,
+  et il s'ouvre différemment d'une machine à l'autre. Un lien ancien portant
+  `?format=docx` ne tombe pas en erreur - il rend le PDF.
 - **Livre des résumés (livret)** : communications acceptées groupées par axe, trois sorties
   depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
   **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome
