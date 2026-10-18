@@ -4028,45 +4028,83 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   concepteur d'attestations). ⚠️ Le concepteur de badges reste une base plus pauvre que
   celui des attestations (pas d'`upper`/`leading`/interlettrage dans le snapshot) : à
   aligner si on y revient. Gardes : `BadgeDefaultTemplateTest`.
-- ⚠️ **Impression = tuilage A4 avec GOUTTIÈRES (comme le modèle .docx de référence)** :
-  `documents/badges-template.blade.php` imprime **autant de badges DE LA DIMENSION CHOISIE**
-  que l'A4 portrait en contient, **séparés par un espace** et avec une **marge autour de la
-  feuille**. Les px CSS valent 1/96 pouce à l'impression ; la vue calcule `cols`/`rows` =
-  `floor(pageA4 * 1,012 / dimension)` (la tolérance de 1,2 % rattrape l'A6 2-up : 397 px ≈
-  105,03 mm, soit 2×210,06 mm, à peine au-delà de l'A4). ⚠️ **Un A6 (105×148 mm) est EXACTEMENT
-  le quart d'une A4** : 2×2 A6 remplissent la feuille bord à bord, **zéro place pour un espace**.
-  Pour avoir des gouttières il FAUT donc **rétrécir le badge** - le modèle de référence a des
-  badges plus petits que l'A6 plein, d'où ses marges. La vue réserve `margin` (6 mm autour,
-  `@page { margin: 6mm }`) et `gutter` (5 mm entre badges, `gap`), puis calcule un `scale`
-  **uniforme** (pas de déformation) qui fait tenir `cols` badges + leurs gouttières dans la
-  zone imprimable, appliqué en `transform` sur chaque `.ukc-doc-canvas` dans des cellules
-  `cellW×cellH`. **A6 → 2×2 = 4 par page, chaque badge réduit d'environ 8 % (≈ 96×136 mm).**
-  `@media print` seulement (l'écran garde la galerie souple) ; repères de découpe (`outline`
-  pointillé) sur chaque cellule. ⚠️ Ne pas revenir à `gap:0` / `margin:0` « pour cramer plus de
-  badges » : le modèle veut l'espace. Le contrôleur passe `width` **et** `height`. Garde :
-  `DocumentsTest` (voit « par page A4 »).
-  - ⚠️ **Le tuilage est factorisé dans `documents/_badge-sheet.blade.php`** (une planche d'UN
-    format : légende + grille + styles d'impression scopés `.badge-sheet--g{i}`), partagé par la
-    planche d'une catégorie (`badges-template.blade.php`) **et** la planche de tous les badges
-    prêts (`badges-all.blade.php`). Y toucher corrige les deux. La légende porte « … par page A4 ».
-  - **Planche « tous les badges prêts »** (`admin.documents.badges.all`, `DocumentController::badgesAll`) :
-    réunit toutes les catégories ayant des destinataires, **groupées par format**, un bloc tuilé par
-    format avec **saut de page entre groupes** (`break-before:page` sur `.badge-group--g{i}`, qui
-    englobe légende + planche pour ne pas séparer l'une de l'autre). ⚠️ **On ne mêle jamais deux
-    formats sur une même feuille** (même règle que le lot d'attestations : la taille de page vient
-    de la mise en page du modèle). `badges()` et `badgesAll()` partagent `renderBadges($event,$type)`
-    (source unique du rendu par catégorie).
+- ⚠️⚠️ **LA PLANCHE DE BADGES EST UN PDF PRODUIT PAR dompdf**, plus une page HTML que
+  l'admin imprimait depuis son navigateur. Les trois sorties
+  (`DocumentController::badges` par catégorie, `badgesAll` toutes catégories,
+  `badgesSelection` les destinataires cochés) rendent `pdf/badges-sheet.blade.php` par
+  `Pdf::loadView(...)->setPaper('a4','portrait')` + `BrandedPdf::stamp()` et le
+  **téléchargent**. Les anciennes vues `documents/badges-template`, `documents/badges-all`
+  et `documents/_badge-sheet` ont été **supprimées** : ne pas les recréer.
+  - **Tuilage A4 avec GOUTTIÈRES, calculé une seule fois** dans
+    **`App\Documents\BadgeSheet::plan($w, $h)`** (colonnes, lignes, échelle, cellule,
+    gouttière 5 mm, marge 6 mm, `perPage`). ⚠️ **Un A6 (105×148 mm) est EXACTEMENT le quart
+    d'une A4** : 2×2 A6 remplissent la feuille bord à bord, **zéro place pour un espace**.
+    Pour avoir des gouttières il FAUT donc **rétrécir le badge** - le modèle .docx de
+    référence a des badges plus petits que l'A6 plein, d'où ses marges. **A6 → 2×2 = 4 par
+    page, badge réduit d'environ 8 % (cellule 364×513).** ⚠️ Ne pas revenir à `gap:0` /
+    `margin:0` « pour cramer plus de badges » : le modèle veut l'espace.
+  - ⚠️⚠️ **LA RÉDUCTION RECALCULE LA MAQUETTE, elle n'applique PAS `transform: scale()`.**
+    **`BadgeSheet::scaleLayout()`** multiplie toute la géométrie (x, y, w, h, corps du
+    texte, côté du QR, rayon, filet, interlettrage) et rend le badge **dessiné à la taille
+    de sa cellule** ; la vue ne pose donc que des `float` et des tailles fixes, que dompdf
+    sait rendre. Un `transform` CSS aurait été le réflexe (c'est ce que faisait la version
+    HTML) : dompdf ne l'applique pas de façon fiable, et c'est **lui** qui produit le
+    document imprimé. ⚠️ **`leading` est un RAPPORT, pas une longueur** : le mettre à
+    l'échelle diviserait l'interligne. Tout nouvel attribut géométrique du concepteur doit
+    être ajouté à `scaleLayout()`, sinon il ne suit pas la réduction.
+  - **Planche « tous les badges prêts »** (`admin.documents.badges.all`) : toutes les
+    catégories ayant des destinataires, **groupées par format**, chaque format remplissant
+    ses propres pages. ⚠️ **On ne mêle jamais deux formats sur une même feuille** (même
+    règle que le lot d'attestations : la taille de page vient de la mise en page du modèle).
+  - ⚠️⚠️ **LE LOT EST BORNÉ : `BadgeSheet::LOT` = 48 badges** (12 feuilles A4).
+    **MESURÉ** : environ **2,5 Mo de mémoire par badge** et 6,9 s pour 48 ; une édition
+    de 191 inscrits faisait tomber dompdf **au milieu** du rendu (128 Mo dépassés), donc
+    une page blanche après l'attente. Un lot borné échoue vite ou réussit vite - même
+    raison que `AttestationExportController::LOT`. `badgeSheetPdf()` relève **en plus**
+    la limite à 512 Mo : les deux, parce qu'un serveur peut être plus avare que le nôtre.
+    ⚠️ Le découpage de `badgesAll` se fait sur la liste **à plat** (catégorie,
+    destinataire) : un plafond appliqué catégorie par catégorie en laisserait en arrière.
+    ⚠️ **L'interface ANNONCE les lots** (`_badge-lots.blade.php`, « Lot 1/5 ») dès qu'il y
+    en a plus d'un - les cacher laisserait croire que « Imprimer » sort tout le monde.
+  - **Imprimer une SÉLECTION** (`admin.documents.badges.selection`, POST) : on coche des
+    destinataires dans « Badges prêts » et on n'imprime qu'eux. ⚠️ La clé est la
+    **référence du badge** (`BadgeCatalog::reference()`), déjà celle du QR : stable, opaque,
+    et elle ne divulgue aucun identifiant interne. Une sélection vide **le dit** au lieu de
+    rendre un PDF vide - comme une catégorie sans destinataire.
+  - ⚠️ **Le texte d'un PDF dompdf est compressé** (polices sous-ensemblées) : aucun test ne
+    peut l'y lire. Que la planche lise bien le **modèle enregistré** se gèle donc par une
+    preuve OBSERVABLE - un modèle de 700×900 n'en laisse tenir qu'**un par page**, là où
+    l'A6 par défaut en met quatre, donc deux destinataires donnent deux pages
+    (`DocumentsTest`). La substitution des jetons s'éprouve un cran plus bas, sur
+    `LayoutRenderer` (`DocumentDesignerTest`).
 
-- ⚠️ **Le hub Badges (`?tab=badges&stab=modeles`) est un STUDIO, pas une table nue** : bandeau KPI
-  `tw-stat` (catégories, destinataires prêts, catégories prêtes, avec QR) pour la **parité** avec
-  les onglets Attestations et Livre ; **vignette d'aperçu RÉELLE** de chaque modèle dans la table
-  (`DocumentHubController::badgePreviewVars()` + `LayoutRenderer::render(..., badge:true)`, variante
-  sans photo, réduite par `transform:scale` dans `.badge-mini`) ; QR en **pastille** (`ukc-pill--ok`
-  « QR » / `ukc-pill--muted` « Sans QR »), plus en « Oui/Non » ; icônes via **`<x-ukc.icon>`**
-  (`download`/`pen`/`eye`), plus de `<svg>` bruts ; bouton **« Imprimer tous les badges prêts »**
-  (→ `badges.all`) visible dès qu'une catégorie a des destinataires. ⚠️ L'aperçu ne charge pas
-  `documents/_fonts` (Jost est déjà la police de l'admin) ; une attestation, elle, l'exigerait.
-  Gardes : `DocumentsTest` (KPI, `badge-mini`, « Imprimer tous les badges prêts », planche groupée).
+- ⚠️ **Le hub Badges (`?tab=badges&stab=modeles`) est un STUDIO : une liste à gauche,
+  l'APERÇU DU MODÈLE CHOISI à droite, sur la même page.** Cliquer une ligne montre le badge
+  en grand (260 px, rendu par le moteur et les jetons de la planche via
+  `DocumentHubController::badgePreviewVars()`), avec son format, son nombre de destinataires
+  et son QR. Bandeau KPI `tw-stat` (catégories, destinataires prêts, catégories prêtes, avec
+  QR) pour la **parité** avec les onglets Attestations et Livre.
+  - ⚠️ **Trois colonnes ont été RETIRÉES, ne pas les réintroduire** : « Aperçu » (une
+    vignette de 86 px n'apprend rien - c'est ce qui a motivé l'aperçu sur la page),
+    « Type » (le libellé le porte déjà) et « QR » (il se lit dans l'aperçu). Restent
+    *Libellé - Format - Destinataires - Statut - Actions*. Un cas vise l'**en-tête exact**
+    du tableau des badges : la page rend aussi les onglets Attestations et Livre, donc une
+    assertion d'absence globale mordrait sur eux.
+  - ⚠️ **Plus de bouton « œil »** : il ouvrait un onglet pour ce que l'aperçu montre
+    désormais sur place. Les actions se réduisent à **imprimer (PDF)** et **modifier le
+    modèle** ; elles portent `@click.stop`, sinon le clic de la ligne les doublerait.
+  - Styles `.badge-studio*` / `.badge-preview` dans `admin.css` ; sous 1100 px la colonne
+    d'aperçu repasse **sous** la liste (à 292 px elle écraserait le badge).
+  - ⚠️ L'aperçu ne charge pas `documents/_fonts` (Jost est déjà la police de l'admin) ;
+    une attestation, elle, l'exigerait.
+  - ⚠️ **La sélection et la pagination de « Badges prêts » vivent DANS la région échangée**
+    (`data-filter-part="badges-table"`) : changer de filtre change la liste, donc la
+    sélection repart de zéro - cocher des gens qu'on ne voit plus serait pire. (Au passage,
+    la pagination n'était rattachée à **aucune** région : son compteur ne suivait pas les
+    filtres.) Le formulaire de sélection (POST) est **frère** de la barre de filtres (GET) :
+    deux formulaires ne s'imbriquent pas.
+  - Gardes : `DocumentsTest` (KPI, aperçu sur la page, colonnes retirées, cases à cocher,
+    PDF par catégorie / global / sélection, tuilage et mise à l'échelle).
 
 L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
 salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les

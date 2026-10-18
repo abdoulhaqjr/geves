@@ -61,9 +61,15 @@ it('les documents générés d’un événement répondent sans erreur (staff)',
     $staff = adminStaff();
     $submission = seededSubmission('accepted'); // événement avec une communication acceptée
     $event = $submission->event;
-    $event->participants()->firstOrCreate(
+    $porteurDeBadge = $event->participants()->firstOrCreate(
         ['email' => 'badge@example.tg'],
         ['first_name' => 'B', 'last_name' => 'Adge', 'role' => 'author']
+    );
+    // ⚠️ **Le badge participant suit le PAIEMENT** : sans règlement il n'y a aucun
+    // destinataire, et la planche le DIT (redirection) au lieu de rendre un PDF vide.
+    $event->payments()->firstOrCreate(
+        ['participant_id' => $porteurDeBadge->id],
+        ['amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-SMOKE-BADGE'],
     );
 
     $this->actingAs($staff, 'web');

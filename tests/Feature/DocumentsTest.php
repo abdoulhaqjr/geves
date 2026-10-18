@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\BadgeSheet;
 use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
 use App\Models\Attestation;
@@ -9,6 +10,7 @@ use App\Models\Event;
 use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\User;
+use App\Support\BadgeCatalog;
 use App\Support\EventSettings;
 use App\Support\Settings;
 use Illuminate\Http\UploadedFile;
@@ -241,80 +243,207 @@ it('refuse le livret .docx à un compte non participant', function () {
         ->assertForbidden();
 });
 
-it('génère la planche de badges', function () {
+/** Nombre de pages d'un PDF (le « /Type /Pages » du catalogue n'en est pas une). */
+function pdfPageCount(string $bytes): int
+{
+    return substr_count($bytes, '/Type /Page') - substr_count($bytes, '/Type /Pages');
+}
+
+it('tuile les badges sur A4 avec des gouttières', function () {
+    // ⚠️ Un A6 est EXACTEMENT le quart d'une A4 : pour avoir un espace entre les
+    // badges il FAUT les réduire. 2×2 = 4 par page, badge réduit d'environ 8 %.
+    $plan = BadgeSheet::plan(397, 560);
+
+    expect($plan['cols'])->toBe(2)
+        ->and($plan['rows'])->toBe(2)
+        ->and($plan['perPage'])->toBe(4)
+        ->and($plan['scale'])->toBeLessThan(1.0)
+        ->and($plan['gutter'])->toBeGreaterThan(0);
+
+    // La planche + ses gouttières tiennent dans la zone imprimable (A4 - 2×6 mm).
+    expect($plan['sheetW'])->toBeLessThanOrEqual(749)
+        ->and($plan['rows'] * $plan['cellH'] + ($plan['rows'] - 1) * $plan['gutter'])->toBeLessThanOrEqual(1078);
+});
+
+it('redessine la maquette à la taille de la cellule, sans toucher à l’interlignage', function () {
+    // ⚠️ La réduction RECALCULE la géométrie : dompdf n'applique pas `transform:
+    // scale()` de façon fiable, et c'est lui qui produit le PDF imprimé.
+    $layout = [
+        'width' => 400, 'height' => 600, 'bg' => '#ffffff',
+        'elements' => [
+            ['type' => 'text', 'x' => 100, 'y' => 200, 'w' => 200, 'h' => 40, 'size' => 20, 'leading' => 1.4, 'spacing' => 2],
+            ['type' => 'qr', 'x' => 40, 'y' => 40, 'size' => 80],
+        ],
+    ];
+
+    $scaled = BadgeSheet::scaleLayout($layout, 0.5, 200, 300);
+
+    expect($scaled['width'])->toBe(200)->and($scaled['height'])->toBe(300);
+    expect($scaled['elements'][0]['x'])->toBe(50)
+        ->and($scaled['elements'][0]['w'])->toBe(100)
+        ->and($scaled['elements'][0]['size'])->toBe(10)
+        ->and($scaled['elements'][1]['size'])->toBe(40);
+    // `leading` est un RAPPORT, pas une longueur : le mettre à l'échelle
+    // diviserait l'interligne par deux.
+    expect($scaled['elements'][0]['leading'])->toBe(1.4);
+});
+
+it('génère la planche de badges en PDF', function () {
     $staff = adminStaff();
     $event = openEdition();
     // ⚠️ **Le badge participant suit le PAIEMENT** (« Inscriptions réglées ») :
     // sans règlement, la planche est vide - et c'est la règle, pas un défaut.
     participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
 
-    // Badge de PARTICIPATION : un communicant est d'abord un participant. Quel que
-    // soit son rôle de fonction, le badge porte « Participant ».
+    // ⚠️ C'est dompdf qui produit la planche, plus l'impression du navigateur.
+    $res = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))->assertOk();
+
+    expect($res->headers->get('content-type'))->toContain('application/pdf')
+        ->and($res->headers->get('content-disposition'))->toContain('badges-default.pdf')
+        ->and(substr($res->getContent(), 0, 5))->toBe('%PDF-');
+});
+
+it('sans destinataire, la planche le dit au lieu de rendre un PDF vide', function () {
+    $staff = adminStaff();
+    $event = openEdition(); // aucun participant réglé
+
     $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
-        ->assertOk()
-        ->assertSee('Awa Kodjo')
-        ->assertSee('Participant')
-        ->assertDontSee('Communicant')
-        // Tuilage A4 : autant de badges que la feuille en contient (A6 = 4 par page).
-        ->assertSee('par page A4');
+        ->assertRedirect();
 });
 
-it('imprime TOUS les badges prêts en une planche, groupés par format', function () {
+it('imprime TOUS les badges prêts en un seul PDF', function () {
     $staff = adminStaff();
     $event = openEdition();
     participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
 
-    // La planche globale réunit toutes les catégories ayant des destinataires,
-    // chaque format sur son propre bloc tuilé (« par page A4 »).
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges.all', $event))
-        ->assertOk()
-        ->assertSee('Tous les badges prêts')
-        ->assertSee('Awa Kodjo')
-        ->assertSee('par page A4');
+    $res = $this->actingAs($staff, 'web')->get(route('admin.documents.badges.all', $event))->assertOk();
+
+    expect($res->headers->get('content-disposition'))->toContain('badges-tous.pdf')
+        ->and(substr($res->getContent(), 0, 5))->toBe('%PDF-');
 });
 
-it('le studio badges montre les KPI, un aperçu par modèle et l’impression groupée', function () {
+it('n’imprime que les destinataires cochés', function () {
     $staff = adminStaff();
     $event = openEdition();
     participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+    participantRegle($event, 'Beni', 'Abalo', 'beni@example.tg');
 
+    // La référence du badge est la clé de sélection : elle vient de la liste réelle.
+    $refAwa = BadgeCatalog::recipients($event, 'default')
+        ->firstWhere('name', 'Awa Kodjo')['ref'];
+
+    $res = $this->actingAs($staff, 'web')
+        ->post(route('admin.documents.badges.selection', ['event' => $event->id]), [
+            'type' => 'default', 'refs' => [$refAwa],
+        ])->assertOk();
+
+    expect($res->headers->get('content-disposition'))->toContain('badges-default-selection.pdf')
+        ->and(substr($res->getContent(), 0, 5))->toBe('%PDF-');
+
+    // Rien de coché : on le dit, on ne rend pas un PDF vide.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
-        ->assertOk()
-        // Bandeau KPI (parité avec Attestations et Livre).
-        ->assertSee('Destinataires prêts')
-        ->assertSee('Catégories prêtes')
-        // Vignette d'aperçu réelle de chaque modèle.
-        ->assertSee('badge-mini', false)
-        // Action groupée dès qu'une catégorie a des destinataires.
-        ->assertSee('Imprimer tous les badges prêts')
-        ->assertSee('badges-tous', false);
+        ->post(route('admin.documents.badges.selection', ['event' => $event->id]), ['type' => 'default', 'refs' => []])
+        ->assertRedirect();
 });
 
-it('la planche de badges utilise le modèle enregistré', function () {
+it('la planche PDF utilise le modèle enregistré', function () {
     $staff = adminStaff();
     $event = openEdition();
     participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+    participantRegle($event, 'Beni', 'Abalo', 'beni@example.tg');
 
-    // Modèle de badge personnalisé avec un texte distinctif substitué.
+    // ⚠️ Preuve OBSERVABLE dans le PDF : un modèle presque aussi grand qu'une A4
+    // n'en laisse tenir qu'UN par page, là où l'A6 par défaut en met quatre. Deux
+    // destinataires donnent donc deux pages - impossible si le modèle enregistré
+    // était ignoré. (Le texte d'un PDF est compressé : on ne peut pas l'y lire.)
     DocumentTemplate::create([
         'event_id' => $event->id,
         'kind' => 'badge',
         'type' => 'default',
         'layout' => [
-            'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'width' => 700, 'height' => 900, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'elements' => [[
-                'type' => 'text', 'x' => 20, 'y' => 40, 'w' => 280, 'h' => 40,
+                'type' => 'text', 'x' => 20, 'y' => 40, 'w' => 600, 'h' => 40,
                 'text' => 'BADGE PERSO {name}', 'size' => 18, 'weight' => 800,
                 'color' => '#223ea4', 'align' => 'center',
             ]],
         ],
     ]);
 
-    // Le rendu reprend le modèle (texte substitué) → preuve que le template enregistré est utilisé.
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
+    expect(BadgeSheet::plan(700, 900)['perPage'])->toBe(1);
+
+    $res = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))->assertOk();
+
+    expect(pdfPageCount($res->getContent()))->toBe(2);
+});
+
+it('borne la planche en lots, et le hub annonce les lots', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    // ⚠️ Un lot BORNÉ : environ 2,5 Mo de mémoire par badge, et le rendu tombait
+    // au milieu sur une édition de 200 inscrits. 52 destinataires = 2 PDF.
+    for ($i = 0; $i < 52; $i++) {
+        participantRegle($event, 'P'.$i, 'Nom'.$i, 'p'.$i.'@example.tg');
+    }
+
+    expect(BadgeSheet::LOT)->toBe(48);
+
+    // Lot 1 : 48 badges = 12 feuilles A4 (4 par page). Lot 2 : les 4 restants.
+    $lot1 = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', [$event, 'type' => 'default']))->assertOk();
+    expect(pdfPageCount($lot1->getContent()))->toBe(12);
+
+    $lot2 = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', [$event, 'type' => 'default', 'lot' => 2]))->assertOk();
+    expect(pdfPageCount($lot2->getContent()))->toBe(1)
+        ->and($lot2->headers->get('content-disposition'))->toContain('badges-default-lot2.pdf');
+
+    // ⚠️ Les cacher laisserait croire que « Imprimer » sort tout le monde.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
         ->assertOk()
-        ->assertSee('BADGE PERSO Awa Kodjo');
+        ->assertSee('Lot 1/2')
+        ->assertSee('Lot 2/2');
+});
+
+it('le studio badges montre les KPI et l’aperçu SUR LA PAGE', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+
+    $res = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
+        ->assertOk()
+        // Bandeau KPI (parité avec Attestations et Livre).
+        ->assertSee('Destinataires prêts')
+        ->assertSee('Catégories prêtes')
+        // L'aperçu est rendu sur la page, à côté de la liste.
+        ->assertSee('badge-studio__preview', false)
+        ->assertSee('Aperçu du modèle')
+        // Action groupée dès qu'une catégorie a des destinataires.
+        ->assertSee('Imprimer tous les badges prêts')
+        ->assertSee('badges-tous', false);
+
+    // ⚠️ Trois colonnes retirées : la vignette n'apprenait rien, et le libellé
+    // porte déjà le type. Ne pas les réintroduire. (On vise l'en-tête EXACT du
+    // tableau des badges : la page rend aussi les onglets Attestations et Livre.)
+    $res->assertSee('<th>Libellé</th><th>Format</th><th>Destinataires</th><th>Statut</th>', false)
+        ->assertDontSee('<th>Aperçu</th><th>Type</th><th>Libellé</th>', false);
+
+    // Le bouton « œil » du badge faisait doublon avec l'aperçu de la page.
+    $res->assertDontSee('apercu?event_id='.$event->id.'&amp;kind=badge', false);
+});
+
+it('propose de cocher des destinataires dans « badges prêts »', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets']))
+        ->assertOk()
+        ->assertSee('Awa Kodjo')
+        ->assertSee('Imprimer la sélection')
+        ->assertSee('name="refs[]"', false)
+        ->assertSee('badges-selection', false);
 });
 
 it('protège les documents admin sans permission', function () {

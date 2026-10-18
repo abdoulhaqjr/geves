@@ -168,9 +168,21 @@ it('rend la planche de badges via le modèle si présent', function () {
             'elements' => [['type' => 'text', 'x' => 10, 'y' => 200, 'w' => 300, 'h' => 30, 'text' => 'CARTE {name}']]],
     ]);
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
-        ->assertOk()
-        ->assertSee('CARTE Awa Kodjo');
+    // La planche est un PDF produit par dompdf : son texte y est compressé, donc
+    // illisible depuis un test. On éprouve donc les deux moitiés separement -
+    // le modèle ENREGISTRÉ substitue bien ses jetons...
+    $layout = LayoutSanitizer::sanitize(
+        (array) DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->where('type', 'default')->first()->layout,
+        'badge',
+        'default',
+    );
+    expect(LayoutRenderer::render($layout, ['name' => 'Awa Kodjo'], badge: true))->toContain('CARTE Awa Kodjo');
+
+    // ...et la route en sort bien un PDF. (Que la planche lise le modèle
+    // enregistré est gelé par DocumentsTest, via le nombre de pages : un modèle
+    // presque aussi grand qu'une A4 n'en laisse tenir qu'un par page.)
+    $res = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))->assertOk();
+    expect(substr($res->getContent(), 0, 5))->toBe('%PDF-');
 });
 
 it('enregistre le nom saisi dans le concepteur', function () {

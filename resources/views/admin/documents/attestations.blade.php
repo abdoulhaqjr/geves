@@ -262,7 +262,12 @@
                     @include('admin.documents._badges-ready')
                 @endif
 
-                <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif>
+                {{-- ⚠️ Pas de colonne « Aperçu » : une vignette de 86px n'apprend rien.
+                     On choisit une ligne, et le badge se montre EN GRAND à côté, sur la
+                     même page - d'où le retrait du bouton « œil », qui ouvrait un onglet
+                     pour la même chose. Les colonnes « Type » et « QR » sont parties
+                     aussi : le libellé porte déjà le type, et le QR se lit dans l'aperçu. --}}
+                <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif x-data="{ sel: '{{ $badgeRows[0]['key'] ?? '' }}' }">
                     {{-- Vue d'ensemble, comme les onglets Attestations et Livre. --}}
                     <div class="ukc-stats" style="margin-bottom:16px;">
                         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Catégories</div><div class="val blue">{{ $badgeStats['types'] }}</div></div>
@@ -273,48 +278,76 @@
 
                     <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--ukc-border);border-radius:10px;background:#f7f9fc;margin-bottom:14px;">
                         <span style="color:var(--ukc-blue);flex:none;margin-top:1px;"><x-ukc.icon name="info" :size="18" /></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);line-height:1.5;">Un modèle par catégorie : le badge <strong>participant</strong> se débloque après paiement ; les badges de <strong>fonction</strong> suivent les affectations de l’événement. Un communicant réglé utilise le badge participant.</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);line-height:1.5;">Un modèle par catégorie : le badge <strong>participant</strong> se débloque après paiement ; les badges de <strong>fonction</strong> suivent les affectations de l’événement. Choisissez une ligne pour voir son aperçu.</span>
                     </div>
 
                     <div class="ukc-toolbar" style="justify-content:flex-end;">
                         @if ($badgeStats['recipients'] > 0)
-                            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges.all', ['event' => $event]) }}" target="_blank" rel="noopener">
-                                <x-ukc.icon name="download" :size="16" /> Imprimer tous les badges prêts ({{ $badgeStats['recipients'] }})
-                            </a>
+                            @if ($badgeStats['lots'] > 1)
+                                @include('admin.documents._badge-lots', ['lots' => $badgeStats['lots'], 'total' => $badgeStats['recipients'], 'routeName' => 'admin.documents.badges.all', 'params' => ['event' => $event->id]])
+                            @else
+                                <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges.all', ['event' => $event]) }}">
+                                    <x-ukc.icon name="download" :size="16" /> Imprimer tous les badges prêts ({{ $badgeStats['recipients'] }})
+                                </a>
+                            @endif
                         @else
                             <span style="font-size:12.5px;color:var(--ukc-muted);">Aucun badge prêt : les planches s’activent dès qu’une catégorie a des destinataires.</span>
                         @endif
                     </div>
 
-                    <div class="ukc-table-wrap">
-                        <table class="ukc-table ukc-table--badges">
-                            <thead><tr><th>Aperçu</th><th>Type</th><th>Libellé</th><th>Format</th><th>Destinataires</th><th>QR</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
-                            <tbody>
-                                @foreach ($badgeRows as $b)
-                                    <tr>
-                                        <td>
-                                            {{-- Vignette réelle du modèle, réduite à l'échelle (moteur et jetons de la planche). --}}
-                                            <div class="badge-mini" style="width:86px;height:{{ (int) round(86 * $b['h'] / $b['w']) }}px;">
-                                                <div style="position:absolute;top:0;left:0;width:{{ $b['w'] }}px;height:{{ $b['h'] }}px;transform:scale({{ round(86 / $b['w'], 4) }});transform-origin:top left;">{!! $b['preview'] !!}</div>
-                                            </div>
-                                        </td>
-                                        <td><span class="ukc-pill ukc-pill--info">{{ $b['type'] }}</span></td>
-                                        <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['sub'] }}</div></td>
-                                        <td>{{ $b['format'] }}</td>
-                                        <td><a class="ukc-stat" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}" title="Voir les destinataires">{{ $b['count'] }}</a></td>
-                                        <td>@if ($b['qr'])<span class="ukc-pill ukc-pill--ok" title="Code QR de vérification présent"><x-ukc.icon name="check" :size="12" /> QR</span>@else<span class="ukc-pill ukc-pill--muted" title="Pas de code QR sur ce modèle">Sans QR</span>@endif</td>
-                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire dans cette catégorie pour cet événement.">Sans destinataire</span>@endif</td>
-                                        <td>
-                                            <div class="ukc-actions" style="justify-content:flex-end;">
-                                                @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Imprimer les badges {{ mb_strtolower($b['type']) }}" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}" target="_blank" rel="noopener"><x-ukc.icon name="download" :size="18" /></a>@endif
-                                                <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="18" /></a>
-                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="eye" :size="18" /></a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div class="badge-studio">
+                        <div class="badge-studio__list">
+                            <div class="ukc-table-wrap">
+                                <table class="ukc-table ukc-table--badges">
+                                    <thead><tr><th>Libellé</th><th>Format</th><th>Destinataires</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
+                                    <tbody>
+                                        @foreach ($badgeRows as $b)
+                                            <tr @click="sel = '{{ $b['key'] }}'" :class="sel === '{{ $b['key'] }}' ? 'is-sel' : ''" style="cursor:pointer;" title="Voir l’aperçu de ce badge">
+                                                <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['type'] }} - {{ $b['sub'] }}</div></td>
+                                                <td>{{ $b['format'] }}</td>
+                                                <td><a class="ukc-stat" @click.stop href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}" title="Choisir les destinataires à imprimer">{{ $b['count'] }}</a></td>
+                                                <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire dans cette catégorie pour cet événement.">Sans destinataire</span>@endif</td>
+                                                <td>
+                                                    <div class="ukc-actions" style="justify-content:flex-end;" @click.stop>
+                                                        @if ($b['count'] > 0)<a class="ukc-btn--icon" title="Imprimer les badges {{ mb_strtolower($b['type']) }} (PDF)" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}"><x-ukc.icon name="download" :size="18" /></a>@endif
+                                                        <a class="ukc-btn--icon" title="Modifier le modèle" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="18" /></a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- L'aperçu vit SUR LA PAGE : le modèle est rendu par le moteur et
+                             les jetons de la planche, à l'échelle. --}}
+                        <aside class="badge-studio__preview">
+                            <div class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-light);margin-bottom:10px;">Aperçu du modèle</div>
+                            @foreach ($badgeRows as $b)
+                                <div x-show="sel === '{{ $b['key'] }}'" style="display:none;">
+                                    <div class="badge-preview" style="width:260px;height:{{ (int) round(260 * $b['h'] / $b['w']) }}px;">
+                                        <div style="position:absolute;top:0;left:0;width:{{ $b['w'] }}px;height:{{ $b['h'] }}px;transform:scale({{ round(260 / $b['w'], 4) }});transform-origin:top left;">{!! $b['preview'] !!}</div>
+                                    </div>
+                                    <div style="margin-top:12px;font-size:13px;"><strong>{{ $b['title'] }}</strong></div>
+                                    <div style="font-size:12px;color:var(--ukc-muted);margin-top:4px;line-height:1.5;">
+                                        {{ $b['format'] }} - {{ $b['count'] }} destinataire(s)<br>
+                                        {{ $b['qr'] ? 'Code QR de vérification' : 'Sans code QR' }}
+                                    </div>
+                                    <div class="ukc-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+                                        @if ($b['count'] > 0)
+                                            @if ($b['lots'] > 1)
+                                                @include('admin.documents._badge-lots', ['lots' => $b['lots'], 'total' => $b['count'], 'routeName' => 'admin.documents.badges', 'params' => ['event' => $event->id, 'type' => $b['key']]])
+                                            @else
+                                                <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}"><x-ukc.icon name="download" :size="16" /> Imprimer (PDF)</a>
+                                            @endif
+                                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}"><x-ukc.icon name="users" :size="16" /> Choisir qui imprimer</a>
+                                        @endif
+                                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="16" /> Modifier le modèle</a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </aside>
                     </div>
                 </div>
 

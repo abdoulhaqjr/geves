@@ -6,6 +6,7 @@ use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
 use App\Documents\BadgeLayout;
+use App\Documents\BadgeSheet;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
@@ -161,6 +162,8 @@ class DocumentHubController extends Controller
                     ),
                     'w' => (int) $layout['width'],
                     'h' => (int) $layout['height'],
+                    // Nombre de PDF à sortir : le lot est borné (mémoire de dompdf).
+                    'lots' => (int) ceil(BadgeCatalog::recipients($event, $type)->count() / BadgeSheet::LOT),
                 ];
             }
         }
@@ -170,6 +173,7 @@ class DocumentHubController extends Controller
             'recipients' => $badgeReadyCount,
             'ready' => count(array_filter($badgeRows, fn ($b) => $b['count'] > 0)),
             'qr' => count(array_filter($badgeRows, fn ($b) => $b['qr'])),
+            'lots' => (int) ceil($badgeReadyCount / BadgeSheet::LOT),
         ];
 
         // Onglet et sous-onglet portés par l'URL (?tab=&stab=) pour que chaque

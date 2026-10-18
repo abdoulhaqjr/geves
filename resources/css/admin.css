@@ -512,9 +512,21 @@
 .admin-documents table.ukc-table th { background: #f8fafc; }
 .admin-documents table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
 .admin-documents .ukc-stat { font-size: 13px; font-weight: 800; color: var(--ukc-blue); }
-/* Vignette d'aperçu réelle d'un modèle de badge (table « Modèles »). */
-.admin-documents .badge-mini { position: relative; overflow: hidden; border: 1px solid var(--ukc-border); border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+/* Studio des badges : la liste à gauche, l'aperçu du modèle choisi à droite.
+   ⚠️ L'aperçu vit SUR LA PAGE (plus de colonne vignette ni de bouton « œil »). */
+.admin-documents .badge-studio { display: flex; gap: 18px; align-items: flex-start; }
+.admin-documents .badge-studio__list { flex: 1 1 auto; min-width: 0; }
+.admin-documents .badge-studio__preview { flex: 0 0 292px; position: sticky; top: 12px; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px; }
+.admin-documents .badge-preview { position: relative; overflow: hidden; border: 1px solid var(--ukc-border); border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
 .admin-documents table.ukc-table.ukc-table--badges td { vertical-align: middle; }
+.admin-documents table.ukc-table.ukc-table--badges tbody tr:hover { background: #f8fafc; }
+.admin-documents table.ukc-table.ukc-table--badges tbody tr.is-sel { background: #eef2ff; box-shadow: inset 3px 0 0 var(--ukc-blue); }
+/* ⚠️ Sous 1100px la colonne d'aperçu passerait sous 292px et écraserait le badge :
+   on la remet sous la liste, pleine largeur. */
+@media (max-width: 1100px) {
+  .admin-documents .badge-studio { flex-wrap: wrap; }
+  .admin-documents .badge-studio__preview { flex: 1 1 100%; position: static; }
+}
 .admin-documents .ukc-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .admin-documents .ukc-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .admin-documents .ukc-check input { width: auto; }

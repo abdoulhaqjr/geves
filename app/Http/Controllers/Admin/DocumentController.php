@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Documents\BadgeLayout;
+use App\Documents\BadgeSheet;
 use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
@@ -217,8 +218,8 @@ class DocumentController extends Controller
         return [$key => $selected, $key.'_labels' => $labels];
     }
 
-    /** Planche A4 du type de badge demandé, depuis ses destinataires réels. */
-    public function badges(Request $request, Event $event): View
+    /** Planche PDF des badges d'UNE catégorie, tuilée A4 avec gouttières. */
+    public function badges(Request $request, Event $event): Response|RedirectResponse
     {
         $type = (string) $request->query('type', 'default');
         if ($type === 'participant_photo') {
@@ -226,84 +227,183 @@ class DocumentController extends Controller
         }
         abort_unless(BadgeCatalog::valid($type), 404);
 
-        $rendered = $this->renderBadges($event, $type);
+        $lot = max(1, (int) $request->query('lot', 1));
+        $people = BadgeCatalog::recipients($event, $type)->forPage($lot, BadgeSheet::LOT)->values();
 
-        return view('documents.badges-template', [
-            'event' => $event,
-            'badges' => $rendered['badges'],
-            'badgeType' => BadgeCatalog::label($type),
-            'width' => $rendered['layout']['width'],
-            'height' => $rendered['layout']['height'],
-        ]);
-    }
-
-    /**
-     * Planche de TOUS les badges prêts, toutes catégories confondues, groupés par
-     * format : un bloc de tuilage A4 par format (saut de page entre groupes). On
-     * ne mélange pas deux formats sur une même feuille (cf. le lot d'attestations).
-     */
-    public function badgesAll(Event $event): View
-    {
-        $groups = [];
-        foreach (array_keys(BadgeCatalog::TYPES) as $type) {
-            $rendered = $this->renderBadges($event, $type);
-            if ($rendered['badges']->isEmpty()) {
-                continue;
-            }
-            $key = $rendered['layout']['width'].'×'.$rendered['layout']['height'];
-            $groups[$key] ??= [
-                'width' => (int) $rendered['layout']['width'],
-                'height' => (int) $rendered['layout']['height'],
-                'labels' => [],
-                'badges' => collect(),
-            ];
-            $groups[$key]['labels'][] = BadgeCatalog::label($type);
-            $groups[$key]['badges'] = $groups[$key]['badges']->concat($rendered['badges']);
+        if ($people->isEmpty()) {
+            return back()->with('ukc_error', 'Aucun destinataire pour cette catégorie de badge.');
         }
 
-        return view('documents.badges-all', [
-            'event' => $event,
-            'groups' => array_values($groups),
-            'totalBadges' => array_sum(array_map(fn ($g) => $g['badges']->count(), $groups)),
-        ]);
+        return $this->badgeSheetPdf(
+            [$this->renderGroup($event, $type, $people)],
+            $event,
+            'badges-'.$type.($lot > 1 ? '-lot'.$lot : '').'.pdf',
+        );
     }
 
     /**
-     * Rend chaque destinataire d'une catégorie de badge en HTML, depuis le modèle
-     * enregistré (créé au besoin). Source unique de la planche par catégorie et de
-     * la planche « tous les badges prêts ».
-     *
-     * @return array{layout: array<string, mixed>, badges: Collection<int, string>}
+     * Planche PDF de TOUS les badges prêts, toutes catégories confondues, groupés
+     * par format : un bloc de tuilage par format. On ne mélange pas deux formats
+     * sur une même feuille (cf. le lot d'attestations).
      */
-    private function renderBadges(Event $event, string $type): array
+    public function badgesAll(Request $request, Event $event): Response|RedirectResponse
     {
-        $people = BadgeCatalog::recipients($event, $type);
+        // Une liste à plat (catégorie, destinataire) : le lot se découpe sur
+        // l'ensemble, sinon un plafond par catégorie en laisserait en arrière.
+        $paires = [];
+        foreach (array_keys(BadgeCatalog::TYPES) as $type) {
+            foreach (BadgeCatalog::recipients($event, $type) as $person) {
+                $paires[] = ['type' => $type, 'person' => $person];
+            }
+        }
 
+        $lot = max(1, (int) $request->query('lot', 1));
+        $paires = collect($paires)->forPage($lot, BadgeSheet::LOT);
+
+        if ($paires->isEmpty()) {
+            return back()->with('ukc_error', 'Aucun badge prêt pour cet événement.');
+        }
+
+        $groups = [];
+        foreach ($paires->groupBy('type') as $type => $lignes) {
+            $groups[] = $this->renderGroup($event, (string) $type, $lignes->pluck('person'));
+        }
+
+        return $this->badgeSheetPdf($groups, $event, 'badges-tous'.($lot > 1 ? '-lot'.$lot : '').'.pdf');
+    }
+
+    /**
+     * Planche PDF des badges CHOISIS : on coche des destinataires dans « Badges
+     * prêts » et on n'imprime qu'eux. La référence stable du badge
+     * (`BadgeCatalog::reference()`) sert de clé - elle est déjà celle du QR.
+     */
+    public function badgesSelection(Request $request, Event $event): Response|RedirectResponse
+    {
+        $type = (string) $request->input('type', 'default');
+        abort_unless(BadgeCatalog::valid($type), 404);
+
+        $refs = array_values(array_filter(array_map(
+            fn ($ref) => is_string($ref) ? $ref : '',
+            (array) $request->input('refs', []),
+        )));
+
+        if ($refs === []) {
+            return back()->with('ukc_error', 'Choisissez au moins un destinataire.');
+        }
+
+        $people = BadgeCatalog::recipients($event, $type)
+            ->filter(fn (array $person) => in_array($person['ref'], $refs, true))
+            ->take(BadgeSheet::LOT)
+            ->values();
+
+        if ($people->isEmpty()) {
+            return back()->with('ukc_error', 'Aucun des destinataires choisis ne porte de badge à imprimer.');
+        }
+
+        return $this->badgeSheetPdf(
+            [$this->renderGroup($event, $type, $people)],
+            $event,
+            'badges-'.$type.'-selection.pdf',
+        );
+    }
+
+    /**
+     * Une catégorie rendue à la taille de cellule du tuilage, prête à être posée
+     * sur la planche.
+     *
+     * @param  Collection<int, array<string, mixed>>  $people
+     * @return array{label: string, plan: array<string, mixed>, badges: list<string>}
+     */
+    private function renderGroup(Event $event, string $type, Collection $people): array
+    {
         // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
         // que l'admin ne pouvait ni voir ni modifier.
         $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
 
+        $plan = BadgeSheet::plan((int) $layout['width'], (int) $layout['height']);
+
         // ⚠️ Plus de valeur de repli : `BadgeCatalog::recipients()` pose TOUJOURS
         // la photo (chaîne vide à défaut) et son mode (« with » à défaut). Un `??`
         // ici laisserait croire que la préférence peut manquer - et c'est en la
         // croyant absente qu'on finit par ne jamais la respecter.
-        $badges = $people->map(fn (array $person) => LayoutRenderer::render(BadgeLayout::forRecipient($layout, $type, $person['photo'], $person['photo_mode'] !== 'without'), [
+        $badges = $people->map(function (array $person) use ($event, $type, $layout, $plan): string {
+            // La variante (avec / sans photo) se choisit sur la maquette NATIVE,
+            // puis seulement on la redessine à la taille de la cellule.
+            $recipientLayout = BadgeLayout::forRecipient($layout, $type, $person['photo'], $person['photo_mode'] !== 'without');
+
+            return LayoutRenderer::render(
+                BadgeSheet::scaleLayout($recipientLayout, $plan['scale'], $plan['cellW'], $plan['cellH']),
+                $this->badgeVars($event, $type, $person),
+                pdf: true,
+                badge: true,
+            );
+        })->values()->all();
+
+        return ['label' => BadgeCatalog::label($type), 'plan' => $plan, 'badges' => $badges];
+    }
+
+    /**
+     * Jetons PLATS du badge (le concepteur de badges n'emploie pas la palette
+     * `[espace.cle]`).
+     *
+     * @param  array<string, mixed>  $person
+     * @return array<string, string>
+     */
+    private function badgeVars(Event $event, string $type, array $person): array
+    {
+        return [
             'org' => $event->series?->name ?? '',
-            'event' => $event->title ?? '',
+            'event' => (string) ($event->title ?? ''),
             'year' => (string) ($event->year ?: ''),
             'theme' => (string) ($event->theme ?? ''),
             'dates' => $event->dateRangeLabel() ?? '',
             'location' => (string) ($event->location ?? ''),
-            'name' => $person['name'],
+            'name' => (string) $person['name'],
             'role' => BadgeCatalog::role($type),
-            'institution' => $person['institution'],
-            'ref' => $person['ref'],
-            'verify_url' => url('/verifier?ref='.urlencode($person['ref']).'&ed='.$event->id),
+            'institution' => (string) $person['institution'],
+            'ref' => (string) $person['ref'],
+            'verify_url' => url('/verifier?ref='.urlencode((string) $person['ref']).'&ed='.$event->id),
             // Photo de profil pour le modèle « Participant avec photo » (élément photo).
-            'recipient.photo' => $person['photo'],
-        ], badge: true));
+            'recipient.photo' => (string) $person['photo'],
+        ];
+    }
 
-        return ['layout' => $layout, 'badges' => $badges];
+    /**
+     * Assemble les planches en PDF : chaque groupe remplit ses pages, un format par
+     * page. ⚠️ Le PDF est produit par dompdf, pas par l'impression du navigateur -
+     * c'est lui qui fait foi à l'impression.
+     *
+     * @param  list<array{label: string, plan: array<string, mixed>, badges: list<string>}>  $groups
+     */
+    private function badgeSheetPdf(array $groups, Event $event, string $filename): Response
+    {
+        // ⚠️ MESURÉ : environ 2,5 Mo de mémoire par badge (48 badges, 12 feuilles,
+        // 6,9 s). Le défaut de 128 Mo tombait AU MILIEU du rendu - page blanche
+        // après l'attente. On borne le lot (BadgeSheet::LOT) ET on relève la
+        // limite : les deux, parce qu'un serveur peut être plus avare que le nôtre.
+        @ini_set('memory_limit', '512M');
+
+        $sheets = [];
+        foreach ($groups as $group) {
+            $plan = $group['plan'];
+            foreach (array_chunk($group['badges'], max(1, (int) $plan['perPage'])) as $page) {
+                $sheets[] = [
+                    'cols' => (int) $plan['cols'],
+                    'cellW' => (int) $plan['cellW'],
+                    'cellH' => (int) $plan['cellH'],
+                    'gutter' => (int) $plan['gutter'],
+                    'sheetW' => (int) $plan['sheetW'],
+                    'badges' => $page,
+                ];
+            }
+        }
+
+        $pdf = Pdf::loadView('pdf.badges-sheet', [
+            'sheets' => $sheets,
+            'marginMm' => (int) ($groups[0]['plan']['marginMm'] ?? 6),
+        ])->setPaper('a4', 'portrait');
+
+        return BrandedPdf::stamp($pdf, 'Badges - '.$event->title)->download($filename);
     }
 }
