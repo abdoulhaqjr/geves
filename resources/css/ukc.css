@@ -1519,13 +1519,19 @@ body.ukc-overlay-open { overflow: hidden; }
    - qui porte la porte de sortie - tombait hors champ. C'est la ZONE qui défile,
    pas la fenêtre : l'en-tête et le pied restent visibles. */
 .ukc-pay-embed__panel {
-  /* ⚠️ **La largeur décide de la MISE EN PAGE du prestataire.** À 520px son
-     formulaire se replie sur une colonne : le choix du moyen, le formulaire et
-     le bouton « Payer » s'empilent, et le bouton tombe sous la ligne de
-     flottaison. Au large, il rend ses deux colonnes - moyens à gauche, saisie et
-     bouton à droite, tout visible d'un regard. C'est la forme de sa page
-     hébergée, et c'est celle qu'on veut sur la nôtre. */
-  width: 100%; max-width: 940px; background: #fff;
+  /* ⚠️⚠️ **LA LARGEUR DÉCIDE DE LA MISE EN PAGE DU PRESTATAIRE**, et elle se
+     règle entre deux écueils. À 520px son formulaire se replie sur une colonne :
+     le choix du moyen, la saisie et le bouton « Payer » s'empilent, et le bouton
+     tombe sous la ligne de flottaison. À 940px il rend bien ses deux colonnes,
+     mais sa carte ne fait qu'environ 690px et il COMBLE LE RESTE EN GRIS : deux
+     bandes mortes de plus de cent pixels de chaque côté, dans une fenêtre qui
+     est la nôtre.
+     ⚠️ 790px laisse 778px au cadre - au-dessus du seuil de 768px où les mises en
+     page de ce genre basculent sur une colonne, donc ses deux colonnes tiennent -
+     et ramène les bandes à une quarantaine de pixels. Descendre plus bas
+     risquerait de replier son formulaire : on ne connaît pas son seuil exact, et
+     il n'est pas à nous. */
+  width: 100%; max-width: 790px; background: #fff;
   border-radius: var(--ukc-radius-lg); box-shadow: var(--ukc-shadow-lg);
   overflow: hidden;
   display: flex; flex-direction: column; max-height: calc(100dvh - 24px);
@@ -1537,20 +1543,6 @@ body.ukc-overlay-open { overflow: hidden; }
   display: inline-flex; align-items: center; gap: 6px;
   color: var(--ukc-green); font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .04em;
-}
-/* ⚠️ L'objet et le montant se lisent d'un seul regard, et le montant ne se
-   coupe JAMAIS : c'est le chiffre qu'on vient vérifier avant de s'engager. */
-.ukc-pay-embed__what {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 14px; margin-top: 7px;
-}
-.ukc-pay-embed__head h2 {
-  margin: 0; font-size: 1rem; font-weight: 800; color: var(--ukc-text);
-  line-height: 1.3; min-width: 0;
-}
-.ukc-pay-embed__amount {
-  flex: none; color: var(--ukc-blue); font-size: 1.22rem; font-weight: 800;
-  white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .ukc-pay-embed__close {
   flex: none; display: inline-flex; align-items: center; justify-content: center;

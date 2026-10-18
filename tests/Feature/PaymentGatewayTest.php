@@ -302,13 +302,15 @@ it('pose la fenêtre de paiement sur la page, avec la clé publique et JAMAIS la
     // « Régler en ligne » : le payeur arrivait devant un formulaire venu
     // d'ailleurs sans savoir ce qu'il engageait, au moment du parcours où l'on
     // doute le plus.
-    // ⚠️ **On regarde DANS la fenêtre, pas dans la page.** « 15 000 FCFA »
-    // s'affiche aussi sur la carte « Montant à régler », à côté : un
-    // `assertSee` nu passait donc même quand la charge avait perdu son montant.
-    // Mesuré - c'est PHPStan, pas ce cas, qui a vu la fenêtre se vider.
+    // ⚠️⚠️ **LE BANDEAU NE RÉPÈTE NI L'OBJET NI LE MONTANT.** Il les a portés, et
+    // c'était une erreur : le formulaire du prestataire annonce déjà la somme, et
+    // il y AJOUTE ses frais - « 100 FCFA » chez nous, « PAYER 102 CFA » chez lui,
+    // deux chiffres différents sur le même écran. Un seul vaut mieux que deux, et
+    // c'est le sien qui sera débité.
     $page->assertSee('Paiement sécurisé')
-        ->assertSee('<h2 id="ukc-pay-embed-title">Frais de participation</h2>', false)
-        ->assertSee('<strong class="ukc-pay-embed__amount">15 000 FCFA</strong>', false);
+        ->assertDontSee('ukc-pay-embed__what', false)
+        ->assertDontSee('ukc-pay-embed__amount', false)
+        ->assertDontSee('ukc-pay-embed-title', false);
 });
 
 /**
@@ -384,7 +386,7 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
     // formulaire se replie sur une colonne et le bouton « Payer » tombe sous la
     // ligne de flottaison ; au large il rend ses deux colonnes, moyens à gauche
     // et saisie à droite, tout visible d'un regard.
-    expect($css)->toContain('width: 100%; max-width: 940px; background: #fff;');
+    expect($css)->toContain('width: 100%; max-width: 790px; background: #fff;');
 });
 
 /**

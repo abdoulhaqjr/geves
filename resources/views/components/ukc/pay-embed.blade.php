@@ -10,7 +10,7 @@
          sous les yeux. Le voile est une surface modale, d'où le rang 100 de la
          charte - celui des modales, au-dessus du chatbot (55) et des
          slideovers (60). --}}
-    <div class="ukc-pay-embed" role="dialog" aria-modal="true" aria-labelledby="ukc-pay-embed-title"
+    <div class="ukc-pay-embed" role="dialog" aria-modal="true" aria-label="{{ __('Paiement sécurisé') }}"
          data-pay-embed="{{ json_encode($embed, JSON_THROW_ON_ERROR) }}">
         {{-- ⚠️ **L'attente a sa place à l'écran.** Le formulaire du prestataire
              met une à deux secondes à venir : la fenêtre s'ouvrait vide, et une
@@ -34,14 +34,6 @@
                             aria-label="{{ __('Fermer') }}">
                         <x-ukc.icon name="close" :size="18" />
                     </button>
-                </div>
-                {{-- ⚠️ **Ce qu'on règle, et combien.** Le bandeau ne disait que
-                     « Régler en ligne » : le payeur arrivait devant un formulaire venu
-                     d'ailleurs sans savoir ce qu'il engageait. C'est le moment du
-                     parcours où l'on doute le plus. --}}
-                <div class="ukc-pay-embed__what">
-                    <h2 id="ukc-pay-embed-title">{{ $embed['title'] ?? __('Frais de participation') }}</h2>
-                    <strong class="ukc-pay-embed__amount">{{ $embed['amount'] ?? '' }}</strong>
                 </div>
             </div>
 

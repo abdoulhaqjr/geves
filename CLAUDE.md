@@ -4521,12 +4521,19 @@ ans d'intervalle de code : d'abord sur 422px de haut, puis sur 800x460, où un
 plancher de 62dvh posé sur la zone laissait 151px à un en-tête et un pied qui en
 réclament 164. C'est la **zone** qui défile, pas la fenêtre.
 
-⚠️ **La LARGEUR décide de la mise en page du prestataire.** À 520px son
-formulaire se replie sur une colonne : le choix du moyen, la saisie et le bouton
-« Payer » s'empilent, et le bouton tombe sous la ligne de flottaison. À **940px**
-il rend ses deux colonnes - moyens à gauche, saisie et bouton à droite, tout
-visible d'un regard. C'est la forme de sa page hébergée, et c'est celle qu'on
-veut sur la nôtre.
+⚠️⚠️ **LA LARGEUR DÉCIDE DE LA MISE EN PAGE DU PRESTATAIRE**, et elle se règle
+entre **deux** écueils, pas un. À 520px son formulaire se replie sur une
+colonne : le choix du moyen, la saisie et le bouton « Payer » s'empilent, et le
+bouton tombe sous la ligne de flottaison. À 940px il rend bien ses deux colonnes
+- moyens à gauche, saisie et bouton à droite - mais **sa carte ne fait
+qu'environ 690px et il comble le reste en gris** : deux bandes mortes de plus de
+cent pixels de chaque côté, dans une fenêtre qui est la nôtre.
+
+**790px** est l'arbitrage : le cadre reçoit 778px, au-dessus du seuil de 768px où
+les mises en page de ce genre basculent sur une colonne, et les bandes tombent à
+une quarantaine de pixels. ⚠️ **Ne pas descendre plus bas pour les faire
+disparaître tout à fait** : on ne connaît pas son seuil exact, il n'est pas à
+nous, et le replier coûterait plus que les bandes ne gênent.
 
 ⚠️ **Le plancher appartient au CADRE, pas à la zone** (`iframe { height: 100%;
 min-height: min(560px, 68dvh) }`) : c'est lui qui donne sa hauteur à la fenêtre
@@ -4537,15 +4544,21 @@ défilait DANS son cadre, qui défilait dans notre zone. Rang 100 (surface modal
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 
-⚠️ **La fenêtre DIT ce qu'on règle et combien.** Elle ne portait que « Régler en
-ligne » : le payeur arrivait devant un formulaire venu d'ailleurs sans savoir ce
-qu'il engageait, au moment du parcours où l'on doute le plus. Elle annonce
-désormais **Paiement sécurisé**, l'objet (frais de participation, ou l'intitulé
-de la formation) et le **montant**, qui ne se coupe jamais - c'est le chiffre
-qu'on vient vérifier avant de s'engager. Le pied dit qu'on ne quitte pas la
-plateforme, et garde la porte de sortie. ⚠️ Le nom de la plateforme passe par le
-placeholder `:app`, jamais en dur ; et l'objet comme le montant viennent de
-`PaymentEmbed`, pas de la vue - la devise **stockée** a le dernier mot.
+⚠️⚠️ **LE BANDEAU NE RÉPÈTE NI L'OBJET NI LE MONTANT**, et c'est un revirement
+assumé. Il les a portés - « Frais de participation » et « 100 FCFA » sous un
+surtitre *Paiement sécurisé* - parce qu'une fenêtre de paiement doit dire ce
+qu'on engage. Sauf que **le formulaire du prestataire l'annonce déjà, et qu'il y
+AJOUTE ses frais** : « 100 FCFA » chez nous, « PAYER 102 CFA » chez lui, deux
+chiffres différents sur le même écran. Un seul vaut mieux que deux, et c'est le
+sien qui sera débité. Il ne reste donc que le surtitre, la croix, et le pied -
+qui dit qu'on ne quitte pas la plateforme et garde la porte de sortie.
+
+⚠️ **Le titre portait le nom accessible de la fenêtre** (`aria-labelledby`) : en
+le retirant, la boîte de dialogue serait devenue **anonyme** pour un lecteur
+d'écran. Elle se nomme désormais elle-même (`aria-label`). Un attribut qui pointe
+sur un élément disparu ne produit aucune erreur - il produit un silence.
+
+⚠️ Le nom de la plateforme passe par le placeholder `:app`, jamais en dur.
 
 ⚠️⚠️ **UN PAIEMENT EN ATTENTE A PU ÊTRE OUVERT AVEC UNE AUTRE PASSERELLE.**
 `Payment::firstOrCreate` ne pose `method`/`gateway` qu'à la **création** : qui

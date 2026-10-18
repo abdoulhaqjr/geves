@@ -72,11 +72,16 @@ s'est rien passé.
 plus `bmo`, `coris_money`, `wave_direct_ci` inexistants) : écrits d'après l'API
 publique, ignorés en silence. La liste est désormais tenue par un cas.
 
-⚠️ **La fenêtre fait 940px de large** : à 520px le formulaire du prestataire se
-repliait sur une colonne et son bouton « Payer » tombait sous la ligne de
-flottaison. ⚠️ « Je choisis sur
-la page de paiement » reste un choix du payeur : aucun opérateur ne lui est
-imposé, seul le pays part.
+⚠️ **La fenêtre fait 790px de large**, entre deux écueils : à 520px le formulaire
+du prestataire se replie sur une colonne, à 940px sa carte (~690px) laisse deux
+bandes grises de plus de cent pixels. 778px au cadre reste au-dessus du seuil de
+768px. ⚠️ **Son bandeau ne répète plus l'objet ni le montant** : le formulaire du
+prestataire les annonce déjà, en y ajoutant ses frais - deux chiffres différents
+sur le même écran valent moins qu'un seul. La fenêtre se nomme donc par
+`aria-label`, le titre qui la nommait ayant disparu.
+
+⚠️ **« Je choisis sur la page de paiement » reste un choix du payeur** : aucun
+opérateur ne lui est imposé, seul le pays part.
 
 **La fenêtre de paiement n'apparaît que lorsque le formulaire est là.** Elle
 s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
