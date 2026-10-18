@@ -77,7 +77,7 @@
         <div class="ukc-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Inscrits</div><div class="val blue">{{ $stats['enrolled'] }}</div><div class="hint">{{ $f->capacity ? 'sur '.$f->capacity.' place(s)' : 'sans limite de places' }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Réglés</div><div class="val green">{{ $stats['paid'] }}</div><div class="hint">{{ $f->isFree() ? 'formation gratuite' : 'inscriptions payées' }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recette</div><div class="val">{{ number_format($stats['revenue'], 0, ',', ' ') }}</div><div class="hint">{{ config('payments.currency', 'XOF') }} encaissés</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recette</div><div class="val">{{ number_format($stats['revenue'], 0, ',', ' ') }}</div><div class="hint">{{ \App\Support\Money::label() }} encaissés</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Formateurs</div><div class="val">{{ $stats['trainers'] }}</div><div class="hint">{{ $f->trainers->where('is_moderator', true)->count() }} modérateur(s)</div></div>
         </div>
 

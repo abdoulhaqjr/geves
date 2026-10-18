@@ -3788,6 +3788,43 @@ ajoutée par la vue, elle ne se saisit pas.
   dans son adresse), et ⚠️ **un relevé illisible ne bloque JAMAIS la
   confirmation** : le participant a payé, il ne perdra pas sa place pour une ligne
   de confort.
+- ⚠️⚠️ **LE CODE ISO ET LE MOT NE SONT PAS LE MÊME OBJET** (`App\Support\Money`).
+  La devise est **`XOF`** : c'est ce que la norme désigne, ce que la base stocke et
+  ce que le prestataire attend (`currency: {iso: XOF}`). Mais personne n'écrit
+  « 100 XOF » - on écrit **« 100 FCFA »**. `Money::label()` fait la traduction,
+  `Money::format()` le montant entier, `Money::noun()` le nom accordé pour la
+  somme en lettres. ⚠️ **C'est une correspondance, pas un réglage** : deux zones
+  franc coexistent (UEMOA `XOF`, CEMAC `XAF`), elles s'écrivent du même mot et ne
+  portent pas le même code - un libellé à tenir à la main dériverait du premier
+  jour où quelqu'un changerait la devise. ⚠️ Un code **inconnu** se rend tel quel
+  (« EUR ») : mieux vaut le code que rien du tout sur un montant. ⚠️ Le champ
+  « Devise » des Réglages reste le **code ISO** - un cas de `PaymentGatewayTest`
+  vérifie que c'est bien lui, et jamais le mot, qui part au prestataire.
+- ⚠️⚠️ **LE REÇU EST UN SEUL DOCUMENT, POUR DEUX SORTIES**
+  (`receipts/_document.blade.php`, inclus par la page imprimable, l'aperçu
+  verrouillé **et** `pdf/receipt.blade.php`). Ils ont vécu en deux fichiers
+  jumeaux et ils ont divergé. ⚠️ Donc tout y est écrit en **tableaux, styles en
+  ligne et couleurs littérales** : dompdf ne connaît ni flexbox, ni grille, ni
+  variable CSS - ce qui s'y rend se rend partout, l'inverse n'est pas vrai. Le
+  drapeau `pdf` ne change **que** l'embarquement du logo (dompdf ne va chercher
+  aucune image distante : il lui faut un chemin de fichier, d'où le
+  `storage:link` en production).
+  ⚠️ **La somme y est écrite DEUX FOIS, dont une en toutes lettres**
+  (`App\Support\MontantEnLettres`) : un chiffre se retouche d'un trait de stylo,
+  pas une ligne de mots - c'est pour cela que tout reçu officiel francophone la
+  porte, et c'est elle qui fait foi en cas de désaccord. Écrite à la main plutôt
+  que confiée à `NumberFormatter` (intl) : l'extension peut manquer sur
+  l'hébergement, et un reçu qui tombe en erreur est un reçu qu'on ne peut plus
+  délivrer. Les accords sont tenus par un jeu de cas (« quatre-vingts » seul mais
+  « quatre-vingt mille », « deux cents » mais « deux cent mille », « deux cents
+  millions »).
+  ⚠️ **Une cellule de tableau fait la hauteur de SA LIGNE DE TEXTE**, pas celle
+  qu'on lui donne : le bandeau tricolore de 4px en rendait dix. `font-size:0;
+  line-height:0` sur la cellule, et les séparateurs sont des `border-top`, pas des
+  bandes de couleur.
+  ⚠️ **L'aperçu stockait `currency => 'FCFA'`** - le mot d'affichage écrit dans la
+  donnée : il montrait une devise que la base ne contient jamais, et la somme en
+  lettres s'achevait sur « FCFA » au lieu de « francs CFA ».
 - **Certification cryptographique des attestations** (identité vérifiable) : chaque
   attestation est scellée à l'émission par une **signature EdDSA (Ed25519)** de
   l'émetteur, sous forme de **Verifiable Credential W3C sécurisé en JWS compact**

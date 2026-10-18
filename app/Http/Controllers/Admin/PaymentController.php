@@ -11,6 +11,7 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Support\Fees;
 use App\Support\ListSort;
+use App\Support\Money;
 use App\Support\Trend;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -91,7 +92,8 @@ class PaymentController extends Controller
             'method' => $method,
             'from' => $from,
             'to' => $to,
-            'currency' => (clone $base)->value('currency') ?: 'XOF',
+            // ⚠️ Pour l'écran : le MOT, pas le code ISO - voir {@see Money}.
+            'currency' => Money::label((string) (clone $base)->value('currency')),
             'stats' => [
                 'paid' => (float) (clone $base)->where('status', 'paid')->sum('amount'),
                 'paidCount' => $paidCount,

@@ -78,7 +78,7 @@
                 <div class="ukc-stats">
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue - {{ $summary['accepted'] }} acceptées</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
-                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency_label'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relectures rendues</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['pending'] }} en attente{{ $rev['late'] > 0 ? ' - '.$rev['late'].' en retard' : '' }}</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="award" :size="20" /></div><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
@@ -227,7 +227,7 @@
                     </h2>
                     <p class="desc">Recettes, passerelles et statut des transactions.</p>
                     <div class="ukc-stats" style="margin-bottom:14px;">
-                        <div class="ukc-stat-card"><div class="lbl">Recettes totales</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }}</div><div class="hint">{{ $summary['currency'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Recettes totales</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }}</div><div class="hint">{{ $summary['currency_label'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Transactions OK</div><div class="val blue">{{ $payStats['ok'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">En attente</div><div class="val warn">{{ $payStats['pending'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Échouées / annulées</div><div class="val">{{ $payStats['failed'] }}</div></div>
@@ -237,7 +237,7 @@
                             <h3 class="sub-h">Par passerelle</h3>
                             <div class="ukc-table-wrap">
                                 <table class="ukc-table" style="min-width:0;">
-                                    <thead><tr><th>Passerelle</th><th class="num">Nb</th><th class="num">Montant ({{ $summary['currency'] }})</th></tr></thead>
+                                    <thead><tr><th>Passerelle</th><th class="num">Nb</th><th class="num">Montant ({{ $summary['currency_label'] }})</th></tr></thead>
                                     <tbody>
                                         @foreach ($report->accountingRows() as $r)
                                             <tr @if($r[0]==='Total') style="font-weight:800;background:#f8fafc;" @endif>
@@ -255,7 +255,7 @@
                                     <thead><tr><th>Tarif</th><th class="num">Nb</th><th class="num">Montant</th></tr></thead>
                                     <tbody>
                                         @forelse ($report->paymentsByTarif() as $r)
-                                            <tr><td>{{ number_format($r['tarif'], 0, ',', ' ') }} {{ $summary['currency'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ number_format($r['total'], 0, ',', ' ') }}</td></tr>
+                                            <tr><td>{{ number_format($r['tarif'], 0, ',', ' ') }} {{ $summary['currency_label'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ number_format($r['total'], 0, ',', ' ') }}</td></tr>
                                         @empty
                                             <tr><td colspan="3" style="text-align:center;color:var(--ukc-muted);padding:16px;">Aucun paiement réglé.</td></tr>
                                         @endforelse
@@ -364,7 +364,7 @@
                         <div class="report-item">
                             <h3>Export comptable</h3>
                             <p>Récapitulatif des recettes réglées par passerelle, avec total.</p>
-                            <div class="meta">XLSX - {{ $summary['currency'] }}</div>
+                            <div class="meta">XLSX - {{ $summary['currency_label'] }}</div>
                             <div class="dl">
                                 <a href="{{ route('admin.reports.export', [$event, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
                             </div>

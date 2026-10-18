@@ -72,6 +72,17 @@ remboursement. Le bouton du back-office reprend donc les droits et marque la
 ligne - en le DISANT, avant et après le clic - et laisse une trace (qui, quand).
 Le virement reste à faire à la main.
 
+⚠️⚠️ **« XOF » EST UN CODE, « FCFA » EST LE MOT.** `App\Support\Money` traduit
+l'un en l'autre à l'affichage : la base, la norme et le prestataire gardent `XOF`,
+les écrans et les documents écrivent **FCFA**. Ne jamais écrire le mot dans une
+donnée (l'aperçu du reçu le faisait).
+
+⚠️ **Le reçu a été refait, et c'est UN SEUL document** pour la page et le PDF
+(`receipts/_document.blade.php`) : en-tête institutionnel, payeur et objet, ligne
+de facture avec total, **somme en toutes lettres** (`MontantEnLettres`), moyen,
+date et référence opérateur. Tout en tableaux et styles en ligne - dompdf ne
+connaît ni flexbox ni variable CSS.
+
 ⚠️ **Ce que le prestataire a enregistré est désormais gardé** : opérateur employé,
 référence opérateur, numéro qui a payé, somme réellement débitée, frais. Le payeur
 n'est pas toujours le participant (mesuré : réglé depuis un autre numéro, chez un

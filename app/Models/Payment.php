@@ -6,6 +6,7 @@ use App\Actions\ConfirmPayment;
 use App\Enums\PaymentStatus;
 use App\Payments\Contracts\OnlineGateway;
 use App\Payments\GatewayRegistry;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -153,6 +154,15 @@ class Payment extends Model
         return self::MANUAL_METHODS[$this->method]
             ?? self::ONLINE_METHODS[$this->method]
             ?? ucfirst((string) $this->method);
+    }
+
+    /**
+     * La devise **telle qu'on l'écrit** : « FCFA », quand la base dit « XOF ».
+     * ⚠️ Le code ISO reste en base et part au prestataire - voir {@see Money}.
+     */
+    public function currencyLabel(): string
+    {
+        return Money::label((string) $this->currency);
     }
 
     /**

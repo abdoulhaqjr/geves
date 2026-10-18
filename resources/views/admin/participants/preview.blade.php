@@ -80,7 +80,7 @@
             @forelse ($payments as $p)
                 <div style="padding:10px 0;border-top:1px solid var(--ukc-border);display:flex;justify-content:space-between;gap:10px;align-items:center;">
                     <div>
-                        <div style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</div>
+                        <div style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currencyLabel() }}</div>
                         <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $p->methodLabel() }} - {{ $p->paid_at?->format('d/m/Y') ?? '-' }}</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">

@@ -34,6 +34,9 @@
                         <div class="ukc-field">
                             <label for="currency">Devise</label>
                             <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
+                            {{-- ⚠️ Le CODE ISO, pas le mot : il part tel quel au prestataire.
+                                 « XOF » s'écrit « FCFA » partout où une somme est affichée. --}}
+                            <span class="hint">Code ISO (XOF). Les montants s'affichent en FCFA.</span>
                         </div>
                         {{-- Une carte par forme (large, compacte). Chaque carte montre
                              le logo sur SES DEUX fonds et accepte une version claire

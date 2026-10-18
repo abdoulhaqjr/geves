@@ -4,7 +4,7 @@
     <x-ukc.pay-embed :embed="session('ukc_pay_embed')" />
     @php
         $me = auth('account')->user();
-        $currency = config('payments.currency', 'XOF');
+        $currency = \App\Support\Money::label();
         $profileMissing = $me?->missingProfileFields() ?? [];
         $metaStyle = 'display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ukc-muted);';
     @endphp

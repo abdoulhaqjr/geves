@@ -31,7 +31,11 @@ class ReceiptController extends Controller
 
         $payment = new Payment;
         $payment->forceFill([
-            'amount' => 25000, 'currency' => 'FCFA', 'method' => 'cash',
+            // ⚠️ Le CODE ISO, comme en base : c'est `Money` qui écrit « FCFA » à
+            // l'affichage. Posé en dur ici, l'aperçu montrait une devise que la
+            // base ne contient jamais - et la somme en lettres s'achevait sur
+            // « FCFA » au lieu de « francs CFA ».
+            'amount' => 25000, 'currency' => config('payments.currency', 'XOF'), 'method' => 'cash',
             'status' => 'paid', 'receipt_no' => 'EXEMPLE-0001', 'paid_at' => now(),
         ]);
         $payment->setRelation('participant', $participant);

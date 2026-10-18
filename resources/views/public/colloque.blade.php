@@ -486,7 +486,7 @@
                                 @endif
                                 <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
                                     <strong style="font-size:1.05rem;">{{ $f->title }}</strong>
-                                    <span class="ukc-pill {{ $f->isFree() ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.config('payments.currency', 'XOF') }}</span>
+                                    <span class="ukc-pill {{ $f->isFree() ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.\App\Support\Money::label() }}</span>
                                 </div>
                                 @if ($f->theme)<div style="color:var(--ukc-muted);font-size:.9rem;">{{ $f->theme }}</div>@endif
                                 <div style="font-size:.82rem;color:var(--ukc-light);margin-top:6px;">

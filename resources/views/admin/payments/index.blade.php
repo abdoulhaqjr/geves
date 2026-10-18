@@ -97,17 +97,7 @@
                                             <div class="meta" style="margin-top:3px;">{{ $p->participant->title }}</div>
                                         @endif
                                     </td>
-                                    <td style="font-weight:700;">
-                                        {{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}
-                                        {{-- ⚠️ Le payeur, lui, a vu PASSER une autre somme : le prestataire
-                                             ajoute ses frais. C'est ce chiffre-là qu'il cite en réclamation. --}}
-                                        @if (($gw['amount_debited'] ?? null) && (float) $gw['amount_debited'] !== (float) $p->amount)
-                                            <div class="meta" style="font-weight:500;">
-                                                {{ number_format((float) $gw['amount_debited'], 0, ',', ' ') }} débités
-                                                @if (($gw['fees'] ?? null) !== null)(frais {{ number_format((float) $gw['fees'], 0, ',', ' ') }})@endif
-                                            </div>
-                                        @endif
-                                    </td>
+                                    <td style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currencyLabel() }}</td>
                                     <td>
                                         {{ $p->methodLabel() }}
                                         {{-- ⚠️ L'opérateur EMPLOYÉ et le numéro DÉBITÉ, qui démentent parfois

@@ -1084,7 +1084,6 @@
     "Bienvenue sur :app, :name !": "Welcome to :app, :name!",
     "Université de Kara - Recherche et innovation": "University of Kara - Research and innovation",
     "Un service commun pour les organisateurs, les comités scientifiques et les participants.": "A shared service for organisers, scientific committees and participants.",
-    "La plateforme": "The platform",
     "Chaque étape d’un événement scientifique, au même endroit.": "Every stage of a scientific event, in one place.",
     "De l’appel à communications aux archives, :app réunit les soumissions, l’évaluation, les inscriptions, le programme et les documents officiels.": "From the call for papers to the archives, :app brings together submissions, review, registration, the programme and official documents.",
     "Chercheurs, doctorants et équipes d’organisation disposent ainsi d’un parcours commun, simple à suivre.": "Researchers, doctoral students and organising teams share a clear journey that is easy to follow.",
@@ -1124,5 +1123,16 @@
     "Paiement sécurisé": "Secure payment",
     "Ouvrir la page de paiement": "Open the payment page",
     "Préparation du paiement sécurisé…": "Preparing secure payment…",
-    "Déduit de votre numéro. Changez-le si ce n’est pas le bon.": "Detected from your phone number. Change it if it is not the right one."
+    "Déduit de votre numéro. Changez-le si ce n’est pas le bon.": "Detected from your phone number. Change it if it is not the right one.",
+    "Émis le :date": "Issued on :date",
+    "Au titre de": "For",
+    "Désignation": "Description",
+    "Montant": "Amount",
+    "Total réglé": "Total paid",
+    "Arrêté le présent reçu à la somme de": "This receipt is issued for the sum of",
+    "Date du paiement": "Payment date",
+    "Référence du paiement": "Payment reference",
+    "Référence opérateur": "Operator reference",
+    "Document établi par :app et généré automatiquement.": "Document issued by :app and generated automatically.",
+    "Il vaut reçu du règlement ci-dessus et ne nécessite pas de signature.": "It serves as a receipt for the payment above and requires no signature."
 }

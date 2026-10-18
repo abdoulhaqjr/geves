@@ -35,8 +35,8 @@
                 <div class="ukc-stat-card"><div class="num">{{ $summary['paidCount'] }}</div><div class="lbl">Ont payé</div></div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:8px;">
-                <div class="ukc-stat-card"><div class="num" style="color:var(--ukc-green);">{{ number_format($summary['collected'], 0, ',', ' ') }} {{ $summary['currency'] }}</div><div class="lbl">Encaissé</div></div>
-                <div class="ukc-stat-card"><div class="num">{{ number_format($summary['pending'], 0, ',', ' ') }} {{ $summary['currency'] }}</div><div class="lbl">En attente</div></div>
+                <div class="ukc-stat-card"><div class="num" style="color:var(--ukc-green);">{{ number_format($summary['collected'], 0, ',', ' ') }} {{ $summary['currency_label'] }}</div><div class="lbl">Encaissé</div></div>
+                <div class="ukc-stat-card"><div class="num">{{ number_format($summary['pending'], 0, ',', ' ') }} {{ $summary['currency_label'] }}</div><div class="lbl">En attente</div></div>
             </div>
             <p style="font-size:.85rem;color:var(--ukc-muted);margin:6px 0 0;">
                 Communications par statut :

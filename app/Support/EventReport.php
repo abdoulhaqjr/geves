@@ -59,6 +59,8 @@ class EventReport
             'collected' => $collected,
             'pending' => $pending,
             'currency' => (string) (Payment::where('event_id', $editionId)->value('currency') ?: 'XOF'),
+            // ⚠️ `currency` reste le CODE (exports, machines) ; voici le MOT, pour les écrans.
+            'currency_label' => Money::label((string) Payment::where('event_id', $editionId)->value('currency')),
         ];
     }
 

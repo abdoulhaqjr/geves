@@ -18,7 +18,7 @@
 @if ($formation->location)
 - **{{ __('Lieu :') }}** {{ $formation->location }}@if ($formation->room) ({{ $formation->room }})@endif
 @endif
-- **{{ __('Frais :') }}** {{ $formation->isFree() ? __('Gratuite') : number_format((float) $formation->fee, 0, ',', ' ').' '.config('payments.currency', 'XOF') }}
+- **{{ __('Frais :') }}** {{ $formation->isFree() ? __('Gratuite') : number_format((float) $formation->fee, 0, ',', ' ').' '.\App\Support\Money::label() }}
 
 <x-mail::button :url="route('account.formations')">
 {{ __('Voir mes formations') }}

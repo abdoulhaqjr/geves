@@ -419,6 +419,32 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
 });
 
 /**
+ * ⚠️⚠️ **LE PRESTATAIRE REÇOIT LE CODE ISO, JAMAIS LE MOT.** On écrit « FCFA »
+ * partout où une somme s'affiche, mais la devise reste `XOF` : c'est ce que la
+ * norme désigne et ce que son API attend. Envoyer le mot ferait échouer la
+ * CRÉATION de la transaction, donc le paiement entier - le payeur n'aurait pas
+ * une page sans sa devise, il n'aurait pas de page du tout.
+ */
+it('envoie le code ISO de la devise, pas le mot affiché', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 77]], 201),
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay'])
+        ->assertRedirect();
+
+    $corps = corpsDeCreation();
+
+    expect($corps['currency']['iso'] ?? null)->toBe('XOF');
+    expect(json_encode($corps, JSON_THROW_ON_ERROR))->not->toContain('FCFA');
+});
+
+/**
  * ⚠️⚠️ **DEUX MORCEAUX DE LA PAGE DU PRESTATAIRE N'ONT RIEN À FAIRE CHEZ NOUS.**
  *
  * ⚠️ **Sa croix** (`.modal-close`, 32px, posée à `top: -15px; right: -15px`)
