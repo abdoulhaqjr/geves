@@ -18,6 +18,7 @@ use App\Support\ListSort;
 use App\Support\MeetingTranscript;
 use App\Support\Notifier;
 use App\Support\ProgramConflicts;
+use App\Support\UserDirectorySearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1475,22 +1476,7 @@ class ProgramController extends Controller
             return response()->json(['people' => []]);
         }
 
-        $terms = preg_split('/\s+/', $q) ?: [$q];
-
-        $users = User::query()
-            ->whereNotNull('email')->where('email', '!=', '')
-            ->where(function ($w) use ($terms) {
-                foreach ($terms as $term) {
-                    $like = '%'.$term.'%';
-                    $w->where(fn ($x) => $x->where('first_name', 'like', $like)
-                        ->orWhere('last_name', 'like', $like)
-                        ->orWhere('name', 'like', $like)
-                        ->orWhere('email', 'like', $like));
-                }
-            })
-            ->orderBy('first_name')->orderBy('last_name')
-            ->limit(10)
-            ->get();
+        $users = UserDirectorySearch::find($q);
 
         return response()->json([
             'people' => $users->map(fn (User $u) => [

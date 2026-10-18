@@ -379,6 +379,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/editions/{event}/modifier', [EventFormController::class, 'update'])->name('admin.evenements.update');
             Route::post('/editions/{event}/relecteurs/expertise', [EventFormController::class, 'saveReviewerExpertise'])->name('admin.evenements.reviewers.expertise');
             Route::post('/editions/{event}/relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'storeReviewer'])->name('admin.evenements.reviewers.store');
+            Route::get('/editions/{event}/relecteurs/personnes', [App\Http\Controllers\Admin\SubmissionController::class, 'reviewerPeople'])->name('admin.evenements.reviewers.people');
             Route::post('/editions/{event}/relecteurs/grille', [EventFormController::class, 'saveReviewGrid'])->name('admin.evenements.reviewers.criteria');
             Route::post('/editions/{event}/paiement', [EventFormController::class, 'savePayment'])->name('admin.evenements.payment');
             Route::post('/editions/{event}/visio', [EventFormController::class, 'saveMeetings'])->name('admin.evenements.meetings');

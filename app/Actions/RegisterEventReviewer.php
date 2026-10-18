@@ -11,9 +11,16 @@ use Illuminate\Validation\ValidationException;
 class RegisterEventReviewer
 {
     /** @param list<string> $tracks */
-    public function handle(Event $event, string $name, string $email, ?string $institution = null, array $tracks = []): Participant
+    public function handle(Event $event, string $firstName, string $lastName, string $email, ?string $institution = null, array $tracks = [], ?User $selectedAccount = null): Participant
     {
         $email = mb_strtolower(trim($email));
+        $account = $selectedAccount ?? User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($account) {
+            $firstName = (string) ($account->first_name ?: $firstName);
+            $lastName = (string) ($account->last_name ?: $lastName);
+            $institution = $institution ?: (string) ($account->affiliation ?? '');
+        }
+
         $matches = Participant::where('event_id', $event->id)
             ->whereRaw('LOWER(email) = ?', [$email])
             ->get();
@@ -27,13 +34,10 @@ class RegisterEventReviewer
             throw ValidationException::withMessages(['reviewerEmail' => 'Cette personne possède déjà un autre rôle de gestion sur cet événement.']);
         }
 
-        $account = User::whereRaw('LOWER(email) = ?', [$email])->first();
         $participant ??= new Participant(['event_id' => $event->id, 'email' => $email]);
 
-        $parts = preg_split('/\s+/', trim($name)) ?: [];
-        $last = count($parts) > 1 ? (string) array_pop($parts) : '';
-        $participant->first_name = implode(' ', $parts);
-        $participant->last_name = $last;
+        $participant->first_name = trim($firstName);
+        $participant->last_name = trim($lastName);
         $participant->role = 'reviewer';
         $participant->email = $email;
         $participant->institution = $institution ?: $participant->institution;

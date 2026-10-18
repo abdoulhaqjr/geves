@@ -1397,6 +1397,11 @@ enregistre nom, e-mail, institution facultative et axes éventuels via
 `editions_write`). La fiche de soumission et l'attribution automatique retrouvent
 ensuite ce participant `role=reviewer` ; l'e-mail d'invitation est envoyé à
 l'assignation. Le vivier reste affiché sans axes thématiques.
+Le bouton **Ajouter un évaluateur** ouvre un panneau latéral. La recherche de
+comptes par e-mail, nom ou prénom réutilise `UserDirectorySearch` (aussi appelé
+par le Programme) ; choisir une suggestion préremplit e-mail, prénom, nom et
+institution. Le serveur confirme la correspondance du compte choisi et utilise
+son identité canonique. Une saisie libre reste possible sans compte correspondant.
 
 ## Tutoriels vidéo - captures authentifiées et lancement serveur autonome (2026-10-09)
 

@@ -1,5 +1,53 @@
 <x-layouts.admin title="Évaluateurs & expertise" subtitle="Axes évaluables par évaluateur et charge courante">
-    <div class="admin-page admin-submissions">
+    <div class="admin-page admin-submissions" x-data="{
+        reviewerOpen: @js($errors->has('reviewerFirstName') || $errors->has('reviewerLastName') || $errors->has('reviewerEmail') || $errors->has('reviewerInstitution') || $errors->has('reviewerTracks') || $errors->has('reviewerTracks.*')),
+        query: '', email: @js(old('reviewerEmail', '')), firstName: @js(old('reviewerFirstName', '')),
+        lastName: @js(old('reviewerLastName', '')), institution: @js(old('reviewerInstitution', '')),
+        selectedId: '', selectedName: '', alreadyRegistered: false,
+        lockedFirstName: false, lockedLastName: false,
+        results: [], searching: false, searched: false,
+        lookupSeq: 0,
+        searchPeople() {
+            const q = this.query.trim();
+            const seq = ++this.lookupSeq;
+            if (this.selectedId && q === this.email) return;
+            if (this.selectedId) {
+                this.selectedId = ''; this.selectedName = ''; this.alreadyRegistered = false;
+                this.lockedFirstName = false; this.lockedLastName = false;
+                this.email = ''; this.firstName = ''; this.lastName = ''; this.institution = '';
+            }
+            if (q.includes('@')) this.email = q;
+            if (q.length < 2) { this.results = []; this.searching = false; this.searched = false; return; }
+            this.searching = true; this.searched = false;
+            fetch(@js($event ? route('admin.evenements.reviewers.people', $event) : '' ) + '?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } })
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(d => { if (seq === this.lookupSeq) { this.results = d.people || []; this.searched = true; } })
+                .catch(() => { if (seq === this.lookupSeq) { this.results = []; this.searched = false; } })
+                .finally(() => { if (seq === this.lookupSeq) this.searching = false; });
+        },
+        pickPerson(person) {
+            this.lookupSeq++;
+            this.selectedId = person.id;
+            this.selectedName = person.name;
+            this.alreadyRegistered = !!person.already_registered;
+            this.query = person.email;
+            this.email = person.email;
+            this.firstName = person.first_name;
+            this.lastName = person.last_name;
+            this.lockedFirstName = !!person.first_name;
+            this.lockedLastName = !!person.last_name;
+            this.institution = person.institution || this.institution;
+            this.results = [];
+            this.searching = false; this.searched = false;
+        },
+        clearPerson() {
+            this.selectedId = ''; this.selectedName = ''; this.alreadyRegistered = false; this.query = '';
+            this.lockedFirstName = false; this.lockedLastName = false;
+            this.email = ''; this.firstName = ''; this.lastName = '';
+            this.institution = ''; this.results = []; this.searching = false; this.searched = false;
+            this.$nextTick(() => this.$refs.reviewerSearch?.focus());
+        }
+    }">
 
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
@@ -16,6 +64,14 @@
         @if (! $event)
             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour gérer l’expertise des évaluateurs.</p></div>
         @else
+            @if ($canWrite)
+                <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+                    <button type="button" class="ukc-btn ukc-btn--blue" @click="reviewerOpen = true; $nextTick(() => $refs.reviewerSearch?.focus())">
+                        <x-ukc.icon name="user-plus" :size="16" /> Ajouter un évaluateur
+                    </button>
+                </div>
+            @endif
+
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="tag" :size="20" /></div><div class="lbl">Axes de l’événement</div><div class="val">{{ count($reviewerAxes) }}</div></div>
@@ -26,48 +82,6 @@
                 </div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Charge moyenne</div><div class="val">{{ number_format($avgLoad, 1, ',', ' ') }}</div></div>
             </div>
-
-            @if ($canWrite)
-                <form method="POST" action="{{ route('admin.evenements.reviewers.store', $event) }}" class="ukc-card" style="margin-bottom:16px;">
-                    @csrf
-                    <h2 style="margin:0 0 6px;font-size:1.05rem;">Ajouter un évaluateur à cet événement</h2>
-                    <p style="margin:0 0 16px;color:var(--ukc-muted);">Enregistrez-le ici avant de lui attribuer une soumission. L'invitation à évaluer sera envoyée lors de l'attribution.</p>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">
-                        <div class="ukc-field">
-                            <label for="reviewerName">Nom complet</label>
-                            <input id="reviewerName" name="reviewerName" type="text" value="{{ old('reviewerName') }}" required maxlength="200" autocomplete="name" placeholder="Prénom Nom">
-                            @error('reviewerName') <span class="error">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="ukc-field">
-                            <label for="reviewerEmail">E-mail</label>
-                            <input id="reviewerEmail" name="reviewerEmail" type="email" value="{{ old('reviewerEmail') }}" required maxlength="200" autocomplete="email" placeholder="evaluateur@exemple.tg">
-                            @error('reviewerEmail') <span class="error">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="ukc-field">
-                            <label for="reviewerInstitution">Institution <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
-                            <input id="reviewerInstitution" name="reviewerInstitution" type="text" value="{{ old('reviewerInstitution') }}" maxlength="255" placeholder="Université ou organisme">
-                            @error('reviewerInstitution') <span class="error">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-                    @if ($reviewerAxes !== [])
-                        <div class="ukc-field" style="margin-top:14px;">
-                            <label>Axes d'expertise <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
-                            <div class="reviewer-axes reviewer-axes--chips">
-                                @foreach ($reviewerAxes as $axis)
-                                    <label class="axis-check" title="{{ $axis }}">
-                                        <input type="checkbox" name="reviewerTracks[]" value="{{ $axis }}" @checked(in_array($axis, (array) old('reviewerTracks', []), true))>
-                                        <span>{{ \Illuminate\Support\Str::limit($axis, 34) }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                            @if ($errors->has('reviewerTracks.*')) <span class="error">{{ $errors->first('reviewerTracks.*') }}</span> @endif
-                        </div>
-                    @endif
-                    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
-                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="user-plus" :size="16" /> Ajouter l'évaluateur</button>
-                    </div>
-                </form>
-            @endif
 
             @if (count($uncoveredAxes))
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
@@ -94,7 +108,7 @@
                     @if ($reviewers->isEmpty())
                         <div style="padding:22px;color:var(--ukc-muted);">
                             @if ($canWrite)
-                                Aucun évaluateur sur cet événement. Ajoutez-en un avec le formulaire ci-dessus pour le rendre disponible lors de l'attribution.
+                                Aucun évaluateur sur cet événement. Utilisez « Ajouter un évaluateur » pour le rendre disponible lors de l'attribution.
                             @else
                                 Aucun évaluateur sur cet événement. Demandez à un responsable de l'événement d'en ajouter.
                             @endif
@@ -158,6 +172,88 @@
                     </p>
                 @endif
             </form>
+
+            @if ($canWrite)
+                <x-ukc.slideover open="reviewerOpen" onClose="reviewerOpen = false" title="Ajouter un évaluateur" width="500px">
+                    <form method="POST" action="{{ route('admin.evenements.reviewers.store', $event) }}" id="reviewerForm">
+                        @csrf
+                        <p style="margin:0 0 18px;color:var(--ukc-muted);">Recherchez un compte par e-mail, nom ou prénom. Si aucun compte ne correspond, renseignez les champs manuellement.</p>
+
+                        <div class="ukc-form-row">
+                            <label for="reviewerSearch">Rechercher une personne</label>
+                            <div class="ukc-combo" style="position:relative;" @click.outside="results = []">
+                                <input id="reviewerSearch" x-ref="reviewerSearch" type="text" x-model="query" autocomplete="off"
+                                       placeholder="E-mail, nom ou prénom" @input.debounce.250ms="searchPeople()"
+                                       @focus="if (query.trim().length >= 2 && !selectedId) searchPeople()">
+                                <ul class="ukc-combo-menu" x-show="results.length > 0" x-cloak>
+                                    <template x-for="person in results" :key="person.id">
+                                        <li @mousedown.prevent="pickPerson(person)">
+                                            <strong x-text="person.name"></strong>
+                                            <span x-text="person.email"></span>
+                                            <span x-show="person.already_registered" style="color:var(--ukc-green);">Déjà enregistré</span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <small x-show="searching" x-cloak>Recherche en cours…</small>
+                            <small x-show="searched && !searching && results.length === 0 && !selectedId" x-cloak>Aucun compte correspondant. Vous pouvez renseigner les champs ci-dessous.</small>
+                            <small x-show="selectedId" x-cloak style="color:var(--ukc-green);">
+                                Compte sélectionné : <span x-text="selectedName"></span>.
+                                <button type="button" class="ukc-link" @click="clearPerson()">Changer</button>
+                            </small>
+                            <small x-show="alreadyRegistered" x-cloak style="color:var(--ukc-muted);">Cette personne figure déjà parmi les évaluateurs de cet événement.</small>
+                        </div>
+
+                        <input type="hidden" name="reviewerUserId" x-model="selectedId">
+                        <div class="ukc-form-row">
+                            <label for="reviewerEmail">E-mail</label>
+                            <input id="reviewerEmail" name="reviewerEmail" type="email" x-model="email" required maxlength="200"
+                                   :readonly="!!selectedId" @input="selectedId = ''; selectedName = ''" placeholder="evaluateur@exemple.tg">
+                            @error('reviewerEmail') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-form-grid">
+                            <div class="ukc-form-row">
+                                <label for="reviewerFirstName">Prénom</label>
+                                <input id="reviewerFirstName" name="reviewerFirstName" type="text" x-model="firstName" required maxlength="150"
+                                       :readonly="!!selectedId && lockedFirstName" placeholder="Prénom">
+                                @error('reviewerFirstName') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-form-row">
+                                <label for="reviewerLastName">Nom</label>
+                                <input id="reviewerLastName" name="reviewerLastName" type="text" x-model="lastName" required maxlength="150"
+                                       :readonly="!!selectedId && lockedLastName" placeholder="Nom">
+                                @error('reviewerLastName') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                        <div class="ukc-form-row">
+                            <label for="reviewerInstitution">Institution <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
+                            <input id="reviewerInstitution" name="reviewerInstitution" type="text" x-model="institution" maxlength="255" placeholder="Université ou organisme">
+                            @error('reviewerInstitution') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        @if ($reviewerAxes !== [])
+                            <div class="ukc-form-row">
+                                <label>Axes d'expertise <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
+                                <div class="reviewer-axes reviewer-axes--chips">
+                                    @foreach ($reviewerAxes as $axis)
+                                        <label class="axis-check" title="{{ $axis }}">
+                                            <input type="checkbox" name="reviewerTracks[]" value="{{ $axis }}" @checked(in_array($axis, (array) old('reviewerTracks', []), true))>
+                                            <span>{{ \Illuminate\Support\Str::limit($axis, 34) }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @if ($errors->has('reviewerTracks.*')) <span class="error">{{ $errors->first('reviewerTracks.*') }}</span> @endif
+                            </div>
+                        @endif
+                        <p class="hint" style="font-size:12.5px;color:var(--ukc-muted);">L'invitation à évaluer sera envoyée lorsqu'une soumission lui sera attribuée.</p>
+                    </form>
+
+                    <x-slot:footer>
+                        <span style="flex:1;"></span>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="reviewerOpen = false">Annuler</button>
+                        <button type="submit" form="reviewerForm" class="ukc-btn ukc-btn--blue" :disabled="alreadyRegistered">Ajouter l'évaluateur</button>
+                    </x-slot:footer>
+                </x-ukc.slideover>
+            @endif
         @endif
     </div>
 </x-layouts.admin>

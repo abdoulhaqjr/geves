@@ -28,8 +28,10 @@ use App\Support\ReviewGrid;
 use App\Support\SimilarityChecker;
 use App\Support\SubmissionFormConfig;
 use App\Support\Trend;
+use App\Support\UserDirectorySearch;
 use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -37,6 +39,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -624,23 +627,65 @@ class SubmissionController extends Controller
     public function storeReviewer(Request $request, Event $event, RegisterEventReviewer $action): RedirectResponse
     {
         $data = $request->validate([
-            'reviewerName' => ['required', 'string', 'max:200'],
+            'reviewerFirstName' => ['required', 'string', 'max:150'],
+            'reviewerLastName' => ['required', 'string', 'max:150'],
             'reviewerEmail' => ['required', 'email', 'max:200'],
+            'reviewerUserId' => ['nullable', 'integer', 'exists:users,id'],
             'reviewerInstitution' => ['nullable', 'string', 'max:255'],
             'reviewerTracks' => ['array'],
             'reviewerTracks.*' => ['string', Rule::in(ReviewerExpertise::axes($event))],
         ]);
 
+        $selectedAccount = isset($data['reviewerUserId']) ? User::find($data['reviewerUserId']) : null;
+        if ($selectedAccount && mb_strtolower((string) $selectedAccount->email) !== mb_strtolower(trim($data['reviewerEmail']))) {
+            throw ValidationException::withMessages(['reviewerEmail' => 'Sélectionnez à nouveau le compte correspondant à cet e-mail.']);
+        }
+
         $action->handle(
             $event,
-            trim($data['reviewerName']),
+            trim($data['reviewerFirstName']),
+            trim($data['reviewerLastName']),
             $data['reviewerEmail'],
             trim($data['reviewerInstitution'] ?? ''),
             $data['reviewerTracks'] ?? [],
+            $selectedAccount,
         );
 
         return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
             ->with('ukc_status', 'Évaluateur ajouté à cet événement. Il est disponible pour les attributions.');
+    }
+
+    /** Suggestions de comptes pour le panneau d'ajout d'un évaluateur. */
+    public function reviewerPeople(Request $request, Event $event): JsonResponse
+    {
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $users = UserDirectorySearch::find($data['q'] ?? '');
+
+        $existingEmails = Participant::where('event_id', $event->id)
+            ->where('role', 'reviewer')
+            ->pluck('email')
+            ->map(fn ($email) => mb_strtolower((string) $email))
+            ->all();
+
+        return response()->json(['people' => $users->map(function (User $user) use ($existingEmails) {
+            $firstName = trim((string) $user->first_name);
+            $lastName = trim((string) $user->last_name);
+            if ($firstName === '' && $lastName === '' && ! str_contains((string) $user->name, '@')) {
+                $parts = preg_split('/\s+/', trim((string) $user->name)) ?: [];
+                $lastName = count($parts) > 1 ? (string) array_pop($parts) : '';
+                $firstName = implode(' ', $parts);
+            }
+
+            return [
+                'id' => $user->id,
+                'name' => trim($firstName.' '.$lastName) ?: $user->email,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => (string) $user->email,
+                'institution' => (string) ($user->affiliation ?? ''),
+                'already_registered' => in_array(mb_strtolower((string) $user->email), $existingEmails, true),
+            ];
+        })->values()]);
     }
 
     /**

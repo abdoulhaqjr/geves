@@ -1057,7 +1057,11 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
     enregistrer ses axes. Il devient alors sélectionnable sur les fiches de
     soumission et dans l'attribution automatique ; l'invitation part lors de
     l'assignation, pas lors de l'ajout au vivier. La liste reste visible même
-    lorsque l'événement n'a pas encore d'axes.
+    lorsque l'événement n'a pas encore d'axes. L'ajout s'ouvre dans
+    `<x-ukc.slideover>` ; la recherche par e-mail, prénom ou nom partage
+    `UserDirectorySearch` avec le Programme. La sélection d'un compte renseigne
+    l'identité et l'affiliation ; le serveur vérifie l'e-mail lié et reprend les
+    noms du compte lorsqu'il existe.
   - **Options** (`admin.submissions.options`) : **toutes** les règles de l'édition
     pour ce module - *dépôt* (limites du formulaire), *attribution* (relecteurs
     visés, charge max), *évaluation* (grille, délai).
