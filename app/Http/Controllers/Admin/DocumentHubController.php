@@ -66,7 +66,7 @@ class DocumentHubController extends Controller
             'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par rapporteur'],
             'organisation' => ['title' => 'Attestation de participation à l’organisation', 'sub' => 'Équipe d’appui au comité d’organisation', 'scope' => 'Hors comités'],
             'comite_organisation' => ['title' => 'Attestation du comité d’organisation', 'sub' => 'Membres du comité d’organisation', 'scope' => 'Comité d’organisation'],
-            'instruction_resumes' => ['title' => 'Attestation d’instruction de résumés', 'sub' => 'Relecteurs ayant évalué des résumés', 'scope' => 'Une par relecteur'],
+            'instruction_resumes' => ['title' => 'Attestation d’instruction de résumés', 'sub' => 'Évaluateurs de résumés', 'scope' => 'Une par évaluateur'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
             'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
@@ -829,9 +829,9 @@ class DocumentHubController extends Controller
 
     /**
      * Bénéficiaires de l'attestation d'instruction de résumés : les participants qui
-     * ont RENDU au moins une évaluation (relecture `completed`) sur une soumission de
-     * l'événement. Dédoublonné : une attestation par relecteur, quel que soit le
-     * nombre de résumés instruits. On s'en tient aux relectures rendues (le travail a
+     * ont RENDU au moins une évaluation (évaluation `completed`) sur une soumission de
+     * l'événement. Dédoublonné : une attestation par évaluateur, quel que soit le
+     * nombre de résumés instruits. On s'en tient aux évaluations rendues (le travail a
      * eu lieu), pas aux simples invitations ou aux refus.
      */
     private function reviewerTargets(Event $event): Collection

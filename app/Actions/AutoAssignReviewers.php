@@ -14,8 +14,8 @@ use App\Support\ReviewerAssignmentPlanner;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Attribution automatique des relecteurs sur un événement : prépare les données
- * réelles (soumissions à couvrir, relecteurs + expertise + charge, conflits
+ * Attribution automatique des évaluateurs sur un événement : prépare les données
+ * réelles (soumissions à couvrir, évaluateurs + expertise + charge, conflits
  * d'intérêts), délègue le choix au {@see ReviewerAssignmentPlanner}, et sait
  * appliquer un plan validé en réutilisant {@see AssignReviewer} (idempotent).
  */
@@ -30,7 +30,7 @@ class AutoAssignReviewers
     ) {}
 
     /**
-     * Construit un aperçu (dry-run) : propositions + charge par relecteur + stats.
+     * Construit un aperçu (dry-run) : propositions + charge par évaluateur + stats.
      *
      * @return array{
      *   proposals: list<array{submission_id:int, submission_title:string, submission_ref:string, track:string, reviewer_id:int, reviewer_name:string, reason:string, coi:string|null}>,
@@ -50,7 +50,7 @@ class AutoAssignReviewers
             ->with('reviews')
             ->orderBy('id')->get();
 
-        // Charge courante par relecteur (relectures actives sur l'événement).
+        // Charge courante par évaluateur (évaluations actives sur l'événement).
         $load = Review::query()
             ->whereIn('reviewer_id', $reviewers->pluck('id'))
             ->whereIn('status', Review::ACTIVE_STATUSES)
@@ -67,9 +67,9 @@ class AutoAssignReviewers
         $coi = [];
         $subDto = [];
         foreach ($submissions as $sub) {
-            // ⚠️ `exclude` reprend TOUS les relecteurs déjà sollicités (y compris
+            // ⚠️ `exclude` reprend TOUS les évaluateurs déjà sollicités (y compris
             // ceux qui ont refusé : on ne les represse pas), alors que la
-            // couverture ne compte que les relectures ACTIVES - un refus ou une
+            // couverture ne compte que les évaluations ACTIVES - un refus ou une
             // annulation libère la place.
             $assigned = $sub->reviews->pluck('reviewer_id')->filter()->values()->all();
             $active = $sub->reviews->filter(fn (Review $r) => $r->isActive())->count();
@@ -83,7 +83,7 @@ class AutoAssignReviewers
             }
         }
 
-        // Candidatures des relecteurs (préférences + conflits auto-déclarés).
+        // Candidatures des évaluateurs (préférences + conflits auto-déclarés).
         $bids = [];
         foreach (ReviewerBid::whereIn('submission_id', $submissions->pluck('id'))->get() as $bid) {
             $bids[$bid->submission_id][$bid->reviewer_id] = [
@@ -139,11 +139,11 @@ class AutoAssignReviewers
     }
 
     /**
-     * Applique un plan validé (paires soumission→relecteur), en re-vérifiant
+     * Applique un plan validé (paires soumission→évaluateur), en re-vérifiant
      * l'appartenance à l'événement et l'absence de conflit d'intérêt élevé.
      *
      * @param  list<array{submission_id:int, reviewer_id:int, reason?:string|null}>  $pairs
-     * @return int nombre de relectures effectivement créées
+     * @return int nombre d’évaluations effectivement créées
      */
     public function apply(Event $event, array $pairs): int
     {

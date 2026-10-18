@@ -11,8 +11,8 @@ Un espace unique pour les **organisateurs**, les **comités**, le **secrétariat
 ## ✨ Fonctionnalités principales
 
 - **Multi-événements par édition** - chaque manifestation (colloque, séminaire, journée) est une *édition* avec ses propres réglages, axes, échéances et équipe.
-- **Espace participant** - profil, sélection du colloque courant (et des appels ouverts), soumission de résumés (wizard guidé, quota par édition), suivi des communications, paiements, documents, espaces de fonction (modérateur / rapporteur / relecteur).
-- **Soumission & évaluation** - dépôt de résumés multi-étapes, assignation de relecteurs, grilles d'évaluation, décisions du comité scientifique.
+- **Espace participant** - profil, sélection du colloque courant (et des appels ouverts), soumission de résumés (wizard guidé, quota par édition), suivi des communications, paiements, documents, espaces de fonction (modérateur / rapporteur / évaluateur).
+- **Soumission & évaluation** - dépôt de résumés multi-étapes, assignation d'évaluateurs, grilles d'évaluation, décisions du comité scientifique.
 - **Programme & déroulement** - ateliers, sessions, créneaux, salles, visioconférence, annonces en direct, rapports de séance.
 - **Back-office avec RBAC par édition** - rôles fins (administrateur, gestionnaire, secrétariat, comité scientifique/supervision, comptabilité, appui…) avec capacités cadrées par édition.
 - **Paiements** - suivi des frais d'inscription, relances, passerelles en ligne.

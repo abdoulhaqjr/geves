@@ -19,8 +19,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Espace relecteur (côté participant) : « Mes relectures ». Regroupe les
- * relectures confiées à l'utilisateur au titre de ses inscriptions « relecteur »
+ * Espace évaluateur (côté participant) : « Mes évaluations ». Regroupe les
+ * évaluations confiées à l'utilisateur au titre de ses inscriptions « évaluateur »
  * (par événement) et l'évaluation se fait EN PLACE (panneau latéral, sans changer
  * de page), en aveugle. Un appel à candidatures (préférences + conflits) est
  * proposé pour les communications encore ouvertes. Remplace l'ancien portail à
@@ -40,7 +40,7 @@ class ReviewWorkspaceController extends Controller
 
         // Filtres (même grammaire que les listes du back-office : sélecteurs qui
         // se soumettent au changement + recherche). ⚠️ Ils portent sur la LISTE ;
-        // les compteurs, eux, décrivent toujours l'ensemble de mes relectures -
+        // les compteurs, eux, décrivent toujours l'ensemble de mes évaluations -
         // sinon « 2 en retard » deviendrait faux dès qu'on filtre.
         $tab = $request->query('tab') === 'candidatures' ? 'candidatures' : 'relectures';
         $status = (string) $request->query('status', '');
@@ -49,7 +49,7 @@ class ReviewWorkspaceController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $events = $reviewerParticipants->pluck('event')->filter()->unique('id')->values();
-        // Axes réellement présents dans MES relectures : un filtre ne doit pas
+        // Axes réellement présents dans MES évaluations : un filtre ne doit pas
         // proposer une valeur qui ne renverrait jamais rien.
         $tracks = $reviews->map(fn (Review $r) => (string) $r->submission?->track)
             ->filter()->unique()->sort()->values();
@@ -89,7 +89,7 @@ class ReviewWorkspaceController extends Controller
                 'statusLabel' => $r->statusLabel(),
                 'statusPill' => $r->statusPill(),
                 // L'échéance ne concerne que ce qui reste à rendre : sur une
-                // relecture refusée, annulée ou déjà rendue, elle n'a plus de sens.
+                // évaluation refusée, annulée ou déjà rendue, elle n'a plus de sens.
                 'due' => $r->isPending() ? $r->due_at?->translatedFormat('d/m/Y') : null,
                 'late' => $r->isLate(),
                 'daysLate' => $r->daysLate(),
@@ -107,8 +107,8 @@ class ReviewWorkspaceController extends Controller
             ];
         })->values();
 
-        // Appel à candidatures : soumissions des événements du relecteur, en aveugle,
-        // encore ouvertes et non déjà confiées à ce relecteur.
+        // Appel à candidatures : soumissions des événements de l’évaluateur, en aveugle,
+        // encore ouvertes et non déjà confiées à cet évaluateur.
         $reviewerIds = $reviewerParticipants->pluck('id');
         $biddable = Submission::whereIn('event_id', $editionIds)
             // Un événement archivé est close : plus de candidature possible.
@@ -126,7 +126,7 @@ class ReviewWorkspaceController extends Controller
             'reviewsData' => $reviewsData,
             'recommendations' => Review::RECOMMENDATIONS,
             'scale' => ReviewGrid::SCALE,
-            // ⚠️ Compteurs DISJOINTS : « à évaluer » ne compte que les relectures
+            // ⚠️ Compteurs DISJOINTS : « à évaluer » ne compte que les évaluations
             // acceptées, sinon il englobait les invitations et le total ne
             // tombait plus juste. Chaque carte porte son propre retard.
             'invitedCount' => $reviews->where('status', 'invited')->count(),
@@ -152,7 +152,7 @@ class ReviewWorkspaceController extends Controller
     }
 
     /**
-     * Réponse du relecteur à une invitation : accepter ou refuser (avec motif).
+     * Réponse de l’évaluateur à une invitation : accepter ou refuser (avec motif).
      * Un refus libère la place - la soumission réapparaît dans l'aperçu
      * d'attribution côté admin, sans remplacement automatique : c'est le
      * comité qui décide qui solliciter ensuite.
@@ -168,12 +168,12 @@ class ReviewWorkspaceController extends Controller
             'decline_reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        // Une relecture déjà rendue ne se renégocie pas.
+        // Une évaluation déjà rendue ne se renégocie pas.
         abort_if($review->isCompleted(), 422);
 
         if ($data['answer'] === 'accept') {
             $review->update(['status' => 'accepted', 'responded_at' => now(), 'decline_reason' => null]);
-            $message = 'Merci, vous avez accepté cette relecture.';
+            $message = 'Merci, vous avez accepté cette évaluation.';
         } else {
             $review->update([
                 'status' => 'declined',
@@ -186,10 +186,10 @@ class ReviewWorkspaceController extends Controller
         $review->loadMissing('submission', 'reviewer');
         Notifier::staff(
             kind: 'review_response',
-            title: $data['answer'] === 'accept' ? 'Relecture acceptée' : 'Relecture refusée',
+            title: $data['answer'] === 'accept' ? 'Évaluation acceptée' : 'Évaluation refusée',
             body: trim(sprintf(
-                '%s a %s la relecture de « %s »%s',
-                $review->reviewer?->full_name ?: 'Un relecteur',
+                '%s a %s l’évaluation de « %s »%s',
+                $review->reviewer?->full_name ?: 'Un évaluateur',
                 $data['answer'] === 'accept' ? 'accepté' : 'refusé',
                 $review->submission?->ref_code ?: ($review->submission?->title ?: 'une communication'),
                 $review->decline_reason ? ' - motif : '.$review->decline_reason : '.'
@@ -253,7 +253,7 @@ class ReviewWorkspaceController extends Controller
         return back()->with('ukc_status', 'Votre évaluation a été enregistrée. Merci !');
     }
 
-    /** Enregistre les candidatures (préférences + conflits) du relecteur. */
+    /** Enregistre les candidatures (préférences + conflits) de l’évaluateur. */
     public function saveBids(Request $request): RedirectResponse
     {
         $reviewerParticipants = $this->reviewerParticipants();
@@ -265,7 +265,7 @@ class ReviewWorkspaceController extends Controller
             'bids.*.conflict' => ['nullable', 'boolean'],
         ]);
 
-        // Regroupe (soumission autorisée => inscription relecteur de la bonne événement).
+        // Regroupe (soumission autorisée => inscription évaluateur de la bonne événement).
         $editionByReviewer = $reviewerParticipants->pluck('event_id', 'id');
         $allowed = Submission::whereIn('event_id', $editionByReviewer->values()->unique())
             ->whereHas('event', fn ($q) => $q->where('status', '!=', 'archived'))
@@ -295,7 +295,7 @@ class ReviewWorkspaceController extends Controller
     }
 
     /**
-     * Inscriptions « relecteur » de l'utilisateur connecté (une par événement).
+     * Inscriptions « évaluateur » de l'utilisateur connecté (une par événement).
      *
      * @return Collection<int, Participant>
      */
@@ -309,7 +309,7 @@ class ReviewWorkspaceController extends Controller
             ->get();
     }
 
-    /** La relecture appartient-elle bien à une inscription relecteur du compte ? */
+    /** L’évaluation appartient-elle bien à une inscription évaluateur du compte ? */
     private function authorizeReview(Review $review): void
     {
         abort_unless(

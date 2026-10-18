@@ -147,9 +147,9 @@
                         </a>
                     @endif
                     @if ($isReviewer)
-                        <a href="{{ route('account.reviews') }}" title="{{ __('Mes relectures') }}"
+                        <a href="{{ route('account.reviews') }}" title="{{ __('Mes évaluations') }}"
                            @class(['active' => request()->routeIs('account.reviews')])>
-                            <x-ukc.icon name="inbox" :size="18" /> <span class="txt">{{ __('Mes relectures') }}</span>
+                            <x-ukc.icon name="inbox" :size="18" /> <span class="txt">{{ __('Mes évaluations') }}</span>
                         </a>
                     @endif
                 @endif

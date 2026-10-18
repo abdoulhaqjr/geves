@@ -17,8 +17,8 @@ class StaffRoles
         'editions_read' => 'Événements (lecture)',
         'editions_write' => 'Événements (écriture)',
         'submissions_list' => 'Soumissions - liste',
-        'assign_reviewers' => 'Assigner relecteurs',
-        'evaluate' => 'Évaluer (relectures)',
+        'assign_reviewers' => 'Assigner des évaluateurs',
+        'evaluate' => 'Évaluer les soumissions',
         'final_decision' => 'Décision finale',
         'participants' => 'Participants',
         'payments' => 'Paiements',
@@ -71,7 +71,7 @@ class StaffRoles
         'scientific' => [
             'label' => 'Comité scientifique',
             'category' => 'Organisation', 'pill' => 'review', 'abbr' => 'Comité sci.',
-            'description' => 'Synthèse des relectures, décisions d’acceptation / refus / corrections.',
+            'description' => 'Synthèse des évaluations, décisions d’acceptation / refus / corrections.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'assign_reviewers', 'evaluate', 'final_decision'],
         ],
         'comite_supervision' => [
@@ -87,8 +87,8 @@ class StaffRoles
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
         ],
         'reviewer' => [
-            'label' => 'Relecteur',
-            'category' => 'Organisation', 'pill' => 'info', 'abbr' => 'Relect.',
+            'label' => 'Évaluateur',
+            'category' => 'Organisation', 'pill' => 'info', 'abbr' => 'Éval.',
             'description' => 'Évaluation des soumissions assignées, déclaration COI, commentaires et recommandation.',
             'permissions' => ['view_dashboard', 'submissions_list', 'evaluate'],
         ],
@@ -160,7 +160,7 @@ class StaffRoles
     /**
      * Fonctions assignables à une équipe d'événement (staff ↔ événement). On exclut :
      *  - `administrator` : capacité globale (transverse à tous les colloques) ;
-     *  - `reviewer` : la relecture scientifique passe par le Participant relecteur
+     *  - `reviewer` : l’évaluation scientifique passe par le Participant évaluateur
      *    (par événement, portail à jeton) - pas par un rôle staff global.
      *
      * @return array<string, string> nom => libellé

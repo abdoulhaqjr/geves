@@ -223,7 +223,7 @@ class TutorialGuideCatalog
                 'steps' => [
                     'Dans Événements, créez le colloque ou choisissez une série existante ; renseignez son titre, ses dates et son équipe.',
                     'Complétez la fiche de l’événement : informations publiques, calendrier, appel à communications, modalités d’inscription et paiement si applicable.',
-                    'Dans Soumissions, préparez le formulaire et les règles, puis suivez les dépôts, les relectures et les décisions scientifiques.',
+                    'Dans Soumissions, préparez le formulaire et les règles, puis suivez les dépôts, les évaluations et les décisions scientifiques.',
                     'Dans Programme, organisez ateliers et sessions, affectez les créneaux, les espaces, les intervenants et les accès visio.',
                     'Suivez Participants, Paiements et Secrétariat pour contrôler les inscriptions, les demandes et les documents opérationnels.',
                     'Dans Projet, attribuez les tâches, fixez les jalons et mettez leurs états à jour avec l’équipe jusqu’à la clôture.',

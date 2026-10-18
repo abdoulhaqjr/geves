@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type oral/poster,
  * mode de présentation propre à cette communication (online/onsite),
- * statut du workflow de relecture et versionnage (resoumission).
+ * statut du workflow d’évaluation et versionnage (resoumission).
  * Statuts : {@see SubmissionStatus}.
  *
  * @property array<int, array<string, mixed>>|null $authors
@@ -46,7 +46,7 @@ class Submission extends Model
     }
 
     /**
-     * Phase de réponse aux relecteurs (rebuttal), ou null.
+     * Phase de réponse aux évaluateurs (rebuttal), ou null.
      *
      * @return array<string, mixed>|null
      */
@@ -213,8 +213,8 @@ class Submission extends Model
 
     /**
      * L'auteur peut encore corriger librement sa communication (titre/résumé/
-     * mots-clés) TANT QU'aucun relecteur, membre du comité ou gestionnaire n'y a
-     * touché : statut initial « déposée » et aucune relecture créée. Après la
+     * mots-clés) TANT QU'aucun évaluateur, membre du comité ou gestionnaire n'y a
+     * touché : statut initial « déposée » et aucune évaluation créée. Après la
      * première intervention du staff, la correction passe par le circuit officiel
      * de resoumission ({@see canBeRevised()}).
      *

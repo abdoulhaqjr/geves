@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 /**
- * Assigne un relecteur à une soumission : crée/retrouve le participant relecteur
+ * Assigne un évaluateur à une soumission : crée/retrouve le participant évaluateur
  * (par e-mail sur l'événement), le relie à un compte (provisionné au besoin pour
- * accéder à « Mes relectures »), crée la relecture et passe la soumission
- * « en relecture ».
+ * accéder à « Mes évaluations »), crée l’évaluation et passe la soumission
+ * « en évaluation ».
  */
 class AssignReviewer
 {
@@ -45,9 +45,9 @@ class AssignReviewer
             }
         }
 
-        // Relie l'inscription à un compte (identité unifiée) : la relecture se
-        // fait depuis « Mes relectures » connecté. Provisionne un compte si le
-        // relecteur n'en a pas encore (il définira son mot de passe via l'e-mail).
+        // Relie l'inscription à un compte (identité unifiée) : l’évaluation se
+        // fait depuis « Mes évaluations » connecté. Provisionne un compte si le
+        // évaluateur n'en a pas encore (il définira son mot de passe via l'e-mail).
         if (blank($reviewer->user_id)) {
             $normalized = mb_strtolower(trim($email));
             $account = User::whereRaw('LOWER(email) = ?', [$normalized])->first()
@@ -72,7 +72,7 @@ class AssignReviewer
         );
 
         // Ré-attribution après un refus ou une annulation : on rouvre la même
-        // ligne plutôt que d'en créer une seconde (l'unicité soumission/relecteur
+        // ligne plutôt que d'en créer une seconde (l'unicité soumission/évaluateur
         // reste vraie) et l'échéance repart de zéro.
         $reopened = ! $review->wasRecentlyCreated && in_array($review->status, ['declined', 'cancelled'], true);
         if ($reopened) {
@@ -91,14 +91,14 @@ class AssignReviewer
             $submission->update(['status' => 'under_review']);
         }
 
-        // Notification in-app au relecteur, s'il dispose d'un compte lié.
+        // Notification in-app à l’évaluateur, s'il dispose d'un compte lié.
         // Notifie aussi une RÉ-attribution après refus/annulation : sans cela, le
-        // relecteur ne saurait pas que la communication lui revient.
+        // évaluateur ne saurait pas que la communication lui revient.
         if ($review->wasRecentlyCreated || $reopened) {
             Notifier::account(
                 $reviewer->user,
                 kind: 'review_assigned',
-                title: 'Nouvelle relecture assignée',
+                title: 'Nouvelle évaluation assignée',
                 body: 'Une communication vous a été confiée pour évaluation.',
                 url: route('account.reviews'),
                 icon: 'inbox',
@@ -109,7 +109,7 @@ class AssignReviewer
     }
 
     /**
-     * Provisionne un compte participant pour un relecteur invité sans compte.
+     * Provisionne un compte participant pour un évaluateur invité sans compte.
      * Compte vérifié (invitation par le comité) mais avec mot de passe à définir
      * (`must_reset_password`) : le lien d'invitation l'amène à le créer.
      */
@@ -119,7 +119,7 @@ class AssignReviewer
 
         $user = new User;
         $user->forceFill([
-            'first_name' => $first ?: 'Relecteur',
+            'first_name' => $first ?: 'Évaluateur',
             'last_name' => $last,
             'email' => $email,
             'password' => Str::random(40),

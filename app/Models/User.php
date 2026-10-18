@@ -264,7 +264,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /**
-     * Inscriptions « relecteur » de cet utilisateur (par événement, jeton de portail).
+     * Inscriptions « évaluateur » de cet utilisateur (par événement, jeton de portail).
      *
      * @return Builder<Participant>
      */
@@ -285,7 +285,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return filled($this->email) && $this->sessionsAsRapporteur()->exists();
     }
 
-    /** A-t-il des relectures qui lui sont confiées ? */
+    /** A-t-il des évaluations qui lui sont confiées ? */
     public function isReviewerSomewhere(): bool
     {
         return $this->reviewerParticipations()->exists();

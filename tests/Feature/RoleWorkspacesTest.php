@@ -194,7 +194,7 @@ it('limite les onglets des Rapports à la fonction (comptable → Paiements)', f
         ->assertOk()
         ->assertSee('Rapport paiements')     // panneau Paiements rendu
         ->assertDontSee('Rapport soumissions')
-        ->assertDontSee('Rapport relectures')
+        ->assertDontSee('Rapport évaluations')
         ->assertDontSee('Rapport participants')
         ->getContent();
 

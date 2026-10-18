@@ -2466,3 +2466,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Sous-onglets Documents dans l'URL (18 octobre 2026)
 
 - Les trois sous-onglets du livre utilisent `?tab=livre&stab=main|modeles|apparence`, comme ceux des attestations et badges. Le contrôleur valide la valeur et ouvre `main` par défaut ; les liens directs et le rechargement conservent ainsi le sous-onglet. Le sélecteur d'événement conserve l'onglet et le sous-onglet courants.
+
+### Terminologie des évaluateurs (18 octobre 2026)
+
+- La navigation, les réglages, l'espace participant, les notifications, les rapports, les courriels par défaut et les traductions emploient **évaluateur** et **évaluation**. Les identifiants `reviewer`/`review` et les URL historiques contenant `relecteur` ou `relecture` restent inchangés pour conserver les liens et les données. Les textes personnalisés déjà saisis dans les modèles de courriel ne sont pas remplacés automatiquement.

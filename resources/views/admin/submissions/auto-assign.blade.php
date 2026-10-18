@@ -1,6 +1,6 @@
 {{-- ⚠️ `subtitle` est une valeur PHP, échappée à l'affichage : y écrire « &amp; »
      produit un « &amp;amp; » visible. Mettre le caractère tel quel. --}}
-<x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts & charge">
+<x-layouts.admin title="Attribution automatique" subtitle="Évaluateurs - matching par axe, conflits d’intérêts & charge">
     <div class="admin-page">
         {{-- Sélecteur d'événement en tête, AVANT les onglets (convention des pages
              Documents, Participants, Paiements et Soumissions). --}}
@@ -20,7 +20,7 @@
              des réglages de l'événement, pas des paramètres de cette page). --}}
         @if ($event)
             <p style="margin:-4px 0 16px;font-size:13px;color:var(--ukc-muted);">
-                Règles appliquées : <strong>{{ $target }}</strong> relecteur(s) par soumission -
+                Règles appliquées : <strong>{{ $target }}</strong> évaluateur(s) par soumission -
                 charge max <strong>{{ $maxLoad > 0 ? $maxLoad : 'illimitée' }}</strong> -
                 <a href="{{ route('admin.submissions.options', ['event_id' => $event_id]) }}"
                    style="color:var(--ukc-blue);font-weight:600;">modifier</a>
@@ -30,13 +30,13 @@
             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour lancer l’attribution.</p></div>
         @elseif (empty($preview['reviewers']))
             <div class="ukc-card">
-                <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cet événement. Assignez d’abord un relecteur depuis une soumission,
-                    ou invitez des relecteurs, puis revenez ici.</p>
+                <p style="margin:0;color:var(--ukc-muted);">Aucun évaluateur sur cet événement. Assignez d’abord un évaluateur depuis une soumission,
+                    ou invitez des évaluateurs, puis revenez ici.</p>
             </div>
         @else
             {{-- Indicateurs du plan --}}
             <div class="ukc-stats">
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relecteurs</div><div class="val blue">{{ count($preview['reviewers']) }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val blue">{{ count($preview['reviewers']) }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">À couvrir</div><div class="val warn">{{ $preview['needing'] }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Proposées</div><div class="val green">{{ count($preview['proposals']) }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--{{ $preview['uncovered'] ? 'red' : 'green' }}"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Non couvertes</div><div class="val" style="color:{{ $preview['uncovered'] ? '#dc2626' : 'var(--ukc-green)' }};">{{ $preview['uncovered'] }}</div></div>
@@ -51,7 +51,7 @@
 
                     @if (empty($preview['proposals']))
                         <div style="padding:18px;color:var(--ukc-muted);">
-                            Rien à proposer : toutes les soumissions éligibles sont déjà couvertes, ou aucun relecteur disponible sans conflit d’intérêt élevé.
+                            Rien à proposer : toutes les soumissions éligibles sont déjà couvertes, ou aucun évaluateur disponible sans conflit d’intérêt élevé.
                         </div>
                     @else
                         {{-- `n` = paires cochées sur la PAGE courante (la sélection ne
@@ -69,7 +69,7 @@
                                             <x-ukc.th sort="ref" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
                                             <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
                                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
-                                            <x-ukc.th sort="reviewer" :current="$sort" :dir="$dir">Relecteur proposé</x-ukc.th>
+                                            <x-ukc.th sort="reviewer" :current="$sort" :dir="$dir">Évaluateur proposé</x-ukc.th>
                                             <th>Motif</th>
                                             <x-ukc.th sort="coi" :current="$sort" :dir="$dir">COI</x-ukc.th>
                                         </tr>
@@ -85,7 +85,7 @@
                                                 <td>{{ $p['reviewer_name'] }}</td>
                                                 <td style="font-size:13px;color:var(--ukc-muted);">
                                                     {{ $p['reason'] }}
-                                                    {{-- La justification suit la paire : elle est archivée sur la relecture (review.assign_reason). --}}
+                                                    {{-- La justification suit la paire : elle est archivée sur l’évaluation (review.assign_reason). --}}
                                                     <input type="hidden" name="reasons[{{ $p['submission_id'] }}:{{ $p['reviewer_id'] }}]" value="{{ $p['reason'] }}">
                                                 </td>
                                                 <td>
@@ -112,16 +112,16 @@
                     @endif
                 </div>
 
-                {{-- Charge des relecteurs : ce qui éclaire le plan (dont « Proposé »).
+                {{-- Charge des évaluateurs : ce qui éclaire le plan (dont « Proposé »).
                      L'expertise elle-même se règle dans l'onglet dédié. --}}
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- la charge ne compte que les relectures en cours ou rendues.</span></div>
+                        <div><strong>Charge des évaluateurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- la charge ne compte que les évaluations en cours ou rendues.</span></div>
                         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.reviewers', ['event_id' => $event_id]) }}">Gérer l’expertise</a>
                     </div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
-                            <thead><tr><th>Relecteur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th><th style="text-align:center;">Proposé</th></tr></thead>
+                            <thead><tr><th>Évaluateur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th><th style="text-align:center;">Proposé</th></tr></thead>
                             <tbody>
                                 @forelse ($preview['reviewers'] as $rev)
                                     <tr>
@@ -135,7 +135,7 @@
                                         <td style="text-align:center;">@if ($rev['proposed'])<span class="ukc-pill ukc-pill--info">+{{ $rev['proposed'] }}</span>@else - @endif</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="4" style="color:var(--ukc-muted);">Aucun relecteur.</td></tr>
+                                    <tr><td colspan="4" style="color:var(--ukc-muted);">Aucun évaluateur.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

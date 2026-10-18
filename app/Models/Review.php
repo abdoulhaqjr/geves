@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Relecture en aveugle d'une soumission par un relecteur (participant).
+ * Évaluation en aveugle d'une soumission par un évaluateur (participant).
  *
  * @property array<string, int>|null $scores notes par critère de la grille
  * @property Carbon|null $assigned_at
@@ -18,7 +18,7 @@ class Review extends Model
 {
     protected $guarded = ['id'];
 
-    /** Recommandations possibles d'un relecteur. */
+    /** Recommandations possibles d'un évaluateur. */
     public const RECOMMENDATIONS = [
         'accept' => 'Accepter en l’état',
         'minor' => 'Révisions mineures',
@@ -27,7 +27,7 @@ class Review extends Model
     ];
 
     /**
-     * Cycle de vie d'une relecture. `invited` : confiée, le relecteur n'a pas
+     * Cycle de vie d'une évaluation. `invited` : confiée, l’évaluateur n'a pas
      * encore répondu. `accepted` : il s'est engagé. `declined` : il a refusé (la
      * place est libérée, la soumission redevient à couvrir). `completed` : rendue.
      * `cancelled` : retirée par l'organisation.
@@ -47,7 +47,7 @@ class Review extends Model
     public const ACTIVE_STATUSES = ['invited', 'accepted', 'completed'];
 
     /**
-     * Statuts « encore dus » : le relecteur a quelque chose à faire (confirmer
+     * Statuts « encore dus » : l’évaluateur a quelque chose à faire (confirmer
      * ou évaluer). ⚠️ C'est la bonne liste pour un compteur « à traiter » -
      * un `status != completed` compterait aussi les refus et les annulations.
      */
@@ -68,9 +68,9 @@ class Review extends Model
     }
 
     /**
-     * Avancement compact d'un lot de relectures, pour une liste :
+     * Avancement compact d'un lot d’évaluations, pour une liste :
      * `['done' => 1, 'total' => 2, 'late' => 1, 'lateDays' => 3]`. Même règle
-     * que summarize() - seules les relectures actives comptent.
+     * que summarize() - seules les évaluations actives comptent.
      *
      * @param  iterable<int, self>  $reviews
      * @return array{done:int, total:int, late:int, lateDays:int}
@@ -89,8 +89,8 @@ class Review extends Model
     }
 
     /**
-     * Phrase d'état d'un lot de relectures, telle que le comité la lit :
-     * « 2 relectures demandées - 1 rendue, 1 en retard de 3 j ». Les relectures
+     * Phrase d'état d'un lot d’évaluations, telle que le comité la lit :
+     * « 2 évaluations demandées - 1 rendue, 1 en retard de 3 j ». Les évaluations
      * annulées ne comptent pas ; les refus sont mentionnés à part (ils ont bien
      * eu lieu, mais la place est libre).
      *
@@ -104,8 +104,8 @@ class Review extends Model
 
         if ($active->isEmpty()) {
             return $declined > 0
-                ? 'Aucune relecture en cours - '.$declined.' refus.'
-                : 'Aucun relecteur assigné.';
+                ? 'Aucune évaluation en cours - '.$declined.' refus.'
+                : 'Aucun évaluateur assigné.';
         }
 
         $late = $active->filter(fn (self $r) => $r->isLate());
@@ -125,7 +125,7 @@ class Review extends Model
         }
 
         $count = $active->count();
-        $text = $count.' relecture'.($count > 1 ? 's' : '').' demandée'.($count > 1 ? 's' : '');
+        $text = $count.' évaluation'.($count > 1 ? 's' : '').' demandée'.($count > 1 ? 's' : '');
         if ($parts !== []) {
             $text .= ' - '.implode(', ', $parts);
         }
@@ -158,7 +158,7 @@ class Review extends Model
         };
     }
 
-    /** Relecture attendue : confiée ou acceptée, pas encore rendue. */
+    /** Évaluation attendue : confiée ou acceptée, pas encore rendue. */
     public function isPending(): bool
     {
         return in_array($this->status, self::PENDING_STATUSES, true);
@@ -172,7 +172,7 @@ class Review extends Model
 
     /**
      * En retard : attendue ET échéance dépassée. ⚠️ Ne pas confondre avec
-     * « non rendue » - sans échéance, une relecture n'est jamais en retard.
+     * « non rendue » - sans échéance, une évaluation n'est jamais en retard.
      */
     public function isLate(): bool
     {

@@ -101,7 +101,7 @@ class AccountActivity
         })->with('event')->latest('id')->get();
     }
 
-    /** Le compte a-t-il au moins une participation en tant que relecteur ? */
+    /** Le compte a-t-il au moins une participation en tant que évaluateur ? */
     public function isReviewer(): bool
     {
         return Participant::where('user_id', $this->account->id)
@@ -127,7 +127,7 @@ class AccountActivity
             $roles[] = 'Communicant';
         }
         if ($this->isReviewer()) {
-            $roles[] = 'Relecteur';
+            $roles[] = 'Évaluateur';
         }
         if ($this->moderatedSessions()->isNotEmpty()) {
             $roles[] = 'Modérateur';

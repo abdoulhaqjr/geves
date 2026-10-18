@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Password;
 
 /**
- * Invitation d'un relecteur : lien vers son espace « Mes relectures », échéance
+ * Invitation d'un évaluateur : lien vers son espace « Mes évaluations », échéance
  * de remise et rappel qu'il peut accepter ou refuser. Pour un compte fraîchement
  * provisionné (mot de passe à définir), le lien mène à la création du mot de
  * passe (jeton). Mise en file (ShouldQueue).
@@ -33,7 +33,7 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Invitation à relire des communications'));
+        return new Envelope(subject: __('Invitation à évaluer des communications'));
     }
 
     public function content(): Content
@@ -51,7 +51,7 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
         return new Content(markdown: 'emails.reviewer-invitation', with: [
             'portalUrl' => $url,
             'needsPassword' => $needsPassword,
-            // Échéance de remise : le relecteur doit la connaître AVANT d'accepter.
+            // Échéance de remise : l’évaluateur doit la connaître AVANT d'accepter.
             'due' => $this->review?->due_at?->translatedFormat('j F Y'),
         ]);
     }

@@ -1,4 +1,4 @@
-<x-layouts.admin title="Relecteurs & expertise" subtitle="Axes évaluables par relecteur et charge courante">
+<x-layouts.admin title="Évaluateurs & expertise" subtitle="Axes évaluables par évaluateur et charge courante">
     <div class="admin-page admin-submissions">
 
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
@@ -14,14 +14,14 @@
         @include('admin.submissions._nav', ['current' => 'relecteurs'])
 
         @if (! $event)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour gérer l’expertise des relecteurs.</p></div>
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour gérer l’expertise des évaluateurs.</p></div>
         @else
             <div class="ukc-stats">
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relecteurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="tag" :size="20" /></div><div class="lbl">Axes de l’événement</div><div class="val">{{ count($reviewerAxes) }}</div></div>
                 <div class="ukc-stat-card tw-stat">
                     <div class="tw-stat__icon tw-stat__icon--{{ count($uncoveredAxes) ? 'red' : 'green' }}"><x-ukc.icon name="shield" :size="20" /></div>
-                    <div class="lbl">Axes sans relecteur</div>
+                    <div class="lbl">Axes sans évaluateur</div>
                     <div class="val" style="{{ count($uncoveredAxes) ? 'color:#dc2626;' : 'color:var(--ukc-green);' }}">{{ count($uncoveredAxes) }}</div>
                 </div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Charge moyenne</div><div class="val">{{ number_format($avgLoad, 1, ',', ' ') }}</div></div>
@@ -31,8 +31,8 @@
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
                     <div>
-                        <strong>{{ count($uncoveredAxes) }} axe(s) sans relecteur déclaré.</strong>
-                        L’attribution automatique y proposera un relecteur « hors axe ».
+                        <strong>{{ count($uncoveredAxes) }} axe(s) sans évaluateur déclaré.</strong>
+                        L’attribution automatique y proposera un évaluateur « hors axe ».
                         <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">
                             @foreach ($uncoveredAxes as $axis)
                                 <span class="axis-tag" style="background:#fee2e2;color:#991b1b;">{{ \Illuminate\Support\Str::limit($axis, 42) }}</span>
@@ -45,8 +45,8 @@
                 @csrf
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);">
-                        <strong>Axes évaluables par relecteur</strong>
-                        <span style="color:var(--ukc-muted);font-size:13px;">- l’attribution automatique priorise un relecteur dont l’expertise couvre l’axe de la soumission.</span>
+                        <strong>Axes évaluables par évaluateur</strong>
+                        <span style="color:var(--ukc-muted);font-size:13px;">- l’attribution automatique priorise un évaluateur dont l’expertise couvre l’axe de la soumission.</span>
                     </div>
 
                     @if (empty($reviewerAxes))
@@ -58,13 +58,13 @@
                         </div>
                     @elseif ($reviewers->isEmpty())
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun relecteur sur cet événement. Assignez un relecteur depuis une soumission
+                            Aucun évaluateur sur cet événement. Assignez un évaluateur depuis une soumission
                             (ou depuis la page d’attribution), il apparaîtra ici.
                         </div>
                     @else
                         <div class="ukc-table-wrap">
                             <table class="ukc-table">
-                                <thead><tr><th style="min-width:200px;">Relecteur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th></tr></thead>
+                                <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th></tr></thead>
                                 <tbody>
                                     @foreach ($reviewers as $rev)
                                         <tr>
@@ -95,8 +95,8 @@
                 </div>
 
                 <p class="hint" style="margin:10px 2px 0;font-size:12.5px;color:var(--ukc-muted);">
-                    Un relecteur sans aucun axe coché est traité comme <em>généraliste</em>.
-                    La <strong>charge</strong> ne compte que les relectures en cours ou rendues.
+                    Un évaluateur sans aucun axe coché est traité comme <em>généraliste</em>.
+                    La <strong>charge</strong> ne compte que les évaluations en cours ou rendues.
                 </p>
 
                 @if ($canWrite && ! empty($reviewerAxes) && $reviewers->isNotEmpty())

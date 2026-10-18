@@ -90,23 +90,23 @@
                 @csrf
 
                 <div class="ukc-card">
-                    <h2><span><x-ukc.icon name="refresh" :size="18" /> Attribution des relectures</span></h2>
+                    <h2><span><x-ukc.icon name="refresh" :size="18" /> Attribution des évaluateurs</span></h2>
                     <p class="desc">
                         Règles utilisées par l’<a href="{{ route('admin.submissions.auto-assign', ['event_id' => $event_id]) }}"
                         style="color:var(--ukc-blue);font-weight:600;">attribution automatique</a> pour proposer un plan.
                     </p>
                     <div class="ukc-opts-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
                         <div class="ukc-field">
-                            <label for="review_target">Relecteurs par soumission</label>
+                            <label for="review_target">Évaluateurs par soumission</label>
                             <input type="number" id="review_target" name="review_target" min="1" max="5"
                                    value="{{ $target }}" @disabled(! $canWrite)>
-                            <span class="hint">Nombre de relectures visé pour chaque communication (1 à 5).</span>
+                            <span class="hint">Nombre d’évaluations visé pour chaque communication (1 à 5).</span>
                         </div>
                         <div class="ukc-field">
-                            <label for="review_max_load">Charge maximale par relecteur</label>
+                            <label for="review_max_load">Charge maximale par évaluateur</label>
                             <input type="number" id="review_max_load" name="review_max_load" min="0" max="50"
                                    value="{{ $maxLoad }}" @disabled(! $canWrite)>
-                            <span class="hint">0 = illimitée. Au-delà, le moteur ne propose plus ce relecteur.</span>
+                            <span class="hint">0 = illimitée. Au-delà, le moteur ne propose plus cet évaluateur.</span>
                         </div>
                     </div>
                 </div>
@@ -114,7 +114,7 @@
                 <div class="ukc-card" style="margin-top:18px;">
                     <h2><span><x-ukc.icon name="award" :size="18" /> Grille de notation &amp; délai</span></h2>
                     <p class="desc">
-                        Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
+                        Critères notés de 0 à {{ $reviewScale }} par les évaluateurs ; la note globale /20 en est
                         dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cet événement.
                     </p>
 
@@ -123,8 +123,8 @@
                         <input type="number" id="review_due_days" name="review_due_days" min="1" max="180"
                                value="{{ $reviewDueDays }}" @disabled(! $canWrite)>
                         <span class="hint">
-                            Échéance calculée à l’assignation. Passé ce délai, la relecture est signalée
-                            « en retard » au comité et au relecteur.
+                            Échéance calculée à l’assignation. Passé ce délai, l’évaluation est signalée
+                            « en retard » au comité et à l’évaluateur.
                         </span>
                     </div>
 
@@ -152,7 +152,7 @@
 
                 @if ($canWrite)
                     <div class="ukc-form-actions" style="margin-top:16px;text-align:right;">
-                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les règles de relecture</button>
+                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les règles d’évaluation</button>
                     </div>
                 @else
                     <p class="hint" style="margin-top:10px;font-size:12.5px;color:var(--ukc-muted);">

@@ -110,7 +110,7 @@ it('règle l’expertise depuis son onglet, plus depuis la fiche d’événement
     $this->actingAs($staff, 'web')
         ->get(route('admin.submissions.reviewers', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('Relecteurs &amp; expertise', false)
+        ->assertSee('Évaluateurs &amp; expertise', false)
         ->assertSee('Ama Sow')
         ->assertSee('Enregistrer les expertises');
 
@@ -130,8 +130,8 @@ it('regroupe les règles d’évaluation sur leur onglet', function () {
     $this->actingAs($staff, 'web')
         ->get(route('admin.submissions.options', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('Relecteurs par soumission')
-        ->assertSee('Charge maximale par relecteur')
+        ->assertSee('Évaluateurs par soumission')
+        ->assertSee('Charge maximale par évaluateur')
         ->assertSee('Délai d’évaluation (jours)', false)
         ->assertSee('Grille de notation');
 });
@@ -164,7 +164,7 @@ it('applique les règles de l’événement au plan proposé, sans paramètre d�
     $this->actingAs($staff, 'web')
         ->get(route('admin.submissions.auto-assign', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('4</strong> relecteur(s) par soumission', false);
+        ->assertSee('4</strong> évaluateur(s) par soumission', false);
 });
 
 it('revient sur l’onglet Relecteurs après avoir enregistré l’expertise', function () {

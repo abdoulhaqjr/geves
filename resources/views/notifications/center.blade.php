@@ -8,7 +8,7 @@
         @php
             $kindDesc = [
                 'submission_status' => __('Acceptation, refus, demande de révision'),
-                'review_assigned' => __('Nouvelle relecture qui vous est confiée'),
+                'review_assigned' => __('Nouvelle évaluation qui vous est confiée'),
                 'session_role' => __('Désignation comme modérateur ou rapporteur d’une séance'),
                 'attestation' => __('Attestation ou reçu prêt à télécharger'),
                 'invitation' => __('Invitations et rappels d’inscription'),

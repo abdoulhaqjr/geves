@@ -33,7 +33,7 @@ use Illuminate\View\View;
 /**
  * Communications du compte connecté (contrôleur + Blade, sans Livewire) :
  * liste, dépôt (wizard multi-étapes piloté par Alpine + POST multipart), fiche
- * de suivi (statut, retours relecteurs, versions), choix de créneau et
+ * de suivi (statut, retours évaluateurs, versions), choix de créneau et
  * resoumission d'une version corrigée.
  */
 class SubmissionController extends Controller
@@ -177,7 +177,7 @@ class SubmissionController extends Controller
         ]);
     }
 
-    /** Réponse de l'auteur aux relecteurs (rebuttal), tant que la phase est ouverte. */
+    /** Réponse de l'auteur aux évaluateurs (rebuttal), tant que la phase est ouverte. */
     public function rebuttal(Request $request, Submission $submission): RedirectResponse
     {
         $this->authorizeOwnership($submission);
@@ -186,7 +186,7 @@ class SubmissionController extends Controller
         $data = $request->validate([
             'rebuttal' => ['required', 'string', 'max:8000'],
         ], [
-            'rebuttal.required' => 'Saisissez votre réponse aux relecteurs.',
+            'rebuttal.required' => 'Saisissez votre réponse aux évaluateurs.',
         ]);
 
         $meta = $submission->meta ?? [];
@@ -197,7 +197,7 @@ class SubmissionController extends Controller
         $submission->update(['meta' => $meta]);
 
         return redirect()->route('account.submissions.show', $submission)
-            ->with('ukc_status', 'Votre réponse aux relecteurs a été transmise au comité.');
+            ->with('ukc_status', 'Votre réponse aux évaluateurs a été transmise au comité.');
     }
 
     /** Le participant choisit lui-même un créneau libre. */
@@ -378,7 +378,7 @@ class SubmissionController extends Controller
         return false;
     }
 
-    /** Commentaires des relecteurs destinés à l'auteur (révélés après décision ou en phase de réponse). */
+    /** Commentaires des évaluateurs destinés à l'auteur (révélés après décision ou en phase de réponse). */
     private function authorFeedback(Submission $submission): array
     {
         if (! in_array($submission->status, ['revision', 'accepted', 'rejected'], true) && ! $submission->rebuttalOpen()) {
@@ -388,7 +388,7 @@ class SubmissionController extends Controller
         return $submission->reviews()->where('status', 'completed')->get()
             ->filter(fn ($r) => filled($r->comments))
             ->values()
-            ->map(fn ($r, $i) => ['label' => 'Relecteur '.($i + 1), 'comments' => $r->comments])
+            ->map(fn ($r, $i) => ['label' => 'Évaluateur '.($i + 1), 'comments' => $r->comments])
             ->all();
     }
 

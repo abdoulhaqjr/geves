@@ -8,7 +8,7 @@ use App\Support\Notifier;
 
 /**
  * Crée une notification in-app pour le compte de l'auteur correspondant quand
- * une décision est prise sur sa communication (en relecture, correction,
+ * une décision est prise sur sa communication (en évaluation, correction,
  * acceptée, refusée). Complète l'e-mail (NotifyAuthorOfStatus) sans le remplacer.
  * Auto-découvert par Laravel - ne pas enregistrer manuellement.
  */

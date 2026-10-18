@@ -94,7 +94,7 @@ class DashboardController extends Controller
         // Actions prioritaires réelles.
         $todos = collect([
             ['txt' => $n('submitted').' nouvelle(s) soumission(s) à assigner', 'n' => $n('submitted'), 'pill' => 'err', 'lbl' => 'Urgent'],
-            ['txt' => $n('under_review').' soumission(s) en relecture à décider', 'n' => $n('under_review'), 'pill' => 'review', 'lbl' => 'À décider'],
+            ['txt' => $n('under_review').' soumission(s) en évaluation à décider', 'n' => $n('under_review'), 'pill' => 'review', 'lbl' => 'À décider'],
             ['txt' => $pendingPay.' paiement(s) en attente à relancer', 'n' => $pendingPay, 'pill' => 'warn', 'lbl' => 'Moyen'],
         ])->filter(fn ($t) => $t['n'] > 0)->values();
 

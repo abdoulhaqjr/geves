@@ -162,7 +162,7 @@
                     <div class="tool-list">
                         <button type="button" class="tool-item" @click="ask('Liste les 10 dernières soumissions en évaluation avec leur délai.')">
                             <strong>Pipeline scientifique</strong>
-                            <span>Délais, ateliers, relecteurs</span>
+                            <span>Délais, ateliers, évaluateurs</span>
                         </button>
                         <button type="button" class="tool-item" @click="ask('Contrôle les écarts entre inscriptions payées et badges émis.')">
                             <strong>Contrôle paiements / badges</strong>

@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Soumission '.$submission->ref_code" subtitle="Relecture, décision & historique">
+<x-layouts.admin :title="'Soumission '.$submission->ref_code" subtitle="Évaluation, décision & historique">
     <div class="admin-page admin-submission-detail" data-ajax-root="submission">
         @php($s = $submission)
         @php($initials = fn ($name) => \Illuminate\Support\Str::of($name ?: '?')->explode(' ')->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?')
@@ -248,7 +248,7 @@
                     @if (in_array($s->status, ['submitted', 'under_review'], true) && $reviews->isEmpty())
                         <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
                             <span class="ico"><x-ukc.icon name="info" :size="16" /></span>
-                            <div>Aucune relecture n’a été lancée : vous pouvez <strong>décider directement</strong> (accepter, refuser, demander une correction) sans passer par les relecteurs.</div>
+                            <div>Aucune évaluation n’a été lancée : vous pouvez <strong>décider directement</strong> (accepter, refuser, demander une correction) sans passer par les évaluateurs.</div>
                         </div>
                     @endif
 
@@ -293,7 +293,7 @@
                 @php($coiTag = fn ($lvl) => ['high' => ['Élevé', 'high'], 'medium' => ['Moyen', 'med'], 'low' => ['Faible', 'low']][$lvl] ?? ['OK', 'clear'])
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="shield" :size="18" /> Conflits d’intérêts</span></h2>
-                    <p class="desc">Détection automatique indicative entre relecteurs et auteurs. La décision reste à votre main.</p>
+                    <p class="desc">Détection automatique indicative entre évaluateurs et auteurs. La décision reste à votre main.</p>
                     @forelse ($reviews as $review)
                         @php($cois = $coiByReview[$review->id] ?? [])
                         @if (count($cois))
@@ -313,7 +313,7 @@
                             </div>
                         @endif
                     @empty
-                        <p style="font-size:.88rem;color:var(--ukc-muted);">Assignez des relecteurs pour vérifier les conflits potentiels.</p>
+                        <p style="font-size:.88rem;color:var(--ukc-muted);">Assignez des évaluateurs pour vérifier les conflits potentiels.</p>
                     @endforelse
                     @php($coiIgnoresInstitution = \App\Support\ConflictOfInterest::ignoresSameInstitution($s))
                     <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">
@@ -322,9 +322,9 @@
                     </p>
                 </div>
 
-                {{-- Relecteurs --}}
+                {{-- Évaluateurs --}}
                 <div class="ukc-card">
-                    <h2><span><x-ukc.icon name="mic" :size="18" /> Relecteurs</span></h2>
+                    <h2><span><x-ukc.icon name="mic" :size="18" /> Évaluateurs</span></h2>
                     <p class="desc">{{ \App\Models\Review::summarize($reviews) }}</p>
 
                     @if ($completedCount)
@@ -334,13 +334,13 @@
                                 <div class="tw-score__num">{{ number_format((float) $averageScore, 1, ',', ' ') }}<span>/20</span></div>
                                 <div>
                                     <div class="tw-score__label">Note moyenne</div>
-                                    <div class="tw-score__sub">{{ $completedCount }} relecture(s) rendue(s)</div>
+                                    <div class="tw-score__sub">{{ $completedCount }} évaluation(s) rendue(s)</div>
                                 </div>
                             </div>
                         @else
                             <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
                                 <span class="ico"><x-ukc.icon name="chart" :size="18" /></span>
-                                <div>{{ $completedCount }} relecture(s) rendue(s)</div>
+                                <div>{{ $completedCount }} évaluation(s) rendue(s)</div>
                             </div>
                         @endif
                     @endif
@@ -384,7 +384,7 @@
                             </div>
                             @if ($review->status !== 'cancelled')
                                 <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
-                                      data-ajax data-ajax-msg="Assignation annulée." data-confirm="Retirer cette assignation ? La relecture passe « annulée » : elle reste dans l’historique mais ne compte plus.">
+                                      data-ajax data-ajax-msg="Assignation annulée." data-confirm="Retirer cette assignation ? L’évaluation passe « annulée » : elle reste dans l’historique mais ne compte plus.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="rev-remove" title="Retirer l’assignation">
@@ -394,19 +394,19 @@
                             @endif
                         </div>
                     @empty
-                        <p style="font-size:.9rem;color:var(--ukc-muted);">Aucun relecteur assigné.</p>
+                        <p style="font-size:.9rem;color:var(--ukc-muted);">Aucun évaluateur assigné.</p>
                     @endforelse
 
                     {{-- Assigner --}}
                     <form method="POST" action="{{ route('admin.submissions.review.assign', $s) }}"
-                          data-ajax data-ajax-msg="Relecteur assigné."
+                          data-ajax data-ajax-msg="Évaluateur assigné."
                           style="margin-top:14px;padding-top:14px;border-top:1px solid var(--ukc-border);">
                         @csrf
                         @if ($existingReviewers->count())
                             <div class="ukc-field" style="margin-bottom:8px;">
-                                <label for="existingReviewerId">Relecteur existant</label>
-                                <select id="existingReviewerId" name="existingReviewerId" data-tom data-placeholder="Rechercher un relecteur…">
-                                    <option value="">- Nouveau relecteur -</option>
+                                <label for="existingReviewerId">Évaluateur existant</label>
+                                <select id="existingReviewerId" name="existingReviewerId" data-tom data-placeholder="Rechercher un évaluateur…">
+                                    <option value="">- Nouveà l’évaluateur -</option>
                                     @foreach ($existingReviewers as $rev)
                                         @php($worst = $coiByReviewer[$rev->id] ?? null)
                                         <option value="{{ $rev->id }}">{{ $worst === 'high' ? '⛔ ' : ($worst ? '⚠ ' : '') }}{{ $rev->full_name }} ({{ $rev->email }})</option>
@@ -422,17 +422,17 @@
                         </div>
                         <div class="ukc-field" style="margin-bottom:10px;">
                             <label for="reviewerEmail">E-mail</label>
-                            <input type="email" id="reviewerEmail" name="reviewerEmail" value="{{ old('reviewerEmail') }}" placeholder="relecteur@exemple.tg">
+                            <input type="email" id="reviewerEmail" name="reviewerEmail" value="{{ old('reviewerEmail') }}" placeholder="evaluateur@exemple.tg">
                             @error('reviewerEmail') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="width:100%;">
                             <x-ukc.icon name="user-plus" :size="16" /> Assigner et inviter
                         </button>
-                        <p class="hint" style="margin-top:8px;font-size:12px;color:var(--ukc-light);">Le relecteur reçoit un e-mail avec le lien de son portail d’évaluation en aveugle.</p>
+                        <p class="hint" style="margin-top:8px;font-size:12px;color:var(--ukc-light);">L’évaluateur reçoit un e-mail avec le lien de son portail d’évaluation en aveugle.</p>
                     </form>
                 </div>
 
-                {{-- Phase de réponse aux relecteurs (rebuttal) --}}
+                {{-- Phase de réponse aux évaluateurs (rebuttal) --}}
                 @if ($completedCount)
                     <div class="ukc-card">
                         <h2><span><x-ukc.icon name="pen" :size="18" /> Réponse de l’auteur</span></h2>

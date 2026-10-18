@@ -19,7 +19,7 @@ class EmailAudience
         'paid' => 'Ont réglé leurs frais',
         'unpaid' => 'N’ont pas réglé',
         'accepted' => 'Communication acceptée',
-        'reviewers' => 'Relecteurs',
+        'reviewers' => 'Évaluateurs',
         'not_invited' => 'Pas encore invités',
     ];
 

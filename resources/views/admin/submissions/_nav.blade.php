@@ -22,9 +22,9 @@
     @endif
 
     @if ($current === 'relecteurs')
-        <button type="button" class="active">Relecteurs &amp; expertise</button>
+        <button type="button" class="active">Évaluateurs &amp; expertise</button>
     @else
-        <a href="{{ route('admin.submissions.reviewers', ['event_id' => $navEd]) }}">Relecteurs &amp; expertise</a>
+        <a href="{{ route('admin.submissions.reviewers', ['event_id' => $navEd]) }}">Évaluateurs &amp; expertise</a>
     @endif
 
     @if ($current === 'options')

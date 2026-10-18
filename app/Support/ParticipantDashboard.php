@@ -716,10 +716,10 @@ class ParticipantDashboard
             }
         }
 
-        $relectures = $this->relecturesEnAttente();
-        if ($relectures > 0) {
+        $pendingReviews = $this->relecturesEnAttente();
+        if ($pendingReviews > 0) {
             $out[] = [
-                'titre' => trans_choice(':count relecture à évaluer|:count relectures à évaluer', $relectures, ['count' => $relectures]),
+                'titre' => trans_choice(':count évaluation à rendre|:count évaluations à rendre', $pendingReviews, ['count' => $pendingReviews]),
                 'detail' => __('Le comité attend votre évaluation.'),
                 'url' => route('account.reviews'),
                 'ton' => 'info',
@@ -740,8 +740,8 @@ class ParticipantDashboard
 
     /**
      * ⚠️ « À traiter » = invitée ou acceptée ({@see Review::PENDING_STATUSES}).
-     * Un `status != completed` compterait aussi les relectures refusées ou
-     * annulées : le relecteur garderait un badge pour un travail qu'il n'a plus
+     * Un `status != completed` compterait aussi les évaluations refusées ou
+     * annulées : l’évaluateur garderait un badge pour un travail qu'il n'a plus
      * à faire.
      */
     public function relecturesEnAttente(): int

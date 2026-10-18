@@ -54,7 +54,7 @@
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
-                <div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">en attente de relecture</div>
+                <div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">en attente d’évaluation</div>
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div>
@@ -132,7 +132,7 @@
                 <div class="ukc-card">
                     <h2>Accès rapides</h2>
                     <div class="quick-grid">
-                        <a class="quick-link" href="{{ route('admin.submissions.index') }}">Soumissions<span>Liste &amp; relecture</span></a>
+                        <a class="quick-link" href="{{ route('admin.submissions.index') }}">Soumissions<span>Liste &amp; évaluation</span></a>
                         <a class="quick-link" href="{{ $event ? route('admin.evenements.form', $event) : route('admin.evenements.index') }}">Formulaires<span>Champs &amp; règles</span></a>
                         <a class="quick-link" href="{{ route('admin.payments.index') }}">Paiements<span>FedaPay / Mobile Money</span></a>
                         <a class="quick-link" href="{{ route('admin.documents.attestations') }}">Documents<span>Attestations, badges</span></a>

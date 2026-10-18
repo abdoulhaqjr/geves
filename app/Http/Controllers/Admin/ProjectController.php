@@ -30,7 +30,7 @@ class ProjectController extends Controller
     /** Liens contextuels tâche → feature (libellé). L'URL est bâtie par linkUrl(). */
     public const LINK_TARGETS = [
         'submissions' => 'Soumissions',
-        'reviewers' => 'Relecteurs / attribution',
+        'reviewers' => 'Évaluateurs / attribution',
         'committees' => 'Comités',
         'participants' => 'Participants',
         'payments' => 'Paiements',
@@ -424,9 +424,9 @@ class ProjectController extends Controller
             $t('Cadrage', 'Établir le budget prévisionnel'),
             $t('Appel à communications', 'Rédiger et diffuser l’appel à communications', 'high', 'emails'),
             $t('Appel à communications', 'Mettre en ligne le site de l’événement', 'normal', 'event'),
-            $t('Soumissions & relecture', 'Configurer le formulaire de soumission', 'normal', 'submissions'),
-            $t('Soumissions & relecture', 'Recruter et affecter les relecteurs', 'normal', 'reviewers'),
-            $t('Soumissions & relecture', 'Collecter les relectures et arrêter les décisions', 'normal', 'submissions'),
+            $t('Soumissions & évaluation', 'Configurer le formulaire de soumission', 'normal', 'submissions'),
+            $t('Soumissions & évaluation', 'Recruter et affecter les évaluateurs', 'normal', 'reviewers'),
+            $t('Soumissions & évaluation', 'Collecter les évaluations et arrêter les décisions', 'normal', 'submissions'),
             $t('Programme', 'Composer le programme (sessions, ateliers)', 'normal', 'program'),
             $t('Programme', 'Planifier les créneaux et les salles', 'normal', 'program'),
             $t('Logistique', 'Gérer les inscriptions et les paiements', 'normal', 'payments'),

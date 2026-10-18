@@ -52,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
 
         // RBAC back-office : `manage_colloques` est une super-capacité (staff
         // pleinement habilité / administrateur) qui court-circuite les vérifications
-        // de permissions granulaires. Les autres rôles UKC (Comité, Relecteur,
+        // de permissions granulaires. Les autres rôles UKC (Comité, Évaluateur,
         // Organisateur, Secrétariat, Comptabilité, Appui, Accueil) sont gouvernés
         // par leurs permissions granulaires (matrice d'accès), appliquées par route.
         //

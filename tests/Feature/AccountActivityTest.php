@@ -83,7 +83,7 @@ it('dérive « Relecteur » d’une participation relecteur', function () {
     $account = accountWith();
     $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'reviewer']);
 
-    expect((new AccountActivity($account))->roles())->toContain('Relecteur');
+    expect((new AccountActivity($account))->roles())->toContain('Évaluateur');
 });
 
 it('retombe sur « Auditeur » pour une simple participation sans rôle fort', function () {

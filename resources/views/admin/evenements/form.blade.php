@@ -783,7 +783,7 @@
                                 <label class="ukc-check"><input type="checkbox" name="opt_livret" value="1" @checked($v('opt_livret'))> Livre des résumés activé</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_badges" value="1" @checked($v('opt_badges'))> Badges participants activés</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_formation" value="1" @checked($v('opt_formation'))> Activer le Module Formations</label>
-                                <label class="ukc-check"><input type="checkbox" name="opt_coi_ignore_institution" value="1" @checked($v('opt_coi_ignore_institution'))> Ignorer le conflit d’intérêts entre relecteur et auteur de la même institution</label>
+                                <label class="ukc-check"><input type="checkbox" name="opt_coi_ignore_institution" value="1" @checked($v('opt_coi_ignore_institution'))> Ignorer le conflit d’intérêts entre évaluateur et auteur de la même institution</label>
 
                                 <h3>Liens rapides</h3>
                                 <div class="quick-links">
@@ -968,7 +968,7 @@
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
                                 Attribuez à chaque personne un ou plusieurs <strong>rôles dans ce colloque</strong>
                                 (gestionnaire, comité d’organisation, secrétariat, comptabilité, accueil…) - les rôles se cumulent.
-                                Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
+                                Chaque colloque a sa propre équipe. L’évaluation scientifique se gère dans l’onglet <strong>Évaluateurs</strong>.
                             </p>
 
                             <form method="POST" action="{{ route('admin.evenements.team.attach', $event) }}" class="team-add">

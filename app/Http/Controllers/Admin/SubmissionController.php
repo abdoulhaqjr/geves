@@ -40,8 +40,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Soumissions du back-office (contrôleur + Blade) : liste filtrable + fiche
- * détaillée avec workflow (mise en relecture, correction, acceptation, refus)
- * notifiant l'auteur, et gestion des relecteurs (assignation, retrait, synthèse,
+ * détaillée avec workflow (mise en évaluation, correction, acceptation, refus)
+ * notifiant l'auteur, et gestion des évaluateurs (assignation, retrait, synthèse,
  * conflits d'intérêts).
  */
 class SubmissionController extends Controller
@@ -51,7 +51,7 @@ class SubmissionController extends Controller
 
     /** Statuts que l'on peut appliquer depuis la fiche (le dépôt initial exclu). */
     public const ACTIONS = [
-        'under_review' => ['Mettre en relecture', 'ghost'],
+        'under_review' => ['Mettre en évaluation', 'ghost'],
         'revision' => ['Demander une correction', 'gold'],
         'accepted' => ['Accepter', 'green'],
         'rejected' => ['Refuser', 'danger'],
@@ -85,7 +85,7 @@ class SubmissionController extends Controller
         $sortByAuthor = $sort['sort'] === 'author';
 
         $submissions = Submission::query()
-            // `reviews` : colonne d'avancement de la relecture (Review::progressOf).
+            // `reviews` : colonne d'avancement de l’évaluation (Review::progressOf).
             ->with(['event', 'participant', 'reviews'])
             ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
             // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
@@ -421,7 +421,7 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Ouvre (ou referme) la phase de réponse aux relecteurs (rebuttal) : révèle à
+     * Ouvre (ou referme) la phase de réponse aux évaluateurs (rebuttal) : révèle à
      * l'auteur les commentaires « à l'auteur » et l'autorise à y répondre avant
      * la décision finale.
      */
@@ -446,7 +446,7 @@ class SubmissionController extends Controller
             $submission->participant?->user,
             kind: 'rebuttal',
             title: 'Phase de réponse ouverte',
-            body: 'Vous pouvez consulter les retours des relecteurs et y répondre pour « '.$submission->title.' ».',
+            body: 'Vous pouvez consulter les retours des évaluateurs et y répondre pour « '.$submission->title.' ».',
             url: route('account.submissions.show', $submission),
             icon: 'pen',
         );
@@ -459,11 +459,11 @@ class SubmissionController extends Controller
         $name = trim((string) $request->input('reviewerName'));
         $email = trim((string) $request->input('reviewerEmail'));
 
-        // Relecteur existant sélectionné : on récupère nom + e-mail.
+        // Évaluateur existant sélectionné : on récupère nom + e-mail.
         if ($request->filled('existingReviewerId')) {
             $reviewer = Participant::find($request->input('existingReviewerId'));
             if (! $reviewer) {
-                return back()->withInput()->withErrors(['existingReviewerId' => 'Relecteur introuvable.']);
+                return back()->withInput()->withErrors(['existingReviewerId' => 'Évaluateur introuvable.']);
             }
             $name = $reviewer->full_name;
             $email = (string) $reviewer->email;
@@ -477,16 +477,16 @@ class SubmissionController extends Controller
 
         $review = $action->handle($submission, $name, $email);
 
-        // Invitation par e-mail, soumise à la préférence du relecteur.
+        // Invitation par e-mail, soumise à la préférence de l’évaluateur.
         if (Notifier::emailAllowed($review->reviewer->user, 'review_assigned')) {
             Mail::to($email)->send(new ReviewerInvitationMail($review->reviewer, review: $review));
         }
 
-        return back()->with('ukc_status', 'Relecteur assigné et invité par e-mail.');
+        return back()->with('ukc_status', 'Évaluateur assigné et invité par e-mail.');
     }
 
     /**
-     * Retire une assignation. ⚠️ On n'efface pas la ligne : une relecture est une
+     * Retire une assignation. ⚠️ On n'efface pas la ligne : une évaluation est une
      * pièce du dossier (qui a été sollicité, quand, et ce qu'il a éventuellement
      * rendu). Elle passe « annulée » - hors des compteurs et de la couverture
      * (cf. Review::ACTIVE_STATUSES) mais toujours lisible dans l'historique.
@@ -500,26 +500,26 @@ class SubmissionController extends Controller
         $wasCompleted = $review->isCompleted();
         $review->update(['status' => 'cancelled']);
 
-        // Le relecteur doit savoir qu'il n'a plus cette relecture à rendre.
+        // L’évaluateur doit savoir qu'il n'a plus cette évaluation à rendre.
         $review->loadMissing('reviewer.user');
         Notifier::account(
             $review->reviewer?->user,
             kind: 'review_assigned',
-            title: 'Relecture annulée',
-            body: 'Une relecture qui vous avait été confiée a été retirée par le comité.',
+            title: 'Évaluation annulée',
+            body: 'Une évaluation qui vous avait été confiée a été retirée par le comité.',
             url: route('account.reviews'),
             icon: 'inbox',
         );
 
         return back()->with('ukc_status', $wasCompleted
             ? 'Assignation annulée : l’évaluation reste consultable dans l’historique mais ne compte plus.'
-            : 'Assignation annulée : la place est libérée pour un autre relecteur.');
+            : 'Assignation annulée : la place est libérée pour un autre évaluateur.');
     }
 
     /**
-     * Attribution automatique des relecteurs (aperçu) : sélectionne un événement,
+     * Attribution automatique des évaluateurs (aperçu) : sélectionne un événement,
      * règle la cible et le plafond, propose un plan (matching axe + COI + charge).
-     * L'expertise des relecteurs se règle dans l'onglet « Relecteurs » de la fiche
+     * L'expertise des évaluateurs se règle dans l'onglet « Évaluateurs » de la fiche
      * d'événement.
      */
     public function autoAssign(Request $request, AutoAssignReviewers $engine): View
@@ -578,8 +578,8 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Onglet « Relecteurs & expertise » : la matrice des axes que chaque
-     * relecteur peut évaluer, et sa charge. Elle vivait dans la fiche d'événement,
+     * Onglet « Évaluateurs & expertise » : la matrice des axes que chaque
+     * évaluateur peut évaluer, et sa charge. Elle vivait dans la fiche d'événement,
      * loin du moteur qui la consomme et de la page où l'on constate qu'un axe
      * n'est couvert par personne.
      */
@@ -617,7 +617,7 @@ class SubmissionController extends Controller
 
     /**
      * Onglet « Options » : toutes les RÈGLES du module Soumissions pour cette
-     * événement - dépôt (limites du formulaire), attribution (relecteurs visés,
+     * événement - dépôt (limites du formulaire), attribution (évaluateurs visés,
      * plafond de charge) et évaluation (grille, délai). Elles étaient éclatées
      * entre la page d'attribution (en paramètres d'URL), la fiche d'événement et
      * l'éditeur de formulaire.
@@ -658,14 +658,14 @@ class SubmissionController extends Controller
         );
     }
 
-    /** Applique le plan validé (paires soumission→relecteur cochées). */
+    /** Applique le plan validé (paires soumission→évaluateur cochées). */
     public function autoAssignApply(Request $request, AutoAssignReviewers $engine): RedirectResponse
     {
         $data = $request->validate([
             'event_id' => ['required', 'exists:events,id'],
             'pairs' => ['required', 'array', 'min:1'],
             'pairs.*' => ['string'],
-            // Justification proposée par le moteur, archivée sur la relecture.
+            // Justification proposée par le moteur, archivée sur l’évaluation.
             'reasons' => ['array'],
             'reasons.*' => ['nullable', 'string', 'max:200'],
         ]);
@@ -690,12 +690,12 @@ class SubmissionController extends Controller
         return redirect()
             ->route('admin.submissions.auto-assign', ['event_id' => $event->id])
             ->with('ukc_status', $created > 0
-                ? $created.' relecteur(s) assigné(s) et invité(s) par e-mail.'
+                ? $created.' évaluateur(s) assigné(s) et invité(s) par e-mail.'
                 : 'Aucune nouvelle assignation (déjà en place ou conflit d’intérêt).');
     }
 
     /**
-     * Historique dérivé des vrais événements (dépôt, versions, relectures).
+     * Historique dérivé des vrais événements (dépôt, versions, évaluations).
      *
      * @return array<int, array{when: Carbon|null, what: string, done: bool}>
      */
@@ -712,11 +712,11 @@ class SubmissionController extends Controller
         }
 
         foreach ($reviews as $review) {
-            $name = $review->reviewer?->full_name ?: 'un relecteur';
+            $name = $review->reviewer?->full_name ?: 'un évaluateur';
             $events[] = ['when' => $review->created_at, 'what' => 'Assignée à '.$name, 'done' => false];
             if ($review->isCompleted()) {
                 $reco = $review->recommendationLabel();
-                $events[] = ['when' => $review->updated_at, 'what' => 'Relecture de '.$name.' rendue'.($reco ? ' - '.$reco : ''), 'done' => true];
+                $events[] = ['when' => $review->updated_at, 'what' => 'Évaluation de '.$name.' rendue'.($reco ? ' - '.$reco : ''), 'done' => true];
             }
         }
 

@@ -103,7 +103,7 @@ class AskGesco
                 ."Tu PEUX répondre aux questions personnelles de l'utilisateur (ses soumissions, son paiement, "
                 .'son badge, ses attestations, ses échéances, son PROGRAMME PERSONNEL (quand et où il '
                 .'présente ses communications, et si un créneau a été reprogrammé, ce qui a changé et le nouvel '
-                .'horaire), ses FORMATIONS suivies, ses rôles de séance (modérateur / rapporteur), ses RELECTURES '
+                .'horaire), ses FORMATIONS suivies, ses rôles de séance (modérateur / rapporteur), ses ÉVALUATIONS '
                 ."à rendre et ses RÉCLAMATIONS déposées) en t'appuyant UNIQUEMENT sur ces données ci-dessus. "
                 ."Si l'information demandée n'y figure pas, dis-le et oriente vers la page concernée ou la DRI. "
                 ."Ne divulgue JAMAIS les données d'un autre participant.\n\n"

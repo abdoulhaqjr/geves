@@ -20,7 +20,7 @@
             'seed' => route('admin.project.seed', ['event_id' => $event?->id]),
         ],
     ];
-    $phases = ['Cadrage', 'Appel à communications', 'Soumissions & relecture', 'Programme', 'Logistique', 'Tenue', 'Après-colloque'];
+    $phases = ['Cadrage', 'Appel à communications', 'Soumissions & évaluation', 'Programme', 'Logistique', 'Tenue', 'Après-colloque'];
     $prioClass = "{'ukc-pill--muted':t.priority==='low','ukc-pill--info':t.priority==='normal','ukc-pill--warn':t.priority==='high','ukc-pill--err':t.priority==='urgent'}";
 @endphp
 

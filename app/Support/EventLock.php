@@ -9,9 +9,9 @@ use App\Models\Event;
  *
  * ⚠️ Le déclencheur est le statut **`archived`**, pas la date de fin ni le statut
  * `closed`. `closed` signifie « soumissions closes » - c'est précisément la
- * période où les relecteurs travaillent, les geler alors bloquerait le colloque.
+ * période où les évaluateurs travaillent, les geler alors bloquerait le colloque.
  * De même, un événement dont les dates sont passées mais que l'organisation n'a
- * pas archivée peut encore recevoir des relectures ou une correction.
+ * pas archivée peut encore recevoir des évaluations ou une correction.
  * L'archivage est donc la décision explicite qui fige le dossier.
  *
  * Le back-office n'est PAS concerné : l'admin et les gestionnaires gardent la
@@ -31,7 +31,7 @@ class EventLock
     /**
      * Refuse une action d'écriture sur un événement archivé (403 explicite).
      * À appeler dans les actions participant qui écrivent quelque chose de
-     * rattaché à un événement : dépôt, relecture, rapport, paiement, formation.
+     * rattaché à un événement : dépôt, évaluation, rapport, paiement, formation.
      */
     public static function guard(?Event $event): void
     {

@@ -168,9 +168,9 @@ it('résume l’état des relectures pour le comité', function () {
     ]);
 
     expect(Review::summarize($reviews))
-        ->toBe('2 relectures demandées - 1 rendue, 1 en retard de 3 j (1 refus)');
+        ->toBe('2 évaluations demandées - 1 rendue, 1 en retard de 3 j (1 refus)');
 
-    expect(Review::summarize(collect()))->toBe('Aucun relecteur assigné.');
+    expect(Review::summarize(collect()))->toBe('Aucun évaluateur assigné.');
 });
 
 it('compte le retard réel dans le rapport d’événement', function () {
@@ -219,7 +219,7 @@ it('affiche l’état et l’échéance de chaque relecture sur la fiche admin',
         ->get(route('admin.submissions.show', $submission))
         ->assertOk()
         ->assertSee('en retard de 4 j')
-        ->assertSee('1 relecture demandée');
+        ->assertSee('1 évaluation demandée');
 });
 
 it('propose accepter / refuser sur la page « Mes relectures »', function () {

@@ -272,7 +272,7 @@ it('donne au copilote admin les relectures, formations et réclamations', functi
         ->assertOk();
 
     $prompt = implode("\n", $captured);
-    expect($prompt)->toContain('Relectures :')
+    expect($prompt)->toContain('Évaluations :')
         ->and($prompt)->toContain('Réclamations/incidents en cours');
 });
 

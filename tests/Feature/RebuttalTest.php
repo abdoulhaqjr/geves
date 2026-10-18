@@ -49,7 +49,7 @@ it('révèle les retours relecteurs à l’auteur pendant la phase de réponse',
     $this->actingAs($account, 'account')
         ->get(route('account.submissions.show', $submission->fresh()))
         ->assertSee('méthodologie de la section 3')
-        ->assertSee('Votre réponse aux relecteurs');
+        ->assertSee('Votre réponse aux évaluateurs');
 });
 
 it('enregistre la réponse de l’auteur tant que la phase est ouverte', function () {

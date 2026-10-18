@@ -6,7 +6,7 @@ use App\Models\Event;
 use App\Models\Review;
 
 /**
- * Grille d'évaluation structurée des relectures : liste de critères notés (0-5),
+ * Grille d'évaluation structurée des évaluations : liste de critères notés (0-5),
  * dont on dérive une note globale /20. La grille est configurable par événement
  * (réglage `review_criteria`), avec un jeu de critères académiques par défaut.
  *
@@ -17,7 +17,7 @@ class ReviewGrid
     /** Note maximale par critère (échelle 0-SCALE). */
     public const SCALE = 5;
 
-    /** Relecteurs visés par soumission, à défaut de réglage d'événement. */
+    /** Évaluateurs visés par soumission, à défaut de réglage d'événement. */
     public const DEFAULT_TARGET = 2;
 
     /** Grille académique par défaut (originalité, rigueur, clarté, pertinence, contribution). */
@@ -30,7 +30,7 @@ class ReviewGrid
     ];
 
     /**
-     * Nombre de relecteurs visé par soumission (1-5, défaut 2). Règle de
+     * Nombre d’évaluateurs visé par soumission (1-5, défaut 2). Règle de
      * l'événement, lue par l'attribution automatique.
      *
      * ⚠️ Comme `review_criteria` et `review_due_days`, ce réglage vit à la
@@ -44,7 +44,7 @@ class ReviewGrid
     }
 
     /**
-     * Plafond de relectures par relecteur (0 = illimité). Règle de l'événement.
+     * Plafond d’évaluations par évaluateur (0 = illimité). Règle de l'événement.
      */
     public static function maxLoad(?Event $event): int
     {

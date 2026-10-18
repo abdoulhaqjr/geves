@@ -30,10 +30,10 @@ class EmailTemplates
             'intro' => 'Nous accusons réception de votre communication. Elle sera examinée par le comité scientifique.',
         ],
         'submission_under_review' => [
-            'label' => 'Soumission - mise en relecture',
-            'subject' => 'Votre communication est en relecture',
-            'heading' => 'Communication en relecture',
-            'intro' => 'Votre communication a été transmise à la relecture. Vous serez informé(e) de la décision.',
+            'label' => 'Soumission - mise en évaluation',
+            'subject' => 'Votre communication est en évaluation',
+            'heading' => 'Communication en évaluation',
+            'intro' => 'Votre communication a été transmise à l’évaluation. Vous serez informé(e) de la décision.',
         ],
         'submission_revision' => [
             'label' => 'Soumission - correction demandée',
@@ -83,7 +83,7 @@ class EmailTemplates
     /** Déclencheur (événement) qui envoie automatiquement chaque modèle. */
     public const TRIGGERS = [
         'submission_submitted' => 'Soumission reçue',
-        'submission_under_review' => 'Mise en relecture',
+        'submission_under_review' => 'Mise en évaluation',
         'submission_revision' => 'Correction demandée',
         'submission_accepted' => 'Résumé accepté',
         'submission_rejected' => 'Résumé refusé',

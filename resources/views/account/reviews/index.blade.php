@@ -1,11 +1,11 @@
-<x-layouts.participant :title="__('Mes relectures')" :subtitle="__('Espace relecteur - évaluations confiées')">
+<x-layouts.participant :title="__('Mes évaluations')" :subtitle="__('Espace évaluateur - évaluations confiées')">
 <div class="account-reviews" x-data="ukcReviews(@js($reviewsData), @js($recommendations), {{ $scale }})">
 
     {{-- Sous-navigation : elle n'a de sens que s'il y a réellement deux tâches. --}}
     @if ($biddable->isNotEmpty() || $tab === 'candidatures')
     <div class="ukc-nav-docs">
         <a href="{{ route('account.reviews') }}" @class(['active' => $tab === 'relectures'])>
-            {{ __('Mes relectures') }}
+            {{ __('Mes évaluations') }}
             @if ($reviews->count())<span class="nav-count">{{ $reviews->count() }}</span>@endif
         </a>
         <a href="{{ route('account.reviews', ['tab' => 'candidatures']) }}" @class(['active' => $tab === 'candidatures'])>
@@ -18,7 +18,7 @@
     @if ($tab === 'relectures')
     {{-- Indicateurs --}}
     <div class="ukc-stats" style="margin-bottom:16px;">
-        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">{{ __('Relectures') }}</div><div class="val">{{ $reviews->count() }}</div></div>
+        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">{{ __('Évaluations') }}</div><div class="val">{{ $reviews->count() }}</div></div>
         <div class="ukc-stat-card tw-stat">
             <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mail" :size="20" /></div>
             <div class="lbl">{{ __('À confirmer') }}</div>
@@ -50,7 +50,7 @@
          liste, jamais les compteurs ci-dessus). --}}
     @if (count($reviewsData) || $status !== '' || $search !== '' || $event_id !== '' || $track !== '')
         <form method="GET" class="filter-bar filter-bar--inline">
-            <select name="status" onchange="this.form.submit()" title="{{ __('État de la relecture') }}">
+            <select name="status" onchange="this.form.submit()" title="{{ __('État de l’évaluation') }}">
                 <option value="">{{ __('Tous les états') }}</option>
                 @foreach ($statuses as $key => $label)
                     <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
@@ -77,7 +77,7 @@
             @endif
         </form>
     @endif
-    {{-- Liste des relectures (table Tailwise) --}}
+    {{-- Liste des évaluations (table Tailwise) --}}
     <div class="ukc-card" style="padding:0;">
         @if (count($reviewsData))
             <div class="ukc-table-wrap">
@@ -128,7 +128,7 @@
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">
                                     {{-- Événement archivée : plus d'action possible, mais le
-                                         relecteur garde l'accès à ce qu'il a rendu. --}}
+                                         évaluateur garde l'accès à ce qu'il a rendu. --}}
                                     <template x-if="r.frozen">
                                         <span style="display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;">
                                             <span class="ukc-pill ukc-pill--muted" title="{{ __('Événement archivée : lecture seule.') }}">{{ __('Archivée') }}</span>
@@ -172,13 +172,13 @@
         @elseif ($status !== '' || $search !== '' || $event_id !== '' || $track !== '')
             <div class="ukc-empty" style="border:none;">
                 <span class="ico"><x-ukc.icon name="search" :size="28" /></span>
-                <h3>{{ __('Aucune relecture pour ce filtre') }}</h3>
+                <h3>{{ __('Aucune évaluation pour ce filtre') }}</h3>
                 <p>{{ __('Élargissez la recherche ou réinitialisez les filtres.') }}</p>
             </div>
         @else
             <div class="ukc-empty" style="border:none;">
                 <span class="ico"><x-ukc.icon name="inbox" :size="28" /></span>
-                <h3>{{ __('Aucune relecture confiée') }}</h3>
+                <h3>{{ __('Aucune évaluation confiée') }}</h3>
                 <p>{{ __('Les communications qui vous sont confiées pour évaluation apparaîtront ici.') }}</p>
             </div>
         @endif
@@ -198,7 +198,7 @@
     @elseif ($tab === 'candidatures')
         <div>
             <p style="color:var(--ukc-muted);font-size:13.5px;margin:0 0 14px;">
-                {{ __('Indiquez les communications que vous souhaitez évaluer et signalez tout conflit d’intérêt. Vos préférences aident le comité à répartir les relectures.') }}
+                {{ __('Indiquez les communications que vous souhaitez évaluer et signalez tout conflit d’intérêt. Vos préférences aident le comité à répartir les évaluations.') }}
             </p>
             <form method="POST" action="{{ route('account.reviews.bids') }}">
                 @csrf
@@ -235,11 +235,11 @@
         </div>
     @endif
 
-    {{-- ===== Refuser une relecture (motif communiqué au comité) ===== --}}
+    {{-- ===== Refuser une évaluation (motif communiqué au comité) ===== --}}
     <x-ukc.slideover open="declineOpen" onClose="declineOpen = false" width="460px">
-        <x-slot:header>{{ __('Refuser cette relecture') }}</x-slot:header>
+        <x-slot:header>{{ __('Refuser cette évaluation') }}</x-slot:header>
         <p style="color:var(--ukc-muted);font-size:13.5px;line-height:1.55;">
-            {{ __('Votre refus libère la place : le comité pourra solliciter un autre relecteur. Un motif, même bref, l’aide à mieux répartir les relectures suivantes.') }}
+            {{ __('Votre refus libère la place : le comité pourra solliciter un autre évaluateur. Un motif, même bref, l’aide à mieux répartir les évaluations suivantes.') }}
         </p>
         <div class="ukc-card" style="padding:12px 14px;margin:12px 0;">
             <div style="font-family:var(--ukc-mono);font-weight:700;font-size:12.5px;color:var(--ukc-muted);" x-text="declining.ref"></div>

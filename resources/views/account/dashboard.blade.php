@@ -101,7 +101,7 @@
     <div class="tdb-top">
 
         @if (! $event)
-            {{-- ⚠️ Un modérateur, un rapporteur ou un relecteur est rapproché par
+            {{-- ⚠️ Un modérateur, un rapporteur ou un évaluateur est rapproché par
                  E-MAIL : il peut n'avoir aucune inscription, donc aucun colloque à
                  sélectionner. Lui annoncer une échéance de dépôt n'aurait aucun
                  sens ; ce qu'on lui doit, ce sont ses séances. --}}
@@ -113,7 +113,7 @@
                     <span class="n">{{ __('Mes fonctions') }}</span>
                 </div>
                 <p class="tdb-next__title">
-                    {{ __('Vous n’êtes inscrit à aucun colloque pour l’instant. Les séances et les relectures que l’organisation vous a confiées restent accessibles ci-dessous.') }}
+                    {{ __('Vous n’êtes inscrit à aucun colloque pour l’instant. Les séances et les évaluations que l’organisation vous a confiées restent accessibles ci-dessous.') }}
                 </p>
                 <div class="tdb-next__acts">
                     @if ($moderatedSessions->isNotEmpty())
@@ -128,7 +128,7 @@
                     @endif
                     @if ($isReviewer)
                         <a href="{{ route('account.reviews') }}" class="tdb-btn-ghost">
-                            <x-ukc.icon name="inbox" :size="15" /> {{ __('Mes relectures') }}
+                            <x-ukc.icon name="inbox" :size="15" /> {{ __('Mes évaluations') }}
                         </a>
                     @endif
                 </div>
@@ -247,7 +247,7 @@
                                 $submitRemaining, ['count' => $submitRemaining]
                             ) }}
                         @else
-                            {{ __('Vous avez atteint le nombre maximum de communications pour ce colloque. Vos résumés suivent leur relecture.') }}
+                            {{ __('Vous avez atteint le nombre maximum de communications pour ce colloque. Vos résumés suivent leur évaluation.') }}
                         @endif
                     </p>
                     <div class="tdb-next__acts">
@@ -262,7 +262,7 @@
                     </div>
                 @else
                     <div class="tdb-next__lede">
-                        <span class="n">{{ __('En relecture') }}</span>
+                        <span class="n">{{ __('En évaluation') }}</span>
                         @if ($dates)<span class="w">{{ __('rendez-vous du :dates', ['dates' => $dates]) }}</span>@endif
                     </div>
                     <p class="tdb-next__title">{{ __('Les dépôts sont clos. Vous serez prévenu dès que le comité scientifique aura rendu sa décision.') }}</p>
@@ -497,12 +497,12 @@
                         <div class="tdb-role">
                             <span class="i"><x-ukc.icon name="inbox" :size="17" /></span>
                             <span class="b">
-                                <span class="t">{{ __('Relecteur') }}</span>
+                                <span class="t">{{ __('Évaluateur') }}</span>
                                 <span class="d">
                                     @if ($pendingReviews > 0)
-                                        {{ trans_choice(':count relecture à évaluer|:count relectures à évaluer', $pendingReviews, ['count' => $pendingReviews]) }}
+                                        {{ trans_choice(':count évaluation à rendre|:count évaluations à rendre', $pendingReviews, ['count' => $pendingReviews]) }}
                                     @else
-                                        {{ __('Relectures à jour') }}
+                                        {{ __('Évaluations à jour') }}
                                     @endif
                                 </span>
                             </span>

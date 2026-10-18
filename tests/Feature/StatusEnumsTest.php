@@ -10,7 +10,7 @@ it('expose libellés et pastilles depuis SubmissionStatus', function () {
     expect(SubmissionStatus::Accepted->pill())->toBe('ok');
     expect(SubmissionStatus::Rejected->pill())->toBe('err');
     expect(SubmissionStatus::values())->toContain('submitted', 'accepted');
-    expect(SubmissionStatus::options()['under_review'])->toBe('En relecture');
+    expect(SubmissionStatus::options()['under_review'])->toBe('En évaluation');
     expect(SubmissionStatus::pills()['revision'])->toBe('warn');
 });
 

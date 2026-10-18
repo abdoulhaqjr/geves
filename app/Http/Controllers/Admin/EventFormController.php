@@ -271,7 +271,7 @@ class EventFormController extends Controller
             ->with('edition_tab', 'team');
     }
 
-    /** Enregistre l'expertise (axes) des relecteurs de l'événement (onglet Relecteurs). */
+    /** Enregistre l'expertise (axes) des évaluateurs de l'événement (onglet Évaluateurs). */
     public function saveReviewerExpertise(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
@@ -314,7 +314,7 @@ class EventFormController extends Controller
 
         // L'expertise a son propre onglet dans le module Soumissions : on y revient.
         return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
-            ->with('ukc_status', 'Expertise des relecteurs mise à jour.');
+            ->with('ukc_status', 'Expertise des évaluateurs mise à jour.');
     }
 
     /** Enregistre les traductions de contenu (i18n) d'une locale non par défaut. */

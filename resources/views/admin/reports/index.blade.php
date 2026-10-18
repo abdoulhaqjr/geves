@@ -56,7 +56,7 @@
                 @if ($reportTabs['submissions'])<button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions</button>@endif
                 @if ($reportTabs['participants'])<button type="button" @click="tab='participants'" :class="{ active: tab==='participants' }">Participants</button>@endif
                 @if ($reportTabs['payments'])<button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>@endif
-                @if ($reportTabs['reviews'])<button type="button" @click="tab='reviews'" :class="{ active: tab==='reviews' }">Relectures</button>@endif
+                @if ($reportTabs['reviews'])<button type="button" @click="tab='reviews'" :class="{ active: tab==='reviews' }">Évaluations</button>@endif
                 @if ($reportTabs['exports'])<button type="button" @click="tab='exports'" :class="{ active: tab==='exports' }">Exports prêts</button>@endif
                 @if ($reportTabs['ai'])<button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Export personnalisé (IA)</button>@endif
             </div>
@@ -80,7 +80,7 @@
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency_label'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
-                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relectures rendues</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['pending'] }} en attente{{ $rev['late'] > 0 ? ' - '.$rev['late'].' en retard' : '' }}</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluations rendues</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['pending'] }} en attente{{ $rev['late'] > 0 ? ' - '.$rev['late'].' en retard' : '' }}</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="award" :size="20" /></div><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
                 </div>
 
@@ -269,13 +269,13 @@
 
             @endif
             @if ($reportTabs['reviews'])
-            {{-- Relectures --}}
+            {{-- Évaluations --}}
             <div class="ukc-panel" :class="{ active: tab==='reviews' }">
                 <div class="ukc-card">
-                    <h2>Rapport relectures</h2>
-                    <p class="desc">Charge des relecteurs et délais moyens.</p>
+                    <h2>Rapport évaluations</h2>
+                    <p class="desc">Charge des évaluateurs et délais moyens.</p>
                     <div class="ukc-stats" style="margin-bottom:14px;">
-                        <div class="ukc-stat-card"><div class="lbl">Relecteurs actifs</div><div class="val blue">{{ $rev['reviewers'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Évaluateurs actifs</div><div class="val blue">{{ $rev['reviewers'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Rendues</div><div class="val">{{ $rev['done'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">En attente</div><div class="val warn">{{ $rev['pending'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">En retard</div><div class="val" style="{{ $rev['late'] > 0 ? 'color:#b4231c;' : '' }}">{{ $rev['late'] }}</div></div>
@@ -283,7 +283,7 @@
                     </div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
-                            <thead><tr><th>Relecteur</th><th class="num">Assignées</th><th class="num">Rendues</th><th class="num">En attente</th><th class="num">En retard</th><th>Complétion</th></tr></thead>
+                            <thead><tr><th>Évaluateur</th><th class="num">Assignées</th><th class="num">Rendues</th><th class="num">En attente</th><th class="num">En retard</th><th>Complétion</th></tr></thead>
                             <tbody>
                                 @forelse ($report->reviewsByReviewer() as $r)
                                     <tr>
@@ -301,7 +301,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune relecture assignée.</td></tr>
+                                    <tr><td colspan="6" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune évaluation assignée.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

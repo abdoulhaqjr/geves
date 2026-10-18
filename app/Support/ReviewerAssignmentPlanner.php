@@ -5,14 +5,14 @@ namespace App\Support;
 use App\Models\ReviewerBid;
 
 /**
- * Moteur d'attribution automatique des relecteurs (déterministe, sans I/O donc
- * testable en isolation). À partir des soumissions à couvrir, des relecteurs
+ * Moteur d'attribution automatique des évaluateurs (déterministe, sans I/O donc
+ * testable en isolation). À partir des soumissions à couvrir, des évaluateurs
  * candidats (expertise + charge courante) et d'une carte des conflits d'intérêts,
  * il propose des affectations en :
  *   - excluant tout conflit d'intérêt ÉLEVÉ (règle dure) ;
- *   - privilégiant l'adéquation d'axe (expertise du relecteur ↔ axe de la soumission) ;
- *   - équilibrant la charge (un relecteur peu chargé passe devant) sans dépasser un
- *     plafond par relecteur ;
+ *   - privilégiant l'adéquation d'axe (expertise de l’évaluateur ↔ axe de la soumission) ;
+ *   - équilibrant la charge (un évaluateur peu chargé passe devant) sans dépasser un
+ *     plafond par évaluateur ;
  *   - pénalisant (sans interdire) un conflit d'intérêt moyen/faible.
  * La décision finale reste humaine : ceci alimente un aperçu que l'admin valide.
  */
@@ -39,15 +39,15 @@ class ReviewerAssignmentPlanner
      * @param  list<array{id:int, track:string, needed:int, exclude?:list<int>}>  $submissions
      * @param  list<array{id:int, tracks:list<string>, load:int}>  $reviewers
      * @param  array<int, array<int, string|null>>  $coi  [submissionId][reviewerId] => niveau ConflictOfInterest ou null
-     * @param  int  $maxLoad  charge maximale par relecteur (≤ 0 = illimitée)
-     * @param  array<int, array<int, array{interest?:string, conflict?:bool}>>  $bids  [submissionId][reviewerId] => candidature du relecteur
+     * @param  int  $maxLoad  charge maximale par évaluateur (≤ 0 = illimitée)
+     * @param  array<int, array<int, array{interest?:string, conflict?:bool}>>  $bids  [submissionId][reviewerId] => candidature de l’évaluateur
      * @return list<array{submission_id:int, reviewer_id:int, reason:string, coi:string|null, axis_match:bool}>
      */
     public function plan(array $submissions, array $reviewers, array $coi, int $maxLoad, array $bids = []): array
     {
         $cap = $maxLoad > 0 ? $maxLoad : PHP_INT_MAX;
 
-        // Charge projetée par relecteur (part de la charge courante, s'incrémente).
+        // Charge projetée par évaluateur (part de la charge courante, s'incrémente).
         $load = [];
         $tracksById = [];
         foreach ($reviewers as $r) {
@@ -81,11 +81,11 @@ class ReviewerAssignmentPlanner
 
                 $bid = $bids[$sub['id']][$rid] ?? null;
                 if (($bid['conflict'] ?? false) === true) {
-                    continue; // conflit auto-déclaré par le relecteur
+                    continue; // conflit auto-déclaré par l’évaluateur
                 }
                 $interest = $bid['interest'] ?? null;
                 if ($interest === self::BID_UNAVAILABLE) {
-                    continue; // le relecteur s'est déclaré indisponible
+                    continue; // l’évaluateur s'est déclaré indisponible
                 }
                 $volunteer = $interest === self::BID_INTERESTED;
 
@@ -135,7 +135,7 @@ class ReviewerAssignmentPlanner
     {
         $base = $axisMatch
             ? 'Expertise sur l’axe'
-            : ($generalist ? 'Relecteur généraliste' : 'Hors axe (équilibrage)');
+            : ($generalist ? 'Évaluateur généraliste' : 'Hors axe (équilibrage)');
 
         return $volunteer ? $base.' - volontaire' : $base;
     }

@@ -65,8 +65,8 @@
             </p>
         </div>
 
-        {{-- Correction libre du contenu tant qu'aucun relecteur / comité / gestionnaire
-             n'y a touché (statut « déposée », aucune relecture). Déposant seulement. --}}
+        {{-- Correction libre du contenu tant qu'aucun évaluateur / comité / gestionnaire
+             n'y a touché (statut « déposée », aucune évaluation). Déposant seulement. --}}
         @if ($isOwner && $s->isAuthorEditable())
             <div class="ukc-card" style="margin-bottom:18px;" x-data="{ editing: {{ $errors->any() ? 'true' : 'false' }} }">
                 <div class="ukc-alert ukc-alert--info" style="margin:0;">
@@ -208,17 +208,17 @@
                     @empty
                         <div class="msg-box">
                             <div class="from">{{ __('Secrétariat scientifique') }}</div>
-                            <p>{{ __('Votre soumission a bien été enregistrée et transmise aux relecteurs. Aucune action n’est requise de votre part pour le moment.') }}</p>
+                            <p>{{ __('Votre soumission a bien été enregistrée et transmise aux évaluateurs. Aucune action n’est requise de votre part pour le moment.') }}</p>
                         </div>
                     @endforelse
-                    <p class="hint">{{ __('Les évaluations détaillées des relecteurs restent confidentielles. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
+                    <p class="hint">{{ __('Les évaluations détaillées des évaluateurs restent confidentielles. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
                 </div>
 
-                {{-- Phase de réponse aux relecteurs (rebuttal) - déposant seulement --}}
+                {{-- Phase de réponse aux évaluateurs (rebuttal) - déposant seulement --}}
                 @if ($isOwner && $s->rebuttalOpen())
                     @php($reb = $s->rebuttal())
                     <div class="ukc-card" style="margin-top:18px;border-color:#c7d2fe;background:#f5f7ff;" id="rebuttal">
-                        <h2><x-ukc.icon name="pen" :size="18" /> {{ __('Votre réponse aux relecteurs') }}</h2>
+                        <h2><x-ukc.icon name="pen" :size="18" /> {{ __('Votre réponse aux évaluateurs') }}</h2>
                         <p style="color:var(--ukc-muted);font-size:.9rem;margin:-2px 0 12px;">
                             {{ __('Le comité vous invite à répondre aux retours ci-dessus (préciser, corriger un malentendu, détailler les modifications prévues) avant la décision finale.') }}
                         </p>
@@ -235,7 +235,7 @@
                             <div class="ukc-field">
                                 <label for="rebuttal">{{ $s->hasRebuttal() ? __('Modifier votre réponse') : __('Votre réponse') }} <span class="req">*</span></label>
                                 <textarea id="rebuttal" name="rebuttal" rows="6"
-                                          placeholder="{{ __('Répondez point par point aux remarques des relecteurs.') }}">{{ old('rebuttal', $s->rebuttalText()) }}</textarea>
+                                          placeholder="{{ __('Répondez point par point aux remarques des évaluateurs.') }}">{{ old('rebuttal', $s->rebuttalText()) }}</textarea>
                                 @error('rebuttal') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="ukc-form-actions" style="margin-top:12px;">
@@ -266,7 +266,7 @@
                         <li @class(['muted' => $s->status === 'submitted'])>
                             <div class="when">{{ $s->status === 'submitted' ? __('À venir') : __('En cours') }}</div>
                             <div class="what">{{ __('Évaluation scientifique') }}</div>
-                            <div class="detail">{{ $decided ? __('Relectures rendues') : __('En attente des relectures') }}</div>
+                            <div class="detail">{{ $decided ? __('Évaluations rendues') : __('En attente des évaluations') }}</div>
                         </li>
                         <li @class(['muted' => ! $decided && $s->status !== 'revision'])>
                             <div class="when">{{ $decided ? $s->updated_at?->format('d/m/Y') : __('À venir') }}</div>

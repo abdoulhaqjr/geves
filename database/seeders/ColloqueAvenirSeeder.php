@@ -401,8 +401,8 @@ class ColloqueAvenirSeeder extends Seeder
 
         // --- Relecteurs de test + relectures ---
         $reviewers = [
-            $this->reviewer($event, 'relecteur1@test.tg', 'Rebecca', 'Relectrice'),
-            $this->reviewer($event, 'relecteur2@test.tg', 'Robert', 'Relecteur'),
+            $this->reviewer($event, 'relecteur1@test.tg', 'Rebecca', 'Évaluatrice'),
+            $this->reviewer($event, 'relecteur2@test.tg', 'Robert', 'Évaluateur'),
         ];
 
         // Les communications ACCEPTÉES (déjà planifiées au programme) ont été
@@ -445,7 +445,7 @@ class ColloqueAvenirSeeder extends Seeder
                     'access_token' => Str::random(40),
                     'title' => 'Communication en évaluation '.($k + 1),
                     'authors' => [['name' => $author->name, 'email' => $author->email, 'corresponding' => true]],
-                    'abstract' => 'Résumé d’une communication encore en cours d’évaluation, pour tester le circuit de relecture.',
+                    'abstract' => 'Résumé d’une communication encore en cours d’évaluation, pour tester le circuit d’évaluation.',
                     'keywords' => 'innovation, durabilité, universités',
                     'track' => $track,
                     'type' => 'oral',
@@ -523,7 +523,7 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Communication acceptée NON réglée : '.self::COMPTE_NON_REGLE.' - mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) - auteur2@test.tg (réponse ouverte) - auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
-            $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
+            $this->command?->info('Évaluateur : '.$r->email.' - mot de passe : password (évaluations dans « Mes évaluations »)');
         }
     }
 

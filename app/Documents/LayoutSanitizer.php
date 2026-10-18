@@ -372,7 +372,7 @@ class LayoutSanitizer
     }
 
     /**
-     * Attestation d'INSTRUCTION DE RÉSUMÉS (relecteurs / évaluateurs de résumés).
+     * Attestation d'INSTRUCTION DE RÉSUMÉS (évaluateurs / évaluateurs de résumés).
      * Même maquette officielle que modération / rapporteur, titre et corps mis à part.
      * Titre « ATTESTATION D'INSTRUCTION DE RÉSUMÉS » : Times 28 px ≈ 618 px, tient dans
      * la boîte. Doit rester identique au modèle du concepteur

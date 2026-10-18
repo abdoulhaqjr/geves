@@ -31,7 +31,7 @@ class Notifier
      * L'e-mail d'un Mailable dédié est-il autorisé pour ce destinataire ?
      * Un destinataire sans compte (pas de préférences) reçoit toujours l'e-mail ;
      * sinon la préférence e-mail du type fait foi. Sert à gater les Mailables
-     * riches existants (soumission, reçu, invitation, relecture).
+     * riches existants (soumission, reçu, invitation, évaluation).
      */
     public static function emailAllowed(?User $account, string $kind): bool
     {

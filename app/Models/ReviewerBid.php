@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Candidature d'un relecteur sur une soumission (« bid ») : préférence
+ * Candidature d'un évaluateur sur une soumission (« bid ») : préférence
  * d'évaluation + auto-déclaration de conflit d'intérêt. Exprimée depuis le
- * portail relecteur (en aveugle) et prise en compte par l'attribution auto.
+ * portail évaluateur (en aveugle) et prise en compte par l'attribution auto.
  *
  * @property Submission|null $submission
  * @property Participant|null $reviewer
@@ -21,7 +21,7 @@ class ReviewerBid extends Model
 
     public const UNAVAILABLE = 'unavailable';
 
-    /** Libellés (portail relecteur). */
+    /** Libellés (portail évaluateur). */
     public const INTERESTS = [
         self::INTERESTED => 'Intéressé(e)',
         self::NEUTRAL => 'Neutre',

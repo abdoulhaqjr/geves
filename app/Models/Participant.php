@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Participant : présence d'une personne sur un événement (auteur, auditeur,
- * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
+ * évaluateur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *
  * @property int|null $account_id
@@ -34,7 +34,7 @@ class Participant extends Model
     public const ROLES = [
         'author' => 'Communicant',
         'coauthor' => 'Co-auteur',
-        'reviewer' => 'Relecteur',
+        'reviewer' => 'Évaluateur',
         'committee' => 'Comité scientifique',
         'moderator' => 'Modérateur',
         'rapporteur' => 'Rapporteur',

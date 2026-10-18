@@ -55,7 +55,7 @@ class DashboardController extends Controller
         $activity = new AccountActivity($account);
 
         // ⚠️ **Une fonction ne vient pas forcément avec une inscription.** Un
-        // modérateur, un rapporteur ou un relecteur est rapproché par E-MAIL : il
+        // modérateur, un rapporteur ou un évaluateur est rapproché par E-MAIL : il
         // peut n'avoir aucun `Participant`, donc aucun colloque sélectionnable,
         // donc aucun événement de contexte. L'état vide le renverrait alors sur
         // « votre espace se remplira bientôt » en lui cachant les séances qu'on

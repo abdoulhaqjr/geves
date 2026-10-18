@@ -154,11 +154,11 @@ class AskAdmin
                 ->map(fn ($a) => $a['axe'].' ('.$a['total'].', acceptées '.$a['accepted'].')')
                 ->implode(', ');
 
-            // Relectures : charge et avancement (comité scientifique).
+            // Évaluations : charge et avancement (comité scientifique).
             $rv = $report->reviewStats();
             $reviewLine = ($rv['done'] + $rv['pending'] + $rv['late'] + $rv['declined']) > 0
-                ? 'Relectures : '.$rv['done'].' rendues, '.$rv['pending'].' en attente, '.$rv['late'].' en retard, '
-                    .$rv['declined'].' refusées ('.$rv['reviewers'].' relecteurs'
+                ? 'Évaluations : '.$rv['done'].' rendues, '.$rv['pending'].' en attente, '.$rv['late'].' en retard, '
+                    .$rv['declined'].' refusées ('.$rv['reviewers'].' évaluateurs'
                     .($rv['avgDays'] > 0 ? ', délai moyen '.$rv['avgDays'].' j' : '').')'
                 : null;
 
@@ -315,7 +315,7 @@ class AskAdmin
         RÈGLE DE PÉRIMÈTRE (impérative) : réponds STRICTEMENT dans le cadre de la fonction et du
         périmètre ci-dessus, en adoptant ce rôle (ex. un comptable / assistant comptable est cadré
         sur les paiements, encaissements et finances). Si la demande porte sur un domaine hors de ce
-        périmètre (ex. contenu scientifique, relectures, soumissions pour un comptable), explique
+        périmètre (ex. contenu scientifique, évaluations, soumissions pour un comptable), explique
         poliment que cela relève d'une autre fonction et oriente vers la personne ou l'onglet
         compétent, sans divulguer ces informations.
 

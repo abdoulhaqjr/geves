@@ -17,7 +17,7 @@ use App\Models\User;
  *
  * ⚠️ **La permission est vérifiée ICI, pas chez l'appelant.** `AskAdmin` est
  * joignable par tout le staff ayant « Tableau de bord » sur l'événement -
- * relecteur, secrétariat, comptabilité. Laisser la garde au point d'appel serait
+ * évaluateur, secrétariat, comptabilité. Laisser la garde au point d'appel serait
  * l'oublier un jour. {@see digest()} rend une chaîne vide à qui n'a pas
  * `users_roles`, la permission qui garde déjà la page Utilisateurs & rôles :
  * l'assistant n'ouvre ainsi aucune porte que l'interface tient fermée.

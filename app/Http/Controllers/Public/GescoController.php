@@ -298,7 +298,7 @@ class GescoController extends Controller
 
     /**
      * Engagements PERSONNELS complémentaires : formations suivies, rôles de séance
-     * (modérateur / rapporteur), relectures confiées, réclamations déposées. De quoi
+     * (modérateur / rapporteur), évaluations confiées, réclamations déposées. De quoi
      * répondre « suis-je inscrit à la formation X ? », « quelles séances je modère ? »,
      * « où en est ma réclamation ? » - toujours sur les SEULES données de l'utilisateur.
      *
@@ -336,14 +336,14 @@ class GescoController extends Controller
                 .'. (Rédaction du rapport dans « Mes séances à rapporter ».)';
         }
 
-        // Relectures confiées (reviewer_id = identifiant Participant).
+        // Évaluations confiées (reviewer_id = identifiant Participant).
         if ($participantIds->isNotEmpty()) {
             $reviews = Review::whereIn('reviewer_id', $participantIds)->get();
             if ($reviews->isNotEmpty()) {
                 $pending = $reviews->filter(fn (Review $r) => $r->isPending())->count();
                 $late = $reviews->filter(fn (Review $r) => $r->isLate())->count();
-                $lines[] = 'Relectures : '.$pending.' à rendre'.($late > 0 ? ' (dont '.$late.' en retard)' : '')
-                    .' sur '.$reviews->count().' confiée(s). (Espace « Mes relectures ».)';
+                $lines[] = 'Évaluations : '.$pending.' à rendre'.($late > 0 ? ' (dont '.$late.' en retard)' : '')
+                    .' sur '.$reviews->count().' confiée(s). (Espace « Mes évaluations ».)';
             }
         }
 

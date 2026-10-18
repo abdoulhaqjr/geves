@@ -12,7 +12,7 @@ use App\Models\User;
  * Règles (alignées sur le plugin WordPress) :
  * - **Identité imposée par le compte** : nom/prénom proviennent du compte
  *   (source de vérité), jamais falsifiables via un formulaire.
- * - **Rôle fort non rétrogradé** : un relecteur / membre de comité / modérateur /
+ * - **Rôle fort non rétrogradé** : un évaluateur / membre de comité / modérateur /
  *   rapporteur ne redevient pas « auteur » lors d'une nouvelle soumission.
  * - `access_token` généré une seule fois (lien de suivi par jeton).
  */

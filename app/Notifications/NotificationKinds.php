@@ -20,7 +20,7 @@ class NotificationKinds
     {
         return [
             'submission_status' => ['label' => 'Décisions sur mes communications', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
-            'review_assigned' => ['label' => 'Relectures qui me sont assignées', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
+            'review_assigned' => ['label' => 'Évaluations qui me sont assignées', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'session_role' => ['label' => 'Désignations (modérateur / rapporteur)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'schedule_change' => ['label' => 'Changement d’horaire de mon passage', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'report_reminder' => ['label' => 'Relances de rapport de séance', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
@@ -31,7 +31,7 @@ class NotificationKinds
             'payment' => ['label' => 'Paiements', 'audience' => 'both', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'task_assigned' => ['label' => 'Tâches de projet qui me sont assignées', 'audience' => 'staff', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'submission_new' => ['label' => 'Nouvelles communications', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
-            'review_response' => ['label' => 'Réponses des relecteurs (acceptation / refus)', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
+            'review_response' => ['label' => 'Réponses des évaluateurs (acceptation / refus)', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'contact' => ['label' => 'Messages de contact', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'testimonial' => ['label' => 'Témoignages déposés', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
         ];

@@ -5,7 +5,7 @@ namespace App\Enums;
 use App\Enums\Concerns\HasLabels;
 
 /**
- * Statuts du workflow de relecture d'une communication.
+ * Statuts du workflow d’évaluation d'une communication.
  */
 enum SubmissionStatus: string
 {
@@ -21,7 +21,7 @@ enum SubmissionStatus: string
     {
         return match ($this) {
             self::Submitted => 'Soumise',
-            self::UnderReview => 'En relecture',
+            self::UnderReview => 'En évaluation',
             self::Revision => 'Correction demandée',
             self::Accepted => 'Acceptée',
             self::Rejected => 'Refusée',

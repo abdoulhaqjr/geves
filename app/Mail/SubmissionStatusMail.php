@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * E-mail à l'auteur correspondant lors d'un événement du workflow de sa
- * communication (accusé de réception, mise en relecture, correction, décision).
+ * communication (accusé de réception, mise en évaluation, correction, décision).
  * Sujet/titre/intro proviennent des modèles éditables (EmailTemplates).
  * Mis en file (ShouldQueue) pour ne pas bloquer la requête.
  */

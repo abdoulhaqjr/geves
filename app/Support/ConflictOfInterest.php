@@ -5,11 +5,11 @@ namespace App\Support;
 use App\Models\Submission;
 
 /**
- * Détection déterministe des conflits d'intérêts potentiels entre un relecteur
+ * Détection déterministe des conflits d'intérêts potentiels entre un évaluateur
  * et les auteurs d'une communication, à partir des données réelles (auteurs JSON,
  * institution, historique de co-publication). Règles du mockup / guide §2 :
  * même institution, co-auteur récent (< 5 ans), homonymie (lien familial possible),
- * relecteur lui-même auteur. Le résultat est indicatif : l'admin garde la décision.
+ * évaluateur lui-même auteur. Le résultat est indicatif : l'admin garde la décision.
  */
 class ConflictOfInterest
 {
@@ -22,7 +22,7 @@ class ConflictOfInterest
     private const LEVEL_ORDER = [self::LOW => 1, self::MEDIUM => 2, self::HIGH => 3];
 
     /**
-     * Conflits potentiels entre le relecteur et les auteurs de la soumission.
+     * Conflits potentiels entre l’évaluateur et les auteurs de la soumission.
      *
      * @return list<array{level: string, label: string, detail: string}>
      */
@@ -34,7 +34,7 @@ class ConflictOfInterest
         $revLast = self::lastName($reviewerName);
         $isAuthor = false;
         // Une université qui organise son propre colloque a la plupart de ses
-        // relecteurs ET de ses auteurs en interne : la règle « même institution »
+        // évaluateurs ET de ses auteurs en interne : la règle « même institution »
         // y signale tout le monde et devient du bruit. L'événement peut donc
         // l'ignorer (onglet Options de la fiche d'événement).
         $sameInstitutionCounts = ! self::ignoresSameInstitution($submission);
@@ -46,7 +46,7 @@ class ConflictOfInterest
 
             if ($revEmail !== '' && $authorEmail === $revEmail) {
                 $conflicts[] = ['level' => self::HIGH, 'label' => 'Auteur de la communication',
-                    'detail' => 'Le relecteur figure parmi les auteurs'.($authorName ? ' ('.$authorName.')' : '').'.'];
+                    'detail' => 'L’évaluateur figure parmi les auteurs'.($authorName ? ' ('.$authorName.')' : '').'.'];
                 $isAuthor = true;
 
                 continue;
@@ -61,7 +61,7 @@ class ConflictOfInterest
             }
         }
 
-        // Co-publication : le relecteur a co-signé une autre communication avec un
+        // Co-publication : l’évaluateur a co-signé une autre communication avec un
         // auteur de celle-ci (hors le cas où il en est lui-même auteur).
         if ($revEmail !== '' && ! $isAuthor) {
             foreach (self::coPublicationWith($submission, $revEmail) as $name) {
@@ -117,7 +117,7 @@ class ConflictOfInterest
     }
 
     /**
-     * Noms des auteurs de la soumission avec qui le relecteur a déjà co-signé une
+     * Noms des auteurs de la soumission avec qui l’évaluateur a déjà co-signé une
      * autre communication (dans les 5 dernières années).
      *
      * @return list<string>
@@ -136,7 +136,7 @@ class ConflictOfInterest
             return [];
         }
 
-        // Pré-filtre SQL sur l'e-mail du relecteur (JSON stocké en texte), affinage en PHP.
+        // Pré-filtre SQL sur l'e-mail de l’évaluateur (JSON stocké en texte), affinage en PHP.
         $others = Submission::query()
             ->whereKeyNot($submission->id)
             ->where('created_at', '>=', now()->subYears(5))

@@ -26,6 +26,10 @@ Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system 
 (`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
 Larastan **niveau 5**.
 
+### Terminologie de l'évaluation
+
+- Dans les textes affichés, employer **évaluateur** et **évaluation**. Les identifiants techniques historiques (`reviewer`, `review`, chemins et clés de routes contenant `relecteur` ou `relecture`) restent stables pour préserver les liens et données existants.
+
 ### Protection des formulaires publics
 
 - L'inscription participant (`/inscription`) et le formulaire de contact de l'accueil utilisent Cloudflare Turnstile. Renseigner les deux clés dans **Réglages → Sécurité** (secret chiffré en base) ou dans `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, avec les domaines autorisés dans Cloudflare. Sans les deux clés, les boutons d'envoi restent désactivés ; le serveur refuse aussi les requêtes directes.
@@ -4052,6 +4056,37 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     document imprimé. ⚠️ **`leading` est un RAPPORT, pas une longueur** : le mettre à
     l'échelle diviserait l'interligne. Tout nouvel attribut géométrique du concepteur doit
     être ajouté à `scaleLayout()`, sinon il ne suit pas la réduction.
+  - ⚠️⚠️ **DEUX PIÈGES dompdf ONT FAIT DÉBORDER LA PLANCHE DE LA FEUILLE** (un badge
+    coupé à droite, la moitié basse de la page vide). Les deux sont invisibles à la
+    lecture du code et ne se voient qu'en RENDANT le PDF :
+    1. **dompdf n'ENROULE PAS les `float`.** Il alignait les quatre badges sur UNE
+       seule rangée, qui sortait de l'A4. La planche se pose donc en
+       **`position: absolute`**, jamais en flottant - c'est d'ailleurs déjà ainsi
+       que le badge lui-même est dessiné, et dompdf le rend très bien.
+    2. **Un élément absolu est placé par rapport à la FEUILLE, pas à la zone
+       imprimable** : dompdf ignore `@page { margin }` pour ces éléments, et
+       l'encre se collait au bord gauche (0 mm mesuré). La marge d'impression est
+       donc portée par les **coordonnées** (`marginPx`), et `@page` est à **0**.
+    ⚠️ Un conteneur `position: relative` ne sert pas de référence non plus : ne pas
+    compter dessus pour recentrer la grille, le décalage se met dans chaque cellule.
+  - **Vérifié en MESURANT le PDF rendu**, pas à l'œil : encre 197,6 × 276,4 mm sur
+    A4, marges 6,1 mm à gauche / 6,3 mm à droite / 10,4 mm en haut / 10,3 mm en bas.
+    (Outil : `python -m pip install pymupdf`, puis rendu de la page en PNG et
+    recherche du premier pixel encré. Aucun convertisseur PDF n'est installé sur le
+    poste - `pdftoppm`, Ghostscript et ImageMagick manquent.)
+  - **Gardes** : `DocumentsTest` éprouve la **VUE** (elle portait le défaut, pas le
+    plan) - chaque cellule rendue doit tenir dans la zone imprimable - et interdit
+    le retour d'un `float` dans `pdf/badges-sheet.blade.php`. Sabotage vérifié.
+  - ⚠️ **Le MODÈLE Word de référence**, mesuré (`Badges/CO/template.docx`,
+    `Moderateurs/template.docx`) : A4, marges de page **4,3 mm**, quatre cadres de
+    **104,0 × 139,0 mm** posés en 2×2 (x = 1,5 et 104,2 mm ; y = 10,1 et 151,4 mm).
+    Nos badges sortent un peu plus petits (**96,3 × 135,7 mm**) et c'est **le format
+    du modèle qui l'explique**, pas le tuilage : le concepteur dessine en **A6
+    portrait (397×560 px, rapport 0,709)** quand le cadre Word a un rapport de
+    **0,748**. À rapport A6, 104 mm de large imposeraient 146,7 mm de haut, soit
+    293 mm pour deux rangées - plus de place pour les marges. **Pour des badges à
+    104 × 139 mm, c'est le FORMAT du modèle qu'il faut changer dans le concepteur** ;
+    la planche suit automatiquement, elle tuile ce que le modèle déclare.
   - **Planche « tous les badges prêts »** (`admin.documents.badges.all`) : toutes les
     catégories ayant des destinataires, **groupées par format**, chaque format remplissant
     ses propres pages. ⚠️ **On ne mêle jamais deux formats sur une même feuille** (même

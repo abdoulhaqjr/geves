@@ -436,12 +436,12 @@ class EventReport
     }
 
     /**
-     * Statistiques de relecture : relecteurs actifs, relectures rendues, en retard,
+     * Statistiques d’évaluation : évaluateurs actifs, évaluations rendues, en retard,
      * délai moyen (jours entre assignation et complétion).
      *
-     * ⚠️ « En retard » = échéance dépassée sur une relecture encore due
-     * (Review::isLate()), et non « pas encore rendue » : une relecture confiée
-     * hier n'est pas en retard, et une relecture refusée ou annulée ne l'est
+     * ⚠️ « En retard » = échéance dépassée sur une évaluation encore due
+     * (Review::isLate()), et non « pas encore rendue » : une évaluation confiée
+     * hier n'est pas en retard, et une évaluation refusée ou annulée ne l'est
      * jamais - la place a été libérée.
      *
      * @return array{reviewers:int, done:int, late:int, pending:int, declined:int, avgDays:float}
@@ -466,9 +466,9 @@ class EventReport
     }
 
     /**
-     * Charge par relecteur : assignées, rendues, en retard, complétion (%).
-     * Seules les relectures actives comptent dans la charge (un refus ou une
-     * annulation ne pèse pas sur la complétion du relecteur), et « en retard »
+     * Charge par évaluateur : assignées, rendues, en retard, complétion (%).
+     * Seules les évaluations actives comptent dans la charge (un refus ou une
+     * annulation ne pèse pas sur la complétion de l’évaluateur), et « en retard »
      * suit l'échéance (Review::isLate()).
      *
      * @return array<int, array{name:string, assigned:int, done:int, pending:int, late:int, declined:int, completion:int}>
@@ -485,7 +485,7 @@ class EventReport
                 $done = $active->where('status', 'completed')->count();
 
                 return [
-                    'name' => $group->first()->reviewer?->full_name ?: 'Relecteur inconnu',
+                    'name' => $group->first()->reviewer?->full_name ?: 'Évaluateur inconnu',
                     'assigned' => $assigned,
                     'done' => $done,
                     'pending' => $active->filter(fn (Review $r) => $r->isPending())->count(),
