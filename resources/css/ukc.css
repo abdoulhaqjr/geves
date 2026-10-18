@@ -1488,7 +1488,7 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-pay-embed {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
-  padding: 20px; background: rgba(15, 23, 42, .55);
+  padding: 12px; background: rgba(15, 23, 42, .55);
   overflow-y: auto;
 }
 /* ⚠️ **La fenêtre n'apparaît QUE lorsque le formulaire est là.** Elle s'ouvrait
@@ -1522,7 +1522,7 @@ body.ukc-overlay-open { overflow: hidden; }
   width: 100%; max-width: 520px; background: #fff;
   border-radius: var(--ukc-radius-lg); box-shadow: var(--ukc-shadow-lg);
   overflow: hidden;
-  display: flex; flex-direction: column; max-height: calc(100dvh - 40px);
+  display: flex; flex-direction: column; max-height: calc(100dvh - 24px);
 }
 .ukc-pay-embed__head { flex: none; }
 .ukc-pay-embed__head { padding: 14px 18px 15px; border-bottom: 1px solid var(--ukc-border); }
@@ -1555,13 +1555,23 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-pay-embed__close:hover { color: var(--ukc-text); border-color: var(--ukc-light); }
 /* Le prestataire pose son formulaire ici. Une hauteur minimale évite que le
    panneau ne s'effondre à une barre de titre pendant le chargement. */
-.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: min(420px, 50dvh); padding: 6px; }
+/* ⚠️ **La zone doit pouvoir SE COMPRIMER** (`min-height: 0`), sinon elle pousse
+   le pied hors du panneau, qui le rogne - et c'est le pied qui porte la porte
+   de sortie. Mesuré à 800x460 : un plancher de 62dvh laissait 151px à un
+   en-tête et un pied qui en réclament 164, et le lien de secours disparaissait.
+   Le plancher appartient au CADRE, pas à la zone : c'est elle qui rend la main. */
+.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 6px; }
 /* ⚠️ **Le prestataire pose son cadre à 150px** et le laisse défiler en dedans :
    mesuré en conditions réelles, le formulaire tenait dans une meurtrière, avec
    sa propre barre de défilement DANS la nôtre - deux défilements imbriqués, ce
    que le projet s'interdit ailleurs. On ne lui impose pas une hauteur, on lui
    donne un PLANCHER : il reste libre de grandir quand son formulaire s'allonge. */
-.ukc-pay-embed__box iframe { width: 100%; min-height: min(440px, 52dvh); border: 0; }
+/* ⚠️ **Le cadre REMPLIT la zone** (`height: 100%`), il ne se contente pas d'un
+   plancher : sinon le formulaire du prestataire défilait DANS son cadre, qui
+   défilait lui-même dans la nôtre - deux défilements imbriqués, ce que le
+   projet s'interdit ailleurs. Le plancher ne sert plus qu'aux écrans trop
+   courts, où c'est alors notre zone qui rend la main. */
+.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: min(560px, 68dvh); border: 0; }
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
 .ukc-pay-embed__failed { display: none; }

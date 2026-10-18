@@ -15,6 +15,7 @@ use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -100,6 +101,43 @@ class PaymentController extends Controller
                 'gateway' => $gateway->key(),
             ]
         );
+
+        // ⚠️⚠️ **UN PAIEMENT EN ATTENTE A PU ÊTRE OUVERT AVEC UNE AUTRE
+        // PASSERELLE.** `firstOrCreate` ne pose `method`/`gateway` qu'à la
+        // CRÉATION : qui avait d'abord choisi « sur place », puis revenait régler
+        // en ligne, repartait sur une ligne restée `manual`. Trois conséquences,
+        // toutes silencieuses, et mesurées sur un vrai paiement :
+        //
+        // - `setOperator()` interroge la passerelle **enregistrée** : la
+        //   passerelle hors ligne ne connaît aucun opérateur, donc tout code
+        //   était REJETÉ et le moyen choisi n'atteignait jamais le prestataire ;
+        // - `payments:reconcile` ne repasse que par la passerelle enregistrée :
+        //   un règlement en ligne resté `manual` n'aurait **jamais** été
+        //   revérifié, et le filet de sécurité ne couvrait pas cette ligne ;
+        // - la comptabilité annonçait un encaissement au guichet pour un
+        //   paiement en ligne.
+        //
+        // D'où le réalignement **avant** `setOperator()` : l'ordre est la règle.
+        if ($payment->gateway !== $gateway->key()) {
+            // ⚠️ La référence appartenait à l'autre prestataire : la garder
+            // reviendrait à lui demander des nouvelles d'une transaction qui
+            // n'est pas la sienne. On la JOURNALISE avant de la retirer - c'est
+            // la pièce d'un « j'ai payé mais le système dit non ».
+            if (filled($payment->gateway_ref)) {
+                Log::channel('payments')->warning('Passerelle changée sur un paiement en attente', [
+                    'payment' => $payment->id,
+                    'de' => $payment->gateway,
+                    'vers' => $gateway->key(),
+                    'reference_abandonnee' => $payment->gateway_ref,
+                ]);
+            }
+
+            $payment->update([
+                'method' => $gateway->key(),
+                'gateway' => $gateway->key(),
+                'gateway_ref' => null,
+            ]);
+        }
 
         // Opérateur choisi chez nous (pré-sélection sur la page du prestataire).
         $payment->setOperator($request->input('operator'));

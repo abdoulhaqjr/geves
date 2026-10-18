@@ -34,6 +34,14 @@ base porte les deux formes.
 confondre remettrait son opérateur au payeur contre sa volonté, au retour d'une
 erreur de formulaire.
 
+⚠️ **Un paiement en attente a pu être ouvert avec une autre passerelle** :
+`firstOrCreate` ne pose `gateway` qu'à la création, et qui avait d'abord choisi
+« sur place » repartait sur une ligne restée `manual`. `setOperator()` rejetait
+alors tout code (la passerelle hors ligne n'a pas d'opérateurs), `payments:reconcile`
+ne couvrait plus la ligne, et la comptabilité annonçait un encaissement au
+guichet. La passerelle est réalignée **avant** `setOperator()`, et la référence
+étrangère est journalisée puis abandonnée.
+
 **Le formulaire embarqué ne devine pas le pays** : il POSTE ses options au
 prestataire et, sans pays, retombe sur le Bénin. Mesuré en production - un numéro
 togolais arrivait sur « Mtn Bénin ». On lui passe le `customer` de la transaction
@@ -49,8 +57,8 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et cinq cas de `PaymentGatewayTest`,
-onze sabotages vérifiés.
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et sept cas de `PaymentGatewayTest`,
+treize sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

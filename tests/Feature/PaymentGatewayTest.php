@@ -336,6 +336,77 @@ it('montre une attente animée avant d’ouvrir la fenêtre', function () {
 });
 
 /**
+ * ⚠️⚠️ **LA ZONE DU FORMULAIRE DOIT POUVOIR SE COMPRIMER**, sinon elle pousse le
+ * pied hors du panneau - qui le rogne (`overflow: hidden`) - et c'est le pied
+ * qui porte la **porte de sortie**. Mesuré à 800x460 : un plancher de 62dvh sur
+ * la zone laissait 151px à un en-tête et un pied qui en réclament 164, et le
+ * lien de secours disparaissait sous l'écran.
+ *
+ * ⚠️ Le plancher appartient donc au **cadre**, pas à la zone : c'est lui qui
+ * donne sa hauteur à la fenêtre quand l'écran est confortable (mesuré à
+ * 800x650 : 618px de fenêtre contre 501 avant), et c'est la zone qui rend la
+ * main quand il ne l'est pas. ⚠️ `height: 100%` sur le cadre évite en plus les
+ * deux défilements imbriqués - le formulaire du prestataire défilait DANS son
+ * cadre, qui défilait dans notre zone.
+ */
+it('garde la porte de sortie à l’écran quelle que soit la hauteur', function () {
+    $css = cssUkc();
+
+    expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 6px; }');
+    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: min(560px, 68dvh); border: 0; }');
+    expect($css)->toContain('max-height: calc(100dvh - 24px);');
+});
+
+/**
+ * ⚠️⚠️ **UN PAIEMENT EN ATTENTE A PU ÊTRE OUVERT AVEC UNE AUTRE PASSERELLE**, et
+ * `firstOrCreate` ne pose `method`/`gateway` qu'à la CRÉATION. Qui avait d'abord
+ * choisi « sur place », puis revenait régler en ligne, repartait sur une ligne
+ * restée `manual`. Constaté sur un vrai paiement, et trois défauts d'un coup :
+ *
+ * - `setOperator()` interroge la passerelle **enregistrée** : la passerelle hors
+ *   ligne ne connaît aucun opérateur, donc tout code était rejeté - le moyen
+ *   choisi n'atteignait **jamais** le prestataire, et c'est ce qui faisait
+ *   revenir le formulaire sur son opérateur par défaut ;
+ * - `payments:reconcile` ne repasse que par la passerelle enregistrée : le
+ *   filet de sécurité ne couvrait pas cette ligne ;
+ * - la comptabilité annonçait un encaissement au guichet pour un règlement en
+ *   ligne.
+ */
+it('réaligne la passerelle d’un paiement en attente ouvert ailleurs', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+
+    // La ligne existe déjà, ouverte pour un encaissement au guichet.
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 15000,
+        'method' => 'manual', 'gateway' => 'manual', 'status' => 'pending',
+        'gateway_ref' => 'REF-ETRANGERE',
+    ]);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 59]], 201),
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->from(route('account.payment', $event->id))
+        ->followingRedirects()
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay', 'operator' => 'togocel'])
+        ->assertOk();
+
+    $payment->refresh();
+
+    expect($payment->gateway)->toBe('fedapay');
+    expect($payment->method)->toBe('fedapay');
+    // Ce qui manquait : l'opérateur survit, et il part bien dans la requête.
+    expect($payment->meta['operator'] ?? null)->toBe('togocel');
+    expect(corpsDeCreation()['mode'] ?? null)->toBe('togocel');
+    // ⚠️ L'ancienne référence appartenait à l'autre prestataire : la garder
+    // reviendrait à lui demander des nouvelles d'une transaction étrangère.
+    expect($payment->gateway_ref)->toBe('59');
+});
+
+/**
  * ⚠️⚠️ **LE FORMULAIRE EMBARQUÉ NE DEVINE PAS LE PAYS.** Il s'ouvre sur le
  * prestataire avec les options qu'on lui donne, et sans pays il retombe sur
  * celui du prestataire - **le Bénin**. Mesuré en production : un numéro togolais

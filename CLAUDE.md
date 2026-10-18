@@ -4503,10 +4503,19 @@ boucle des formations, qui en afficherait autant que de lignes, toutes sur la
 même transaction. La charge est construite par **`App\Support\PaymentEmbed`**,
 source unique des deux parcours.
 
-⚠️ **La fenêtre tient dans l'écran** : mesuré sur 422px de haut, la zone du
-formulaire (420px) plus l'en-tête et le pied débordaient, et le pied - qui porte
-la porte de sortie - tombait hors champ. C'est la **zone** qui défile, pas la
-fenêtre. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+⚠️⚠️ **LA ZONE DU FORMULAIRE DOIT POUVOIR SE COMPRIMER** (`min-height: 0`),
+sinon elle pousse le pied hors du panneau - qui le rogne (`overflow: hidden`) -
+et c'est le pied qui porte la **porte de sortie**. Mesuré deux fois, à deux
+ans d'intervalle de code : d'abord sur 422px de haut, puis sur 800x460, où un
+plancher de 62dvh posé sur la zone laissait 151px à un en-tête et un pied qui en
+réclament 164. C'est la **zone** qui défile, pas la fenêtre.
+
+⚠️ **Le plancher appartient au CADRE, pas à la zone** (`iframe { height: 100%;
+min-height: min(560px, 68dvh) }`) : c'est lui qui donne sa hauteur à la fenêtre
+quand l'écran est confortable - mesuré à 800x650, **618px de fenêtre contre 501**
+avant - et c'est la zone qui rend la main quand il ne l'est pas. Le `height: 100%`
+supprime en prime les deux défilements imbriqués : le formulaire du prestataire
+défilait DANS son cadre, qui défilait dans notre zone. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 
@@ -4519,6 +4528,27 @@ qu'on vient vérifier avant de s'engager. Le pied dit qu'on ne quitte pas la
 plateforme, et garde la porte de sortie. ⚠️ Le nom de la plateforme passe par le
 placeholder `:app`, jamais en dur ; et l'objet comme le montant viennent de
 `PaymentEmbed`, pas de la vue - la devise **stockée** a le dernier mot.
+
+⚠️⚠️ **UN PAIEMENT EN ATTENTE A PU ÊTRE OUVERT AVEC UNE AUTRE PASSERELLE.**
+`Payment::firstOrCreate` ne pose `method`/`gateway` qu'à la **création** : qui
+avait d'abord choisi « sur place », puis revenait régler en ligne, repartait sur
+une ligne restée `manual`. Trois défauts d'un coup, tous silencieux, et constatés
+sur un vrai paiement :
+
+- **`setOperator()` interroge la passerelle ENREGISTRÉE**, et la passerelle hors
+  ligne ne connaît aucun opérateur : tout code était donc rejeté, le moyen choisi
+  n'atteignait **jamais** le prestataire, et son formulaire revenait sur son
+  opérateur par défaut (« Mtn Bénin ») ;
+- **`payments:reconcile` ne repasse que par la passerelle enregistrée** : un
+  règlement en ligne resté `manual` n'aurait jamais été revérifié - le filet de
+  sécurité ne couvrait pas cette ligne ;
+- la **comptabilité** annonçait un encaissement au guichet pour un paiement en
+  ligne.
+
+D'où le réalignement **avant** `setOperator()` : l'ordre est la règle. ⚠️ Et la
+**référence** est abandonnée au passage, après journalisation dans le canal
+`payments` : elle appartenait à l'autre prestataire, et la garder reviendrait à
+lui demander des nouvelles d'une transaction qui n'est pas la sienne.
 
 ⚠️⚠️ **LE FORMULAIRE EMBARQUÉ NE DEVINE PAS LE PAYS, ET IL RETOMBE SUR LE
 BÉNIN.** Il ne s'ouvre pas sur la page hébergée : `checkout.js` POSTE ses
