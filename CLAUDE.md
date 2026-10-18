@@ -4598,7 +4598,14 @@ marge droite de sa carte : son texte « MARCHAND » s'arrête à 684px sur 700, 
 au pixel près. ⚠️ **On ne raccourcit pas le cadre** pour supprimer sa bande : un
 cadre plus court que sa carte lui ferait sortir sa propre barre de défilement. En
 plein écran, seule la croix part - sa bande y suit le bas de SON contenu, et
-découper le bas rognerait le formulaire. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+découper le bas rognerait le formulaire.
+
+⚠️ **Ses COINS laissent passer le même voile** : ses blocs blancs sont arrondis de
+3.8px (`.modal-header` en haut, ses deux colonnes en bas), et en dehors de
+l'arrondi le fond sombre reparaît - quatre petites échardes, dont une se voyait à
+l'œil nu en haut à gauche, contre notre bandeau. D'où le **cran de 4px** à ce coin
+et les **25px du bas** plutôt que 22 : ses coins bas s'arrêtent à 517px sur 542.
+Le coin haut droit part déjà avec sa croix. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 

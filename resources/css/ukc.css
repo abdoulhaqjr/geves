@@ -1592,10 +1592,17 @@ body.ukc-overlay-open { overflow: hidden; }
    (`body { background: rgba(0,0,0,.6) }`) : une barre grise sous un formulaire
    blanc partout ailleurs. ⚠️ On ne raccourcit PAS le cadre pour l'éviter - 542px
    est la hauteur de sa carte, et un cadre plus court lui ferait sortir sa propre
-   barre de défilement. On découpe, et le blanc du panneau prend la place. */
+   barre de défilement. On découpe, et le blanc du panneau prend la place.
+   ⚠️ **Ses COINS laissent passer le même voile.** Ses blocs blancs sont arrondis
+   de 3.8px (`.modal-header` en haut, ses deux colonnes en bas) : en dehors de
+   l'arrondi, le voile reparaît - quatre petites échardes sombres, dont une se
+   voyait à l'œil nu en haut à gauche, contre notre bandeau. D'où le cran de 4px
+   au coin haut gauche, et les 25px du bas plutôt que 22 : ses coins bas
+   s'arrêtent à 517px sur 542, et trois pixels de blanc rendus au panneau ne
+   coûtent rien. Le coin haut droit, lui, part déjà avec sa croix. */
 .ukc-pay-embed__box iframe {
   display: block; width: 100%; height: 542px; border: 0;
-  clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 22px), 0 calc(100% - 22px));
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 25px), 0 calc(100% - 25px));
 }
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
@@ -1624,6 +1631,6 @@ body.ukc-pay-embed-open { overflow: hidden; }
      découper le bas rognerait le formulaire. On ne retire que sa croix. */
   .ukc-pay-embed__box iframe {
     height: 100%;
-    clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);
+    clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);
   }
 }

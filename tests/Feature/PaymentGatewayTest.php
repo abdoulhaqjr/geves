@@ -439,15 +439,20 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
  *
  * ⚠️ Les 17x17 du coin sont la marge droite de sa carte : son texte « MARCHAND »
  * s'arrête à 684px sur 700, mesuré au pixel près. Rien d'utile n'y passe.
+ *
+ * ⚠️ **Ses COINS laissent passer le même voile** : ses blocs blancs sont arrondis
+ * de 3.8px, et en dehors de l'arrondi le fond sombre reparaît - quatre échardes,
+ * dont une se voyait à l'œil nu en haut à gauche. D'où le cran de 4px à ce coin,
+ * et les 25px du bas plutôt que 22 : ses coins bas s'arrêtent à 517px sur 542.
  */
 it('ne laisse entrer ni la croix du prestataire ni sa bande grise', function () {
     $css = cssUkc();
 
-    expect($css)->toContain('clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 22px), 0 calc(100% - 22px));');
+    expect($css)->toContain('clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% calc(100% - 25px), 0 calc(100% - 25px));');
 
     // ⚠️ En plein écran, sa bande du bas suit le bas de SON contenu et non celui
     // du cadre : découper le bas rognerait le formulaire. On ne retire que la croix.
-    expect($css)->toContain('clip-path: polygon(0 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);');
+    expect($css)->toContain('clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 17px) 0, calc(100% - 17px) 17px, 100% 17px, 100% 100%, 0 100%);');
 
     // ⚠️ La découpe vit sur le CADRE. Posée sur la zone, elle rognerait aussi notre
     // barre de défilement, et le coin découpé ne suivrait plus le bord du cadre.
