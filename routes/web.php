@@ -577,7 +577,6 @@ Route::prefix('admin')->group(function () {
             Route::get('/attestations/lot.pdf', [AttestationExportController::class, 'pdf'])->name('admin.documents.attestations.lot');
             Route::get('/attestations/emargement.pdf', [AttestationExportController::class, 'emargement'])->name('admin.documents.attestations.emargement');
             Route::post('/attestations/{attestation}/remise', [AttestationExportController::class, 'deliver'])->name('admin.documents.attestations.deliver');
-            Route::post('/badges/options', [DocumentHubController::class, 'saveBadgeOptions'])->name('admin.documents.badges.options');
             Route::post('/livret/options', [DocumentHubController::class, 'saveLivretOptions'])->name('admin.documents.livret.options');
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');
             Route::post('/livret/apparence', [DocumentHubController::class, 'saveLivretApparence'])->name('admin.documents.livret.apparence');

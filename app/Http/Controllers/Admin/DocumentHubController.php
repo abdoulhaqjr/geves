@@ -160,7 +160,7 @@ class DocumentHubController extends Controller
         $tab = in_array($tab, ['attestations', 'badges', 'livre'], true) ? $tab : 'attestations';
 
         $allowed = match ($tab) {
-            'badges' => ['modeles', 'prets', 'options'],
+            'badges' => ['modeles', 'prets'],
             'attestations' => ['modeles', 'delivrees', 'options'],
             'livre' => ['main', 'modeles', 'apparence'],
         };
@@ -209,10 +209,6 @@ class DocumentHubController extends Controller
                 'attDidMethod' => (string) EventSettings::get($event, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
                 'attCryptoSuite' => (string) EventSettings::get($event, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
                 'attCertEnabled' => app(AttestationCertifier::class)->enabled(),
-                'badgePrefix' => (string) EventSettings::get($event, 'badges.prefix', 'UKC-2026-'),
-                'badgeFormat' => (string) EventSettings::get($event, 'badges.format', 'A6 Portrait'),
-                'badgeQrAccess' => (bool) EventSettings::get($event, 'badges.qr_access', true),
-                'badgeBatchPrint' => (bool) EventSettings::get($event, 'badges.batch_print', false),
                 'forewordTitle' => (string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos'),
                 'forewordText' => (string) EventSettings::get($event, 'livret.foreword_text', ''),
                 'forewordSignature' => (string) EventSettings::get($event, 'livret.signature', ''),
@@ -383,23 +379,6 @@ class DocumentHubController extends Controller
         ]);
 
         return back()->with('ukc_status', 'Options des attestations enregistrées.');
-    }
-
-    public function saveBadgeOptions(Request $request): RedirectResponse
-    {
-        $event = $this->currentEdition($request);
-        if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez un événement.');
-        }
-
-        EventSettings::setMany($event, [
-            'badges.prefix' => (string) $request->input('badgePrefix'),
-            'badges.format' => (string) $request->input('badgeFormat'),
-            'badges.qr_access' => $request->boolean('badgeQrAccess'),
-            'badges.batch_print' => $request->boolean('badgeBatchPrint'),
-        ]);
-
-        return back()->with('ukc_status', 'Options des badges enregistrées.');
     }
 
     public function saveLivretOptions(Request $request): RedirectResponse

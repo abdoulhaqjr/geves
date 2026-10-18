@@ -531,7 +531,7 @@ it('avant-propos IA : endpoint sûr même sans fournisseur IA (redirige, aucun 5
     expect(Settings::get('livret.foreword_text'))->toBeNull();
 });
 
-it('audit options : DIDs attestations et réglages badges se persistent sans erreur', function () {
+it('audit options : les DIDs des attestations se persistent sans erreur', function () {
     $staff = adminStaff();
     $event = openEdition();
 
@@ -546,17 +546,6 @@ it('audit options : DIDs attestations et réglages badges se persistent sans err
 
     expect(EventSettings::get($event->fresh(), 'attestations.did_issuer'))->toBe('did:web:univkara.tg:colloques');
     expect(EventSettings::get($event->fresh(), 'attestations.crypto_suite'))->toBe('Ed25519Signature2020');
-
-    $this->actingAs($staff, 'web')->post(route('admin.documents.badges.options'), [
-        'event_id' => $event->id,
-        'badgePrefix' => 'UKC-2026-',
-        'badgeFormat' => 'CR80',
-        'badgeGenerateAfterPayment' => '1',
-        'badgeBatchPrint' => '1',
-    ])->assertSessionHasNoErrors();
-
-    expect(EventSettings::get($event->fresh(), 'badges.format'))->toBe('CR80');
-    expect((bool) EventSettings::get($event->fresh(), 'badges.batch_print'))->toBeTrue();
 });
 
 it('importe un modèle .docx et fixe le modèle actif', function () {
@@ -660,9 +649,6 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
         ->assertOk()->assertSee('Awa Kodjo');
-
-    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
-        ->assertOk()->assertSee('Options générales - Badges');
 });
 
 it('sert chaque onglet principal de Documents par son URL (?tab=)', function () {

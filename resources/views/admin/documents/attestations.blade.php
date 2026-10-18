@@ -256,7 +256,6 @@
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
                         Badges prêts <span class="nav-count">{{ $badgeReadyCount }}</span>
                     </a>
-                    <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'options']) }}" @class(['active' => $tab === 'badges' && $stab === 'options'])>Options générales</a>
                 </div>
 
                 @if ($tab === 'badges' && $stab === 'prets')
@@ -294,45 +293,6 @@
                     </div>
                 </div>
 
-                <div @if ($tab !== 'badges' || $stab !== 'options') style="display:none;" @endif>
-                    <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card">
-                        <input type="hidden" name="event_id" value="{{ $event->id }}">
-                        @csrf
-                        <h3>Options générales - Badges</h3>
-                        <x-ukc.scope-edition :event="$event" />
-                        <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
-                        <div class="ukc-opts-grid">
-                            <div>
-                                <div class="ukc-field" style="margin-bottom:12px;">
-                                    <label>Préfixe des références badge</label>
-                                    <input type="text" name="badgePrefix" value="{{ $opts['badgePrefix'] }}">
-                                </div>
-                                <div class="ukc-field">
-                                    <label>Format d’impression par défaut</label>
-                                    <select name="badgeFormat">
-                                        @foreach ([
-                                            'A6 Portrait' => 'A6 Portrait (105 × 148 mm)',
-                                            'A6 Paysage' => 'A6 Paysage (148 × 105 mm)',
-                                            'A7 Portrait' => 'A7 Portrait (74 × 105 mm)',
-                                            'Carte 90 × 55 mm' => 'Carte 90 × 55 mm',
-                                            'CR80' => 'CR80 (85,6 × 54 mm)',
-                                        ] as $val => $fmtLabel)
-                                            <option value="{{ $val }}" @selected($opts['badgeFormat'] === $val)>{{ $fmtLabel }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="desc">Les badges de participation sont disponibles après confirmation du paiement.</p>
-                                <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
-                                <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
-                            </div>
-                        </div>
-                        <div style="margin-top:16px;">
-                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>
-                        </div>
-                    </form>
-                </div>
             </div>
 
             {{-- ======================= LIVRE DES RÉSUMÉS ======================= --}}
