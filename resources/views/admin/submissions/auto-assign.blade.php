@@ -30,8 +30,8 @@
             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour lancer l’attribution.</p></div>
         @elseif (empty($preview['reviewers']))
             <div class="ukc-card">
-                <p style="margin:0;color:var(--ukc-muted);">Aucun évaluateur sur cet événement. Assignez d’abord un évaluateur depuis une soumission,
-                    ou invitez des évaluateurs, puis revenez ici.</p>
+                <p style="margin:0;color:var(--ukc-muted);">Aucun évaluateur sur cet événement.
+                    <a href="{{ route('admin.submissions.reviewers', ['event_id' => $event->id]) }}">Ajoutez des évaluateurs dans « Évaluateurs &amp; expertise »</a>, puis revenez ici.</p>
             </div>
         @else
             {{-- Indicateurs du plan --}}

@@ -59,7 +59,7 @@ class ReviewerExpertise
     }
 
     /**
-     * @return Collection<int, array{id:int, name:string, institution:string, tracks:array<int, string>, load:int}>
+     * @return Collection<int, array{id:int, name:string, email:string, institution:string, tracks:array<int, string>, load:int}>
      */
     public static function forEdition(?Event $event): Collection
     {
@@ -81,6 +81,7 @@ class ReviewerExpertise
         return $reviewers->map(fn (Participant $r) => [
             'id' => (int) $r->id,
             'name' => $r->full_name,
+            'email' => (string) $r->email,
             'institution' => (string) ($r->institution ?? ''),
             'tracks' => collect($r->meta['review_tracks'] ?? [])
                 ->filter()->map(fn ($t): string => trim((string) $t))->values()->all(),

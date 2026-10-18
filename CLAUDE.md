@@ -1051,7 +1051,13 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   `['current' => '…']`). Chaque page porte le **sélecteur d'édition** puis la
   sous-navigation, comme partout ailleurs.
   - **Relecteurs & expertise** (`admin.submissions.reviewers`) : matrice des axes
-    évaluables + charge (relectures actives seulement).
+    évaluables + charge (relectures actives seulement). L'ajout d'un évaluateur
+    se fait ici au niveau de l'événement, avant toute assignation :
+    `admin.evenements.reviewers.store` crée ou promeut sa participation et peut
+    enregistrer ses axes. Il devient alors sélectionnable sur les fiches de
+    soumission et dans l'attribution automatique ; l'invitation part lors de
+    l'assignation, pas lors de l'ajout au vivier. La liste reste visible même
+    lorsque l'événement n'a pas encore d'axes.
   - **Options** (`admin.submissions.options`) : **toutes** les règles de l'édition
     pour ce module - *dépôt* (limites du formulaire), *attribution* (relecteurs
     visés, charge max), *évaluation* (grille, délai).

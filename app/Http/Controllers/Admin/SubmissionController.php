@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\AssignReviewer;
 use App\Actions\AutoAssignReviewers;
 use App\Actions\LinkSubmissionAuthors;
+use App\Actions\RegisterEventReviewer;
 use App\Actions\UpsertParticipantForAccount;
 use App\Events\SubmissionStatusChanged;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
@@ -35,6 +36,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -456,12 +458,15 @@ class SubmissionController extends Controller
 
     public function assignReviewer(Request $request, Submission $submission, AssignReviewer $action): RedirectResponse
     {
+        $request->validate(['existingReviewerId' => ['nullable', 'integer']]);
         $name = trim((string) $request->input('reviewerName'));
         $email = trim((string) $request->input('reviewerEmail'));
 
         // Évaluateur existant sélectionné : on récupère nom + e-mail.
         if ($request->filled('existingReviewerId')) {
-            $reviewer = Participant::find($request->input('existingReviewerId'));
+            $reviewer = Participant::where('event_id', $submission->event_id)
+                ->where('role', 'reviewer')
+                ->find($request->input('existingReviewerId'));
             if (! $reviewer) {
                 return back()->withInput()->withErrors(['existingReviewerId' => 'Évaluateur introuvable.']);
             }
@@ -613,6 +618,29 @@ class SubmissionController extends Controller
             'avgLoad' => $reviewers->isEmpty() ? 0.0 : round($reviewers->avg('load'), 1),
             'canWrite' => $this->canWriteEdition($event),
         ]);
+    }
+
+    /** Ajoute un évaluateur au vivier de l'événement, sans lui attribuer de soumission. */
+    public function storeReviewer(Request $request, Event $event, RegisterEventReviewer $action): RedirectResponse
+    {
+        $data = $request->validate([
+            'reviewerName' => ['required', 'string', 'max:200'],
+            'reviewerEmail' => ['required', 'email', 'max:200'],
+            'reviewerInstitution' => ['nullable', 'string', 'max:255'],
+            'reviewerTracks' => ['array'],
+            'reviewerTracks.*' => ['string', Rule::in(ReviewerExpertise::axes($event))],
+        ]);
+
+        $action->handle(
+            $event,
+            trim($data['reviewerName']),
+            $data['reviewerEmail'],
+            trim($data['reviewerInstitution'] ?? ''),
+            $data['reviewerTracks'] ?? [],
+        );
+
+        return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
+            ->with('ukc_status', 'Évaluateur ajouté à cet événement. Il est disponible pour les attributions.');
     }
 
     /**

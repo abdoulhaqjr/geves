@@ -1388,6 +1388,16 @@ de l'édition.
 
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.
 
+## Vivier d'évaluateurs par événement (2026-10-18)
+
+Dans **Soumissions → Évaluateurs & expertise**, le formulaire ajoute un évaluateur
+au vivier de l'événement sans créer d'évaluation ni envoyer d'invitation. Il
+enregistre nom, e-mail, institution facultative et axes éventuels via
+`RegisterEventReviewer` et la route `admin.evenements.reviewers.store` (capacité
+`editions_write`). La fiche de soumission et l'attribution automatique retrouvent
+ensuite ce participant `role=reviewer` ; l'e-mail d'invitation est envoyé à
+l'assignation. Le vivier reste affiché sans axes thématiques.
+
 ## Tutoriels vidéo - captures authentifiées et lancement serveur autonome (2026-10-09)
 
 - `admin/prise-en-main` démarre désormais un processus serveur dédié qui lit les

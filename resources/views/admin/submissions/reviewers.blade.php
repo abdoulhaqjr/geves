@@ -27,6 +27,48 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Charge moyenne</div><div class="val">{{ number_format($avgLoad, 1, ',', ' ') }}</div></div>
             </div>
 
+            @if ($canWrite)
+                <form method="POST" action="{{ route('admin.evenements.reviewers.store', $event) }}" class="ukc-card" style="margin-bottom:16px;">
+                    @csrf
+                    <h2 style="margin:0 0 6px;font-size:1.05rem;">Ajouter un évaluateur à cet événement</h2>
+                    <p style="margin:0 0 16px;color:var(--ukc-muted);">Enregistrez-le ici avant de lui attribuer une soumission. L'invitation à évaluer sera envoyée lors de l'attribution.</p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">
+                        <div class="ukc-field">
+                            <label for="reviewerName">Nom complet</label>
+                            <input id="reviewerName" name="reviewerName" type="text" value="{{ old('reviewerName') }}" required maxlength="200" autocomplete="name" placeholder="Prénom Nom">
+                            @error('reviewerName') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="reviewerEmail">E-mail</label>
+                            <input id="reviewerEmail" name="reviewerEmail" type="email" value="{{ old('reviewerEmail') }}" required maxlength="200" autocomplete="email" placeholder="evaluateur@exemple.tg">
+                            @error('reviewerEmail') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="reviewerInstitution">Institution <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
+                            <input id="reviewerInstitution" name="reviewerInstitution" type="text" value="{{ old('reviewerInstitution') }}" maxlength="255" placeholder="Université ou organisme">
+                            @error('reviewerInstitution') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    @if ($reviewerAxes !== [])
+                        <div class="ukc-field" style="margin-top:14px;">
+                            <label>Axes d'expertise <span style="color:var(--ukc-muted);font-weight:400;">(facultatif)</span></label>
+                            <div class="reviewer-axes reviewer-axes--chips">
+                                @foreach ($reviewerAxes as $axis)
+                                    <label class="axis-check" title="{{ $axis }}">
+                                        <input type="checkbox" name="reviewerTracks[]" value="{{ $axis }}" @checked(in_array($axis, (array) old('reviewerTracks', []), true))>
+                                        <span>{{ \Illuminate\Support\Str::limit($axis, 34) }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @if ($errors->has('reviewerTracks.*')) <span class="error">{{ $errors->first('reviewerTracks.*') }}</span> @endif
+                        </div>
+                    @endif
+                    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="user-plus" :size="16" /> Ajouter l'évaluateur</button>
+                    </div>
+                </form>
+            @endif
+
             @if (count($uncoveredAxes))
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
@@ -45,23 +87,25 @@
                 @csrf
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);">
-                        <strong>Axes évaluables par évaluateur</strong>
-                        <span style="color:var(--ukc-muted);font-size:13px;">- l’attribution automatique priorise un évaluateur dont l’expertise couvre l’axe de la soumission.</span>
+                        <strong>Évaluateurs de cet événement</strong>
+                        <span style="color:var(--ukc-muted);font-size:13px;">- gérez leur expertise avant de les attribuer aux soumissions.</span>
                     </div>
 
-                    @if (empty($reviewerAxes))
+                    @if ($reviewers->isEmpty())
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun axe thématique défini pour cet événement. Renseignez les axes dans l’onglet
-                            <strong>Appel &amp; contenu</strong> de la
-                            <a href="{{ route('admin.evenements.edit', $event) }}" style="color:var(--ukc-blue);font-weight:600;">fiche d’événement</a>,
-                            puis revenez ici.
-                        </div>
-                    @elseif ($reviewers->isEmpty())
-                        <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun évaluateur sur cet événement. Assignez un évaluateur depuis une soumission
-                            (ou depuis la page d’attribution), il apparaîtra ici.
+                            @if ($canWrite)
+                                Aucun évaluateur sur cet événement. Ajoutez-en un avec le formulaire ci-dessus pour le rendre disponible lors de l'attribution.
+                            @else
+                                Aucun évaluateur sur cet événement. Demandez à un responsable de l'événement d'en ajouter.
+                            @endif
                         </div>
                     @else
+                        @if ($reviewerAxes === [])
+                            <p style="padding:14px 18px;margin:0;color:var(--ukc-muted);">
+                                Aucun axe thématique défini. Vous pouvez déjà attribuer ces évaluateurs aux soumissions ;
+                                renseignez les axes dans <a href="{{ route('admin.evenements.edit', $event) }}" style="color:var(--ukc-blue);font-weight:600;">Appel &amp; contenu</a> pour préciser leur expertise.
+                            </p>
+                        @endif
                         <div class="ukc-table-wrap">
                             <table class="ukc-table">
                                 <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th></tr></thead>
@@ -70,20 +114,25 @@
                                         <tr>
                                             <td>
                                                 <strong>{{ $rev['name'] }}</strong>
+                                                <div style="color:var(--ukc-muted);font-size:12px;">{{ $rev['email'] }}</div>
                                                 <div style="color:var(--ukc-muted);font-size:12px;">{{ $rev['institution'] ?: '-' }}</div>
                                                 <input type="hidden" name="reviewer_ids[]" value="{{ $rev['id'] }}">
                                             </td>
                                             <td>
-                                                <div class="reviewer-axes reviewer-axes--chips">
-                                                    @foreach ($reviewerAxes as $axis)
-                                                        <label class="axis-check" title="{{ $axis }}">
-                                                            <input type="checkbox" name="expertise[{{ $rev['id'] }}][]" value="{{ $axis }}"
-                                                                   @checked(\App\Support\ReviewerExpertise::covers($rev['tracks'], $axis))
-                                                                   @disabled(! $canWrite)>
-                                                            <span>{{ \Illuminate\Support\Str::limit($axis, 34) }}</span>
-                                                        </label>
-                                                    @endforeach
-                                                </div>
+                                                @if ($reviewerAxes === [])
+                                                    <span style="color:var(--ukc-muted);">Aucun axe défini</span>
+                                                @else
+                                                    <div class="reviewer-axes reviewer-axes--chips">
+                                                        @foreach ($reviewerAxes as $axis)
+                                                            <label class="axis-check" title="{{ $axis }}">
+                                                                <input type="checkbox" name="expertise[{{ $rev['id'] }}][]" value="{{ $axis }}"
+                                                                       @checked(\App\Support\ReviewerExpertise::covers($rev['tracks'], $axis))
+                                                                       @disabled(! $canWrite)>
+                                                                <span>{{ \Illuminate\Support\Str::limit($axis, 34) }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
                                             </td>
                                             <td style="text-align:center;font-weight:700;">{{ $rev['load'] }}</td>
                                         </tr>

@@ -402,6 +402,9 @@
                           data-ajax data-ajax-msg="Évaluateur assigné."
                           style="margin-top:14px;padding-top:14px;border-top:1px solid var(--ukc-border);">
                         @csrf
+                        <p class="hint" style="margin:0 0 10px;font-size:12.5px;">
+                            <a href="{{ route('admin.submissions.reviewers', ['event_id' => $s->event_id]) }}">Gérer les évaluateurs de cet événement</a>
+                        </p>
                         @if ($existingReviewers->count())
                             <div class="ukc-field" style="margin-bottom:8px;">
                                 <label for="existingReviewerId">Évaluateur existant</label>
