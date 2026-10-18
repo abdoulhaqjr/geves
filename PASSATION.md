@@ -66,6 +66,18 @@ ensuite on le DIT, sans jamais annoncer un échec (`payments:reconcile` repasse)
 ⚠️ La vérification se compte **par personne**, jamais par IP : un campus règle
 depuis une poignée d'adresses.
 
+⚠️⚠️ **Mais le compte marchand le REFUSE aujourd'hui** : éprouvé en production,
+le prestataire répond **400 « Opération non autorisée »**. Le paiement sans
+redirection demande une activation, comme la carte bancaire. Le repli joue, le
+payeur voit le formulaire : le parcours fonctionne, il n'est pas ouvert. C'est
+une demande à adresser au prestataire, pas un correctif à écrire.
+
+⚠️ Les replis sont journalisés dans **`storage/logs/payments-AAAA-MM-JJ.log`**
+(driver `daily` : chercher `payments.log` ne rend jamais rien). On ne journalise
+que ce qu'on voulait faire et qu'on ne peut pas - pas l'absence d'opérateur, qui
+est un cas normal : neuf alertes pour zéro anomalie en une journée, et la seule
+ligne utile s'y perdait.
+
 ⚠️ **Quatre codes d'opérateur étaient faux** (`mtn_open_ci` au lieu de `mtn_ci`,
 plus `bmo`, `coris_money`, `wave_direct_ci` inexistants) : écrits d'après l'API
 publique, ignorés en silence. La liste est désormais tenue par un cas.
@@ -82,7 +94,7 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
 **Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et seize cas de `PaymentGatewayTest`,
-vingt et un sabotages vérifiés.
+vingt-deux sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

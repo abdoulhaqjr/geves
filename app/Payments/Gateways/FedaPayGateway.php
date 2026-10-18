@@ -290,6 +290,18 @@ class FedaPayGateway implements OnlineGateway
      */
     protected function pousseSurLeTelephone(string $token, string $mode, mixed $reference = null): bool
     {
+        // ⚠️⚠️ **N'AVOIR AUCUN OPÉRATEUR EST UN CAS NORMAL** - « je choisis sur la
+        // page de paiement », ou la carte bancaire. Le journaliser poserait une
+        // alerte par paiement, et un journal qui crie tout le temps ne dit plus
+        // rien : la seule ligne qui comptait se perdrait au milieu. Mesuré sur le
+        // journal du jour, neuf alertes pour zéro anomalie. On se retire sans un mot.
+        if ($mode === '') {
+            return false;
+        }
+
+        // Ici, en revanche, nous VOULIONS pousser et nous ne le pouvons pas : le
+        // prestataire n'a rendu aucun jeton, ou nous proposons un code qu'il
+        // n'accepte pas. C'est une anomalie, et elle se dit.
         if ($token === '' || ! array_key_exists($mode, $this->mobileOperators())) {
             Log::channel('payments')->warning('Paiement direct impossible : jeton ou opérateur inexploitable', [
                 'transaction' => $reference,

@@ -4647,7 +4647,39 @@ système dit non ». La réponse du prestataire y est **tronquée à 500 caract�
 jamais : il autorise le règlement, c'est un secret de paiement au même titre
 qu'une clé. Un cas le garde.
 
-Sept cas dans `PaymentGatewayTest`, six sabotages vérifiés. ⚠️ Un cinquième ne
+⚠️⚠️ **UN JOURNAL QUI CRIE TOUT LE TEMPS NE DIT PLUS RIEN**, et la première
+version le faisait : elle alertait aussi quand **aucun opérateur** n'était choisi
+- « je choisis sur la page de paiement », ou la carte bancaire, deux cas
+parfaitement normaux. Mesuré sur le journal d'une seule journée : **neuf alertes
+pour zéro anomalie**, au milieu desquelles la seule ligne qui comptait se
+perdait. On ne journalise que ce qu'on VOULAIT faire et qu'on ne peut pas :
+aucun jeton rendu, ou un code que le prestataire n'accepte pas.
+
+⚠️ **Le fichier est `payments-AAAA-MM-JJ.log`**, pas `payments.log` : le canal
+est en driver **`daily`**. Chercher le second ne rend jamais rien, et on en
+conclut à tort qu'il ne s'est rien passé.
+
+### ⚠️ Le PAIEMENT DIRECT est refusé par le compte marchand (2026-10-18)
+
+Éprouvé contre le compte de production, et voici la réponse, mot pour mot :
+
+```
+[2026-10-18 11:08:25] local.WARNING: Paiement direct refusé par le prestataire
+{"transaction":113755521,"operateur":"togocel","statut":400,
+ "reponse":"{\"message\":\"Opération non autorisée\",\"errors\":{},\"model\":null}"}
+```
+
+**400 « Opération non autorisée »** : le paiement sans redirection demande une
+**activation sur le compte marchand**, exactement comme la carte bancaire. Tant
+qu'elle n'est pas accordée, le repli joue et le payeur voit le formulaire - le
+parcours fonctionne, il n'est simplement pas ouvert.
+
+⚠️ **Ne pas en conclure que le code est faux.** L'adresse, le verbe et le corps
+sont ceux du SDK du prestataire (`sendNowWithToken`), et le refus porte sur
+l'**autorisation**, pas sur la requête. C'est une demande à leur adresser, pas un
+correctif à écrire.
+
+Sept cas dans `PaymentGatewayTest`, sept sabotages vérifiés. ⚠️ Un cinquième ne
 mordait pas - une garde `$operator !== ''` **doublait** celle de
 `pousseSurLeTelephone()` : retirée, le cas restait vert. Une condition qu'aucun
 sabotage ne fait tomber est une ligne qu'on croit protectrice et qui ne protège

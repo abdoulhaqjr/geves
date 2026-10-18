@@ -524,7 +524,20 @@ it('ne pousse rien quand le payeur n’a choisi aucun opérateur', function () {
 
     fedapayDirectOk(72);
 
+    // ⚠️⚠️ **Et rien n'est JOURNALISÉ** : n'avoir aucun opérateur est un cas
+    // normal - « je choisis sur la page de paiement », ou la carte bancaire. Une
+    // alerte par paiement noierait la seule ligne qui compte, et un journal qui
+    // crie tout le temps ne dit plus rien. Mesuré : neuf alertes pour zéro
+    // anomalie sur le journal d'une seule journée.
+    $alertes = [];
+    Log::shouldReceive('channel')->andReturnSelf();
+    Log::shouldReceive('warning')->andReturnUsing(function (string $m, array $c = []) use (&$alertes) {
+        $alertes[] = $m;
+    });
+    Log::shouldReceive('info', 'debug', 'error', 'notice')->zeroOrMoreTimes();
+
     expect((new FedaPayGateway)->initiate($payment)['type'])->toBe('embed');
+    expect($alertes)->toBe([]);
 
     // ⚠️ On n'éprouve pas l'absence d'UN appel, mais l'absence de TOUT appel
     // hors transaction : sans opérateur, l'adresse du paiement direct se réduit
