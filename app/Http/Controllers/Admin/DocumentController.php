@@ -400,6 +400,12 @@ class DocumentController extends Controller
                     'cellH' => (int) $plan['cellH'],
                     'gutter' => (int) $plan['gutter'],
                     'sheetW' => (int) $plan['sheetW'],
+                    'sheetH' => (int) $plan['sheetH'],
+                    'marginPx' => (int) $plan['marginPx'],
+                    'pageW' => (int) $plan['pageW'],
+                    'pageH' => (int) $plan['pageH'],
+                    'offsetLeft' => (int) $plan['offsetLeft'],
+                    'offsetTop' => (int) $plan['offsetTop'],
                     'badges' => $page,
                 ];
             }

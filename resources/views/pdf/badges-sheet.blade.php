@@ -6,25 +6,29 @@
          feuille de styles distante, et ce PDF est celui qu'on imprime. --}}
     @include('documents._fonts', ['pdf' => true])
     <style>
-        @page { margin: {{ $marginMm }}mm; }
+        /* ⚠️ Marge de page à ZÉRO, et la marge d'impression portée par les
+           coordonnées des cellules : dompdf place un élément absolu par rapport à
+           la FEUILLE et ignore `@page { margin }` - l'encre se collait au bord. */
+        @page { margin: 0; }
         html, body { margin: 0; padding: 0; }
-        * { box-sizing: border-box; }
         body { font-family: 'Jost', DejaVu Sans, sans-serif; }
         /* ⚠️ Saut de page APRÈS chaque planche sauf la dernière : un saut final
            ajouterait une page blanche à la fin de chaque lot. */
-        .sheet { page-break-after: always; }
+        .sheet { position: relative; page-break-after: always; }
         .sheet.last { page-break-after: auto; }
-        /* Chaque badge est DESSINÉ à la taille de sa cellule (cf. BadgeSheet::scaleLayout) :
-           aucun transform, que dompdf n'applique pas de façon fiable. */
-        .cell { float: left; overflow: hidden; }
-        .clear { clear: both; }
+        /* ⚠️⚠️ POSITIONNEMENT ABSOLU, JAMAIS DE `float` : dompdf n'ENROULE PAS les
+           flottants - il les alignait tous sur une seule rangée, qui sortait de la
+           feuille (un badge coupé à droite, la moitié basse de la page vide). Le
+           badge lui-même est déjà dessiné en absolu, et dompdf le rend très bien. */
+        .cell { position: absolute; overflow: hidden; }
     </style>
 </head>
 <body>
     @foreach ($sheets as $sheet)
-        <div class="sheet @if ($loop->last) last @endif" style="width:{{ $sheet['sheetW'] }}px;">
-            @foreach ($sheet['badges'] as $i => $badge)<div class="cell" style="width:{{ $sheet['cellW'] }}px;height:{{ $sheet['cellH'] }}px;margin:0 {{ ($i + 1) % $sheet['cols'] === 0 ? 0 : $sheet['gutter'] }}px {{ $sheet['gutter'] }}px 0;">{!! $badge !!}</div>@endforeach
-            <div class="clear"></div>
+        <div class="sheet @if ($loop->last) last @endif" style="width:{{ $sheet['pageW'] }}px;height:{{ $sheet['pageH'] - 2 }}px;">
+            @foreach ($sheet['badges'] as $i => $badge)
+                <div class="cell" style="left:{{ $sheet['marginPx'] + $sheet['offsetLeft'] + ($i % $sheet['cols']) * ($sheet['cellW'] + $sheet['gutter']) }}px;top:{{ $sheet['marginPx'] + $sheet['offsetTop'] + intdiv($i, $sheet['cols']) * ($sheet['cellH'] + $sheet['gutter']) }}px;width:{{ $sheet['cellW'] }}px;height:{{ $sheet['cellH'] }}px;">{!! $badge !!}</div>
+            @endforeach
         </div>
     @endforeach
 </body>

@@ -68,6 +68,10 @@ final class BadgeSheet
         $cellW = max(1, (int) floor($w * $scale));
         $cellH = max(1, (int) floor($h * $scale));
 
+        $gut = (int) round($gutter);
+        $sheetW = $cols * $cellW + ($cols - 1) * $gut;
+        $sheetH = $rows * $cellH + ($rows - 1) * $gut;
+
         return [
             'cols' => $cols,
             'rows' => $rows,
@@ -75,9 +79,21 @@ final class BadgeSheet
             'scale' => $scale,
             'cellW' => $cellW,
             'cellH' => $cellH,
-            'gutter' => (int) round($gutter),
+            'gutter' => $gut,
             'marginMm' => self::MARGIN_MM,
-            'sheetW' => $cols * $cellW + ($cols - 1) * (int) round($gutter),
+            // ⚠️ La marge est portée par les COORDONNÉES, pas par `@page` : dompdf
+            // place un élément absolu par rapport à la FEUILLE et ignore la marge
+            // de page - l'encre se collait au bord gauche.
+            'marginPx' => (int) round($margin),
+            'pageW' => (int) round(self::PAGE_W),
+            'pageH' => (int) round(self::PAGE_H),
+            'sheetW' => $sheetW,
+            'sheetH' => $sheetH,
+            // La grille est CENTRÉE dans la zone imprimable : le reliquat de
+            // l'arrondi se partage entre le haut et le bas plutôt que de tout
+            // laisser en bas de feuille.
+            'offsetLeft' => max(0, (int) floor(($availW - $sheetW) / 2)),
+            'offsetTop' => max(0, (int) floor(($availH - $sheetH) / 2)),
         ];
     }
 

@@ -265,6 +265,64 @@ it('tuile les badges sur A4 avec des gouttières', function () {
         ->and($plan['rows'] * $plan['cellH'] + ($plan['rows'] - 1) * $plan['gutter'])->toBeLessThanOrEqual(1078);
 });
 
+it('pose la grille DANS la feuille A4, marges comprises', function () {
+    // ⚠️⚠️ LE DÉFAUT QUI A COÛTÉ UNE VERSION : la planche débordait de la feuille
+    // (un badge coupé à droite, la moitié basse vide). Deux causes, toutes deux
+    // propres à dompdf : il n'ENROULE PAS les `float`, et il place un élément
+    // absolu par rapport à la FEUILLE en ignorant `@page { margin }`. D'où cet
+    // invariant : toute cellule doit tenir dans la zone imprimable.
+    foreach ([[397, 560], [560, 397], [280, 397], [340, 208], [324, 204]] as [$w, $h]) {
+        $p = BadgeSheet::plan($w, $h);
+
+        $droite = $p['marginPx'] + $p['offsetLeft'] + ($p['cols'] - 1) * ($p['cellW'] + $p['gutter']) + $p['cellW'];
+        $bas = $p['marginPx'] + $p['offsetTop'] + ($p['rows'] - 1) * ($p['cellH'] + $p['gutter']) + $p['cellH'];
+
+        expect($droite)->toBeLessThanOrEqual($p['pageW'] - $p['marginPx'], "largeur {$w}x{$h}")
+            ->and($bas)->toBeLessThanOrEqual($p['pageH'] - $p['marginPx'], "hauteur {$w}x{$h}")
+            ->and($p['marginPx'])->toBeGreaterThanOrEqual(22); // 6 mm à 96 dpi
+    }
+});
+
+it('la VUE pose chaque badge dans la zone imprimable de l’A4', function () {
+    // ⚠️⚠️ La garde porte sur la VUE, car c'est elle qui portait le défaut : les
+    // coordonnées doivent inclure la marge d'impression (dompdf place un élément
+    // absolu par rapport à la FEUILLE et ignore `@page { margin }`).
+    $plan = BadgeSheet::plan(397, 560);
+
+    $html = view('pdf.badges-sheet', [
+        'marginMm' => $plan['marginMm'],
+        'sheets' => [[
+            'cols' => $plan['cols'], 'cellW' => $plan['cellW'], 'cellH' => $plan['cellH'],
+            'gutter' => $plan['gutter'], 'sheetW' => $plan['sheetW'], 'sheetH' => $plan['sheetH'],
+            'offsetLeft' => $plan['offsetLeft'], 'offsetTop' => $plan['offsetTop'],
+            'marginPx' => $plan['marginPx'], 'pageW' => $plan['pageW'], 'pageH' => $plan['pageH'],
+            'badges' => array_fill(0, $plan['perPage'], '<i></i>'),
+        ]],
+    ])->render();
+
+    preg_match_all('/class="cell" style="left:(\d+)px;top:(\d+)px;width:(\d+)px;height:(\d+)px;"/', $html, $m, PREG_SET_ORDER);
+
+    expect($m)->toHaveCount($plan['perPage']);
+
+    foreach ($m as $cellule) {
+        [, $x, $y, $w, $h] = array_map('intval', $cellule);
+        expect($x)->toBeGreaterThanOrEqual($plan['marginPx'])
+            ->and($y)->toBeGreaterThanOrEqual($plan['marginPx'])
+            ->and($x + $w)->toBeLessThanOrEqual($plan['pageW'] - $plan['marginPx'])
+            ->and($y + $h)->toBeLessThanOrEqual($plan['pageH'] - $plan['marginPx']);
+    }
+});
+
+it('la planche PDF ne retombe jamais sur des flottants', function () {
+    // ⚠️ dompdf n'enroule pas les `float` : il alignait les 4 badges sur UNE
+    // rangée, qui sortait de la feuille. La planche se pose en absolu.
+    $vue = file_get_contents(resource_path('views/pdf/badges-sheet.blade.php'));
+
+    expect($vue)->toContain('position: absolute')
+        ->and($vue)->not->toContain('float:')
+        ->and($vue)->not->toContain('float :');
+});
+
 it('redessine la maquette à la taille de la cellule, sans toucher à l’interlignage', function () {
     // ⚠️ La réduction RECALCULE la géométrie : dompdf n'applique pas `transform:
     // scale()` de façon fiable, et c'est lui qui produit le PDF imprimé.
