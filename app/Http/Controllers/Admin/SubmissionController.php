@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
+use App\Mail\ReviewerRegistrationMail;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Review;
@@ -648,11 +649,11 @@ class SubmissionController extends Controller
 
         // L'ajout manuel d'un candidat vaut acceptation de sa demande.
         $account = $selectedAccount ?? User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($data['reviewerEmail']))])->first();
-        $acceptedApplication = DB::transaction(function () use ($action, $event, $data, $selectedAccount, $account): ?ReviewerApplication {
+        [$acceptedApplication, $reviewer] = DB::transaction(function () use ($action, $event, $data, $selectedAccount, $account): array {
             $application = $account
                 ? ReviewerApplication::where('event_id', $event->id)->where('user_id', $account->id)->where('status', 'pending')->lockForUpdate()->first()
                 : null;
-            $action->handle(
+            $reviewer = $action->handle(
                 $event,
                 trim($data['reviewerFirstName']),
                 trim($data['reviewerLastName']),
@@ -665,10 +666,12 @@ class SubmissionController extends Controller
                 $this->markReviewerApplicationAccepted($application);
             }
 
-            return $application;
+            return [$application, $reviewer];
         });
         if ($acceptedApplication) {
-            $this->notifyReviewerApplicationAccepted($acceptedApplication);
+            $this->notifyReviewerApplicationAccepted($acceptedApplication, $reviewer);
+        } else {
+            Mail::to($reviewer->email)->send(new ReviewerRegistrationMail($reviewer));
         }
 
         return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
@@ -679,7 +682,7 @@ class SubmissionController extends Controller
     {
         abort_unless($application->event_id === $event->id, 404);
 
-        $acceptedApplication = DB::transaction(function () use ($event, $application, $action): ?ReviewerApplication {
+        $acceptedReviewer = DB::transaction(function () use ($event, $application, $action): ?Participant {
             $application = ReviewerApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
             if ($application->status !== 'pending') {
                 return null;
@@ -688,7 +691,7 @@ class SubmissionController extends Controller
             $account = $application->user;
             abort_if($account === null, 422, 'Le compte de ce candidat n’est plus disponible.');
             $participant = Participant::where('event_id', $event->id)->where('user_id', $account->id)->first();
-            $action->handle(
+            $reviewer = $action->handle(
                 $event,
                 (string) ($account->first_name ?: $participant?->first_name ?: $account->name),
                 (string) ($account->last_name ?: $participant?->last_name ?: ''),
@@ -699,10 +702,10 @@ class SubmissionController extends Controller
             );
             $this->markReviewerApplicationAccepted($application);
 
-            return $application;
+            return $reviewer;
         });
-        if ($acceptedApplication) {
-            $this->notifyReviewerApplicationAccepted($acceptedApplication);
+        if ($acceptedReviewer) {
+            $this->notifyReviewerApplicationAccepted($application, $acceptedReviewer);
         }
 
         return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
@@ -718,9 +721,9 @@ class SubmissionController extends Controller
         ]);
     }
 
-    private function notifyReviewerApplicationAccepted(ReviewerApplication $application): void
+    private function notifyReviewerApplicationAccepted(ReviewerApplication $application, Participant $reviewer): void
     {
-        Notifier::account(
+        Notifier::accountNow(
             $application->user,
             'reviewer_application_accepted',
             'Candidature d’évaluateur acceptée',
@@ -728,6 +731,7 @@ class SubmissionController extends Controller
             route('account.dashboard'),
             'check-circle',
         );
+        Mail::to($reviewer->email)->send(new ReviewerRegistrationMail($reviewer, fromApplication: true));
     }
 
     /** Suggestions de comptes pour le panneau d'ajout d'un évaluateur. */

@@ -21,6 +21,14 @@ class Notifier
         $account?->notify(new SystemNotification($kind, $title, $body, $url, $icon));
     }
 
+    /** Émet aussitôt une notification transactionnelle, sans attendre le worker. */
+    public static function accountNow(?User $account, string $kind, string $title, string $body = '', ?string $url = null, string $icon = 'bell'): void
+    {
+        if ($account) {
+            Notification::sendNow($account, new SystemNotification($kind, $title, $body, $url, $icon));
+        }
+    }
+
     /** Notifie un utilisateur précis (staff/responsable). Ignore un destinataire absent. */
     public static function user(?User $user, string $kind, string $title, string $body = '', ?string $url = null, string $icon = 'bell'): void
     {

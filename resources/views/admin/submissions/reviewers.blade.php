@@ -231,7 +231,7 @@
                             <small x-show="searched && !searching && results.length === 0 && !selectedId" x-cloak>Aucun compte correspondant. Vous pouvez renseigner les champs ci-dessous.</small>
                             <small x-show="selectedId" x-cloak style="color:var(--ukc-green);">
                                 Compte sélectionné : <span x-text="selectedName"></span>.
-                                <button type="button" class="ukc-link" @click="clearPerson()">Changer</button>
+                                <button type="button" class="ukc-link" style="color:var(--ukc-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer;background:none;border:0;padding:0;" @click="clearPerson()">Changer</button>
                             </small>
                             <small x-show="alreadyRegistered" x-cloak style="color:var(--ukc-muted);">Cette personne figure déjà parmi les évaluateurs de cet événement.</small>
                         </div>
