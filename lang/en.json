@@ -1123,5 +1123,7 @@
     "Carte bancaire (Visa / Mastercard)": "Bank card (Visa / Mastercard)",
     "Paiement sécurisé": "Secure payment",
     "Vous ne quittez pas :app : le règlement est traité par notre prestataire de paiement.": "You stay on :app - the payment is handled by our payment provider.",
-    "Ouvrir la page de paiement": "Open the payment page"
+    "Ouvrir la page de paiement": "Open the payment page",
+    "Préparation du paiement sécurisé…": "Preparing secure payment…",
+    "Déduit de votre numéro. Changez-le si ce n’est pas le bon.": "Detected from your phone number. Change it if it is not the right one."
 }

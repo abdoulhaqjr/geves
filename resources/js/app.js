@@ -3122,6 +3122,48 @@ function ukcPayEmbedScript(src) {
     return el.__ukcReady;
 }
 
+/**
+ * ⚠️ **La fenêtre ne s'ouvre QUE lorsque le formulaire du prestataire est là.**
+ * Elle s'ouvrait vide, et le payeur regardait un cadre blanc se remplir - une à
+ * deux secondes, au moment du parcours où l'on doute le plus.
+ *
+ * ⚠️ **Trois filets, et ce n'est pas du zèle.** Le cadre peut arriver déjà
+ * chargé (son `load` ne rejouera jamais), le prestataire peut changer la façon
+ * dont il le pose, et le réseau peut traîner. Sans plancher, l'attente
+ * tournerait à l'infini et la PORTE DE SORTIE - la page hébergée, en pied de
+ * fenêtre - resterait cachée : un paiement perdu, pour avoir voulu épargner un
+ * cadre blanc.
+ */
+function ukcPayEmbedReveal(wrap, box) {
+    let fait = false;
+    const montrer = () => {
+        if (fait) return;
+        fait = true;
+        wrap.dataset.ready = '1';
+    };
+
+    // Plancher général : on montre la fenêtre quoi qu'il arrive.
+    window.setTimeout(montrer, 12000);
+
+    const guetter = () => {
+        const cadre = box.querySelector('iframe');
+        if (!cadre) return false;
+
+        cadre.addEventListener('load', montrer);
+        // Le cadre est là, donc le formulaire vient : on ne l'attend pas plus.
+        window.setTimeout(montrer, 4000);
+
+        return true;
+    };
+
+    if (guetter()) return;
+
+    const obs = new MutationObserver(() => {
+        if (guetter()) obs.disconnect();
+    });
+    obs.observe(box, { childList: true, subtree: true });
+}
+
 function initPayEmbed(root = document) {
     root.querySelectorAll('[data-pay-embed]:not([data-pay-embed-ready])').forEach((wrap) => {
         wrap.dataset.payEmbedReady = '1';
@@ -3159,7 +3201,11 @@ function initPayEmbed(root = document) {
         }).catch(() => {}).then(() => window.location.reload());
 
         ukcPayEmbedScript(UKC_FEDAPAY_CHECKOUT).then(() => {
-            if (typeof window.FedaPay === 'undefined') return;
+            // ⚠️ On LÈVE l'erreur au lieu de rendre la main en silence : sinon la
+            // fenêtre resterait sur son attente, pour toujours, sans un mot.
+            if (typeof window.FedaPay === 'undefined') throw new Error('objet absent');
+
+            ukcPayEmbedReveal(wrap, box);
 
             window.FedaPay.init({
                 public_key: cfg.public_key,
@@ -3175,8 +3221,12 @@ function initPayEmbed(root = document) {
                 },
             });
         }).catch(() => {
-            // Le script n'a pas chargé : la porte de sortie reste à l'écran, et on
-            // le DIT - un cadre vide sans un mot se lit comme une panne de GEVES.
+            // Le script n'a pas chargé, ou n'a rien défini : la porte de sortie reste
+            // à l'écran, et on le DIT - un cadre vide sans un mot se lit comme une
+            // panne de GEVES.
+            //
+            // ⚠️ `data-failed` **montre la fenêtre** : c'est elle qui porte le message
+            // et le lien vers la page hébergée.
             wrap.dataset.failed = '1';
         });
     });

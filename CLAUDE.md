@@ -4520,6 +4520,24 @@ plateforme, et garde la porte de sortie. ⚠️ Le nom de la plateforme passe pa
 placeholder `:app`, jamais en dur ; et l'objet comme le montant viennent de
 `PaymentEmbed`, pas de la vue - la devise **stockée** a le dernier mot.
 
+⚠️ **LA FENÊTRE N'APPARAÎT QUE LORSQUE LE FORMULAIRE EST LÀ.** Elle s'ouvrait
+vide, et le payeur regardait un cadre blanc se remplir pendant une à deux
+secondes - au moment du parcours où l'on doute le plus, sur un écran où une page
+blanche se lit comme une panne. On montre d'abord une **attente animée** (le
+ruban du voile IA, `ukcAiSlide` : une seule animation d'attente dans le projet),
+puis la fenêtre, qui arrive en fondu avec son objet, son montant et son
+formulaire d'un seul tenant.
+
+⚠️⚠️ **L'attente a un PLANCHER, et l'échec OUVRE la fenêtre.** C'est la
+contrepartie indispensable : le signal peut ne jamais venir (cadre déjà chargé,
+donc `load` qui ne rejouera pas ; script absent ; CDN coupé). Trois filets -
+`load` du cadre, 4 s après sa pose, 12 s en tout - et `data-failed` **montre** la
+fenêtre, parce que c'est elle qui porte le message et la **porte de sortie**.
+Sans cela l'attente tournerait à l'infini devant un payeur qui n'a plus aucune
+issue : un paiement perdu, pour avoir voulu épargner un cadre blanc. ⚠️ Pour la
+même raison, un `window.FedaPay` absent **lève une erreur** au lieu de rendre la
+main en silence.
+
 ⚠️ **ÉPROUVÉ EN CONDITIONS RÉELLES le 2026-10-18** (compte marchand en
 production, clés `live`) : le formulaire s'ouvre bien sur `/compte/paiement/{id}`
 sans aucune redirection, il porte le bon marchand, notre identifiant de
@@ -4542,6 +4560,58 @@ formulaire ne proposait que Mobile Money. Le réglage « Proposer la carte
 bancaire » doit alors être **décoché**, sinon GEVES annonce un moyen que la page
 de paiement ne donne pas.
 Cinq cas dans `PaymentGatewayTest`, trois sabotages vérifiés.
+
+### L'OPÉRATEUR SE DÉDUIT DU NUMÉRO (2026-10-18)
+
+Un payeur qui a donné son téléphone a déjà dit son opérateur : le préfixe de son
+numéro le désigne. La liste en portait **onze**, du Togo au Niger, et on lui
+demandait d'y retrouver le sien - au moment du parcours où l'on abandonne le
+plus. **`App\Support\MobileNetwork::fromPhone()`** lit les plans de numérotation
+publiés (Togo, Bénin, Côte d'Ivoire, Sénégal, Niger) et rend un **réseau**
+(`togocom`, `moov-tg`, `mtn-bj`…) ; **`OnlineGateway::operatorFromPhone()`** le
+traduit dans le vocabulaire du prestataire.
+
+⚠️ **DEUX VOCABULAIRES, UNE TRADUCTION EXPLICITE.** `MobileNetwork` nomme les
+réseaux comme le font les régulateurs ; le prestataire a ses propres codes
+`mode`. Les mêler ferait d'un changement de prestataire une réécriture des plans
+de numérotation. Et il n'a pas de code pour tout le monde - ni Orange Côte
+d'Ivoire, ni Orange Sénégal, ni Moov Niger : **ce qu'il ne sait pas cibler ne se
+déduit pas**, le payeur choisit comme avant.
+
+⚠️ **ET JAMAIS UN CODE QU'ON N'OFFRE PLUS** : un dernier filtre tient la promesse
+de `mobileOperators()`, seule liste qui part dans la requête. Sans lui, retirer
+un opérateur de la liste laisserait son code se glisser dans `mode` par cette
+porte - là où personne ne penserait à regarder.
+
+⚠️ **C'EST UNE PRÉSOMPTION, JAMAIS UN FAIT.** La portabilité des numéros existe
+dans la zone : un numéro en 90 peut avoir déménagé chez l'autre opérateur, et
+aucun plan ne le dira jamais. La déduction **pré-sélectionne** donc un choix qui
+reste à l'écran, nommé, et se change d'un geste - elle ne décide pas en silence.
+Appliquée sans un mot, elle enverrait le payeur sur le formulaire du mauvais
+opérateur sans qu'il comprenne pourquoi : la ligne « Déduit de votre numéro.
+Changez-le si ce n'est pas le bon. » est ce qui lui donne le droit de la
+contredire.
+
+⚠️ **PRÉFIXE INCONNU = RIEN DU TOUT.** Les plans publiés sont incomplets (le
+Niger n'attribue publiquement pas la moitié de ses tranches) et ils bougent - le
+**Bénin est passé à dix chiffres le 30 novembre 2024**, en posant « 01 » devant
+tous les numéros. Les deux formes vivent en base, et `MobileNetwork` les
+reconnaît toutes deux. Ne rien déduire laisse le payeur choisir, ce qui
+fonctionnait déjà ; deviner le dirigerait vers le mauvais guichet.
+
+⚠️ **`old()` REND `null` SANS SAISIE, ET `''` QUAND LE PAYEUR A CHOISI « je
+choisis sur la page de paiement ».** Confondre les deux lui remettrait son
+opérateur au retour d'une erreur de formulaire, **contre son choix explicite** -
+et c'est précisément le moment où il a besoin qu'on ne touche plus à ses
+réponses.
+
+⚠️ **Le numéro lu est celui du PAYEUR**, pas celui du compte : `payerContact()`
+prend la fiche de participation d'abord, et c'est ce numéro-là que la passerelle
+recevra. En déduire l'opérateur d'un autre numéro pré-sélectionnerait un
+opérateur qui ne correspond pas au téléphone pré-rempli sur la page suivante.
+
+Neuf cas dans `OperateurDeduitTest` (vingt-cinq avec leurs jeux de données),
+cinq sabotages vérifiés.
 
 ### Carte bancaire : acceptée depuis toujours, proposée depuis le 2026-10-18
 

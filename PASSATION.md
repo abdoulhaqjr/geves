@@ -13,6 +13,35 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### L'opérateur se déduit du numéro, et la fenêtre attend le formulaire (2026-10-18)
+
+**Le numéro dit déjà l'opérateur.** La liste en portait onze, du Togo au Niger :
+`App\Support\MobileNetwork` lit les plans de numérotation publiés et rend un
+réseau, que la passerelle traduit dans ses propres codes
+(`OnlineGateway::operatorFromPhone`). Le moyen arrive pré-sélectionné.
+
+⚠️ **C'est une présomption, jamais un fait** : la portabilité des numéros peut
+l'avoir démentie. Le choix reste à l'écran, nommé, et se change d'un geste - avec
+la mention « Déduit de votre numéro ». Appliqué en silence, il enverrait le payeur
+sur le formulaire du mauvais opérateur.
+
+⚠️ **Préfixe inconnu, ou réseau que le prestataire ne sait pas cibler** (Orange CI,
+Orange Sénégal, Moov Niger) : on ne déduit rien, le payeur choisit comme avant.
+Les plans bougent - le Bénin est passé à dix chiffres le 30 novembre 2024, et la
+base porte les deux formes.
+
+⚠️ **`old()` rend `null` sans saisie et `''` sur un choix explicite** : les
+confondre remettrait son opérateur au payeur contre sa volonté, au retour d'une
+erreur de formulaire.
+
+**La fenêtre de paiement n'apparaît que lorsque le formulaire est là.** Elle
+s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
+⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
+porte la porte de sortie, et une attente sans fin serait un paiement perdu.
+
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et deux cas de `PaymentGatewayTest`,
+sept sabotages vérifiés.
+
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 
 Le payeur ne quitte plus GEVES. Le formulaire du prestataire (CheckoutJS de

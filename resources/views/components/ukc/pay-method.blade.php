@@ -7,11 +7,13 @@
     $methods = [];
     $operators = [];
     $methodGateway = null;
+    $methodGatewayObj = null;
     foreach ($gateways as $g) {
         if ($g instanceof OnlineGateway && $g->paymentMethods() !== []) {
             $methods = $g->paymentMethods();
             $operators = $g->mobileOperators();
             $methodGateway = $g->key();
+            $methodGatewayObj = $g;
             break;
         }
     }
@@ -20,9 +22,26 @@
     // nous sans jamais être transmis au prestataire (cf. `FedaPayGateway::initiate`).
     $autres = array_diff_key($methods, $operators);
 
-    // « Intelligent » : on met en tête les opérateurs du pays du numéro de la
-    // personne (indicatif E.164), le reste passe dans un second groupe.
-    $phone = preg_replace('/\D+/', '', (string) ($phone ?? auth('account')->user()?->phone ?? ''));
+    // Le numéro du payeur : celui que la page transmet d'abord, le compte ensuite.
+    $tel = (string) ($phone ?? '');
+    $tel = $tel !== '' ? $tel : (string) (auth('account')->user()?->phone ?? '');
+
+    // ⚠️ **Le numéro DIT déjà l'opérateur** : son préfixe le désigne. On
+    // pré-sélectionne donc, au lieu de faire chercher dans onze entrées celui
+    // qu'on connaît. Mais la portabilité fait de ce préfixe une PRÉSOMPTION : le
+    // choix reste à l'écran, nommé, et se change d'un geste
+    // (cf. `App\Support\MobileNetwork`).
+    $detecte = $methodGatewayObj?->operatorFromPhone($tel);
+
+    // ⚠️ `old()` rend **null** quand rien n'a été saisi, et `''` quand le payeur
+    // a VOULU « je choisis sur la page de paiement ». Confondre les deux lui
+    // remettrait son opérateur au retour d'une erreur de formulaire, contre son
+    // choix explicite.
+    $choisi = old('operator') !== null ? (string) old('operator') : (string) ($detecte ?? '');
+
+    // À défaut d'opérateur déduit, on met au moins en tête ceux du PAYS du
+    // numéro ; le reste passe dans un second groupe.
+    $phone = preg_replace('/\D+/', '', $tel);
     $country = null;
     foreach (['228' => 'Togo', '229' => 'Bénin', '225' => 'Côte d’Ivoire', '221' => 'Sénégal', '227' => 'Niger'] as $prefix => $label) {
         if ($phone !== '' && str_starts_with($phone, (string) $prefix)) {
@@ -46,30 +65,37 @@
                  propose tout ce qu'il accepte. L'intitulé le dit, là où « Choisir mon
                  opérateur » laissait croire qu'il fallait en prendre un - et donc que
                  la carte n'était pas acceptée. --}}
-            <option value="">{{ __('Je choisis sur la page de paiement') }}</option>
+            <option value="" @selected($choisi === '')>{{ __('Je choisis sur la page de paiement') }}</option>
             @foreach ($autres as $code => $label)
-                <option value="{{ $code }}" @selected(old('operator') === $code)>{{ $label }}</option>
+                <option value="{{ $code }}" @selected($choisi === $code)>{{ $label }}</option>
             @endforeach
             @if ($operators !== [])
                 @if ($mine !== [])
                     <optgroup label="{{ __('Mobile money').' - '.$country }}">
                         @foreach ($mine as $code => $label)
-                            <option value="{{ $code }}" @selected(old('operator') === $code)>{{ $label }}</option>
+                            <option value="{{ $code }}" @selected($choisi === $code)>{{ $label }}</option>
                         @endforeach
                     </optgroup>
                     <optgroup label="{{ __('Mobile money - autres pays') }}">
                         @foreach ($others as $code => $label)
-                            <option value="{{ $code }}" @selected(old('operator') === $code)>{{ $label }}</option>
+                            <option value="{{ $code }}" @selected($choisi === $code)>{{ $label }}</option>
                         @endforeach
                     </optgroup>
                 @else
                     <optgroup label="{{ __('Mobile money') }}">
                         @foreach ($operators as $code => $label)
-                            <option value="{{ $code }}" @selected(old('operator') === $code)>{{ $label }}</option>
+                            <option value="{{ $code }}" @selected($choisi === $code)>{{ $label }}</option>
                         @endforeach
                     </optgroup>
                 @endif
             @endif
         </select>
+        {{-- ⚠️ **On DIT que c'est déduit.** Un opérateur pré-sélectionné sans un
+             mot se lit comme une obligation, et la portabilité peut l'avoir
+             démenti : le payeur doit savoir d'où vient ce choix pour oser le
+             changer. --}}
+        @if ($detecte !== null)
+            <small class="ukc-pay-method__hint">{{ __('Déduit de votre numéro. Changez-le si ce n’est pas le bon.') }}</small>
+        @endif
     </div>
 @endif

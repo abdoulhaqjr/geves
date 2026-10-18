@@ -11,6 +11,15 @@
          slideovers (60). --}}
     <div class="ukc-pay-embed" role="dialog" aria-modal="true" aria-labelledby="ukc-pay-embed-title"
          data-pay-embed="{{ json_encode($embed, JSON_THROW_ON_ERROR) }}">
+        {{-- ⚠️ **L'attente a sa place à l'écran.** Le formulaire du prestataire
+             met une à deux secondes à venir : la fenêtre s'ouvrait vide, et une
+             page blanche à l'instant de payer se lit comme une panne de GEVES.
+             `role="status"` le dit aussi aux lecteurs d'écran. --}}
+        <div class="ukc-pay-embed__wait" role="status">
+            <p>{{ __('Préparation du paiement sécurisé…') }}</p>
+            <span class="ukc-pay-embed__bar" aria-hidden="true"><span></span></span>
+        </div>
+
         <div class="ukc-pay-embed__panel">
             <div class="ukc-pay-embed__head">
                 <div class="ukc-pay-embed__top">

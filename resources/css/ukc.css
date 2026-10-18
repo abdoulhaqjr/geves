@@ -1124,7 +1124,7 @@ body.ukc-overlay-open { overflow: hidden; }
 /* ⚠️ Pas d'animation quand l'utilisateur en a demandé moins : le voile reste
    lisible et statique, l'information étant dans le texte. */
 @media (prefers-reduced-motion: reduce) {
-  .ukc-ai-veil__halo, .ukc-ai-veil__bar span { animation: none; }
+  .ukc-ai-veil__halo, .ukc-ai-veil__bar span, .ukc-pay-embed__bar span { animation: none; }
 }
 
 /* ===== Pointage de présence (séance) =====
@@ -1475,6 +1475,12 @@ body.ukc-overlay-open { overflow: hidden; }
   .ukc-shell .tdb-ag__row .a { align-self: flex-start; }
 }
 
+/* Un opérateur pré-sélectionné sans un mot se lit comme une obligation. */
+.ukc-pay-method__hint {
+  display: block; margin-top: 5px; color: var(--ukc-light);
+  font-size: 11.5px; line-height: 1.4;
+}
+
 /* ---- Formulaire de paiement embarqué (prestataire en ligne) ----
    ⚠️ Rang 100 : c'est une surface MODALE, au-dessus du chatbot (55) et des
    slideovers (60). Un formulaire de paiement à moitié recouvert, c'est un
@@ -1484,6 +1490,29 @@ body.ukc-overlay-open { overflow: hidden; }
   display: flex; align-items: center; justify-content: center;
   padding: 20px; background: rgba(15, 23, 42, .55);
   overflow-y: auto;
+}
+/* ⚠️ **La fenêtre n'apparaît QUE lorsque le formulaire est là.** Elle s'ouvrait
+   vide, et le payeur regardait un cadre blanc se remplir pendant une à deux
+   secondes - au moment du parcours où l'on doute le plus, sur un écran où une
+   page blanche se lit comme une panne. On montre l'attente, puis la fenêtre.
+   ⚠️ `data-failed` la montre AUSSI : c'est elle qui porte le message d'échec et
+   la porte de sortie. Rester sur l'attente ferait tourner un ruban à l'infini
+   devant un payeur qui n'a plus aucune issue. */
+.ukc-pay-embed:not([data-ready]):not([data-failed]) .ukc-pay-embed__panel { display: none; }
+.ukc-pay-embed[data-ready] .ukc-pay-embed__wait,
+.ukc-pay-embed[data-failed] .ukc-pay-embed__wait { display: none; }
+.ukc-pay-embed[data-ready] .ukc-pay-embed__panel,
+.ukc-pay-embed[data-failed] .ukc-pay-embed__panel { animation: ukcFade .22s ease-out; }
+.ukc-pay-embed__wait { max-width: 320px; text-align: center; color: #fff; }
+.ukc-pay-embed__wait p { margin: 0; font-size: 14px; font-weight: 600; }
+/* Le même ruban que le voile IA : une seule animation d'attente dans le projet. */
+.ukc-pay-embed__bar {
+  display: block; width: 190px; height: 3px; margin: 14px auto 0;
+  border-radius: 999px; background: rgba(255, 255, 255, .22); overflow: hidden;
+}
+.ukc-pay-embed__bar span {
+  display: block; width: 40%; height: 100%; border-radius: 999px;
+  background: var(--ukc-gold, #ffd700); animation: ukcAiSlide 1.5s ease-in-out infinite;
 }
 /* ⚠️ **La fenêtre TIENT dans l'écran.** Mesuré sur une fenêtre de 422px de haut :
    la zone du formulaire (420px) plus l'en-tête et le pied débordaient, et le pied

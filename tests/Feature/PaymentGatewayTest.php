@@ -287,6 +287,77 @@ it('pose la fenêtre de paiement sur la page, avec la clé publique et JAMAIS la
         ->assertSee('15 000 FCFA');
 });
 
+/**
+ * La feuille de style du projet, **commentaires retirés**.
+ *
+ * ⚠️ Sans ce retrait, le commentaire qui EXPLIQUE pourquoi la fenêtre attend
+ * ferait passer le cas qui l'exige. Déjà vu deux fois ici, sur le dégradé des
+ * héros puis sur la grille du barème : un commentaire n'applique rien.
+ */
+function cssUkc(): string
+{
+    return (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(resource_path('css/ukc.css')));
+}
+
+/**
+ * ⚠️ **La fenêtre ne s'ouvre QUE lorsque le formulaire du prestataire est là.**
+ * Elle s'ouvrait vide, et le payeur regardait un cadre blanc se remplir pendant
+ * une à deux secondes - au moment du parcours où l'on doute le plus, sur un
+ * écran où une page blanche se lit comme une panne.
+ */
+it('montre une attente animée avant d’ouvrir la fenêtre', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 55]], 201),
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->from(route('account.payment', $event->id))
+        ->followingRedirects()
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay'])
+        ->assertOk()
+        ->assertSee('ukc-pay-embed__wait', false)
+        // ⚠️ Le texte est DANS la page, donc traduit : posé en `content:` dans la
+        // feuille de style, il échapperait à `__()`.
+        ->assertSee('Préparation du paiement sécurisé');
+
+    $css = cssUkc();
+
+    // Le panneau reste caché tant que rien n'est prêt...
+    expect($css)->toContain('.ukc-pay-embed:not([data-ready]):not([data-failed]) .ukc-pay-embed__panel { display: none; }');
+    // ...et l'attente s'efface dès que la fenêtre s'ouvre, dans les DEUX cas.
+    expect($css)->toContain('.ukc-pay-embed[data-ready] .ukc-pay-embed__wait,');
+    expect($css)->toContain('.ukc-pay-embed[data-failed] .ukc-pay-embed__wait { display: none; }');
+    // Le ruban s'arrête pour qui demande moins de mouvement.
+    expect($css)->toContain('.ukc-pay-embed__bar span { animation: none; }');
+});
+
+/**
+ * ⚠️⚠️ **L'ATTENTE A UN PLANCHER, et la fenêtre s'ouvre même en cas d'échec.**
+ * C'est la contrepartie indispensable de la fenêtre qui attend : le signal peut
+ * ne jamais venir (cadre déjà chargé, script absent, CDN coupé), et sans issue
+ * l'attente tournerait à l'infini devant un payeur dont la PORTE DE SORTIE - la
+ * page hébergée, en pied de fenêtre - serait cachée. Un paiement perdu, pour
+ * avoir voulu épargner un cadre blanc.
+ */
+it('ouvre la fenêtre même quand le formulaire ne vient jamais', function () {
+    $js = (string) file_get_contents(resource_path('js/app.js'));
+
+    // Un plancher général, et un second dès que le cadre est posé.
+    expect($js)->toContain('window.setTimeout(montrer, 12000)');
+    expect($js)->toContain('window.setTimeout(montrer, 4000)');
+
+    // ⚠️ L'objet absent LÈVE une erreur au lieu de rendre la main en silence :
+    // sinon la fenêtre resterait sur son attente, pour toujours, sans un mot.
+    expect($js)->toContain("if (typeof window.FedaPay === 'undefined') throw new Error(");
+
+    // Et l'échec MONTRE la fenêtre : c'est elle qui porte le message et le lien.
+    expect(cssUkc())->toContain('.ukc-pay-embed[data-failed] .ukc-pay-embed__panel { animation:');
+});
+
 /* ------------------------------- FedaPay ---------------------------------- */
 
 it('FedaPay : initie une transaction et redirige vers l’URL hébergée', function () {

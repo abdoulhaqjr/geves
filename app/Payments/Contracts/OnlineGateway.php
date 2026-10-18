@@ -37,6 +37,19 @@ interface OnlineGateway extends PaymentGateway
     public function paymentMethods(): array;
 
     /**
+     * L'opérateur **déduit du numéro de téléphone** du payeur, dit dans le
+     * vocabulaire du prestataire, ou null si rien ne se déduit.
+     *
+     * ⚠️ **C'est une présomption, pas un fait** : la portabilité des numéros peut
+     * l'avoir démentie. Elle sert à PRÉ-SÉLECTIONNER un choix qui reste à l'écran
+     * et modifiable d'un geste - jamais à décider en silence.
+     *
+     * ⚠️ Le code rendu est forcément une clé de `mobileOperators()` : c'est la
+     * seule liste transmissible au prestataire.
+     */
+    public function operatorFromPhone(?string $phone): ?string;
+
+    /**
      * Interroge le prestataire et renvoie un statut normalisé.
      *
      * @return 'paid'|'pending'|'failed'

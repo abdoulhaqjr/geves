@@ -4,6 +4,7 @@ namespace App\Payments\Gateways;
 
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
+use App\Support\MobileNetwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -77,6 +78,37 @@ class FedaPayGateway implements OnlineGateway
             : [];
 
         return $carte + $this->mobileOperators();
+    }
+
+    /**
+     * L'opérateur déduit du numéro, traduit dans le vocabulaire du prestataire.
+     *
+     * ⚠️ **Deux vocabulaires, une traduction explicite.** `MobileNetwork` nomme
+     * les réseaux comme le font les régulateurs ; le prestataire a ses propres
+     * codes `mode`, et n'en a pas pour tout le monde - ni Orange Côte d'Ivoire,
+     * ni Orange Sénégal, ni Moov Niger. Ce qu'il ne sait pas cibler ne se déduit
+     * pas : le payeur choisit, comme avant.
+     *
+     * ⚠️ **Et jamais un code qu'on n'offre plus.** Le dernier filtre tient la
+     * promesse de `mobileOperators()`, seule liste qui part dans la requête :
+     * sans lui, retirer un opérateur de la liste laisserait son code se glisser
+     * dans `mode` par cette porte.
+     */
+    public function operatorFromPhone(?string $phone): ?string
+    {
+        $code = match (MobileNetwork::fromPhone($phone)) {
+            'togocom' => 'togocel',
+            'moov-tg' => 'moov_tg',
+            'mtn-bj' => 'mtn_open',
+            'moov-bj' => 'moov',
+            'celtiis-bj' => 'sbin',
+            'mtn-ci' => 'mtn_open_ci',
+            'free-sn' => 'free_sn',
+            'airtel-ne' => 'airtel_ne',
+            default => null,
+        };
+
+        return $code !== null && array_key_exists($code, $this->mobileOperators()) ? $code : null;
     }
 
     public function isAvailable(): bool
