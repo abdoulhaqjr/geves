@@ -53,18 +53,14 @@ class DocumentController extends Controller
 
         if ($request->query('format') === 'docx') {
             $base = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.docx';
-            // ⚠️ Un `?template=` facultatif permet de télécharger UN style intégré
-            // précis (chaque carte « Modèles intégrés » a son bouton), sans avoir à
-            // le rendre actif d'abord. Sans paramètre, on reprend le modèle actif.
-            $key = $this->templateKey($event, $request->query('template'));
             // Modèle .docx personnalisé sélectionné ? On remplit ses balises ; sinon
             // on retombe sur le générateur intégré paramétrable.
-            if ($template = $this->selectedLivretTemplate($event, $key)) {
+            if ($template = $this->selectedLivretTemplate($event)) {
                 return (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))
                     ->download($base);
             }
 
-            return (new LivretDocx($event, $groups, $request->boolean('harmonize'), $this->livretStyle($key)))->download($base);
+            return (new LivretDocx($event, $groups, $request->boolean('harmonize'), $this->livretStyle($event)))->download($base);
         }
 
         if ($request->query('format') === 'pdf') {
@@ -85,32 +81,14 @@ class DocumentController extends Controller
     }
 
     /**
-     * Clé du modèle de livret à produire : l'override `?template=` s'il désigne un
-     * style INTÉGRÉ connu (téléchargement direct d'une carte « Modèles intégrés »),
-     * sinon le modèle actif enregistré pour l'événement.
-     *
-     * ⚠️ L'override ne vaut QUE pour les styles intégrés : un modèle .docx importé
-     * se télécharge par son URL de stockage directe, pas par cette route - inutile
-     * donc de laisser un nom arbitraire piloter la génération.
-     */
-    private function templateKey(Event $event, ?string $override): string
-    {
-        $override = trim((string) $override);
-        if ($override !== '' && in_array($override, ['default', 'base', ...array_keys(LivretDocx::STYLES)], true)) {
-            return $override;
-        }
-
-        return (string) EventSettings::get($event, 'livret.template', 'default');
-    }
-
-    /**
-     * Modèle .docx personnalisé correspondant à la clé donnée, ou null (générateur
+     * Modèle .docx personnalisé sélectionné pour cet événement, ou null (générateur
      * intégré). Un modèle n'est retenu que si son fichier existe réellement.
      *
      * @return array{name?: string, path?: string}|null
      */
-    private function selectedLivretTemplate(Event $event, string $selected): ?array
+    private function selectedLivretTemplate(Event $event): ?array
     {
+        $selected = (string) EventSettings::get($event, 'livret.template', 'default');
         // 'default'/'base'/'fss' = styles intégrés (générateur LivretDocx), pas un
         // modèle .docx importé.
         if (in_array($selected, ['', 'default', 'base', ...array_keys(LivretDocx::STYLES)], true)) {
@@ -129,9 +107,11 @@ class DocumentController extends Controller
         return null;
     }
 
-    /** Style intégré pour la clé donnée : 'fss'/'general' si connu, sinon 'default'. */
-    private function livretStyle(string $selected): string
+    /** Style intégré actif pour le .docx : 'fss' si sélectionné, sinon 'default'. */
+    private function livretStyle(Event $event): string
     {
+        $selected = (string) EventSettings::get($event, 'livret.template', 'default');
+
         return array_key_exists($selected, LivretDocx::STYLES) ? $selected : 'default';
     }
 
@@ -168,7 +148,7 @@ class DocumentController extends Controller
         // que l'aperçu reflète fidèlement le .docx. Les autres styles gardent la
         // mise en page par défaut dans le PDF. Résolu EN TÊTE : la casse des auteurs
         // de l'index en dépend (cf. LivretDocx::authorCase).
-        $general = $this->livretStyle($this->templateKey($event, null)) === 'general';
+        $general = $this->livretStyle($event) === 'general';
 
         // Index des auteurs : nom => références des résumés (renvoi), même règle que le .docx.
         $authorIndex = [];

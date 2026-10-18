@@ -174,7 +174,7 @@ it('applique le style « Document général du colloque » (comité en tableau +
         ->toContain('<w:bookmarkStart');
 });
 
-it('propose un bouton Télécharger sur CHAQUE modèle intégré', function () {
+it('propose un bouton Télécharger sur CHAQUE modèle intégré, vers le gabarit à balises', function () {
     $staff = adminStaff();
     $event = openEdition();
 
@@ -182,36 +182,24 @@ it('propose un bouton Télécharger sur CHAQUE modèle intégré', function () {
         ->get(route('admin.documents.attestations', ['tab' => 'livre', 'stab' => 'modeles', 'event_id' => $event->id]))
         ->assertOk();
 
-    // Les trois styles intégrés se téléchargent en .docx via ?template=<clé>.
-    foreach (['default', 'fss', 'general'] as $style) {
-        $page->assertSee(e(route('admin.documents.livret', [
-            'event' => $event, 'format' => 'docx', 'template' => $style,
-        ])), false);
-    }
-    // Le modèle de base conserve son propre téléchargement (gabarit à balises).
-    $page->assertSee(e(route('admin.documents.livret.base-template')), false);
+    // ⚠️ « Télécharger » rend le MODÈLE (gabarit .docx à balises à personnaliser dans
+    // Word), jamais le livre peuplé : les QUATRE cartes de modèle intégré pointent sur
+    // la route du gabarit de base (une 5e occurrence vient du lien « modèle de base »
+    // de la carte des modèles personnalisés).
+    $content = $page->getContent();
+    expect(substr_count($content, e(route('admin.documents.livret.base-template'))))->toBeGreaterThanOrEqual(5);
 });
 
-it('télécharge un style intégré précis via ?template= sans le rendre actif', function () {
+it('le gabarit de base téléchargé est un vrai .docx à balises de fusion', function () {
     $staff = adminStaff();
-    $submission = seededSubmission('accepted');
-    $event = $submission->event;
 
-    // Le modèle actif reste « default » (jamais touché) : seul le style « general »
-    // enregistre des styles de titre Word → c'est le marqueur qui les distingue.
-    $general = livretDocumentXml(
-        $this->actingAs($staff, 'web')
-            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx', 'template' => 'general']))
-            ->streamedContent()
-    );
-    $defaut = livretDocumentXml(
-        $this->actingAs($staff, 'web')
-            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
-            ->streamedContent()
-    );
+    $res = $this->actingAs($staff, 'web')->get(route('admin.documents.livret.base-template'));
 
-    expect($general)->toContain('w:val="Heading1"');   // style « general » servi par l'override
-    expect($defaut)->not->toContain('w:val="Heading1"'); // modèle actif inchangé (default)
+    $res->assertOk();
+    expect($res->headers->get('content-type'))
+        ->toContain('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    $xml = livretDocumentXml($res->streamedContent());
+    expect($xml)->toContain('[[RESUMES]]')->toContain('[[PROGRAMME]]');
 });
 
 it('génère le livret en PDF', function () {
