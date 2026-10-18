@@ -383,28 +383,39 @@ it('montre une attente animée avant d’ouvrir la fenêtre', function () {
  * `min(560px, 68dvh)` : sous 824px de fenêtre, 68dvh l'emportait - 491px sur un
  * écran de 722 - soit moins que sa carte, mesurée à 700x542 pour un cadre de
  * 778px. Le payeur perdait l'en-tête de la transaction, sans retour possible.
+ *
+ * ⚠️⚠️ **ET LA FENÊTRE RESTE SOUS 768px DE LARGE**, ce qui règle les deux à la
+ * fois. Sa carte est figée à `max-width: 700px` : au-delà, il comble en GRIS,
+ * chez nous. Et sa page porte `d-md-flex d-block` - sous 768px elle repasse en
+ * `display: block`, la carte commence EN HAUT et son débordement redevient un
+ * défilement ordinaire. Le rognage du haut n'est alors plus possible du tout.
  */
 it('garde la porte de sortie à l’écran quelle que soit la hauteur', function () {
     $css = cssUkc();
 
     expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 0; }');
-    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: 600px; border: 0; }');
+    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 542px; border: 0; }');
     expect($css)->toContain('max-height: calc(100dvh - 24px);');
 
-    // ⚠️ **Le plancher du cadre ne suit PAS la hauteur de l'écran.** Exprimé en
-    // `dvh`, il repasse sous la carte du prestataire dès qu'on quitte le grand
-    // écran, et son centrage vertical lui coupe le haut sans retour. On lit la
-    // valeur plutôt que la ligne : c'est la PROPRIÉTÉ qui compte, pas sa forme.
-    preg_match('/\.ukc-pay-embed__box iframe \{[^}]*min-height: ([^;]+);/', $css, $m);
-    $plancher = trim($m[1] ?? '');
-    expect($plancher)->not->toContain('vh');
-    expect((int) $plancher)->toBeGreaterThanOrEqual(560);
+    // ⚠️ **La hauteur du cadre ne suit PAS celle de l'écran.** Exprimée en `dvh`,
+    // elle repasse sous la carte du prestataire dès qu'on quitte le grand écran.
+    // On lit la VALEUR plutôt que la ligne : c'est la propriété qui compte, pas
+    // sa forme. (`[^-]height` écarte `max-height`.)
+    preg_match('/\.ukc-pay-embed__box iframe \{[^}]*[^-]height: ([^;]+);/', $css, $m);
+    $hauteur = trim($m[1] ?? '');
+    expect($hauteur)->not->toContain('vh');
+    expect((int) $hauteur)->toBeGreaterThanOrEqual(520);
 
-    // ⚠️ **La largeur décide de la MISE EN PAGE du prestataire** : à 520px son
-    // formulaire se replie sur une colonne et le bouton « Payer » tombe sous la
-    // ligne de flottaison ; au large il rend ses deux colonnes, moyens à gauche
-    // et saisie à droite, tout visible d'un regard.
-    expect($css)->toContain('width: 100%; max-width: 790px; background: #fff;');
+    // ⚠️ **La fenêtre fait la largeur de sa carte**, figée à 700px : au-delà, il
+    // comble en gris, et ce gris est chez nous.
+    expect($css)->toContain('width: 100%; max-width: 700px; background: #fff;');
+
+    // ⚠️⚠️ **ET ELLE NE REPASSE JAMAIS AU-DESSUS DE 768px.** C'est le seuil de sa
+    // page (`d-md-flex d-block`) : au-dessus, elle centre sa carte à la verticale
+    // et lui coupe le haut sans retour ; en dessous, la carte commence en haut.
+    // On lit la valeur, pas la ligne - l'élargir d'un chiffre rouvrirait le défaut.
+    preg_match('/\.ukc-pay-embed__panel \{[^}]*max-width: (\d+)px;/', $css, $l);
+    expect((int) ($l[1] ?? 0))->toBeGreaterThan(0)->toBeLessThan(768);
 });
 
 /**

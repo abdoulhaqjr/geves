@@ -72,19 +72,22 @@ s'est rien passé.
 plus `bmo`, `coris_money`, `wave_direct_ci` inexistants) : écrits d'après l'API
 publique, ignorés en silence. La liste est désormais tenue par un cas.
 
-⚠️ **La fenêtre fait 790px de large**, entre deux écueils : à 520px le formulaire
-du prestataire se replie sur une colonne, à 940px sa carte (~690px) laisse deux
-bandes grises de plus de cent pixels. 778px au cadre reste au-dessus du seuil de
-768px. ⚠️ **Son bandeau ne répète plus l'objet ni le montant** : le formulaire du
+⚠️ **La fenêtre fait exactement la taille de sa carte : 700x542.** Sa carte est
+figée à `max-width: 700px` et il comble en gris tout ce qu'on prend au-delà ;
+le cadre fait donc 542px de haut, fixes. ⚠️ **Son bandeau ne répète plus l'objet
+ni le montant** : le formulaire du
 prestataire les annonce déjà, en y ajoutant ses frais - deux chiffres différents
 sur le même écran valent moins qu'un seul. La fenêtre se nomme donc par
 `aria-label`, le titre qui la nommait ayant disparu.
 
-⚠️⚠️ **LE CADRE NE DESCEND JAMAIS SOUS 600px**, et surtout pas en `dvh`. La page
-du prestataire centre sa carte à la verticale : un cadre plus court qu'elle lui
-coupe le haut **sans retour** (`top: -31px`, `scrollTop` bloqué à 0, mesuré). Le
-plancher valait `min(560px, 68dvh)` et tombait à 491px sur un écran de 722, pour
-une carte de 700x542 : le payeur ne voyait plus l'en-tête de sa transaction.
+⚠️⚠️ **LA FENÊTRE NE REPASSE JAMAIS AU-DESSUS DE 768px DE LARGE.** C'est le seuil
+de sa page (`d-md-flex d-block`) : au-dessus, elle centre sa carte à la verticale
+et lui coupe le haut **sans retour** quand le cadre est plus court qu'elle
+(`top: -31px`, `scrollTop` bloqué à 0, mesuré) ; en dessous, la carte commence en
+haut et son débordement redevient un défilement ordinaire. ⚠️ Et la hauteur du
+cadre ne s'exprime jamais en `dvh` : le plancher valait `min(560px, 68dvh)` et
+tombait à 491px sur un écran de 722, pour une carte de 542 - le payeur ne voyait
+plus l'en-tête de sa transaction.
 
 ⚠️ **« Je choisis sur la page de paiement » reste un choix du payeur** : aucun
 opérateur ne lui est imposé, seul le pays part.

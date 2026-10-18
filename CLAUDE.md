@@ -4527,40 +4527,36 @@ ans d'intervalle de code : d'abord sur 422px de haut, puis sur 800x460, où un
 plancher de 62dvh posé sur la zone laissait 151px à un en-tête et un pied qui en
 réclament 164. C'est la **zone** qui défile, pas la fenêtre.
 
-⚠️⚠️ **LA LARGEUR DÉCIDE DE LA MISE EN PAGE DU PRESTATAIRE**, et elle se règle
-entre **deux** écueils, pas un. À 520px son formulaire se replie sur une
-colonne : le choix du moyen, la saisie et le bouton « Payer » s'empilent, et le
-bouton tombe sous la ligne de flottaison. À 940px il rend bien ses deux colonnes
-- moyens à gauche, saisie et bouton à droite - mais **sa carte ne fait
-qu'environ 690px et il comble le reste en gris** : deux bandes mortes de plus de
-cent pixels de chaque côté, dans une fenêtre qui est la nôtre.
+⚠️⚠️ **LA FENÊTRE FAIT EXACTEMENT LA TAILLE DE SA CARTE : 700x542.** Sa carte est
+figée (`width: 100%; max-width: 700px; margin: 0 auto`, relevé sur sa page), et
+**tout ce que la fenêtre prend au-delà, il le comble en gris** - un gris qui
+s'affiche chez nous. 940px lui laissaient deux bandes mortes de plus de cent
+pixels, 790px une quarantaine, 700px aucune. Le cadre fait donc **542px de haut,
+fixes** : plus haut, il montrerait du gris sous elle ; plus court, sa page
+défilerait en dedans.
 
-**790px** est l'arbitrage : le cadre reçoit 778px, au-dessus du seuil de 768px où
-les mises en page de ce genre basculent sur une colonne, et les bandes tombent à
-une quarantaine de pixels. ⚠️ **Ne pas descendre plus bas pour les faire
-disparaître tout à fait** : on ne connaît pas son seuil exact, il n'est pas à
-nous, et le replier coûterait plus que les bandes ne gênent.
+⚠️⚠️ **ET 700px NOUS PLACE SOUS SON SEUIL DE 768px, CE QUI RÈGLE LE HAUT.** Sa
+page porte `d-md-flex d-block`. **Au-dessus de 768px**, elle centre sa carte à la
+verticale (`align-items: center`) dans un bloc haut de `100vh` du cadre : dès que
+le cadre est plus court qu'elle, le débordement se partage en haut ET en bas, et
+le haut devient **inatteignable** - mesuré sur sa page, cadre de 480px, carte à
+`top: -31px`, `scrollTop` bloqué à 0. Le payeur perdait l'en-tête de sa
+transaction - marchand, identifiant - sans qu'aucune barre de défilement ne l'y
+ramène. **En dessous de 768px**, elle repasse en `display: block` : la carte
+commence EN HAUT, et son débordement redevient un défilement ordinaire. Le
+rognage n'est alors plus possible du tout.
 
-⚠️ **Le plancher appartient au CADRE, pas à la zone** (`iframe { height: 100%;
-min-height: 600px }`) : c'est lui qui donne sa hauteur à la fenêtre quand l'écran
-est confortable - mesuré à 800x650, **618px de fenêtre contre 501** avant - et
-c'est la zone qui rend la main quand il ne l'est pas. Le `height: 100%` supprime
-en prime les deux défilements imbriqués : le formulaire du prestataire défilait
-DANS son cadre, qui défilait dans notre zone.
-
-⚠️⚠️ **UN CADRE PLUS COURT QUE SA CARTE LUI COUPE LE HAUT, SANS RETOUR.** Sa page
-centre sa carte à la verticale (`display: flex; align-items: center`) dans un bloc
-haut de `100vh` **du cadre**. Trop court, le débordement se partage en haut ET en
-bas, et le haut devient **inatteignable** : mesuré sur sa page, cadre de 480px,
-carte à `top: -31px` et `scrollTop` bloqué à 0. Le payeur perdait l'en-tête de la
-transaction - marchand, identifiant - et aucune barre de défilement ne l'y
-ramenait. ⚠️ Sa carte mesure **700x542** dans un cadre de 778px.
-
-⚠️ **D'où un plancher qui ne s'exprime JAMAIS en `dvh`.** Il valait
+⚠️ **La hauteur du cadre ne s'exprime donc JAMAIS en `dvh`.** Le plancher a valu
 `min(560px, 68dvh)` : sous 824px de fenêtre, c'est `68dvh` qui l'emportait - 491px
-sur un écran de 722 - soit moins que sa carte. 600px lui laisse de l'air, de quoi
-encaisser un message d'erreur qui l'allongerait. Au-delà, c'est **notre** zone qui
-défile - et la nôtre part du haut. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+sur un écran de 722 - soit moins que sa carte, et c'est ce qui rognait le haut en
+production. ⚠️ Sa carte s'allonge quand on la rétrécit : 542px à 700 et 686 de
+large, **562px** à 620 et en dessous, le texte se repliant. En plein écran
+(≤ 560px), le cadre prend toute la hauteur et c'est sa page qui défile.
+
+⚠️ **Ses deux colonnes tiennent bien plus bas qu'on ne l'a cru** : mesurées côte à
+côte à 686, 620, 575 et 520px. Ce qui tombait sous la ligne de flottaison tenait
+à la HAUTEUR du cadre, pas à sa largeur - l'arbitrage « 790px entre deux écueils »
+reposait sur une prémisse fausse. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 

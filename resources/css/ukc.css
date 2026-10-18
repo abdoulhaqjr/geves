@@ -1519,19 +1519,20 @@ body.ukc-overlay-open { overflow: hidden; }
    - qui porte la porte de sortie - tombait hors champ. C'est la ZONE qui défile,
    pas la fenêtre : l'en-tête et le pied restent visibles. */
 .ukc-pay-embed__panel {
-  /* ⚠️⚠️ **LA LARGEUR DÉCIDE DE LA MISE EN PAGE DU PRESTATAIRE**, et elle se
-     règle entre deux écueils. À 520px son formulaire se replie sur une colonne :
-     le choix du moyen, la saisie et le bouton « Payer » s'empilent, et le bouton
-     tombe sous la ligne de flottaison. À 940px il rend bien ses deux colonnes,
-     mais sa carte ne fait qu'environ 690px et il COMBLE LE RESTE EN GRIS : deux
-     bandes mortes de plus de cent pixels de chaque côté, dans une fenêtre qui
-     est la nôtre.
-     ⚠️ 790px laisse 778px au cadre - au-dessus du seuil de 768px où les mises en
-     page de ce genre basculent sur une colonne, donc ses deux colonnes tiennent -
-     et ramène les bandes à une quarantaine de pixels. Descendre plus bas
-     risquerait de replier son formulaire : on ne connaît pas son seuil exact, et
-     il n'est pas à nous. */
-  width: 100%; max-width: 790px; background: #fff;
+  /* ⚠️⚠️ **SA CARTE EST FIGÉE À 700px** (`width: 100%; max-width: 700px;
+     margin: 0 auto`, relevé sur sa page) : tout ce que la fenêtre prend au-delà,
+     il le COMBLE EN GRIS - et ce gris est chez nous. La fenêtre fait donc
+     exactement sa carte, pas un pixel de plus.
+     ⚠️⚠️ 700px nous place aussi SOUS son seuil de 768px, et c'est là que tout se
+     joue : sa page porte `d-md-flex d-block`. Au-dessus, elle centre sa carte à
+     la verticale et lui coupe le haut dès que le cadre est plus court qu'elle -
+     `top: -31px`, `scrollTop` bloqué à 0, mesuré. En dessous, elle repasse en
+     `display: block` : la carte commence EN HAUT, et son débordement redevient
+     un défilement ordinaire, qui part du haut.
+     ⚠️ Ses deux colonnes tiennent bien plus bas que ce qu'on croyait : mesurées
+     côte à côte à 686, 620, 575 et 520px. Ce qui tombait sous la ligne de
+     flottaison tenait à la HAUTEUR du cadre, pas à sa largeur. */
+  width: 100%; max-width: 700px; background: #fff;
   border-radius: var(--ukc-radius-lg); box-shadow: var(--ukc-shadow-lg);
   overflow: hidden;
   display: flex; flex-direction: column; max-height: calc(100dvh - 24px);
@@ -1565,28 +1566,17 @@ body.ukc-overlay-open { overflow: hidden; }
    ne se voyaient pas - le prestataire pose ses propres marges - mais ils
    prenaient 12px de hauteur à une carte qui n'en a pas de trop. */
 .ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 0; }
-/* ⚠️ **Le prestataire pose son cadre à 150px** et le laisse défiler en dedans :
-   mesuré en conditions réelles, le formulaire tenait dans une meurtrière, avec
-   sa propre barre de défilement DANS la nôtre - deux défilements imbriqués, ce
-   que le projet s'interdit ailleurs. On ne lui impose pas une hauteur, on lui
-   donne un PLANCHER : il reste libre de grandir quand son formulaire s'allonge.
-   ⚠️ **Le cadre REMPLIT la zone** (`height: 100%`) quand elle est plus grande
-   que le plancher : sinon le formulaire défilerait DANS son cadre, qui
-   défilerait lui-même dans la nôtre. */
-/* ⚠️⚠️ **UN CADRE PLUS COURT QUE LEUR CARTE LUI COUPE LE HAUT, DÉFINITIVEMENT.**
-   Leur page centre sa carte à la verticale (`display: flex; align-items: center`)
-   dans un bloc haut de 100vh DU CADRE. Trop court, le débordement se partage en
-   haut ET en bas, et le haut devient INATTEIGNABLE : mesuré sur leur page, cadre
-   de 480px, carte à `top: -31px`, `scrollTop` bloqué à 0. Le payeur perdait
-   l'en-tête de la transaction - marchand, identifiant - et aucune barre de
-   défilement ne pouvait l'y ramener.
-   ⚠️ Le plancher valait `min(560px, 68dvh)` : sous 824px de fenêtre c'est 68dvh
-   qui l'emportait - 491px sur un écran de 722 - donc MOINS que leur carte,
-   mesurée à 700x542 dans un cadre de 778px. D'où le haut rogné, en vrai.
-   ⚠️ 600px, c'est leur carte plus de l'air : elle encaisse un message d'erreur
-   qui l'allongerait sans que leur centrage ne rogne rien. Au-delà, c'est NOTRE
-   zone qui défile - et la nôtre part du haut. */
-.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: 600px; border: 0; }
+/* ⚠️⚠️ **LE CADRE FAIT LA HAUTEUR EXACTE DE SA CARTE** : 542px, mesurés à 700px
+   de large. Plus haut, il montrerait du gris sous elle - le même gris qu'il
+   étale sur les côtés. Plus court, sa page défilerait en dedans.
+   ⚠️⚠️ **ET SURTOUT PAS EN `dvh`.** Le plancher a valu `min(560px, 68dvh)` :
+   sous 824px de fenêtre, c'est 68dvh qui l'emportait - 491px sur un écran de
+   722 - donc moins que sa carte. Au-dessus de 768px de large, son centrage
+   vertical coupait alors le HAUT du formulaire, sans retour possible. Sous
+   768px (où la fenêtre se tient désormais), sa page repasse en `display: block`
+   et le haut ne se perd plus : si sa carte grandit - un message d'erreur - elle
+   défile, elle ne se rogne pas. */
+.ukc-pay-embed__box iframe { display: block; width: 100%; height: 542px; border: 0; }
 /* ⚠️ Le message d'échec est ÉCRIT DANS LA PAGE, pas dans la feuille de style :
    le site est bilingue, et un texte posé en `content:` échappe à `__()`. */
 .ukc-pay-embed__failed { display: none; }
@@ -1608,4 +1598,8 @@ body.ukc-pay-embed-open { overflow: hidden; }
 @media (max-width: 560px) {
   .ukc-pay-embed { padding: 0; }
   .ukc-pay-embed__panel { max-width: none; min-height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  /* ⚠️ En plein écran, le cadre prend toute la hauteur : sa carte y est plus
+     haute (562px mesurés à 375px de large) et c'est sa page qui défile, depuis
+     le haut. Une hauteur fixe laisserait du blanc sous elle. */
+  .ukc-pay-embed__box iframe { height: 100%; }
 }
