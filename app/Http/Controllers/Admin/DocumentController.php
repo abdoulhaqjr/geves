@@ -235,7 +235,7 @@ class DocumentController extends Controller
         }
 
         return $this->badgeSheetPdf(
-            [$this->renderGroup($event, $type, $people)],
+            [$this->renderGroup($event, $type, $people->all())],
             $event,
             'badges-'.$type.($lot > 1 ? '-lot'.$lot : '').'.pdf',
         );
@@ -266,7 +266,7 @@ class DocumentController extends Controller
 
         $groups = [];
         foreach ($paires->groupBy('type') as $type => $lignes) {
-            $groups[] = $this->renderGroup($event, (string) $type, $lignes->pluck('person'));
+            $groups[] = $this->renderGroup($event, (string) $type, $lignes->pluck('person')->all());
         }
 
         return $this->badgeSheetPdf($groups, $event, 'badges-tous'.($lot > 1 ? '-lot'.$lot : '').'.pdf');
@@ -301,7 +301,7 @@ class DocumentController extends Controller
         }
 
         return $this->badgeSheetPdf(
-            [$this->renderGroup($event, $type, $people)],
+            [$this->renderGroup($event, $type, $people->all())],
             $event,
             'badges-'.$type.'-selection.pdf',
         );
@@ -311,10 +311,16 @@ class DocumentController extends Controller
      * Une catégorie rendue à la taille de cellule du tuilage, prête à être posée
      * sur la planche.
      *
-     * @param  Collection<int, array<string, mixed>>  $people
+     * ⚠️ Les destinataires arrivent en TABLEAU, pas en `Collection` : celle-ci
+     * n'est pas covariante pour l'analyse, donc une liste dont chaque entrée est
+     * décrite champ par champ (ce que rend `BadgeCatalog::recipients()`) ne « vaut »
+     * pas une liste de `array<string, mixed>`. Même remède que `roleUsageLines` :
+     * tableau dans l'aide, `->all()` au point d'appel.
+     *
+     * @param  list<array<string, mixed>>  $people
      * @return array{label: string, plan: array<string, mixed>, badges: list<string>}
      */
-    private function renderGroup(Event $event, string $type, Collection $people): array
+    private function renderGroup(Event $event, string $type, array $people): array
     {
         // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
         // que l'admin ne pouvait ni voir ni modifier.
@@ -327,7 +333,7 @@ class DocumentController extends Controller
         // la photo (chaîne vide à défaut) et son mode (« with » à défaut). Un `??`
         // ici laisserait croire que la préférence peut manquer - et c'est en la
         // croyant absente qu'on finit par ne jamais la respecter.
-        $badges = $people->map(function (array $person) use ($event, $type, $layout, $plan): string {
+        $badges = array_map(function (array $person) use ($event, $type, $layout, $plan): string {
             // La variante (avec / sans photo) se choisit sur la maquette NATIVE,
             // puis seulement on la redessine à la taille de la cellule.
             $recipientLayout = BadgeLayout::forRecipient($layout, $type, $person['photo'], $person['photo_mode'] !== 'without');
@@ -338,7 +344,7 @@ class DocumentController extends Controller
                 pdf: true,
                 badge: true,
             );
-        })->values()->all();
+        }, $people);
 
         return ['label' => BadgeCatalog::label($type), 'plan' => $plan, 'badges' => $badges];
     }
