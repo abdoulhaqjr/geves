@@ -7,6 +7,7 @@ use App\Payments\Contracts\OnlineGateway;
 use App\Support\MobileNetwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * FedaPay - mobile money (MTN, Moov, Togocom…) et carte bancaire via page hébergée.
@@ -204,7 +205,7 @@ class FedaPayGateway implements OnlineGateway
         // la porte, et une seule fois. Doublée, elle devient une condition qu'aucun
         // sabotage ne fait tomber - donc une ligne qu'on croit protectrice et qui
         // ne protège rien. Mesuré : le cas restait vert sans elle.
-        if (filled($payer['phone']) && $this->pousseSurLeTelephone((string) ($token['token'] ?? ''), $operator)) {
+        if (filled($payer['phone']) && $this->pousseSurLeTelephone((string) ($token['token'] ?? ''), $operator, $id)) {
             return [
                 'type' => 'push',
                 'transaction_id' => (string) $id,
@@ -274,20 +275,55 @@ class FedaPayGateway implements OnlineGateway
      *
      * ⚠️ Et cet appel ne dit **jamais** qu'un paiement a réussi : il dit qu'une
      * demande est partie. Le verdict vient de `verify()`, comme partout ailleurs.
+     *
+     * ⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER.**
+     * Mesuré en conditions réelles : l'opérateur était bien enregistré, la
+     * transaction bien créée, et le payeur retombait pourtant sur le formulaire -
+     * **sans une ligne nulle part**. On ne savait ni si le prestataire avait
+     * refusé, ni pourquoi. Tout repli est donc journalisé dans le canal
+     * `payments`, celui qu'on vient consulter pour un « j'ai payé mais le système
+     * dit non ».
+     *
+     * ⚠️ **Le JETON n'est pas journalisé** : il autorise le règlement, c'est un
+     * secret de paiement au même titre qu'une clé. On journalise la référence de
+     * la transaction, qui suffit à retrouver la trace chez le prestataire.
      */
-    protected function pousseSurLeTelephone(string $token, string $mode): bool
+    protected function pousseSurLeTelephone(string $token, string $mode, mixed $reference = null): bool
     {
         if ($token === '' || ! array_key_exists($mode, $this->mobileOperators())) {
+            Log::channel('payments')->warning('Paiement direct impossible : jeton ou opérateur inexploitable', [
+                'transaction' => $reference,
+                'operateur' => $mode,
+                'jeton_present' => $token !== '',
+            ]);
+
             return false;
         }
 
         try {
-            return $this->http()
+            $reponse = $this->http()
                 ->timeout(20)
-                ->post($this->baseUrl().'/'.$mode, ['token' => $token])
-                ->successful();
+                ->post($this->baseUrl().'/'.$mode, ['token' => $token]);
+
+            if ($reponse->successful()) {
+                return true;
+            }
+
+            Log::channel('payments')->warning('Paiement direct refusé par le prestataire', [
+                'transaction' => $reference,
+                'operateur' => $mode,
+                'statut' => $reponse->status(),
+                // Tronqué : une page d'erreur HTML entière noierait le journal.
+                'reponse' => mb_substr($reponse->body(), 0, 500),
+            ]);
+
+            return false;
         } catch (\Throwable $e) {
-            report($e);
+            Log::channel('payments')->warning('Paiement direct injoignable', [
+                'transaction' => $reference,
+                'operateur' => $mode,
+                'erreur' => $e->getMessage(),
+            ]);
 
             return false;
         }

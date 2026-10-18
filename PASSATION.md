@@ -81,8 +81,8 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et quinze cas de `PaymentGatewayTest`,
-dix-neuf sabotages vérifiés.
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et seize cas de `PaymentGatewayTest`,
+vingt et un sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

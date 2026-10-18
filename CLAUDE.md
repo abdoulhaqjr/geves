@@ -4635,7 +4635,19 @@ payeur aurait vu sa **confirmation** refusée, sans rien y comprendre.
 ⚠️ **La carte bancaire n'a pas de paiement direct** : elle garde le formulaire,
 comme « je choisis sur la page de paiement ».
 
-Six cas dans `PaymentGatewayTest`, quatre sabotages vérifiés. ⚠️ Un cinquième ne
+⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER**, et le
+premier essai réel l'a montré : l'opérateur était bien enregistré, la
+transaction bien créée, et le payeur retombait sur le formulaire **sans une
+ligne nulle part**. On ne savait ni si le prestataire avait refusé, ni pourquoi.
+Les trois replis de `pousseSurLeTelephone()` (jeton ou opérateur inexploitable,
+refus du prestataire, service injoignable) sont désormais journalisés dans le
+canal **`payments`** - celui qu'on vient consulter pour un « j'ai payé mais le
+système dit non ». La réponse du prestataire y est **tronquée à 500 caractères**
+(une page d'erreur HTML entière noierait le journal). ⚠️ Le **jeton** n'y figure
+jamais : il autorise le règlement, c'est un secret de paiement au même titre
+qu'une clé. Un cas le garde.
+
+Sept cas dans `PaymentGatewayTest`, six sabotages vérifiés. ⚠️ Un cinquième ne
 mordait pas - une garde `$operator !== ''` **doublait** celle de
 `pousseSurLeTelephone()` : retirée, le cas restait vert. Une condition qu'aucun
 sabotage ne fait tomber est une ligne qu'on croit protectrice et qui ne protège

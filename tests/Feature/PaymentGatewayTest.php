@@ -6,6 +6,7 @@ use App\Models\EventSeries;
 use App\Models\User;
 use App\Payments\Gateways\FedaPayGateway;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 
@@ -464,6 +465,51 @@ it('repart sur le formulaire quand la demande directe échoue', function () {
     ]);
 
     expect((new FedaPayGateway)->initiate($payment->fresh())['type'])->toBe('embed');
+});
+
+/**
+ * ⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER.**
+ * Mesuré en conditions réelles : l'opérateur était bien enregistré, la
+ * transaction bien créée, et le payeur retombait pourtant sur le formulaire -
+ * **sans une ligne nulle part**. On ne savait ni si le prestataire avait refusé,
+ * ni pourquoi. Le canal `payments` est précisément celui qu'on vient consulter
+ * pour un « j'ai payé mais le système dit non ».
+ *
+ * ⚠️ **Le JETON n'est pas journalisé** : il autorise le règlement, c'est un
+ * secret de paiement au même titre qu'une clé.
+ */
+it('journalise le refus du paiement direct, sans jamais écrire le jeton', function () {
+    configureFedapayEmbarque();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = paiementEnAttente($event, $participant);
+    $payment->setOperator('togocel');
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['token' => 'tok_secret', 'url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 74]], 201),
+        '*/v1/togocel' => Http::response(['message' => 'mobile money direct non activé'], 422),
+    ]);
+
+    $lignes = [];
+    Log::shouldReceive('channel')->andReturnSelf();
+    Log::shouldReceive('warning')->andReturnUsing(function (string $message, array $contexte = []) use (&$lignes) {
+        $lignes[] = [$message, $contexte];
+    });
+    Log::shouldReceive('info', 'debug', 'error', 'notice')->zeroOrMoreTimes();
+
+    (new FedaPayGateway)->initiate($payment->fresh());
+
+    expect($lignes)->toHaveCount(1);
+    [$message, $contexte] = $lignes[0];
+
+    expect($message)->toContain('Paiement direct refusé');
+    expect($contexte['statut'])->toBe(422);
+    expect($contexte['operateur'])->toBe('togocel');
+    expect($contexte['transaction'])->toBe(74);
+    expect($contexte['reponse'])->toContain('mobile money direct');
+
+    // ⚠️ Le jeton autorise le règlement : il ne s'écrit nulle part.
+    expect(json_encode($contexte))->not->toContain('tok_secret');
 });
 
 /**
