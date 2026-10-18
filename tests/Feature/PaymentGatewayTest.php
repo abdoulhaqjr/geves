@@ -374,13 +374,31 @@ it('montre une attente animée avant d’ouvrir la fenêtre', function () {
  * main quand il ne l'est pas. ⚠️ `height: 100%` sur le cadre évite en plus les
  * deux défilements imbriqués - le formulaire du prestataire défilait DANS son
  * cadre, qui défilait dans notre zone.
+ *
+ * ⚠️⚠️ **ET IL NE S'EXPRIME JAMAIS EN `dvh`.** La page du prestataire centre sa
+ * carte à la verticale (`display: flex; align-items: center`) dans un bloc haut
+ * de 100vh DU CADRE : un cadre plus court que la carte partage le débordement en
+ * haut ET en bas, et le haut devient INATTEIGNABLE - mesuré sur sa page, cadre de
+ * 480px, carte à `top: -31px`, `scrollTop` bloqué à 0. Le plancher valait
+ * `min(560px, 68dvh)` : sous 824px de fenêtre, 68dvh l'emportait - 491px sur un
+ * écran de 722 - soit moins que sa carte, mesurée à 700x542 pour un cadre de
+ * 778px. Le payeur perdait l'en-tête de la transaction, sans retour possible.
  */
 it('garde la porte de sortie à l’écran quelle que soit la hauteur', function () {
     $css = cssUkc();
 
-    expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 6px; }');
-    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: min(560px, 68dvh); border: 0; }');
+    expect($css)->toContain('.ukc-pay-embed__box { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 0; }');
+    expect($css)->toContain('.ukc-pay-embed__box iframe { display: block; width: 100%; height: 100%; min-height: 600px; border: 0; }');
     expect($css)->toContain('max-height: calc(100dvh - 24px);');
+
+    // ⚠️ **Le plancher du cadre ne suit PAS la hauteur de l'écran.** Exprimé en
+    // `dvh`, il repasse sous la carte du prestataire dès qu'on quitte le grand
+    // écran, et son centrage vertical lui coupe le haut sans retour. On lit la
+    // valeur plutôt que la ligne : c'est la PROPRIÉTÉ qui compte, pas sa forme.
+    preg_match('/\.ukc-pay-embed__box iframe \{[^}]*min-height: ([^;]+);/', $css, $m);
+    $plancher = trim($m[1] ?? '');
+    expect($plancher)->not->toContain('vh');
+    expect((int) $plancher)->toBeGreaterThanOrEqual(560);
 
     // ⚠️ **La largeur décide de la MISE EN PAGE du prestataire** : à 520px son
     // formulaire se replie sur une colonne et le bouton « Payer » tombe sous la

@@ -80,6 +80,12 @@ prestataire les annonce déjà, en y ajoutant ses frais - deux chiffres différe
 sur le même écran valent moins qu'un seul. La fenêtre se nomme donc par
 `aria-label`, le titre qui la nommait ayant disparu.
 
+⚠️⚠️ **LE CADRE NE DESCEND JAMAIS SOUS 600px**, et surtout pas en `dvh`. La page
+du prestataire centre sa carte à la verticale : un cadre plus court qu'elle lui
+coupe le haut **sans retour** (`top: -31px`, `scrollTop` bloqué à 0, mesuré). Le
+plancher valait `min(560px, 68dvh)` et tombait à 491px sur un écran de 722, pour
+une carte de 700x542 : le payeur ne voyait plus l'en-tête de sa transaction.
+
 ⚠️ **« Je choisis sur la page de paiement » reste un choix du payeur** : aucun
 opérateur ne lui est imposé, seul le pays part.
 

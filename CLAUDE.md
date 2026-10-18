@@ -4536,11 +4536,25 @@ disparaître tout à fait** : on ne connaît pas son seuil exact, il n'est pas �
 nous, et le replier coûterait plus que les bandes ne gênent.
 
 ⚠️ **Le plancher appartient au CADRE, pas à la zone** (`iframe { height: 100%;
-min-height: min(560px, 68dvh) }`) : c'est lui qui donne sa hauteur à la fenêtre
-quand l'écran est confortable - mesuré à 800x650, **618px de fenêtre contre 501**
-avant - et c'est la zone qui rend la main quand il ne l'est pas. Le `height: 100%`
-supprime en prime les deux défilements imbriqués : le formulaire du prestataire
-défilait DANS son cadre, qui défilait dans notre zone. Rang 100 (surface modale), au-dessus du chatbot (55) et des
+min-height: 600px }`) : c'est lui qui donne sa hauteur à la fenêtre quand l'écran
+est confortable - mesuré à 800x650, **618px de fenêtre contre 501** avant - et
+c'est la zone qui rend la main quand il ne l'est pas. Le `height: 100%` supprime
+en prime les deux défilements imbriqués : le formulaire du prestataire défilait
+DANS son cadre, qui défilait dans notre zone.
+
+⚠️⚠️ **UN CADRE PLUS COURT QUE SA CARTE LUI COUPE LE HAUT, SANS RETOUR.** Sa page
+centre sa carte à la verticale (`display: flex; align-items: center`) dans un bloc
+haut de `100vh` **du cadre**. Trop court, le débordement se partage en haut ET en
+bas, et le haut devient **inatteignable** : mesuré sur sa page, cadre de 480px,
+carte à `top: -31px` et `scrollTop` bloqué à 0. Le payeur perdait l'en-tête de la
+transaction - marchand, identifiant - et aucune barre de défilement ne l'y
+ramenait. ⚠️ Sa carte mesure **700x542** dans un cadre de 778px.
+
+⚠️ **D'où un plancher qui ne s'exprime JAMAIS en `dvh`.** Il valait
+`min(560px, 68dvh)` : sous 824px de fenêtre, c'est `68dvh` qui l'emportait - 491px
+sur un écran de 722 - soit moins que sa carte. 600px lui laisse de l'air, de quoi
+encaisser un message d'erreur qui l'allongerait. Au-delà, c'est **notre** zone qui
+défile - et la nôtre part du haut. Rang 100 (surface modale), au-dessus du chatbot (55) et des
 slideovers (60) : un formulaire de paiement à moitié recouvert est un paiement
 abandonné.
 
