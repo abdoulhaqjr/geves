@@ -52,31 +52,21 @@ essais réels. Il est bien envoyé (mesuré en base), et la page affiche quand m
 son sélecteur sur « Mtn Bénin ». Il ne sert qu'au **paiement direct**
 (`POST /v1/{mode}` avec le jeton), qui se passe entièrement de page.
 
-**Le paiement direct est en place (2026-10-18)** : dès que le payeur a un
-opérateur et un numéro, aucun formulaire ne s'ouvre - son téléphone sonne, il
-compose son code. Cela emporte les deux écrans que nous ne maîtrisions pas (le
-sélecteur d'opérateur et la case « reçu par mail », tous deux chez le
-prestataire).
+⚠️⚠️ **Ce parcours a été écrit, éprouvé, puis RETIRÉ** (commits `eb74b470`,
+`b4940f95`, `5d35acca` - à reprendre là si besoin). Le compte marchand le
+refuse : **400 « Opération non autorisée »**. Il demande une activation, comme la
+carte bancaire, et le refus porte sur l'**autorisation**, pas sur la requête -
+l'adresse, le verbe et le corps sont ceux de leur propre SDK. C'est une demande à
+leur adresser, pas un correctif à écrire. Retiré plutôt que laissé dormant : du
+code qu'aucun chemin n'emprunte se périme sans qu'on s'en aperçoive.
 
-⚠️ **Fail-open, seule exception du module** : si la demande directe échoue, on
-repart sur le formulaire - laisser l'échec remonter priverait le payeur de tout
-moyen de régler. ⚠️ Le navigateur ne décide toujours de rien : la page demande au
-serveur d'interroger, toutes les six secondes, pendant quatre minutes au plus -
-ensuite on le DIT, sans jamais annoncer un échec (`payments:reconcile` repasse).
-⚠️ La vérification se compte **par personne**, jamais par IP : un campus règle
-depuis une poignée d'adresses.
+⚠️ **Le sélecteur d'opérateur et la case « reçu par mail » restent donc ceux du
+prestataire**, dans un cadre d'un autre domaine, hors de portée. Aucune de ses
+options documentées ne les pilote - vérifié dans la source de son `checkout.js`.
 
-⚠️⚠️ **Mais le compte marchand le REFUSE aujourd'hui** : éprouvé en production,
-le prestataire répond **400 « Opération non autorisée »**. Le paiement sans
-redirection demande une activation, comme la carte bancaire. Le repli joue, le
-payeur voit le formulaire : le parcours fonctionne, il n'est pas ouvert. C'est
-une demande à adresser au prestataire, pas un correctif à écrire.
-
-⚠️ Les replis sont journalisés dans **`storage/logs/payments-AAAA-MM-JJ.log`**
-(driver `daily` : chercher `payments.log` ne rend jamais rien). On ne journalise
-que ce qu'on voulait faire et qu'on ne peut pas - pas l'absence d'opérateur, qui
-est un cas normal : neuf alertes pour zéro anomalie en une journée, et la seule
-ligne utile s'y perdait.
+⚠️ **Le canal `payments` écrit dans `payments-AAAA-MM-JJ.log`** (driver `daily`) :
+chercher `payments.log` ne rend jamais rien, et on en conclut à tort qu'il ne
+s'est rien passé.
 
 ⚠️ **Quatre codes d'opérateur étaient faux** (`mtn_open_ci` au lieu de `mtn_ci`,
 plus `bmo`, `coris_money`, `wave_direct_ci` inexistants) : écrits d'après l'API
@@ -93,8 +83,8 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et seize cas de `PaymentGatewayTest`,
-vingt-deux sabotages vérifiés.
+**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et dix cas de `PaymentGatewayTest`,
+seize sabotages vérifiés.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 

@@ -6,7 +6,6 @@ use App\Models\EventSeries;
 use App\Models\User;
 use App\Payments\Gateways\FedaPayGateway;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 
@@ -303,9 +302,13 @@ it('pose la fenêtre de paiement sur la page, avec la clé publique et JAMAIS la
     // « Régler en ligne » : le payeur arrivait devant un formulaire venu
     // d'ailleurs sans savoir ce qu'il engageait, au moment du parcours où l'on
     // doute le plus.
+    // ⚠️ **On regarde DANS la fenêtre, pas dans la page.** « 15 000 FCFA »
+    // s'affiche aussi sur la carte « Montant à régler », à côté : un
+    // `assertSee` nu passait donc même quand la charge avait perdu son montant.
+    // Mesuré - c'est PHPStan, pas ce cas, qui a vu la fenêtre se vider.
     $page->assertSee('Paiement sécurisé')
-        ->assertSee('Frais de participation')
-        ->assertSee('15 000 FCFA');
+        ->assertSee('<h2 id="ukc-pay-embed-title">Frais de participation</h2>', false)
+        ->assertSee('<strong class="ukc-pay-embed__amount">15 000 FCFA</strong>', false);
 });
 
 /**
@@ -384,205 +387,13 @@ it('garde la porte de sortie à l’écran quelle que soit la hauteur', function
     expect($css)->toContain('width: 100%; max-width: 940px; background: #fff;');
 });
 
-/* ------------------------- Paiement DIRECT (sans formulaire) -------------- */
-
 /**
- * Les appels enregistrés dont l'adresse finit par ce segment.
- *
- * @return list<array<string, mixed>>
- */
-function appelsVers(string $segment): array
-{
-    $trouves = [];
-    foreach (Http::recorded() as [$request, $response]) {
-        if (str_ends_with($request->url(), $segment)) {
-            $trouves[] = $request->data();
-        }
-    }
-
-    return $trouves;
-}
-
-/** Transaction créée, jeton rendu, et la demande directe acceptée. */
-function fedapayDirectOk(int $id = 70): void
-{
-    Http::fake([
-        '*/transactions/*/token' => Http::response(['token' => 'tok_abc', 'url' => 'https://paiement.exemple/abc']),
-        '*/transactions' => Http::response(['v1/transaction' => ['id' => $id]], 201),
-        '*/v1/togocel' => Http::response(['v1/transaction' => ['id' => $id, 'status' => 'pending']]),
-    ]);
-}
-
-/**
- * ⚠️⚠️ **LE SEUL ENDROIT OÙ L'OPÉRATEUR CHOISI SERT VRAIMENT.** Sur la page du
- * prestataire, `mode` n'a aucun effet - établi en trois essais réels, le
- * sélecteur revenait sur « Mtn Bénin ». Il n'est honoré que par le **paiement
- * direct** : `POST /v1/{mode}` avec le jeton, et la demande part sur le
- * téléphone du payeur.
- *
- * ⚠️ Ce parcours emporte avec lui les deux écrans que nous ne maîtrisions pas :
- * le sélecteur d'opérateur et la case « Je veux recevoir mon reçu par mail »,
- * tous deux dans le cadre du prestataire, donc hors de notre portée.
- */
-it('pousse la demande sur le téléphone quand l’opérateur est connu', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = paiementEnAttente($event, $participant);
-    $payment->setOperator('togocel');
-
-    fedapayDirectOk();
-
-    $resultat = (new FedaPayGateway)->initiate($payment->fresh());
-
-    expect($resultat['type'])->toBe('push');
-    expect($resultat['operator'])->toBe('togocel');
-    expect($resultat['phone'])->toBe('+22890000000');
-    // ⚠️ La porte de sortie reste ouverte : une demande poussée peut ne jamais
-    // arriver, et le payeur n'aurait alors RIEN - ni formulaire, ni message.
-    expect($resultat['url'])->toBe('https://paiement.exemple/abc');
-
-    // La demande part bien, et c'est le JETON qu'elle porte.
-    expect(appelsVers('/v1/togocel'))->toBe([['token' => 'tok_abc']]);
-});
-
-/**
- * ⚠️ **FAIL-OPEN, et c'est voulu** : si la demande directe échoue - opérateur
- * muet, méthode fermée sur le compte marchand, réseau - on repart sur le
- * formulaire. Laisser l'échec remonter priverait le payeur de TOUT moyen de
- * régler, pour un canal qui n'est qu'un raccourci. Le projet est fail-closed sur
- * les STATUTS ; ici on ne décide d'aucun statut, on sonne à une porte.
- */
-it('repart sur le formulaire quand la demande directe échoue', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = paiementEnAttente($event, $participant);
-    $payment->setOperator('togocel');
-
-    Http::fake([
-        '*/transactions/*/token' => Http::response(['token' => 'tok_abc', 'url' => 'https://paiement.exemple/abc']),
-        '*/transactions' => Http::response(['v1/transaction' => ['id' => 71]], 201),
-        '*/v1/togocel' => Http::response(['message' => 'indisponible'], 503),
-    ]);
-
-    expect((new FedaPayGateway)->initiate($payment->fresh())['type'])->toBe('embed');
-});
-
-/**
- * ⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER.**
- * Mesuré en conditions réelles : l'opérateur était bien enregistré, la
- * transaction bien créée, et le payeur retombait pourtant sur le formulaire -
- * **sans une ligne nulle part**. On ne savait ni si le prestataire avait refusé,
- * ni pourquoi. Le canal `payments` est précisément celui qu'on vient consulter
- * pour un « j'ai payé mais le système dit non ».
- *
- * ⚠️ **Le JETON n'est pas journalisé** : il autorise le règlement, c'est un
- * secret de paiement au même titre qu'une clé.
- */
-it('journalise le refus du paiement direct, sans jamais écrire le jeton', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = paiementEnAttente($event, $participant);
-    $payment->setOperator('togocel');
-
-    Http::fake([
-        '*/transactions/*/token' => Http::response(['token' => 'tok_secret', 'url' => 'https://paiement.exemple/abc']),
-        '*/transactions' => Http::response(['v1/transaction' => ['id' => 74]], 201),
-        '*/v1/togocel' => Http::response(['message' => 'mobile money direct non activé'], 422),
-    ]);
-
-    $lignes = [];
-    Log::shouldReceive('channel')->andReturnSelf();
-    Log::shouldReceive('warning')->andReturnUsing(function (string $message, array $contexte = []) use (&$lignes) {
-        $lignes[] = [$message, $contexte];
-    });
-    Log::shouldReceive('info', 'debug', 'error', 'notice')->zeroOrMoreTimes();
-
-    (new FedaPayGateway)->initiate($payment->fresh());
-
-    expect($lignes)->toHaveCount(1);
-    [$message, $contexte] = $lignes[0];
-
-    expect($message)->toContain('Paiement direct refusé');
-    expect($contexte['statut'])->toBe(422);
-    expect($contexte['operateur'])->toBe('togocel');
-    expect($contexte['transaction'])->toBe(74);
-    expect($contexte['reponse'])->toContain('mobile money direct');
-
-    // ⚠️ Le jeton autorise le règlement : il ne s'écrit nulle part.
-    expect(json_encode($contexte))->not->toContain('tok_secret');
-});
-
-/**
- * ⚠️ **Sans opérateur, rien ne se pousse** : « Je choisis sur la page de
- * paiement » est un choix du payeur, et on ne sait pas chez qui sonner. Le
- * formulaire reste son chemin.
- */
-it('ne pousse rien quand le payeur n’a choisi aucun opérateur', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = paiementEnAttente($event, $participant);
-
-    fedapayDirectOk(72);
-
-    // ⚠️⚠️ **Et rien n'est JOURNALISÉ** : n'avoir aucun opérateur est un cas
-    // normal - « je choisis sur la page de paiement », ou la carte bancaire. Une
-    // alerte par paiement noierait la seule ligne qui compte, et un journal qui
-    // crie tout le temps ne dit plus rien. Mesuré : neuf alertes pour zéro
-    // anomalie sur le journal d'une seule journée.
-    $alertes = [];
-    Log::shouldReceive('channel')->andReturnSelf();
-    Log::shouldReceive('warning')->andReturnUsing(function (string $m, array $c = []) use (&$alertes) {
-        $alertes[] = $m;
-    });
-    Log::shouldReceive('info', 'debug', 'error', 'notice')->zeroOrMoreTimes();
-
-    expect((new FedaPayGateway)->initiate($payment)['type'])->toBe('embed');
-    expect($alertes)->toBe([]);
-
-    // ⚠️ On n'éprouve pas l'absence d'UN appel, mais l'absence de TOUT appel
-    // hors transaction : sans opérateur, l'adresse du paiement direct se réduit
-    // à `/v1/`, que guetter `/v1/togocel` laisserait passer. Mesuré au sabotage.
-    $hors = Http::recorded()
-        ->map(fn ($paire) => $paire[0]->url())
-        ->reject(fn (string $url) => str_contains($url, '/transactions'))
-        ->values()->all();
-
-    expect($hors)->toBe([]);
-});
-
-/**
- * La fenêtre doit DIRE ce qui se passe : un écran qui attend sans rien annoncer
- * se lit comme une panne, et le payeur a son téléphone en main.
- */
-it('annonce la demande envoyée au téléphone, et garde la porte de sortie', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-
-    fedapayDirectOk(73);
-
-    $this->actingAs($account, 'account')
-        ->from(route('account.payment', $event->id))
-        ->followingRedirects()
-        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay', 'operator' => 'togocel'])
-        ->assertOk()
-        ->assertSee('Validez sur votre téléphone')
-        ->assertSee('+22890000000')
-        // ⚠️ L'opérateur est nommé COMME LE PAYEUR LE CONNAÎT, pas par son code.
-        ->assertSee('Togocel T-Money (Togo)')
-        ->assertSee('En attente de votre validation')
-        // La porte de sortie, adaptée : il n'y a pas de formulaire à attendre.
-        ->assertSee('Vous n’avez rien reçu sur votre téléphone ?', false)
-        ->assertSee('https://paiement.exemple/abc', false)
-        // ⚠️ Aucun formulaire embarqué : pas de clé publique dans la page.
-        ->assertDontSee('pk_sandbox_abc123', false);
-});
-
-/**
- * ⚠️⚠️ **VÉRIFIER UN PAIEMENT SE COMPTE PAR PERSONNE, JAMAIS PAR IP.** Le
- * parcours direct interroge le serveur toutes les six secondes pendant que le
- * payeur compose son code, et un campus règle ses frais depuis une poignée
- * d'adresses : par IP, le deuxième payeur aurait vu sa confirmation refusée,
- * sans rien y comprendre. Même leçon que le fil de la salle de visio.
+ * ⚠️⚠️ **VÉRIFIER UN PAIEMENT SE COMPTE PAR PERSONNE, JAMAIS PAR IP.** Un
+ * campus règle ses frais depuis une poignée d'adresses partagées : par IP, la
+ * confirmation de quelqu'un peut être refusée parce que ses voisins viennent de
+ * régler. Et ce n'est pas une requête de confort qu'on écarte là - c'est celle
+ * qui dit au payeur que son règlement est passé. Même leçon que le fil de la
+ * salle de visio.
  */
 it('compte la vérification de paiement par personne, pas par adresse', function () {
     expect((string) file_get_contents(base_path('routes/web.php')))

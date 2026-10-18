@@ -7,7 +7,6 @@ use App\Payments\Contracts\OnlineGateway;
 use App\Support\MobileNetwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
  * FedaPay - mobile money (MTN, Moov, Togocom…) et carte bancaire via page hébergée.
@@ -195,30 +194,6 @@ class FedaPayGateway implements OnlineGateway
         $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
         $url = (string) ($token['url'] ?? '');
 
-        // ⚠️⚠️ **LE PAIEMENT DIRECT : aucun formulaire, la demande part sur le
-        // téléphone.** C'est le seul endroit où `mode` sert vraiment - sur la page
-        // de paiement il n'a aucun effet, mesuré trois fois en conditions réelles.
-        // On supprime ainsi les deux écrans que nous ne maîtrisons pas : le
-        // sélecteur d'opérateur (qui retombait sur « Mtn Bénin ») et la case
-        // « Je veux recevoir mon reçu par mail », tous deux chez le prestataire.
-        // ⚠️ Pas de garde sur `$operator` ici : c'est `pousseSurLeTelephone()` qui
-        // la porte, et une seule fois. Doublée, elle devient une condition qu'aucun
-        // sabotage ne fait tomber - donc une ligne qu'on croit protectrice et qui
-        // ne protège rien. Mesuré : le cas restait vert sans elle.
-        if (filled($payer['phone']) && $this->pousseSurLeTelephone((string) ($token['token'] ?? ''), $operator, $id)) {
-            return [
-                'type' => 'push',
-                'transaction_id' => (string) $id,
-                'operator' => $operator,
-                'phone' => (string) $payer['phone'],
-                // ⚠️ **La porte de sortie reste ouverte**, et elle l'est encore plus
-                // ici : une demande poussée peut ne jamais arriver (réseau de
-                // l'opérateur, téléphone éteint), et le payeur n'aurait alors
-                // RIEN - ni formulaire, ni message. La page hébergée le rattrape.
-                'url' => $url,
-            ];
-        }
-
         // ⚠️ **Sans clé PUBLIQUE, pas de formulaire embarqué** : on repart en
         // redirection. C'est la seule règle - pas de réglage de plus à tenir
         // d'accord avec la réalité. Qui renseigne la clé publique veut le
@@ -259,86 +234,6 @@ class FedaPayGateway implements OnlineGateway
             // perdu.
             'url' => $url,
         ];
-    }
-
-    /**
-     * Envoie la demande de paiement **sur le téléphone du payeur**, sans aucune
-     * page : `POST /v1/{mode}` avec le jeton de la transaction (c'est le
-     * `sendNowWithToken($mode, $token)` de leur SDK).
-     *
-     * ⚠️ **Fail-open, et c'est voulu** : si cet appel échoue - opérateur qui ne
-     * répond pas, méthode fermée sur le compte marchand, réseau - on rend `false`
-     * et l'appelant repart sur le formulaire. Laisser l'exception remonter
-     * priverait le payeur de TOUT moyen de régler, pour un canal qui n'est qu'un
-     * raccourci. Le reste du projet est fail-closed sur les STATUTS ; ici on ne
-     * décide d'aucun statut, on sonne à une porte.
-     *
-     * ⚠️ Et cet appel ne dit **jamais** qu'un paiement a réussi : il dit qu'une
-     * demande est partie. Le verdict vient de `verify()`, comme partout ailleurs.
-     *
-     * ⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER.**
-     * Mesuré en conditions réelles : l'opérateur était bien enregistré, la
-     * transaction bien créée, et le payeur retombait pourtant sur le formulaire -
-     * **sans une ligne nulle part**. On ne savait ni si le prestataire avait
-     * refusé, ni pourquoi. Tout repli est donc journalisé dans le canal
-     * `payments`, celui qu'on vient consulter pour un « j'ai payé mais le système
-     * dit non ».
-     *
-     * ⚠️ **Le JETON n'est pas journalisé** : il autorise le règlement, c'est un
-     * secret de paiement au même titre qu'une clé. On journalise la référence de
-     * la transaction, qui suffit à retrouver la trace chez le prestataire.
-     */
-    protected function pousseSurLeTelephone(string $token, string $mode, mixed $reference = null): bool
-    {
-        // ⚠️⚠️ **N'AVOIR AUCUN OPÉRATEUR EST UN CAS NORMAL** - « je choisis sur la
-        // page de paiement », ou la carte bancaire. Le journaliser poserait une
-        // alerte par paiement, et un journal qui crie tout le temps ne dit plus
-        // rien : la seule ligne qui comptait se perdrait au milieu. Mesuré sur le
-        // journal du jour, neuf alertes pour zéro anomalie. On se retire sans un mot.
-        if ($mode === '') {
-            return false;
-        }
-
-        // Ici, en revanche, nous VOULIONS pousser et nous ne le pouvons pas : le
-        // prestataire n'a rendu aucun jeton, ou nous proposons un code qu'il
-        // n'accepte pas. C'est une anomalie, et elle se dit.
-        if ($token === '' || ! array_key_exists($mode, $this->mobileOperators())) {
-            Log::channel('payments')->warning('Paiement direct impossible : jeton ou opérateur inexploitable', [
-                'transaction' => $reference,
-                'operateur' => $mode,
-                'jeton_present' => $token !== '',
-            ]);
-
-            return false;
-        }
-
-        try {
-            $reponse = $this->http()
-                ->timeout(20)
-                ->post($this->baseUrl().'/'.$mode, ['token' => $token]);
-
-            if ($reponse->successful()) {
-                return true;
-            }
-
-            Log::channel('payments')->warning('Paiement direct refusé par le prestataire', [
-                'transaction' => $reference,
-                'operateur' => $mode,
-                'statut' => $reponse->status(),
-                // Tronqué : une page d'erreur HTML entière noierait le journal.
-                'reponse' => mb_substr($reponse->body(), 0, 500),
-            ]);
-
-            return false;
-        } catch (\Throwable $e) {
-            Log::channel('payments')->warning('Paiement direct injoignable', [
-                'transaction' => $reference,
-                'operateur' => $mode,
-                'erreur' => $e->getMessage(),
-            ]);
-
-            return false;
-        }
     }
 
     /**

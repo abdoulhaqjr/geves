@@ -1125,12 +1125,5 @@
     "Vous ne quittez pas :app : le règlement est traité par notre prestataire de paiement.": "You stay on :app - the payment is handled by our payment provider.",
     "Ouvrir la page de paiement": "Open the payment page",
     "Préparation du paiement sécurisé…": "Preparing secure payment…",
-    "Déduit de votre numéro. Changez-le si ce n’est pas le bon.": "Detected from your phone number. Change it if it is not the right one.",
-    "Validez sur votre téléphone": "Confirm on your phone",
-    "Une demande de paiement vient d’être envoyée au :phone.": "A payment request has just been sent to :phone.",
-    "Composez votre code secret pour confirmer le règlement.": "Enter your PIN to confirm the payment.",
-    "En attente de votre validation…": "Waiting for your confirmation…",
-    "La demande a été refusée, ou elle a expiré.": "The request was declined, or it expired.",
-    "Nous n’avons pas encore reçu la confirmation. Si vous avez validé, le règlement sera enregistré d’ici quelques minutes.": "We have not received the confirmation yet. If you approved it, the payment will be recorded within a few minutes.",
-    "Vous n’avez rien reçu sur votre téléphone ?": "Nothing received on your phone?"
+    "Déduit de votre numéro. Changez-le si ce n’est pas le bon.": "Detected from your phone number. Change it if it is not the right one."
 }

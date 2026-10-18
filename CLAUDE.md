@@ -4592,98 +4592,41 @@ sélecteur d'opérateur et sans case « Je veux recevoir mon reçu par mail », 
 appartiennent tous deux à la page du prestataire et nous sont inaccessibles
 (cadre d'un autre domaine).
 
-### Le PAIEMENT DIRECT : aucun formulaire, la demande part sur le téléphone
+### ⚠️⚠️ N'ESSAYEZ PAS D'IMPOSER L'OPÉRATEUR AU PRESTATAIRE (2026-10-18)
 
-Quand le payeur a un **opérateur** et un **numéro**, on ne lui ouvre plus aucun
-formulaire : `POST /v1/{mode}` avec le jeton, et son téléphone sonne. Il compose
-son code, et c'est réglé. La fenêtre de GEVES n'affiche alors qu'un message - le
-numéro visé, l'opérateur **nommé comme il le connaît** (« Togocel T-Money »,
-jamais `togocel`), et ce qu'on attend.
+**`mode` ne pré-sélectionne RIEN sur la page de paiement.** C'est la leçon la
+plus coûteuse de ce module : trois essais en conditions réelles pour l'établir.
+Le champ part bien - mesuré en base (`meta.operator` posé) et dans la requête de
+création - et la page du prestataire affiche quand même son sélecteur, sur
+**« Mtn Bénin »** par défaut.
 
-⚠️⚠️ **FAIL-OPEN, et c'est la seule exception du module.** Si la demande directe
-échoue - opérateur muet, méthode fermée sur le compte marchand, réseau -
-`pousseSurLeTelephone()` rend `false` et l'on **repart sur le formulaire**.
-Laisser l'échec remonter priverait le payeur de TOUT moyen de régler, pour un
-canal qui n'est qu'un raccourci. Le projet reste fail-closed sur les **statuts** ;
-ici on ne décide d'aucun statut, on sonne à une porte.
+⚠️ `mode` ne sert qu'au **paiement direct**, celui qui se passe entièrement de
+page : `POST /v1/{mode}` avec le jeton de `POST /transactions/{id}/token` (le
+`sendNowWithToken($mode, $token)` de leur SDK). Le payeur reçoit alors la demande
+**sur son téléphone**, sans aucun formulaire.
 
-⚠️⚠️ **Et le navigateur ne décide toujours de RIEN.** La page n'écoute aucun
-signal du prestataire : elle demande au **serveur** d'interroger
-(`payment.verify`), toutes les six secondes. Ce qui défile n'est qu'une horloge.
-
-⚠️ **L'attente a une FIN** : quatre minutes, puis on le DIT. Une demande poussée
-peut n'arriver jamais (téléphone éteint, réseau de l'opérateur), et un ruban qui
-tourne indéfiniment devant quelqu'un qui a sorti sa carte, c'est un paiement
-perdu. ⚠️ Ni le refus ni l'expiration ne sont un **verdict** : `payments:reconcile`
-repasse toutes les dix minutes, et le message ne dit donc jamais « échec » - il
-dit ce qu'on sait, et ce qu'on ne sait pas encore. La **porte de sortie** (page
-hébergée) reste en pied de fenêtre, reformulée : « Vous n'avez rien reçu sur
-votre téléphone ? »
-
-⚠️ **UNE SEULE fenêtre pour les deux parcours** (`journey` = `push` | `form`,
-posé par `PaymentEmbed`) : deux composants se décaleraient, et le défaut ne se
-verrait que d'un côté - sur un écran de paiement. Seule la **largeur** diffère :
-940px pour le formulaire du prestataire (qui a besoin de ses deux colonnes),
-560px pour un message, qui se perdrait dans la première.
-
-⚠️ **Vérifier un paiement se compte PAR PERSONNE, jamais par IP**
-(`RateLimiter::for('paiement-verif')`, même clé que le fil de visio). Le parcours
-direct interroge toutes les six secondes pendant que le payeur compose son code,
-et un campus règle ses frais depuis une poignée d'adresses : par IP, le deuxième
-payeur aurait vu sa **confirmation** refusée, sans rien y comprendre.
-
-⚠️ **La carte bancaire n'a pas de paiement direct** : elle garde le formulaire,
-comme « je choisis sur la page de paiement ».
-
-⚠️⚠️ **UN REPLI SILENCIEUX EST UN REPLI QU'ON NE PEUT PAS DIAGNOSTIQUER**, et le
-premier essai réel l'a montré : l'opérateur était bien enregistré, la
-transaction bien créée, et le payeur retombait sur le formulaire **sans une
-ligne nulle part**. On ne savait ni si le prestataire avait refusé, ni pourquoi.
-Les trois replis de `pousseSurLeTelephone()` (jeton ou opérateur inexploitable,
-refus du prestataire, service injoignable) sont désormais journalisés dans le
-canal **`payments`** - celui qu'on vient consulter pour un « j'ai payé mais le
-système dit non ». La réponse du prestataire y est **tronquée à 500 caractères**
-(une page d'erreur HTML entière noierait le journal). ⚠️ Le **jeton** n'y figure
-jamais : il autorise le règlement, c'est un secret de paiement au même titre
-qu'une clé. Un cas le garde.
-
-⚠️⚠️ **UN JOURNAL QUI CRIE TOUT LE TEMPS NE DIT PLUS RIEN**, et la première
-version le faisait : elle alertait aussi quand **aucun opérateur** n'était choisi
-- « je choisis sur la page de paiement », ou la carte bancaire, deux cas
-parfaitement normaux. Mesuré sur le journal d'une seule journée : **neuf alertes
-pour zéro anomalie**, au milieu desquelles la seule ligne qui comptait se
-perdait. On ne journalise que ce qu'on VOULAIT faire et qu'on ne peut pas :
-aucun jeton rendu, ou un code que le prestataire n'accepte pas.
-
-⚠️ **Le fichier est `payments-AAAA-MM-JJ.log`**, pas `payments.log` : le canal
-est en driver **`daily`**. Chercher le second ne rend jamais rien, et on en
-conclut à tort qu'il ne s'est rien passé.
-
-### ⚠️ Le PAIEMENT DIRECT est refusé par le compte marchand (2026-10-18)
-
-Éprouvé contre le compte de production, et voici la réponse, mot pour mot :
+⚠️⚠️ **Ce parcours A ÉTÉ ÉCRIT, ÉPROUVÉ, PUIS RETIRÉ** (commits `eb74b470`,
+`b4940f95`, `5d35acca` - à reprendre là si besoin). Éprouvé contre le compte de
+production, le prestataire répond :
 
 ```
-[2026-10-18 11:08:25] local.WARNING: Paiement direct refusé par le prestataire
 {"transaction":113755521,"operateur":"togocel","statut":400,
  "reponse":"{\"message\":\"Opération non autorisée\",\"errors\":{},\"model\":null}"}
 ```
 
-**400 « Opération non autorisée »** : le paiement sans redirection demande une
-**activation sur le compte marchand**, exactement comme la carte bancaire. Tant
-qu'elle n'est pas accordée, le repli joue et le payeur voit le formulaire - le
-parcours fonctionne, il n'est simplement pas ouvert.
+**400 « Opération non autorisée »** : le paiement direct demande une
+**activation sur le compte marchand**, exactement comme la carte bancaire. Le
+refus porte sur l'**autorisation**, pas sur la requête - l'adresse, le verbe et
+le corps sont ceux de leur propre SDK. C'est une demande à leur adresser, pas un
+correctif à écrire. Retiré à la demande de l'équipe plutôt que laissé dormant :
+du code qu'aucun chemin n'emprunte se périme sans qu'on s'en aperçoive.
 
-⚠️ **Ne pas en conclure que le code est faux.** L'adresse, le verbe et le corps
-sont ceux du SDK du prestataire (`sendNowWithToken`), et le refus porte sur
-l'**autorisation**, pas sur la requête. C'est une demande à leur adresser, pas un
-correctif à écrire.
-
-Sept cas dans `PaymentGatewayTest`, sept sabotages vérifiés. ⚠️ Un cinquième ne
-mordait pas - une garde `$operator !== ''` **doublait** celle de
-`pousseSurLeTelephone()` : retirée, le cas restait vert. Une condition qu'aucun
-sabotage ne fait tomber est une ligne qu'on croit protectrice et qui ne protège
-rien ; elle a été supprimée, pas commentée.
+⚠️ **Deux écrans resteront donc ceux du prestataire** tant que l'activation n'est
+pas accordée : son **sélecteur d'opérateur** et sa case **« Je veux recevoir mon
+reçu par mail »**. Ils vivent dans un cadre d'un autre domaine - aucune de ses
+options documentées (`public_key`, `transaction`, `customer`, `currency`,
+`locale`, `button`) ne les pilote, et son `checkout.js` ne transmet rien d'autre.
+Inutile de chercher : c'est vérifié dans sa source.
 
 ⚠️ **Les codes d'opérateur sont CEUX DU PRESTATAIRE, et quatre étaient faux** :
 `mtn_open_ci` (le code documenté est **`mtn_ci`**), plus `bmo`, `coris_money` et

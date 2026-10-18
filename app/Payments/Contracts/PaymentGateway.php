@@ -19,19 +19,16 @@ interface PaymentGateway
     public function isAvailable(): bool;
 
     /**
-     * Initie le paiement. Quatre formes, et c'est l'appelant qui les distingue :
+     * Initie le paiement. Trois formes, et c'est l'appelant qui les distingue :
      *
      * - `redirect` : on envoie le payeur sur la page du prestataire (`url`) ;
      * - `embed` : le formulaire du prestataire s'ouvre SUR notre page
      *   ({@see PaymentEmbed}) ; `url` reste la porte de sortie si
      *   son script ne charge pas ;
-     * - `push` : **aucun formulaire** - la demande d'approbation part sur le
-     *   téléphone du payeur, et la page attend le verdict du serveur. `url`
-     *   reste la porte de sortie si la demande n'arrive jamais ;
      * - `instructions` : rien en ligne, on affiche la marche à suivre (`message`).
      *
      * @return array{
-     *     type: 'redirect'|'embed'|'push'|'instructions',
+     *     type: 'redirect'|'embed'|'instructions',
      *     url?: string,
      *     message?: string,
      *     public_key?: string,
@@ -39,8 +36,6 @@ interface PaymentGateway
      *     transaction_id?: string,
      *     customer?: array<string, mixed>,
      *     mode?: string,
-     *     operator?: string,
-     *     phone?: string,
      * }
      */
     public function initiate(Payment $payment): array;

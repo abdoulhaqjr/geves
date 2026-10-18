@@ -3,8 +3,6 @@
 namespace App\Support;
 
 use App\Models\Payment;
-use App\Payments\Contracts\OnlineGateway;
-use App\Payments\GatewayRegistry;
 
 /**
  * Ce qu'il faut à la page pour afficher le formulaire de paiement EMBARQUÉ du
@@ -32,14 +30,6 @@ final class PaymentEmbed
         return [
             'gateway' => $gateway,
             'payment' => $payment->id,
-            // ⚠️ **Deux parcours, une seule fenêtre.** `push` : la demande est
-            // partie sur le téléphone, la page attend le verdict du serveur.
-            // `form` : le formulaire du prestataire s'ouvre dans la fenêtre. Deux
-            // composants se décaleraient, et le défaut ne se verrait que d'un
-            // côté - sur un écran de paiement.
-            'journey' => ($result['type'] ?? '') === 'push' ? 'push' : 'form',
-            'phone' => (string) ($result['phone'] ?? ''),
-            'operator' => self::operateur($result, $gateway),
             // ⚠️ **Une fenêtre de paiement DIT ce qu'on règle et combien.** Elle
             // ne portait que « Régler en ligne » : le payeur y arrivait sans
             // savoir ce qu'il engageait, et devait faire confiance à un cadre
@@ -64,26 +54,6 @@ final class PaymentEmbed
             'url' => (string) ($result['url'] ?? ''),
             'verify_url' => route('payment.verify', ['gateway' => $gateway]),
         ];
-    }
-
-    /**
-     * L'opérateur, dit **comme le payeur le connaît** - « Togocel T-Money »,
-     * pas `togocel`.
-     *
-     * ⚠️ Le libellé vient de la passerelle, jamais d'une liste recopiée : c'est
-     * elle qui sait ce qu'elle propose, et une seconde liste se décalerait de la
-     * première au premier opérateur ajouté.
-     */
-    private static function operateur(array $result, string $gateway): string
-    {
-        $code = (string) ($result['operator'] ?? '');
-        if ($code === '') {
-            return '';
-        }
-
-        $gw = app(GatewayRegistry::class)->get($gateway);
-
-        return $gw instanceof OnlineGateway ? (string) ($gw->mobileOperators()[$code] ?? '') : '';
     }
 
     /** Ce que le payeur règle, dit en clair. */
