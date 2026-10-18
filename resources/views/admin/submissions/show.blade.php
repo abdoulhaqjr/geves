@@ -406,7 +406,7 @@
                             <div class="ukc-field" style="margin-bottom:8px;">
                                 <label for="existingReviewerId">Évaluateur existant</label>
                                 <select id="existingReviewerId" name="existingReviewerId" data-tom data-placeholder="Rechercher un évaluateur…">
-                                    <option value="">- Nouveà l’évaluateur -</option>
+                                    <option value="">- Nouvel évaluateur -</option>
                                     @foreach ($existingReviewers as $rev)
                                         @php($worst = $coiByReviewer[$rev->id] ?? null)
                                         <option value="{{ $rev->id }}">{{ $worst === 'high' ? '⛔ ' : ($worst ? '⚠ ' : '') }}{{ $rev->full_name }} ({{ $rev->email }})</option>
