@@ -289,12 +289,27 @@ class DocumentHubController extends Controller
             'livretSectionCount' => count($sections),
             'livretSectionsFilled' => count(array_filter($sections)),
             'livretBuiltins' => [
-                ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre - commissions numérotées - programme par jour', 'download' => null],
-                ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre - comités simples - programme par jour, salle et séance', 'download' => null],
-                ['key' => 'general', 'name' => 'Modèle 3 - Document général du colloque', 'desc' => 'Comité d’organisation en tableau - programme synthétique - communications en ateliers - résumés par axe', 'download' => null],
+                // ⚠️ Chaque style intégré se télécharge en .docx pour l'événement
+                // courant, via `?template=<clé>` (cf. DocumentController::templateKey) :
+                // on obtient le Word d'un style SANS avoir à le rendre actif d'abord.
+                ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre - commissions numérotées - programme par jour', 'download' => $this->livretStyleDownload($event, 'default')],
+                ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre - comités simples - programme par jour, salle et séance', 'download' => $this->livretStyleDownload($event, 'fss')],
+                ['key' => 'general', 'name' => 'Modèle 3 - Document général du colloque', 'desc' => 'Comité d’organisation en tableau - programme synthétique - communications en ateliers - résumés par axe', 'download' => $this->livretStyleDownload($event, 'general')],
+                // 'base' = gabarit à balises de fusion (vide), indépendant de l'événement.
                 ['key' => 'base', 'name' => 'Modèle de base '.config('app.name'), 'desc' => 'Document .docx à balises de fusion, à personnaliser dans Word', 'download' => route('admin.documents.livret.base-template')],
             ],
         ];
+    }
+
+    /**
+     * URL de téléchargement .docx d'un style intégré pour cet événement, ou null
+     * sans événement de contexte (la route a besoin de l'événement).
+     */
+    private function livretStyleDownload(?Event $event, string $style): ?string
+    {
+        return $event
+            ? route('admin.documents.livret', ['event' => $event, 'format' => 'docx', 'template' => $style])
+            : null;
     }
 
     /** Émet les attestations d'un type pour son audience éligible (idempotent). */

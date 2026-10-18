@@ -3601,7 +3601,16 @@ ajoutée par la vue, elle ne se saisit pas.
     et `selectedLivretTemplate()` traite `default`/`base` + toutes les clés de `STYLES` comme des
     styles intégrés (≠ modèle .docx importé). ⚠️ **Ajouter un style = l'ajouter à `STYLES` ET à la
     liste `livretBuiltins` de `DocumentHubController::livretViewExtras()`** (sinon il est généré mais
-    pas proposé dans le sélecteur). ⚠️ Les styles `default`/`fss` n'agissent que sur le **.docx** ;
+    pas proposé dans le sélecteur). ⚠️ **Chaque modèle intégré a son bouton « Télécharger »**
+    (`livretBuiltins[].download`) : `default`/`fss`/`general` pointent sur
+    `admin.documents.livret?format=docx&template=<clé>`, et `base` sur le gabarit à balises
+    (`livret.base-template`). La route `livret` accepte un **`?template=` facultatif**
+    (`DocumentController::templateKey()`, borné aux clés intégrées `default`/`base`/STYLES) qui
+    sert le .docx d'UN style **sans le rendre actif** ; sans paramètre, c'est le modèle actif
+    enregistré. Un modèle .docx **importé** se télécharge par son URL de stockage directe et se
+    **supprime** (bouton corbeille, `livret.template.delete`) - l'override `?template=` ne le
+    concerne pas. Gardes : `LivretTest` (bouton par modèle, override qui n'active pas le style).
+    ⚠️ Les styles `default`/`fss` n'agissent que sur le **.docx** ;
     l'aperçu HTML et le PDF gardent alors la mise en page par défaut. **EXCEPTION : `general` est
     aussi reflété dans l'aperçu PDF** (`DocumentController::livretViewData()` branche sur
     `livretStyle()` : comité d'organisation en tableau, ordre supervision → scientifique →

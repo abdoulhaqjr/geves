@@ -174,6 +174,46 @@ it('applique le style « Document général du colloque » (comité en tableau +
         ->toContain('<w:bookmarkStart');
 });
 
+it('propose un bouton Télécharger sur CHAQUE modèle intégré', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+
+    $page = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['tab' => 'livre', 'stab' => 'modeles', 'event_id' => $event->id]))
+        ->assertOk();
+
+    // Les trois styles intégrés se téléchargent en .docx via ?template=<clé>.
+    foreach (['default', 'fss', 'general'] as $style) {
+        $page->assertSee(e(route('admin.documents.livret', [
+            'event' => $event, 'format' => 'docx', 'template' => $style,
+        ])), false);
+    }
+    // Le modèle de base conserve son propre téléchargement (gabarit à balises).
+    $page->assertSee(e(route('admin.documents.livret.base-template')), false);
+});
+
+it('télécharge un style intégré précis via ?template= sans le rendre actif', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $event = $submission->event;
+
+    // Le modèle actif reste « default » (jamais touché) : seul le style « general »
+    // enregistre des styles de titre Word → c'est le marqueur qui les distingue.
+    $general = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx', 'template' => 'general']))
+            ->streamedContent()
+    );
+    $defaut = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
+            ->streamedContent()
+    );
+
+    expect($general)->toContain('w:val="Heading1"');   // style « general » servi par l'override
+    expect($defaut)->not->toContain('w:val="Heading1"'); // modèle actif inchangé (default)
+});
+
 it('génère le livret en PDF', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
