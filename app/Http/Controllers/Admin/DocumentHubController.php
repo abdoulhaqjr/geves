@@ -288,7 +288,7 @@ class DocumentHubController extends Controller
     private function badgePreviewVars(Event $event, string $type): array
     {
         return [
-            'org' => $event->series?->name ?? '',
+            'org' => $event->series->name ?? '',
             'event' => (string) ($event->title ?? ''),
             'year' => (string) ($event->year ?: ''),
             'theme' => (string) ($event->theme ?? ''),
