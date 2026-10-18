@@ -43,9 +43,14 @@
             {{-- ⚠️ **Porte de sortie, toujours présente.** Si le script du
                  prestataire ne charge pas - réseau, blocage, coupure de son CDN -
                  le payeur doit pouvoir finir quand même. Un formulaire embarqué
-                 sans issue, c'est un paiement perdu. --}}
+                 sans issue, c'est un paiement perdu.
+
+                 ⚠️ **C'est tout ce que le pied porte.** Il assurait aussi qu'on ne
+                 quittait pas la plateforme ; le prestataire signe désormais son
+                 propre cadre, bord à bord, et la fenêtre reste visiblement la
+                 nôtre - en-tête, croix, page derrière. Une ligne de moins sous un
+                 formulaire de paiement, c'est une hésitation de moins. --}}
             <div class="ukc-pay-embed__foot">
-                <p>{{ __('Vous ne quittez pas :app : le règlement est traité par notre prestataire de paiement.', ['app' => config('app.name')]) }}</p>
                 <p>
                     {{ __('Le formulaire ne s’affiche pas ?') }}
                     @if (($embed['url'] ?? '') !== '')

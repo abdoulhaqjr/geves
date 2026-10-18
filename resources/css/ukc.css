@@ -1590,7 +1590,6 @@ body.ukc-overlay-open { overflow: hidden; }
   background: var(--ukc-bg); color: var(--ukc-light); font-size: 12px; line-height: 1.5;
 }
 .ukc-pay-embed__foot p { margin: 0; }
-.ukc-pay-embed__foot p + p { margin-top: 3px; }
 .ukc-pay-embed__foot a { color: var(--ukc-blue); font-weight: 700; }
 /* La page derrière ne défile plus : deux zones de défilement imbriquées font
    perdre le formulaire sous les doigts. */

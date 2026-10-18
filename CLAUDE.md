@@ -4566,8 +4566,14 @@ surtitre *Paiement sécurisé* - parce qu'une fenêtre de paiement doit dire ce
 qu'on engage. Sauf que **le formulaire du prestataire l'annonce déjà, et qu'il y
 AJOUTE ses frais** : « 100 FCFA » chez nous, « PAYER 102 CFA » chez lui, deux
 chiffres différents sur le même écran. Un seul vaut mieux que deux, et c'est le
-sien qui sera débité. Il ne reste donc que le surtitre, la croix, et le pied -
-qui dit qu'on ne quitte pas la plateforme et garde la porte de sortie.
+sien qui sera débité. Il ne reste donc que le surtitre, la croix, et le pied.
+
+⚠️ **Et le pied ne porte plus QUE la porte de sortie.** Il assurait aussi qu'on
+ne quittait pas la plateforme ; depuis que le cadre du prestataire va bord à
+bord et signe sa propre page, la phrase expliquait une inquiétude que l'écran ne
+soulevait plus. Sous un formulaire de paiement, une ligne de moins est une
+hésitation de moins - mais **jamais celle-là** : le lien vers la page hébergée
+reste, et il reste seul.
 
 ⚠️ **Le titre portait le nom accessible de la fenêtre** (`aria-labelledby`) : en
 le retirant, la boîte de dialogue serait devenue **anonyme** pour un lecteur
