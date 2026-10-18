@@ -1,23 +1,42 @@
 <x-layouts.app :title="'Badges - ' . $event->title">
     @php
         // ⚠️ Impression : on tuile AUTANT de badges DE LA DIMENSION CHOISIE que l'A4
-        // peut en contenir (comme l'ancien template.docx), sans déformer le badge.
-        // Les px CSS s'impriment à 96 dpi : un badge de L px fait L/96 pouce. On calcule
-        // combien de colonnes/lignes tiennent sur une A4 portrait, avec une petite
-        // tolérance (le badge A6 fait 397 px ≈ 105,03 mm, soit 2×210,06 mm, à peine au
-        // delà de l'A4 : sans tolérance il ne passerait qu'à une colonne) et une marge
-        // de sécurité pour ne jamais rogner au bord de la feuille.
+        // peut en contenir, avec des GOUTTIÈRES entre les badges et une marge autour de
+        // la feuille (comme le modèle .docx de référence), sans déformer le badge.
+        //
+        // ⚠️ Pourquoi des gouttières imposent de RÉDUIRE le badge : un A6 (105×148 mm)
+        // est EXACTEMENT le quart d'une A4 (210×297 mm), donc 2×2 A6 remplissent la
+        // feuille bord à bord - zéro place pour un espace. Le modèle de référence a des
+        // badges plus petits que l'A6 plein, d'où ses marges. On réserve donc marge +
+        // gouttière et on met le badge à l'échelle pour qu'il tienne dans ce qui reste.
+        //
+        // Les px CSS s'impriment à 96 dpi : un badge de L px fait L/96 pouce.
         $w = (int) ($width ?? 397);
         $h = (int) ($height ?? 560);
         $pageW = 793.7;   // 210 mm @ 96 dpi
         $pageH = 1122.52; // 297 mm @ 96 dpi
-        $tol = 1.012;     // ~1,2 % : rattrape le quasi-débordement de l'A6 2-up
+        $mm = 96 / 25.4;              // px par mm à 96 dpi
+        $margin = 6 * $mm;           // marge autour de la feuille (6 mm)
+        $gutter = 5 * $mm;           // espace entre badges (5 mm)
+        // Nombre de colonnes/lignes : combien de badges de taille native tiennent,
+        // avec une petite tolérance (l'A6 fait 105,03 mm, soit 2×210,06 mm, à peine
+        // au-delà de l'A4 : sans tolérance il ne passerait qu'à une colonne). Le
+        // rétrécissement par la suite rend la place aux gouttières.
+        $tol = 1.012;
         $cols = max(1, (int) floor($pageW * $tol / $w));
         $rows = max(1, (int) floor($pageH * $tol / $h));
-        $fit = min($pageW / ($cols * $w), $pageH / ($rows * $h), 1.0);
-        $scale = round($fit * 0.995, 4); // marge anti-rognage
+        // Zone imprimable (hors marge) moins les gouttières -> échelle qui fait tenir
+        // badges + gouttières + marge sans jamais rogner. Uniforme (pas de déformation).
+        $availW = $pageW - 2 * $margin;
+        $availH = $pageH - 2 * $margin;
+        $scaleW = ($availW - ($cols - 1) * $gutter) / ($cols * $w);
+        $scaleH = ($availH - ($rows - 1) * $gutter) / ($rows * $h);
+        $scale = round(min($scaleW, $scaleH, 1.0) * 0.998, 4); // marge anti-rognage
         $cellW = (int) floor($w * $scale);
         $cellH = (int) floor($h * $scale);
+        $sheetW = $cols * $cellW + ($cols - 1) * $gutter;
+        $marginMm = 6;
+        $gutterPx = (int) round($gutter);
         $perPage = $cols * $rows;
     @endphp
 
@@ -51,13 +70,15 @@
                 .no-print { display:none !important; }
                 html, body { background:#fff !important; }
                 .badge-page { max-width:none !important; margin:0 !important; padding:0 !important; }
-                @page { size: A4 portrait; margin: 0; }
+                /* Marge autour de la feuille (les badges ne touchent plus le bord). */
+                @page { size: A4 portrait; margin: {{ $marginMm }}mm; }
 
                 /* Tuilage : N colonnes de cellules exactement dimensionnées, centrées,
-                   le badge réduit par transform pour que {{ $cols }} tiennent en largeur. */
+                   séparées par une gouttière ; le badge est réduit par transform pour que
+                   {{ $cols }} badges + leurs gouttières tiennent en largeur. */
                 .badge-sheet {
-                    gap:0;
-                    width:{{ $cols * $cellW }}px;
+                    gap:{{ $gutterPx }}px;
+                    width:{{ (int) round($sheetW) }}px;
                     margin:0 auto;
                     justify-content:flex-start;
                 }

@@ -3937,17 +3937,23 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   concepteur d'attestations). ⚠️ Le concepteur de badges reste une base plus pauvre que
   celui des attestations (pas d'`upper`/`leading`/interlettrage dans le snapshot) : à
   aligner si on y revient. Gardes : `BadgeDefaultTemplateTest`.
-- ⚠️ **Impression = tuilage A4 (comme l'ancien `template.docx`)** :
+- ⚠️ **Impression = tuilage A4 avec GOUTTIÈRES (comme le modèle .docx de référence)** :
   `documents/badges-template.blade.php` imprime **autant de badges DE LA DIMENSION CHOISIE**
-  que l'A4 portrait en contient. Les px CSS valent 1/96 pouce à l'impression ; la vue calcule
-  `cols`/`rows` = `floor(pageA4 * 1,012 / dimension)` (la tolérance de 1,2 % rattrape l'A6
-  2-up : 397 px ≈ 105,03 mm, soit 2×210,06 mm, à peine au-delà de l'A4), puis un `scale`
-  (= ajustement × 0,995 de sécurité anti-rognage) appliqué en `transform` sur chaque
-  `.ukc-doc-canvas`, dans des cellules fixes `cellW×cellH`. **A6 → 2×2 = 4 par page.**
-  `@media print` seulement (l'écran garde la galerie souple) ; `@page { size:A4; margin:0 }`,
-  repères de découpe (`outline` pointillé). ⚠️ Le badge n'est **pas déformé** : on ne réduit
-  que d'une fraction (sécurité), jamais pour cramer plus de badges. Le contrôleur passe
-  `width` **et** `height`. Garde : `DocumentsTest` (voit « par page A4 »).
+  que l'A4 portrait en contient, **séparés par un espace** et avec une **marge autour de la
+  feuille**. Les px CSS valent 1/96 pouce à l'impression ; la vue calcule `cols`/`rows` =
+  `floor(pageA4 * 1,012 / dimension)` (la tolérance de 1,2 % rattrape l'A6 2-up : 397 px ≈
+  105,03 mm, soit 2×210,06 mm, à peine au-delà de l'A4). ⚠️ **Un A6 (105×148 mm) est EXACTEMENT
+  le quart d'une A4** : 2×2 A6 remplissent la feuille bord à bord, **zéro place pour un espace**.
+  Pour avoir des gouttières il FAUT donc **rétrécir le badge** - le modèle de référence a des
+  badges plus petits que l'A6 plein, d'où ses marges. La vue réserve `margin` (6 mm autour,
+  `@page { margin: 6mm }`) et `gutter` (5 mm entre badges, `gap`), puis calcule un `scale`
+  **uniforme** (pas de déformation) qui fait tenir `cols` badges + leurs gouttières dans la
+  zone imprimable, appliqué en `transform` sur chaque `.ukc-doc-canvas` dans des cellules
+  `cellW×cellH`. **A6 → 2×2 = 4 par page, chaque badge réduit d'environ 8 % (≈ 96×136 mm).**
+  `@media print` seulement (l'écran garde la galerie souple) ; repères de découpe (`outline`
+  pointillé) sur chaque cellule. ⚠️ Ne pas revenir à `gap:0` / `margin:0` « pour cramer plus de
+  badges » : le modèle veut l'espace. Le contrôleur passe `width` **et** `height`. Garde :
+  `DocumentsTest` (voit « par page A4 »).
 
 L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
 salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les
