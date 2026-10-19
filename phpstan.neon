@@ -12,6 +12,13 @@ parameters:
     paths:
         - app
 
+    # ⚠️ FPDI/FPDF ne se découvrent pas tout seuls : `setasign/fpdf` publie un
+    # `\FPDF` SANS namespace par classmap, et l'analyse ne résout alors ni lui ni
+    # ses descendants (`setasign\Fpdi\Fpdi`) - neuf « classe inconnue » dans
+    # `GenerateBadgeExport`, pour une dépendance pourtant installée.
+    scanDirectories:
+        - vendor/setasign
+
     ignoreErrors:
         # Propriétés magiques des composants Livewire (bindings de vue).
         # reportUnmatched:false - le motif reste valable pour le futur code

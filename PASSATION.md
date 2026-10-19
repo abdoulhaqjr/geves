@@ -25,6 +25,7 @@ arrivent sur `/csp-report`, avec limitation, déduplication et journalisation
 sans URL de page. La suite dépend des violations observées (Turnstile, visio,
 FedaPay, scripts et styles intégrés) ; voir `DEPLOIEMENT.md` avant de durcir
 HSTS ou d'activer la politique complète.
+
 ### L'aperçu montre le vrai e-mail, et le bouton tient en mode sombre (2026-10-19)
 
 **L'aperçu n'était pas un aperçu.** `admin/emails` affichait l'objet et le corps
