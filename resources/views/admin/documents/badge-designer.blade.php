@@ -82,19 +82,19 @@
           <div class="ed-panel-section" id="badgeDesignFormat">A6 Portrait</div>
           {{-- L'aperçu (.mini) est rendu par le JS depuis le modèle réel (T[tpl]),
                rempli des valeurs d'exemple - même rendu que « Mes badges ». --}}
-          <div class="ed-tpl-card active" data-tpl="co" data-formats="modele-303 modele-304 modele-106 a6-pochette a7-portrait">
+          <div class="ed-tpl-card active" data-tpl="co" data-formats="modele-303 modele-304 modele-106 a6-pochette cr80">
             <div class="mini"></div>
             Cadre vert/bleu UK x Parakou
           </div>
-          <div class="ed-tpl-card" data-tpl="co-photo" data-formats="modele-303 modele-304 modele-106 a6-pochette a7-portrait">
+          <div class="ed-tpl-card" data-tpl="co-photo" data-formats="modele-303 modele-304 modele-106 a6-pochette cr80">
             <div class="mini"></div>
             Cadre vert/bleu avec photo UK x Parakou
           </div>
-          <div class="ed-tpl-card" data-tpl="participant" data-formats="modele-303 modele-304 modele-106 a6-pochette a7-portrait card-landscape cr80">
+          <div class="ed-tpl-card" data-tpl="participant" data-formats="modele-303 modele-304 modele-106 a6-pochette cr80">
             <div class="mini"></div>
             Bandeau bleu - photo - nom - QR
           </div>
-          <div class="ed-tpl-card" data-tpl="card" data-formats="card-landscape cr80">
+          <div class="ed-tpl-card" data-tpl="card" data-formats="cr80">
             <div class="mini"></div>
             Badge paysage type carte
           </div>
@@ -237,8 +237,6 @@
           <button type="button" class="chip" data-size="modele-106" title="65 × 95 mm">Modèle 106</button>
           <button type="button" class="chip" data-size="a6-pochette" title="108 × 155 mm">A6 porte-badge</button>
           <button type="button" class="chip" data-size="cr80" title="85,6 × 54 mm">CR80</button>
-          <button type="button" class="chip" data-size="a7-portrait" title="74 × 105 mm">A7 Portrait</button>
-          <button type="button" class="chip" data-size="card-landscape" title="90 × 55 mm">Carte 90×55</button>
         </div>
         <select class="ed-format-select" id="badgeFormatSelect" aria-label="Format du badge">
           {{-- ⚠️ Mêmes formats que les pastilles ci-dessus ET que FORMAT_DIMENSIONS
@@ -249,8 +247,6 @@
           <option value="modele-106">Modèle 106</option>
           <option value="a6-pochette">A6 porte-badge</option>
           <option value="cr80">CR80</option>
-          <option value="a7-portrait">A7 Portrait</option>
-          <option value="card-landscape">Carte 90×55</option>
         </select>
         <span class="spacer"></span>
         <div class="ed-zoom-bar">

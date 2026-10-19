@@ -980,12 +980,14 @@
     'a6-portrait': 'A6 Portrait', 'a6-landscape': 'A6 Paysage',
     'a7-portrait': 'A7 Portrait', 'card-landscape': 'Carte 90×55'
   };
-  /* ⚠️⚠️ `a6-portrait` et `a6-landscape` ne sont PLUS PROPOSÉS (ce sont des formats
-     de PAPIER, pas des porte-badges), mais ils restent CONNUS : `a6-portrait` est la
-     taille de BASE de la page, et un badge enregistré avant ce retrait n'a aucune
-     classe de format - le retirer d'ici rouvrirait ces badges à la mauvaise taille,
-     avec leurs éléments débordant d'une page plus petite. Les retirer du menu
-     suffit ; les effacer d'ici abîmerait l'existant. */
+  /* ⚠️⚠️ Quatre formats ne sont PLUS PROPOSÉS - `a6-portrait`, `a6-landscape`,
+     `a7-portrait`, `card-landscape` : ce sont des formats de PAPIER ou de carte
+     générique, pas des porte-badges. Ils restent CONNUS, et il ne faut pas les
+     effacer : `a6-portrait` est la taille de BASE de la page (un badge enregistré
+     à ce format n'a donc AUCUNE classe), et les trois autres sont portés par la
+     classe d'un badge déjà enregistré. Les retirer d'ici rouvrirait ces badges à la
+     mauvaise taille, éléments débordant d'une page plus petite. Les retirer du menu
+     suffit ; les effacer abîmerait l'existant. */
   // ⚠️ DÉDUITES des formats déclarés, jamais recopiées : quatre listes devaient
   // rester d'accord (pastilles, menu déroulant, dimensions, libellés), et c'est le
   // menu déroulant qui a fini par ignorer les formats ajoutés.

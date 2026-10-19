@@ -458,14 +458,25 @@ it('déclare les formats de badge au MÊME endroit partout', function () {
     // Les formats du marché doivent être là, à leur taille réelle (96 dpi).
     expect($pastilles)->toContain('modele-303', 'modele-304', 'modele-106', 'a6-pochette', 'cr80');
 
-    // ⚠️⚠️ Les A6 PAPIER ne sont PLUS proposés (ce sont des formats de feuille, pas
-    // des porte-badges) mais restent CONNUS : `a6-portrait` est la taille de base de
-    // la page, et un badge enregistré avant ce retrait n'a aucune classe de format.
-    // Les effacer du JS rouvrirait ces badges à la mauvaise taille.
-    foreach (['a6-portrait', 'a6-landscape'] as $papier) {
-        expect($pastilles)->not->toContain($papier)
-            ->and($dimensions)->toContain($papier);
+    // ⚠️⚠️ Quatre formats ne sont PLUS proposés - A6 papier, A7, carte générique :
+    // ce ne sont pas des porte-badges. Ils restent CONNUS, et il ne faut pas les
+    // effacer : `a6-portrait` est la taille de base de la page (un badge enregistré
+    // à ce format n'a donc aucune classe), et les trois autres sont portés par la
+    // classe d'un badge déjà enregistré. Les retirer du JS les rouvrirait à la
+    // mauvaise taille.
+    foreach (['a6-portrait', 'a6-landscape', 'a7-portrait', 'card-landscape'] as $retire) {
+        expect($pastilles)->not->toContain($retire)
+            ->and($dimensions)->toContain($retire);
     }
+
+    // ⚠️ Seuls les PORTE-BADGES sont proposés, et chacun doit avoir au moins un
+    // modèle de design - un format sans design ouvre un panneau vide.
+    expect($pastilles)->toBe(['a6-pochette', 'cr80', 'modele-106', 'modele-303', 'modele-304']);
+
+    preg_match_all('/data-tpl="[a-z-]+" data-formats="([^"]+)"/', $blade, $cartes);
+    $couverts = array_unique(explode(' ', implode(' ', $cartes[1])));
+    $sansDesign = array_values(array_diff($pastilles, $couverts));
+    expect($sansDesign)->toBe([], 'formats proposés sans modèle de design : '.implode(', ', $sansDesign));
 
     // ⚠️ `a6-portrait` est la taille de BASE de la page : elle n'a pas de classe.
     // ⚠️ On RELÈVE les fautifs au lieu de passer un message à `toContain()` : il

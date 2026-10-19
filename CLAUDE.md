@@ -4124,14 +4124,21 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
     2 × 100 = 200 mm, soit exactement la feuille moins ses marges. Une tolérance
     d'**1 px** (0,26 mm) évite qu'un arrondi coûte une colonne.
-  - ⚠️⚠️ **« PROPOSÉ » ET « CONNU » SONT DEUX CHOSES.** Les **A6 papier**
-    (`a6-portrait` 105 × 148, `a6-landscape` 148 × 105) ne sont **plus proposés** -
-    ce sont des formats de FEUILLE, pas des porte-badges - mais ils restent
+  - ⚠️⚠️ **« PROPOSÉ » ET « CONNU » SONT DEUX CHOSES.** **Quatre formats** -
+    `a6-portrait` (105 × 148), `a6-landscape` (148 × 105), `a7-portrait` (74 × 105)
+    et `card-landscape` (90 × 55) - ne sont **plus proposés** : ce sont des formats
+    de feuille ou de carte générique, pas des porte-badges. **Seuls les cinq
+    porte-badges sont offerts** (303, 304, 106, A6 porte-badge, CR80). Ils restent
     **déclarés dans `FORMAT_DIMENSIONS`**, et il ne faut pas les en retirer :
     `a6-portrait` est la **taille de BASE** de `.ed-page`, et un badge enregistré
-    avant ce retrait **n'a aucune classe de format** dans son `editor_state`. Les
-    effacer rouvrirait ces badges à la mauvaise taille, éléments débordant d'une
-    page plus petite - et un enregistrement depuis cet écran abîmerait le modèle.
+    à ce format **n'a aucune classe** dans son `editor_state` ; les trois autres
+    sont portés par la classe d'un badge déjà enregistré. Les effacer rouvrirait ces
+    badges à la mauvaise taille, éléments débordant d'une page plus petite - et un
+    enregistrement depuis cet écran abîmerait le modèle.
+    ⚠️ **Tout format proposé doit avoir au moins un modèle de design**
+    (`data-formats` des `.ed-tpl-card`), sinon le panneau « Modèles de design »
+    s'ouvre VIDE sur ce format - c'était le cas du CR80, qui n'avait pas la maquette
+    officielle alors qu'elle sait se composer en carte. Un cas le vérifie.
     ⚠️ Quand la page porte un format qu'on ne propose plus, `syncFormatControls()`
     ajoute une option **« … (ancien format) »** : sans elle, le menu afficherait un
     AUTRE format que celui de la page, donc mentirait sur ce qu'on modifie.
