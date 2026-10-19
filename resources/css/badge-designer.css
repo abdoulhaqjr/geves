@@ -333,6 +333,11 @@
     .ed-page.size-a7-portrait { width: 280px; height: 397px; }
     .ed-page.size-card-landscape { width: 340px; height: 208px; border-radius: 6px; }
     .ed-page.size-cr80 { width: 324px; height: 204px; border-radius: 6px; }
+    /* Porte-badges du marché : dimensions de SORTIE (96 dpi -> 1 px = 1/96 pouce). */
+    .ed-page.size-modele-303 { width: 333px; height: 472px; }  /* 88 × 125 mm */
+    .ed-page.size-modele-304 { width: 378px; height: 510px; }  /* 100 × 135 mm */
+    .ed-page.size-modele-106 { width: 246px; height: 359px; }  /* 65 × 95 mm */
+    .ed-page.size-a6-pochette { width: 408px; height: 586px; } /* 108 × 155 mm */
     .ed-page-bg {
       position: absolute; inset: 0; pointer-events: none;
       background: linear-gradient(180deg, #223ea4 0%, #223ea4 32%, #fff 32%, #fff 100%);

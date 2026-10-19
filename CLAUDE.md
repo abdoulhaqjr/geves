@@ -4050,23 +4050,39 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   `Pdf::loadView(...)->setPaper('a4','portrait')` + `BrandedPdf::stamp()` et le
   **téléchargent**. Les anciennes vues `documents/badges-template`, `documents/badges-all`
   et `documents/_badge-sheet` ont été **supprimées** : ne pas les recréer.
-  - **Tuilage A4 avec GOUTTIÈRES, calculé une seule fois** dans
-    **`App\Documents\BadgeSheet::plan($w, $h)`** (colonnes, lignes, échelle, cellule,
-    gouttière 5 mm, marge 6 mm, `perPage`). ⚠️ **Un A6 (105×148 mm) est EXACTEMENT le quart
-    d'une A4** : 2×2 A6 remplissent la feuille bord à bord, **zéro place pour un espace**.
-    Pour avoir des gouttières il FAUT donc **rétrécir le badge** - le modèle .docx de
-    référence a des badges plus petits que l'A6 plein, d'où ses marges. **A6 → 2×2 = 4 par
-    page, badge réduit d'environ 8 % (cellule 364×513).** ⚠️ Ne pas revenir à `gap:0` /
-    `margin:0` « pour cramer plus de badges » : le modèle veut l'espace.
-  - ⚠️⚠️ **LA RÉDUCTION RECALCULE LA MAQUETTE, elle n'applique PAS `transform: scale()`.**
-    **`BadgeSheet::scaleLayout()`** multiplie toute la géométrie (x, y, w, h, corps du
-    texte, côté du QR, rayon, filet, interlettrage) et rend le badge **dessiné à la taille
-    de sa cellule** ; la vue ne pose donc que des `float` et des tailles fixes, que dompdf
-    sait rendre. Un `transform` CSS aurait été le réflexe (c'est ce que faisait la version
-    HTML) : dompdf ne l'applique pas de façon fiable, et c'est **lui** qui produit le
-    document imprimé. ⚠️ **`leading` est un RAPPORT, pas une longueur** : le mettre à
-    l'échelle diviserait l'interligne. Tout nouvel attribut géométrique du concepteur doit
-    être ajouté à `scaleLayout()`, sinon il ne suit pas la réduction.
+  - ⚠️⚠️ **UN BADGE S'IMPRIME À SA TAILLE RÉELLE. ON NE LE RÉTRÉCIT PAS.** Ce sont
+    des **dimensions de SORTIE** : le badge entre dans une **pochette**, donc 88 mm
+    doivent faire 88 mm sur le papier. Notre travail est de les **DISPOSER** sur l'A4
+    en tenant compte de la **zone non imprimable** des imprimantes
+    (`BadgeSheet::MIN_MARGIN_MM` = **5 mm**). `BadgeSheet::plan()` calcule combien il
+    en tient, l'espace de coupe et l'origine **centrée** ; `scale` vaut **1.0**.
+    ⚠️ Le seul rétrécissement admis est un **filet de sécurité** : un format plus
+    grand que la feuille, qui sortirait rogné. `trueSize` dit lequel des deux cas.
+  - **Formats de porte-badges, et ce qu'ils donnent par feuille A4** (mesuré) :
+    **Modèle 303** 88 × 125 mm → **4/page** ; **Modèle 304** 100 × 135 mm →
+    **4/page** ; **Modèle 106** 65 × 95 mm → **9/page** ; **CR80** 85,6 × 54 mm →
+    **10/page** ; **A6 porte-badge** 108 × 155 mm → **1/page** (2 × 108 = 216 mm,
+    plus large que l'A4 : c'est physique, pas un défaut) ; **A6 papier**
+    105 × 148 mm → **1/page** (2 × 105 = 210 mm = la feuille entière, il ne reste
+    rien pour les marges). Ces formats sont des **pastilles du concepteur**
+    (`badge-designer.blade.php` + `.ed-page.size-*` dans `badge-designer.css`), et
+    **la planche suit ce que le modèle déclare** - c'est là qu'on change la taille.
+  - ⚠️ **Deux badges peuvent partager leur trait de coupe** (`BadgeSheet::axe()`) :
+    on essaie d'abord avec l'espace souhaité (5 mm), puis **sans**, parce que c'est
+    souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
+    2 × 100 = 200 mm, soit exactement la feuille moins ses marges. Une tolérance
+    d'**1 px** (0,26 mm) évite qu'un arrondi coûte une colonne.
+  - ⚠️ **`BadgeSheet::formatLabel()` est la source unique du nom d'un format**
+    (« Modèle 303 - 88 × 125 mm ») : le hub l'affiche avec le **nombre par page**,
+    pour qu'on voie tout de suite qu'un modèle mal dimensionné n'en sort qu'un.
+  - ⚠️⚠️ **LA RÉDUCTION, QUAND ELLE A LIEU, RECALCULE LA MAQUETTE** et n'applique
+    PAS `transform: scale()`. **`BadgeSheet::scaleLayout()`** multiplie toute la
+    géométrie (x, y, w, h, corps du texte, côté du QR, rayon, filet, interlettrage)
+    et rend le badge **dessiné** à la taille voulue. Un `transform` CSS aurait été le
+    réflexe : dompdf ne l'applique pas de façon fiable, et c'est **lui** qui produit
+    le document imprimé. ⚠️ **`leading` est un RAPPORT, pas une longueur** : le
+    mettre à l'échelle diviserait l'interligne. Tout nouvel attribut géométrique du
+    concepteur doit être ajouté à `scaleLayout()`.
   - ⚠️⚠️ **DEUX PIÈGES dompdf ONT FAIT DÉBORDER LA PLANCHE DE LA FEUILLE** (un badge
     coupé à droite, la moitié basse de la page vide). Les deux sont invisibles à la
     lecture du code et ne se voient qu'en RENDANT le PDF :
@@ -4095,9 +4111,9 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     du modèle qui l'explique**, pas le tuilage : le concepteur dessine en **A6
     portrait (397×560 px, rapport 0,709)** quand le cadre Word a un rapport de
     **0,748**. À rapport A6, 104 mm de large imposeraient 146,7 mm de haut, soit
-    293 mm pour deux rangées - plus de place pour les marges. **Pour des badges à
-    104 × 139 mm, c'est le FORMAT du modèle qu'il faut changer dans le concepteur** ;
-    la planche suit automatiquement, elle tuile ce que le modèle déclare.
+    293 mm pour deux rangées - plus de place pour les marges. **Le format se choisit dans le
+    concepteur** (pastilles Modèle 303 / 304 / 106 / A6 porte-badge / CR80) et la
+    planche suit : elle dispose à la taille réelle ce que le modèle déclare.
   - **Planche « tous les badges prêts »** (`admin.documents.badges.all`) : toutes les
     catégories ayant des destinataires, **groupées par format**, chaque format remplissant
     ses propres pages. ⚠️ **On ne mêle jamais deux formats sur une même feuille** (même
@@ -5438,6 +5454,16 @@ L'ancienne URL GET `/admin/editions/{event}` redirige vers
 `admin.evenements.edit` avec la capacité `editions_write`. Le même chemin en
 DELETE reste réservé à la suppression ; les nouveaux liens doivent utiliser
 la route nommée de modification.
+
+## Format des noms par événement
+
+Le formulaire général d'une édition enregistre `settings.name_order` : `first_last`
+(défaut historique) ou `last_first`. `App\Support\EventNameFormat` est la source
+commune de présentation pour les participants, utilisateurs et auteurs ayant des
+champs prénom/nom distincts. Les listes, le programme, les badges, le livre des
+résumés, les reçus et les nouveaux courriels/attestations utilisent cette règle.
+Les anciens auteurs ne possédant qu'un champ `name` conservent leur texte saisi.
+Les attestations déjà émises gardent leur `recipient_name` signé.
 
 ## Pages d'erreur HTTP
 

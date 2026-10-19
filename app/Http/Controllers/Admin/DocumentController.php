@@ -398,23 +398,19 @@ class DocumentController extends Controller
                     'cols' => (int) $plan['cols'],
                     'cellW' => (int) $plan['cellW'],
                     'cellH' => (int) $plan['cellH'],
-                    'gutter' => (int) $plan['gutter'],
-                    'sheetW' => (int) $plan['sheetW'],
-                    'sheetH' => (int) $plan['sheetH'],
-                    'marginPx' => (int) $plan['marginPx'],
+                    'gutterX' => (int) $plan['gutterX'],
+                    'gutterY' => (int) $plan['gutterY'],
+                    'originLeft' => (int) $plan['originLeft'],
+                    'originTop' => (int) $plan['originTop'],
                     'pageW' => (int) $plan['pageW'],
                     'pageH' => (int) $plan['pageH'],
-                    'offsetLeft' => (int) $plan['offsetLeft'],
-                    'offsetTop' => (int) $plan['offsetTop'],
                     'badges' => $page,
                 ];
             }
         }
 
-        $pdf = Pdf::loadView('pdf.badges-sheet', [
-            'sheets' => $sheets,
-            'marginMm' => (int) ($groups[0]['plan']['marginMm'] ?? 6),
-        ])->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('pdf.badges-sheet', ['sheets' => $sheets])
+            ->setPaper('a4', 'portrait');
 
         return BrandedPdf::stamp($pdf, 'Badges - '.$event->title)->download($filename);
     }

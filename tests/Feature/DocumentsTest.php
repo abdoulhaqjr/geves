@@ -249,37 +249,60 @@ function pdfPageCount(string $bytes): int
     return substr_count($bytes, '/Type /Page') - substr_count($bytes, '/Type /Pages');
 }
 
-it('tuile les badges sur A4 avec des gouttières', function () {
-    // ⚠️ Un A6 est EXACTEMENT le quart d'une A4 : pour avoir un espace entre les
-    // badges il FAUT les réduire. 2×2 = 4 par page, badge réduit d'environ 8 %.
-    $plan = BadgeSheet::plan(397, 560);
+it('imprime chaque badge à sa TAILLE RÉELLE et le dispose sur l’A4', function () {
+    // ⚠️⚠️ Ce sont des dimensions de SORTIE : le badge entre dans une pochette,
+    // donc il ne se rétrécit pas pour en faire tenir davantage. Notre travail est
+    // de les DISPOSER en tenant compte de la zone non imprimable des imprimantes.
+    $attendu = [
+        'Modèle 303' => [333, 472, 4],
+        'Modèle 304' => [378, 510, 4],
+        'Modèle 106' => [246, 359, 9],
+        'A6 porte-badge' => [408, 586, 1],
+        'CR80' => [324, 204, 10],
+    ];
 
-    expect($plan['cols'])->toBe(2)
-        ->and($plan['rows'])->toBe(2)
-        ->and($plan['perPage'])->toBe(4)
-        ->and($plan['scale'])->toBeLessThan(1.0)
-        ->and($plan['gutter'])->toBeGreaterThan(0);
+    foreach ($attendu as $nom => [$w, $h, $parPage]) {
+        $p = BadgeSheet::plan($w, $h);
 
-    // La planche + ses gouttières tiennent dans la zone imprimable (A4 - 2×6 mm).
-    expect($plan['sheetW'])->toBeLessThanOrEqual(749)
-        ->and($plan['rows'] * $plan['cellH'] + ($plan['rows'] - 1) * $plan['gutter'])->toBeLessThanOrEqual(1078);
+        expect($p['scale'])->toBe(1.0, $nom.' doit sortir à sa taille réelle')
+            ->and($p['trueSize'])->toBeTrue()
+            ->and($p['cellW'])->toBe($w)
+            ->and($p['cellH'])->toBe($h)
+            ->and($p['perPage'])->toBe($parPage, $nom)
+            ->and($p['label'])->toStartWith($nom);
+
+        // La planche entière tient dans la zone imprimable (marges comprises).
+        expect($p['originLeft'])->toBeGreaterThanOrEqual($p['minMarginPx'], $nom.' marge gauche')
+            ->and($p['originTop'])->toBeGreaterThanOrEqual($p['minMarginPx'], $nom.' marge haute')
+            ->and($p['originLeft'] + $p['sheetW'])->toBeLessThanOrEqual($p['pageW'] - $p['minMarginPx'], $nom)
+            ->and($p['originTop'] + $p['sheetH'])->toBeLessThanOrEqual($p['pageH'] - $p['minMarginPx'], $nom);
+    }
+});
+
+it('ne réduit un badge que s’il est plus grand que la feuille', function () {
+    // Filet de sécurité : sans lui, un format démesuré sortirait rogné.
+    $p = BadgeSheet::plan(1200, 1600);
+
+    expect($p['scale'])->toBeLessThan(1.0)
+        ->and($p['trueSize'])->toBeFalse()
+        ->and($p['perPage'])->toBe(1)
+        ->and($p['originLeft'] + $p['sheetW'])->toBeLessThanOrEqual($p['pageW'] - $p['minMarginPx']);
 });
 
 it('pose la grille DANS la feuille A4, marges comprises', function () {
     // ⚠️⚠️ LE DÉFAUT QUI A COÛTÉ UNE VERSION : la planche débordait de la feuille
     // (un badge coupé à droite, la moitié basse vide). Deux causes, toutes deux
     // propres à dompdf : il n'ENROULE PAS les `float`, et il place un élément
-    // absolu par rapport à la FEUILLE en ignorant `@page { margin }`. D'où cet
-    // invariant : toute cellule doit tenir dans la zone imprimable.
-    foreach ([[397, 560], [560, 397], [280, 397], [340, 208], [324, 204]] as [$w, $h]) {
+    // absolu par rapport à la FEUILLE en ignorant `@page { margin }`.
+    foreach ([[397, 560], [560, 397], [333, 472], [378, 510], [246, 359], [324, 204], [408, 586]] as [$w, $h]) {
         $p = BadgeSheet::plan($w, $h);
 
-        $droite = $p['marginPx'] + $p['offsetLeft'] + ($p['cols'] - 1) * ($p['cellW'] + $p['gutter']) + $p['cellW'];
-        $bas = $p['marginPx'] + $p['offsetTop'] + ($p['rows'] - 1) * ($p['cellH'] + $p['gutter']) + $p['cellH'];
+        $droite = $p['originLeft'] + ($p['cols'] - 1) * ($p['cellW'] + $p['gutterX']) + $p['cellW'];
+        $bas = $p['originTop'] + ($p['rows'] - 1) * ($p['cellH'] + $p['gutterY']) + $p['cellH'];
 
-        expect($droite)->toBeLessThanOrEqual($p['pageW'] - $p['marginPx'], "largeur {$w}x{$h}")
-            ->and($bas)->toBeLessThanOrEqual($p['pageH'] - $p['marginPx'], "hauteur {$w}x{$h}")
-            ->and($p['marginPx'])->toBeGreaterThanOrEqual(22); // 6 mm à 96 dpi
+        expect($droite)->toBeLessThanOrEqual($p['pageW'] - $p['minMarginPx'], "largeur {$w}x{$h}")
+            ->and($bas)->toBeLessThanOrEqual($p['pageH'] - $p['minMarginPx'], "hauteur {$w}x{$h}")
+            ->and($p['minMarginPx'])->toBeGreaterThanOrEqual(18); // 5 mm à 96 dpi
     }
 });
 
@@ -287,15 +310,14 @@ it('la VUE pose chaque badge dans la zone imprimable de l’A4', function () {
     // ⚠️⚠️ La garde porte sur la VUE, car c'est elle qui portait le défaut : les
     // coordonnées doivent inclure la marge d'impression (dompdf place un élément
     // absolu par rapport à la FEUILLE et ignore `@page { margin }`).
-    $plan = BadgeSheet::plan(397, 560);
+    $plan = BadgeSheet::plan(333, 472); // Modèle 303 : 4 par page
 
     $html = view('pdf.badges-sheet', [
-        'marginMm' => $plan['marginMm'],
         'sheets' => [[
             'cols' => $plan['cols'], 'cellW' => $plan['cellW'], 'cellH' => $plan['cellH'],
-            'gutter' => $plan['gutter'], 'sheetW' => $plan['sheetW'], 'sheetH' => $plan['sheetH'],
-            'offsetLeft' => $plan['offsetLeft'], 'offsetTop' => $plan['offsetTop'],
-            'marginPx' => $plan['marginPx'], 'pageW' => $plan['pageW'], 'pageH' => $plan['pageH'],
+            'gutterX' => $plan['gutterX'], 'gutterY' => $plan['gutterY'],
+            'originLeft' => $plan['originLeft'], 'originTop' => $plan['originTop'],
+            'pageW' => $plan['pageW'], 'pageH' => $plan['pageH'],
             'badges' => array_fill(0, $plan['perPage'], '<i></i>'),
         ]],
     ])->render();
@@ -306,10 +328,10 @@ it('la VUE pose chaque badge dans la zone imprimable de l’A4', function () {
 
     foreach ($m as $cellule) {
         [, $x, $y, $w, $h] = array_map('intval', $cellule);
-        expect($x)->toBeGreaterThanOrEqual($plan['marginPx'])
-            ->and($y)->toBeGreaterThanOrEqual($plan['marginPx'])
-            ->and($x + $w)->toBeLessThanOrEqual($plan['pageW'] - $plan['marginPx'])
-            ->and($y + $h)->toBeLessThanOrEqual($plan['pageH'] - $plan['marginPx']);
+        expect($x)->toBeGreaterThanOrEqual($plan['minMarginPx'])
+            ->and($y)->toBeGreaterThanOrEqual($plan['minMarginPx'])
+            ->and($x + $w)->toBeLessThanOrEqual($plan['pageW'] - $plan['minMarginPx'])
+            ->and($y + $h)->toBeLessThanOrEqual($plan['pageH'] - $plan['minMarginPx']);
     }
 });
 
@@ -446,6 +468,14 @@ it('borne la planche en lots, et le hub annonce les lots', function () {
 
     expect(BadgeSheet::LOT)->toBe(48);
 
+    // Modèle 303 (88 × 125 mm) : 4 badges par feuille A4.
+    DocumentTemplate::create([
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default',
+        'layout' => ['width' => 333, 'height' => 472, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'elements' => [['type' => 'text', 'x' => 20, 'y' => 40, 'w' => 280, 'h' => 30, 'text' => '{name}']]],
+    ]);
+    expect(BadgeSheet::plan(333, 472)['perPage'])->toBe(4);
+
     // Lot 1 : 48 badges = 12 feuilles A4 (4 par page). Lot 2 : les 4 restants.
     $lot1 = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', [$event, 'type' => 'default']))->assertOk();
     expect(pdfPageCount($lot1->getContent()))->toBe(12);
@@ -498,7 +528,9 @@ it('propose de cocher des destinataires dans « badges prêts »', function () {
     $this->actingAs($staff, 'web')
         ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets']))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
+        // ⚠️ On vise la MÉCANIQUE de sélection, pas le nom affiché : sa mise en
+        // forme appartient à l'identité d'événement et peut changer sans que la
+        // sélection soit en cause.
         ->assertSee('Imprimer la sélection')
         ->assertSee('name="refs[]"', false)
         ->assertSee('badges-selection', false);

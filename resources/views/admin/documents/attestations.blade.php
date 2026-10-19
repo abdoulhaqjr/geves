@@ -304,7 +304,7 @@
                                         @foreach ($badgeRows as $b)
                                             <tr @click="sel = '{{ $b['key'] }}'" :class="sel === '{{ $b['key'] }}' ? 'is-sel' : ''" style="cursor:pointer;" title="Voir l’aperçu de ce badge">
                                                 <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['type'] }} - {{ $b['sub'] }}</div></td>
-                                                <td>{{ $b['format'] }}</td>
+                                                <td>{{ $b['format'] }}<div style="font-size:12px;color:var(--ukc-muted);">{{ $b['perPage'] }} par page A4</div></td>
                                                 <td><a class="ukc-stat" @click.stop href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}" title="Choisir les destinataires à imprimer">{{ $b['count'] }}</a></td>
                                                 <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire dans cette catégorie pour cet événement.">Sans destinataire</span>@endif</td>
                                                 <td>
@@ -331,7 +331,8 @@
                                     </div>
                                     <div style="margin-top:12px;font-size:13px;"><strong>{{ $b['title'] }}</strong></div>
                                     <div style="font-size:12px;color:var(--ukc-muted);margin-top:4px;line-height:1.5;">
-                                        {{ $b['format'] }} - {{ $b['count'] }} destinataire(s)<br>
+                                        {{ $b['format'] }} - taille réelle<br>
+                                        {{ $b['perPage'] }} par page A4 - {{ $b['count'] }} destinataire(s)<br>
                                         {{ $b['qr'] ? 'Code QR de vérification' : 'Sans code QR' }}
                                     </div>
                                     <div class="ukc-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">

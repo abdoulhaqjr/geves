@@ -230,11 +230,17 @@
         <button type="button" class="chip" id="btnBg">Image de fond</button>
         <span class="label">Format :</span>
         <div class="ed-format-chips" role="group" aria-label="Format du badge">
+          {{-- ⚠️ Formats de PORTE-BADGES d'abord : ce sont des dimensions de SORTIE,
+               le badge s'imprime à cette taille pour entrer dans sa pochette. --}}
+          <button type="button" class="chip" data-size="modele-303" title="88 × 125 mm">Modèle 303</button>
+          <button type="button" class="chip" data-size="modele-304" title="100 × 135 mm">Modèle 304</button>
+          <button type="button" class="chip" data-size="modele-106" title="65 × 95 mm">Modèle 106</button>
+          <button type="button" class="chip" data-size="a6-pochette" title="108 × 155 mm">A6 porte-badge</button>
+          <button type="button" class="chip" data-size="cr80" title="85,6 × 54 mm">CR80</button>
           <button type="button" class="chip active" data-size="a6-portrait" title="105 × 148 mm">A6 Portrait</button>
           <button type="button" class="chip" data-size="a6-landscape" title="148 × 105 mm">A6 Paysage</button>
           <button type="button" class="chip" data-size="a7-portrait" title="74 × 105 mm">A7 Portrait</button>
           <button type="button" class="chip" data-size="card-landscape" title="90 × 55 mm">Carte 90×55</button>
-          <button type="button" class="chip" data-size="cr80" title="85,6 × 54 mm">CR80</button>
         </div>
         <select class="ed-format-select" id="badgeFormatSelect" aria-label="Format du badge">
           <option value="a6-portrait">A6 Portrait</option>

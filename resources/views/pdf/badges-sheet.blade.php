@@ -27,7 +27,7 @@
     @foreach ($sheets as $sheet)
         <div class="sheet @if ($loop->last) last @endif" style="width:{{ $sheet['pageW'] }}px;height:{{ $sheet['pageH'] - 2 }}px;">
             @foreach ($sheet['badges'] as $i => $badge)
-                <div class="cell" style="left:{{ $sheet['marginPx'] + $sheet['offsetLeft'] + ($i % $sheet['cols']) * ($sheet['cellW'] + $sheet['gutter']) }}px;top:{{ $sheet['marginPx'] + $sheet['offsetTop'] + intdiv($i, $sheet['cols']) * ($sheet['cellH'] + $sheet['gutter']) }}px;width:{{ $sheet['cellW'] }}px;height:{{ $sheet['cellH'] }}px;">{!! $badge !!}</div>
+                <div class="cell" style="left:{{ $sheet['originLeft'] + ($i % $sheet['cols']) * ($sheet['cellW'] + $sheet['gutterX']) }}px;top:{{ $sheet['originTop'] + intdiv($i, $sheet['cols']) * ($sheet['cellH'] + $sheet['gutterY']) }}px;width:{{ $sheet['cellW'] }}px;height:{{ $sheet['cellH'] }}px;">{!! $badge !!}</div>
             @endforeach
         </div>
     @endforeach

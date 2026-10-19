@@ -136,20 +136,13 @@ class DocumentHubController extends Controller
             foreach (BadgeCatalog::TYPES as $type => $meta) {
                 $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, $meta['title']);
                 $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
-                $dimensions = $layout['width'].'×'.$layout['height'];
                 $badgeRows[] = [
                     'key' => $type,
                     'type' => $meta['label'],
                     'title' => (string) $template->title,
                     'sub' => $meta['source'],
-                    'format' => match ($dimensions) {
-                        '397×560' => 'A6 Portrait',
-                        '560×397' => 'A6 Paysage',
-                        '280×397' => 'A7 Portrait',
-                        '340×208' => 'Carte 90 × 55 mm',
-                        '324×204' => 'CR80',
-                        default => $dimensions.' px',
-                    },
+                    'format' => BadgeSheet::formatLabel((int) $layout['width'], (int) $layout['height']),
+                    'perPage' => BadgeSheet::plan((int) $layout['width'], (int) $layout['height'])['perPage'],
                     'count' => BadgeCatalog::recipients($event, $type)->count(),
                     'qr' => collect($layout['elements'] ?? [])->contains(fn ($element) => ($element['type'] ?? null) === 'qr'),
                     // Vignette d'aperçu réelle du modèle (mêmes moteur et jetons que
