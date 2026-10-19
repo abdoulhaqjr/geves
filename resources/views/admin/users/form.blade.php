@@ -101,11 +101,6 @@
                      passe et les notes internes - alors qu'il décide de tout. --}}
                 <div class="ukc-card">
                     <h2>Niveau d’accès</h2>
-                    <div class="desc">
-                        Le seul rôle global du système. Tout le reste - gestionnaire, comité,
-                        secrétariat, accueil - se confie <strong>par colloque</strong> : l’administrateur
-                        crée l’événement et y nomme son gestionnaire, qui forme ensuite son équipe.
-                    </div>
                     <div class="uf-levels">
                         @foreach (\App\Models\User::accessLevels() as $key => $label)
                             <label class="uf-choice">
@@ -136,12 +131,12 @@
                          rien de cela - on y réglait des accès sans jamais voir
                          ceux dont le compte dispose. --}}
                     <div class="ukc-card">
-                        <h2>Accès aux colloques</h2>
+                        <h2>Accès aux événements</h2>
 
                         @if ($user->access_level === \App\Models\User::ACCESS_SUPER_ADMIN)
                             <div class="uf-note uf-note--all">
                                 <x-ukc.icon name="shield" :size="18" />
-                                <div><strong>Tous les colloques.</strong> Super administrateur : la plateforme entière, affectation ou pas.</div>
+                                <div><strong>Tous les événements.</strong> Super administrateur : la plateforme entière, affectation ou pas.</div>
                             </div>
                         @endif
 
@@ -159,7 +154,7 @@
                             @if ($user->access_level !== \App\Models\User::ACCESS_SUPER_ADMIN)
                                 <div class="uf-note uf-note--none">
                                     <x-ukc.icon name="info" :size="18" />
-                                    <div>Aucune affectation : ce compte n’ouvre <strong>aucun colloque</strong>. Ajoutez-le à l’équipe d’un événement pour lui confier une fonction.</div>
+                                    <div>Aucune affectation : ce compte n’ouvre <strong>aucun événement</strong>. Ajoutez-le à l’équipe d’un événement pour lui confier une fonction.</div>
                                 </div>
                             @endif
                         @endforelse

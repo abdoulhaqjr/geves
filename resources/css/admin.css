@@ -506,7 +506,11 @@
    règle de feuille, media query comprise : la fiche ne pouvait donc pas
    s'adapter en étroit, et deux blocs voisins ne pouvaient pas se ressembler
    autrement qu'en recopiant les mêmes déclarations. */
-.admin-user-form { max-width: 1120px; }
+/* ⚠️ Pas de `max-width` : la fiche prend TOUTE la largeur de son conteneur. Elle
+   était bridée, et sur un grand écran la page s'arrêtait au milieu en laissant
+   un tiers de vide à droite - la colonne latérale donnait l'impression d'être
+   posée au hasard. C'est la grille ci-dessous qui répartit, pas un plafond. */
+.admin-user-form { max-width: none; }
 
 /* ⚠️ Ce qui se MODIFIE à gauche, ce qui se CONSTATE et s'actionne à droite.
    Les actions du compte vivaient SOUS le bouton « Enregistrer » : après la fin

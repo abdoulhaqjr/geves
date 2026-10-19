@@ -120,7 +120,7 @@ class UserController extends Controller
      * répondait à une question que personne ne pose devant cet écran.
      *
      * ⚠️ **Le rôle global n'est mentionné QUE s'il y en a** : c'est ce qui rend
-     * visible, d'un coup d'œil, qu'« Administrateur colloque » est un rôle de
+     * visible, d'un coup d'œil, qu'« Administrateur de la plateforme » est un rôle de
      * plateforme et non une fonction d'événement.
      *
      * Assemblé ici et non dans le gabarit : un bloc `@php … @endphp` y casserait

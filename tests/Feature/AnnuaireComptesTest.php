@@ -116,7 +116,7 @@ it('sert l’annuaire des comptes à qui peut ouvrir la page Utilisateurs & rôl
     expect($annuaire)
         ->toContain('Nadia Gestionnaire')
         ->toContain($cible->email)
-        ->toContain('Administrateur de colloque')
+        ->toContain('Administrateur d’événements')
         ->toContain('RÉPARTITION DES COMPTES');
 });
 

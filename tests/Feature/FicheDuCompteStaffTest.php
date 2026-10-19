@@ -24,7 +24,7 @@ function ficheAdmin(): User
     return $admin;
 }
 
-it('montre les colloques où le compte travaille, et à quel titre', function () {
+it('montre les événements où le compte travaille, et à quel titre', function () {
     $admin = ficheAdmin();
     $event = openEdition();
     $u = User::factory()->create();
@@ -32,7 +32,7 @@ it('montre les colloques où le compte travaille, et à quel titre', function ()
 
     $this->actingAs($admin, 'web')->get(route('admin.users.edit', $u))
         ->assertOk()
-        ->assertSee('Accès aux colloques')
+        ->assertSee('Accès aux événements')
         ->assertSee($event->title)
         ->assertSee('Secrétariat')
         // Une affectation se confie depuis l'équipe de l'événement : la fiche
@@ -40,13 +40,13 @@ it('montre les colloques où le compte travaille, et à quel titre', function ()
         ->assertSee(route('admin.evenements.edit', ['event' => $event->id, 'tab' => 'team']));
 });
 
-it('dit qu’un compte sans affectation n’ouvre aucun colloque', function () {
+it('dit qu’un compte sans affectation n’ouvre aucun événement', function () {
     $admin = ficheAdmin();
     $u = User::factory()->create();
 
     $this->actingAs($admin, 'web')->get(route('admin.users.edit', $u))
         ->assertOk()
-        ->assertSee('aucun colloque');
+        ->assertSee('aucun événement');
 });
 
 it('annonce la plateforme entière pour un super administrateur', function () {
@@ -55,7 +55,37 @@ it('annonce la plateforme entière pour un super administrateur', function () {
 
     $this->actingAs($admin, 'web')->get(route('admin.users.edit', $u))
         ->assertOk()
-        ->assertSee('Tous les colloques.');
+        ->assertSee('Tous les événements.');
+});
+
+it('ne parle plus seulement de colloques', function () {
+    // ⚠️ GEVES gère aussi des SÉMINAIRES et des JOURNÉES SCIENTIFIQUES
+    // (`EventType`) : la fiche était rédigée comme si le colloque était le seul
+    // objet du système. Le mot reste légitime pour le TYPE et dans les
+    // identifiants (`colloque_admin`), nulle part ailleurs ici.
+    $admin = ficheAdmin();
+    $event = openEdition();
+    $admin->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+
+    $reponse = $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))->assertOk();
+
+    // ⚠️ On nomme les tournures, on ne balaie pas le mot : le TITRE d'un
+    // événement peut légitimement contenir « colloque » (c'est une donnée, et
+    // c'est même un type), tout comme l'identifiant `colloque_admin`.
+    foreach ([
+        'Accès aux colloques',
+        'aucun colloque',
+        'Tous les colloques',
+        'par colloque',
+        'Administrateur de colloque',
+        'du colloque',
+    ] as $tournure) {
+        $reponse->assertDontSee($tournure);
+    }
+
+    $reponse->assertSee('Accès aux événements')
+        ->assertSee('Administrateur d’événements')
+        ->assertSee('Gestionnaire de l’événement');
 });
 
 it('explique chaque niveau d’accès au lieu d’une liste déroulante', function () {

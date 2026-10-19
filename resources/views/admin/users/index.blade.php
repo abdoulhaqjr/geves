@@ -195,7 +195,7 @@
                             @endforeach
                         </div>
                     </div>
-                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code>, portée par le seul rôle <strong>Administrateur colloque</strong> - hors matrice, préservée automatiquement.</p>
+                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code>, portée par le seul rôle <strong>Administrateur de la plateforme</strong> - hors matrice, préservée automatiquement.</p>
                     <div class="ukc-form-actions" style="margin-top:14px;">
                         <button type="submit" class="ukc-btn ukc-btn--blue">
                             <x-ukc.icon name="check" :size="16" /> Enregistrer la matrice

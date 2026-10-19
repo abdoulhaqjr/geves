@@ -81,7 +81,7 @@ it('compte les personnes affectées sur des événements, pas les rôles globaux
 
 /**
  * ⚠️ Le rôle global n'est mentionné QUE s'il existe : c'est ce qui rend visible
- * qu'« Administrateur colloque » est un rôle de plateforme, pas une fonction
+ * qu'« Administrateur de la plateforme » est un rôle global, pas une fonction
  * d'événement.
  */
 it('ne mentionne le rôle global que lorsqu’il y en a un', function () {
@@ -91,7 +91,7 @@ it('ne mentionne le rôle global que lorsqu’il y en a un', function () {
 
     $bloc = ongletRoles();
 
-    expect(ligneRole($bloc, 'Gestionnaire du colloque'))
+    expect(ligneRole($bloc, 'Gestionnaire de l’événement'))
         ->toContain('1 personne sur 1 événement')
         ->toContain('1 rôle global');
 

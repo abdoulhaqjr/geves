@@ -59,11 +59,24 @@ qui paramètrent l'événement, forment l'équipe et montent le programme.
   l'annotation `string` faisait passer tout contrôle de nullité pour « toujours
   vrai » à l'analyse, qui invitait donc à retirer la garde qui tient ce cas.
 
+⚠️⚠️ **Et les libellés disaient « colloque ».** GEVES gère aussi des séminaires et
+des journées scientifiques : « Administrateur de colloque », « Gestionnaire du
+colloque », « Co-gestionnaire du colloque », « Administrateur colloque » et les
+descriptions de `StaffRoles` nommaient un seul des trois types. Ils disent
+désormais **événement** (et « Administrateur de la plateforme » pour le rôle
+global, qui n'administre pas un colloque). ⚠️ **Seuls les libellés changent** :
+`colloque_admin` et `manage_colloques` sont des identifiants en base. La fiche
+prend aussi **toute la largeur** de son conteneur - bridée, elle laissait un
+tiers de l'écran vide à droite - et le chapeau du bloc « Niveau d'accès » a été
+retiré : trois indices sous trois choix se passent d'un quatrième paragraphe.
+
 ⚠️ **Nommer un gestionnaire n'envoie aucun e-mail** : `attachTeamMember()` attache
 la ligne et redirige. La personne n'apprend sa nomination que si on la prévient à
 la main, alors que c'est elle qui doit prendre l'événement en charge. **À faire.**
 
-Gardes : `FicheDuCompteStaffTest` (11 cas, 3 sabotages vérifiés).
+Gardes : `FicheDuCompteStaffTest` (12 cas, 4 sabotages vérifiés), dont un qui
+nomme les tournures interdites (« Accès aux colloques », « aucun colloque »…) sans
+balayer le mot : le TITRE d'un événement peut légitimement le contenir.
 
 ### En-têtes de sécurité HTTP (2026-10-19)
 

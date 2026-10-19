@@ -804,6 +804,17 @@ plus (`User::accessLevels()`), sur la plateforme entière :
 relecteur sur un autre, rien du tout sur un troisième.** Gérer un événement n'élève
 personne au rang d'administrateur de la plateforme.
 
+⚠️⚠️ **LES LIBELLÉS DISENT « ÉVÉNEMENT », PAS « COLLOQUE »** (2026-10-19). GEVES gère
+aussi des **séminaires** et des **journées scientifiques** (`EventType`) : les rôles
+étaient pourtant nommés comme si le colloque était le seul objet du système.
+`colloque_admin` → **« Administrateur d'événements »**, `gerant` → **« Gestionnaire de
+l'événement »**, `co_gerant` → **« Co-gestionnaire de l'événement »**, `administrator` →
+**« Administrateur de la plateforme »** (il n'administre pas un colloque, il porte
+`manage_colloques`), et les descriptions de `StaffRoles` suivent. ⚠️ **Seuls les
+LIBELLÉS changent** : les clés (`colloque_admin`, `manage_colloques`) sont des
+identifiants enregistrés en base, et la convention ci-dessus les protège. Même règle que
+pour le site public, et pour la même raison.
+
 ⚠️ **Deux gardes de routes, une seule source de vérité.** `edition.cap:<capacité>` (16
 groupes) passe par `canOnEdition()` ; `can:<capacité>` (3 groupes : Réglages,
 Utilisateurs & rôles, Témoignages) passe par le Gate spatie. **Les deux doivent
@@ -867,16 +878,19 @@ une étiquette : les capacités d'une fonction ne sont lues que par `edition.cap
 - ⚠️ **Le NIVEAU D'ACCÈS a sa carte** : c'était un `<select>` entre « Nouveau mot de
   passe » et « Notes internes », sous une légende d'une ligne pour les trois choix
   confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Trois choix, chacun
-  disant ce qu'il ouvre (`User::accessLevelHints()`).
-- ⚠️ **La fiche montre l'ACCÈS RÉEL** : les affectations `event_user` du compte (colloque,
-  fonction, nombre de capacités, lien vers l'onglet Équipe de l'événement), en lecture
+  disant ce qu'il ouvre (`User::accessLevelHints()`). ⚠️ **Pas de chapeau au-dessus
+  d'eux** : la carte en portait un qui redisait le modèle (« le seul rôle global… »), et
+  trois indices sous trois choix se passent d'un quatrième paragraphe.
+- ⚠️ **La fiche montre l'ACCÈS RÉEL** : les affectations `event_user` du compte
+  (événement, fonction, nombre de capacités, lien vers l'onglet Équipe), en lecture
   seule. On y réglait des accès sans jamais voir ceux dont le compte dispose.
 - ⚠️ **DEUX COLONNES : ce qui se modifie à gauche, ce qui se constate et s'actionne à
   droite** (`.uf-grid`). Vérification d'adresse, mot de passe et suppression vivaient
   **sous le bouton « Enregistrer »**, après la fin apparente de la page : on les lisait
   comme une suite du formulaire. Elles ne peuvent pas y entrer - chacune a le sien, et
   deux formulaires ne s'imbriquent pas - d'où la colonne. Elle repasse **sous** le
-  formulaire en dessous de 1040px.
+  formulaire en dessous de 1040px. ⚠️ **Et la fiche n'a PAS de `max-width`** : bridée,
+  elle laissait un tiers de l'écran vide à droite sur un grand moniteur.
 - ⚠️⚠️ **`destroy()` gardait la porte, `update()` laissait la fenêtre ouverte.** La
   suppression interdit depuis toujours d'effacer son propre compte et le dernier
   administrateur ; l'enregistrement de la fiche ne vérifiait **rien**, alors qu'il mène au

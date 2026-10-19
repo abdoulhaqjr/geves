@@ -127,7 +127,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     {
         return [
             self::ACCESS_SUPER_ADMIN => 'Super administrateur',
-            self::ACCESS_COLLOQUE_ADMIN => 'Administrateur de colloque',
+            // ⚠️ La CLÉ reste `colloque_admin` (identifiant, enregistré tel quel
+            // en base) ; seul le LIBELLÉ suit le vocabulaire du projet. GEVES ne
+            // gère plus que des colloques : séminaires et journées scientifiques
+            // relèvent du même niveau d'accès.
+            self::ACCESS_COLLOQUE_ADMIN => 'Administrateur d’événements',
             self::ACCESS_USER => 'Utilisateur',
         ];
     }
@@ -145,9 +149,9 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public static function accessLevelHints(): array
     {
         return [
-            self::ACCESS_SUPER_ADMIN => 'Toute la plateforme : tous les colloques, les comptes, les rôles et les réglages. À réserver.',
-            self::ACCESS_COLLOQUE_ADMIN => 'Crée et gère ses propres colloques, et y nomme l’équipe. N’atteint ni les comptes ni les réglages de la plateforme.',
-            self::ACCESS_USER => 'Aucun accès global : n’ouvre que les colloques où le compte est affecté, et seulement ce que sa fonction y permet. C’est le niveau de l’immense majorité.',
+            self::ACCESS_SUPER_ADMIN => 'Toute la plateforme : tous les événements, les comptes et les réglages. À réserver.',
+            self::ACCESS_COLLOQUE_ADMIN => 'Crée ses propres événements et y nomme le gestionnaire. N’atteint ni les comptes ni les réglages de la plateforme.',
+            self::ACCESS_USER => 'Aucun accès global : n’ouvre que les événements où le compte est affecté, et seulement ce que sa fonction y permet. C’est le niveau de l’immense majorité.',
         ];
     }
 

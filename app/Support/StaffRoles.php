@@ -41,7 +41,7 @@ class StaffRoles
      */
     public const ROLES = [
         'administrator' => [
-            'label' => 'Administrateur colloque',
+            'label' => 'Administrateur de la plateforme',
             'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Admin',
             'description' => 'Accès complet : événements, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
@@ -51,18 +51,18 @@ class StaffRoles
             ],
         ],
         'gerant' => [
-            'label' => 'Gestionnaire du colloque',
+            'label' => 'Gestionnaire de l’événement',
             'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Gestion.',
-            'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
+            'description' => 'Responsable d’un événement : accès complet à CET événement (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project', 'announcements', 'claims',
             ],
         ],
         'co_gerant' => [
-            'label' => 'Co-gestionnaire du colloque',
+            'label' => 'Co-gestionnaire de l’événement',
             'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Co-gest.',
-            'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
+            'description' => 'Co-responsable d’un événement : mêmes accès que le gestionnaire sur CET événement.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project', 'announcements', 'claims',
@@ -77,13 +77,13 @@ class StaffRoles
         'comite_supervision' => [
             'label' => 'Comité de supervision',
             'category' => 'Organisation', 'pill' => 'info', 'abbr' => 'Comité sup.',
-            'description' => 'Supervision du colloque : vue d’ensemble et suivi (soumissions, participants, paiements), sans décision ni modification.',
+            'description' => 'Supervision de l’événement : vue d’ensemble et suivi (soumissions, participants, paiements), sans décision ni modification.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments'],
         ],
         'comite_organisation' => [
             'label' => 'Comité d’organisation',
             'category' => 'Appui', 'pill' => 'warn', 'abbr' => 'Comité org.',
-            'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme du colloque.',
+            'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme de l’événement.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
         ],
         'reviewer' => [
@@ -159,7 +159,7 @@ class StaffRoles
 
     /**
      * Fonctions assignables à une équipe d'événement (staff ↔ événement). On exclut :
-     *  - `administrator` : capacité globale (transverse à tous les colloques) ;
+     *  - `administrator` : capacité globale (transverse à tous les événements) ;
      *  - `reviewer` : l’évaluation scientifique passe par le Participant évaluateur
      *    (par événement, portail à jeton) - pas par un rôle staff global.
      *
