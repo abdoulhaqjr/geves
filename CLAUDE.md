@@ -3369,6 +3369,25 @@ ajoutée par la vue, elle ne se saisit pas.
   offerts d'office** - ils restent dans `Attestation::TYPES` (données existantes) mais ne
   sont ni créés (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans
   `$typeMeta` sans demande.
+  - ⚠️ **LES MENUS SE DRESSENT SUR `$typeMeta`, PAS SUR `Attestation::TYPES`.** Les
+    deux listes déroulantes de la page les prenaient encore de la constante, donc elles
+    proposaient toujours « Soumission » et « Acceptation » : on pouvait créer un modèle
+    d'un type que rien n'émet plus, et filtrer les délivrées sur deux types qui n'y
+    figurent jamais. `$offerts = array_intersect_key(Attestation::TYPES, $typeMeta)` est
+    la liste proposée - l'ordre et les libellés courts restent ceux de la constante.
+  - ⚠️ **MAIS LE FILTRE PORTE SUR CE QUI EXISTE** : `filterTypes` ajoute aux types
+    offerts ceux **réellement délivrés sur cet événement**, sinon une attestation
+    « soumission » déjà en base deviendrait introuvable. ⚠️ Il se lit sur **toutes**
+    les attestations, pas sur le décompte `byType` qui écarte les révoquées - un type
+    dont tout est révoqué doit rester filtrable. Un type retiré ne revient donc jamais
+    dans le menu de **création**, seulement dans celui du **filtre**, et seulement s'il
+    a servi.
+  - ⚠️ **`TemplateDesignerController::SCOPES` doit couvrir chaque type offert** : la
+    portée s'affiche en lecture seule à la création d'un modèle, et `instruction_resumes`
+    y manquait - il retombait sur « Participant », c'est-à-dire sur une portée fausse.
+    Les clés retirées y restent : un ancien modèle s'ouvre encore dans le concepteur.
+  Garde : `DocumentsTest` (« ne propose que les types d'attestation offerts… »,
+  3 sabotages vérifiés).
 - **Attestations adossées à l'ÉQUIPE** (`event_user`), rapprochées vers les `Participant` par
   `user_id` via **`DocumentHubController::teamRoleTargets($event, $include, $exclude)`** :
   `$include` → doit porter au moins un de ces rôles ; `$exclude` → n'en porte aucun

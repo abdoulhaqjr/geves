@@ -20,7 +20,7 @@
     <input type="hidden" name="stab" value="delivrees">
     <select name="type">
         <option value="">Tous les types</option>
-        @foreach ($types as $key => $label)<option value="{{ $key }}" @selected($type === $key)>{{ $label }}</option>@endforeach
+        @foreach ($filterTypes as $key => $label)<option value="{{ $key }}" @selected($type === $key)>{{ $label }}</option>@endforeach
     </select>
     <select name="state">
         <option value="">Tous les états</option>

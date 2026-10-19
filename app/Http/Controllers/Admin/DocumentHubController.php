@@ -74,6 +74,13 @@ class DocumentHubController extends Controller
             'formation_animation' => ['title' => 'Attestation d’animation', 'sub' => 'Formateurs', 'scope' => 'Par formation'],
         ];
 
+        // ⚠️ LA LISTE PROPOSÉE EST CELLE DE $typeMeta, PAS `Attestation::TYPES`.
+        // Cette dernière porte aussi « soumission » et « acceptation », qui ne sont
+        // plus offerts d'office : ils restent définis pour les données existantes,
+        // mais les menus les proposaient encore - à la création d'un modèle comme
+        // au filtre des attestations délivrées. L'ordre reste celui d'`Attestation`.
+        $offerts = array_intersect_key(Attestation::TYPES, $typeMeta);
+
         $rows = [];
         if ($event) {
             $formationCounts = $this->formationTargetCounts($event);
@@ -188,14 +195,14 @@ class DocumentHubController extends Controller
             'events' => $this->accessibleEditions($request, 'documents'),
             'event' => $event,
             'event_id' => $event ? (string) $event->id : '',
-            'types' => Attestation::TYPES,
+            'types' => $offerts,
             'attestations' => $attestations,
             'rows' => $rows,
             'counts' => $counts,
             'badgeReadyCount' => $badgeReadyCount,
             'tab' => $tab,
             'stab' => $stab,
-            ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event) : []),
+            ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event, $offerts) : []),
             ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $event) : []),
             // ⚠️ La page qui ÉMET doit dire ce que l'émission déclenche : en ligne,
             // chaque attestation part par e-mail ; sur papier, rien ne part.
@@ -655,9 +662,10 @@ class DocumentHubController extends Controller
      * Données du sous-onglet « Attestations délivrées » (liste filtrable, triable
      * et paginée). Servi par la page Documents pour que l'onglet ait une URL.
      *
+     * @param  array<string, string>  $offerts  types proposés aujourd'hui
      * @return array<string, mixed>
      */
-    private function issuedList(Request $request, ?Event $event): array
+    private function issuedList(Request $request, ?Event $event, array $offerts = []): array
     {
         // ⚠️ Les filtres viennent d'AttestationQuery, partagés avec les exports :
         // on imprime ce qu'on regarde. Deux constructions de requête finiraient
@@ -694,9 +702,21 @@ class DocumentHubController extends Controller
                 ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
         ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'delivered' => 0, 'pending' => 0, 'byType' => collect()];
 
+        // ⚠️ LE FILTRE PORTE SUR CE QUI EXISTE : aux types proposés aujourd'hui
+        // s'ajoutent ceux qui ont réellement été délivrés sur cet événement. Sans
+        // cela, des attestations déjà en base (« soumission », « acceptation »)
+        // deviendraient introuvables ; avec, un type retiré ne reparait que s'il a
+        // vraiment servi. ⚠️ On lit TOUTES les attestations, pas le décompte
+        // `byType` qui écarte les révoquées : un type dont tout est révoqué reste
+        // filtrable, sinon la liste se filtrerait sur un type absent du menu.
+        $presents = $event
+            ? Attestation::where('event_id', $event->id)->distinct()->pluck('type')->all()
+            : [];
+
         return [
             'issued' => $issued,
             'issuedStats' => $stats,
+            'filterTypes' => array_intersect_key(Attestation::TYPES, $offerts + array_flip($presents)),
             'type' => $type,
             'state' => $state,
             'delivery' => $delivery,

@@ -126,6 +126,7 @@ class TemplateDesignerController extends Controller
         'rapporteur' => 'Par session',
         'organisation' => 'Équipe d’organisation',
         'comite_organisation' => 'Comité d’organisation',
+        'instruction_resumes' => 'Une par évaluateur',
         'formation' => 'Par formation',
         'formation_animation' => 'Par formation',
     ];

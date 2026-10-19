@@ -674,6 +674,42 @@ it('filtre les attestations délivrées par nom, e-mail et date d’émission', 
         ->assertOk()->assertSee('Kofi Mensah')->assertDontSee('Awa Kodjo');
 });
 
+it('ne propose que les types d’attestation offerts, et garde ceux déjà délivrés', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    $base = ['event_id' => $event->id, 'tab' => 'attestations'];
+
+    // « soumission » et « acceptation » restent dans Attestation::TYPES pour les
+    // données existantes, mais ne sont plus offerts : ni à la création d'un
+    // modèle, ni au filtre des délivrées.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'modeles']))
+        ->assertOk()
+        ->assertDontSee('<option value="soumission"', false)
+        ->assertDontSee('<option value="acceptation"', false)
+        ->assertSee('<option value="instruction_resumes"', false);
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'delivrees']))
+        ->assertOk()
+        ->assertDontSee('<option value="soumission"', false)
+        ->assertSee('<option value="participation"', false);
+
+    // ⚠️ Mais une attestation déjà délivrée sous un type retiré doit rester
+    // filtrable - même révoquée, sinon elle devient introuvable.
+    Attestation::create([
+        'event_id' => $event->id, 'type' => 'soumission', 'uuid' => 'uuid-ancienne',
+        'recipient_name' => 'Awa Kodjo', 'revoked' => true, 'issued_at' => now()->subYear(),
+    ]);
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'delivrees']))
+        ->assertOk()
+        ->assertSee('<option value="soumission"', false)
+        // Le type retiré ne revient PAS dans le menu de création pour autant.
+        ->assertDontSee('<option value="acceptation"', false);
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'modeles']))
+        ->assertOk()->assertDontSee('<option value="soumission"', false);
+});
+
 it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () {
     $staff = adminStaff();
     $event = openEdition();
