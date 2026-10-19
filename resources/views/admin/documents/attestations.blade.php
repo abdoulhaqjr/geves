@@ -311,11 +311,11 @@
                                         <div style="position:absolute;top:0;left:0;width:{{ $b['w'] }}px;height:{{ $b['h'] }}px;transform:scale({{ round(260 / $b['w'], 4) }});transform-origin:top left;">{!! $b['preview'] !!}</div>
                                     </div>
                                     <div style="margin-top:12px;font-size:13px;"><strong>{{ $b['title'] }}</strong></div>
-                                    <div class="ukc-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+                                    <div class="ukc-actions" style="margin-top:12px;flex-wrap:nowrap;justify-content:flex-start;gap:8px;">
                                         @if ($b['count'] > 0)
-                                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}"><x-ukc.icon name="users" :size="16" /> Choisir qui imprimer</a>
+                                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}"><x-ukc.icon name="users" :size="16" /> Imprimer</a>
                                         @endif
-                                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="16" /> Modifier le modèle</a>
+                                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="16" /> Modifier</a>
                                     </div>
                                 </div>
                             @endforeach
