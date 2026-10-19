@@ -980,6 +980,12 @@
     'a6-portrait': 'A6 Portrait', 'a6-landscape': 'A6 Paysage',
     'a7-portrait': 'A7 Portrait', 'card-landscape': 'Carte 90×55'
   };
+  /* ⚠️⚠️ `a6-portrait` et `a6-landscape` ne sont PLUS PROPOSÉS (ce sont des formats
+     de PAPIER, pas des porte-badges), mais ils restent CONNUS : `a6-portrait` est la
+     taille de BASE de la page, et un badge enregistré avant ce retrait n'a aucune
+     classe de format - le retirer d'ici rouvrirait ces badges à la mauvaise taille,
+     avec leurs éléments débordant d'une page plus petite. Les retirer du menu
+     suffit ; les effacer d'ici abîmerait l'existant. */
   // ⚠️ DÉDUITES des formats déclarés, jamais recopiées : quatre listes devaient
   // rester d'accord (pastilles, menu déroulant, dimensions, libellés), et c'est le
   // menu déroulant qui a fini par ignorer les formats ajoutés.
@@ -1000,7 +1006,17 @@
     document.querySelectorAll('[data-size]').forEach(function (button) {
       button.classList.toggle('active', button.dataset.size === size);
     });
-    document.getElementById('badgeFormatSelect').value = size;
+    // ⚠️ Un badge enregistré peut porter un format qu'on ne propose plus (A6 papier) :
+    // sans cette option de circonstance, le menu afficherait un AUTRE format que
+    // celui de la page - il mentirait sur ce qu'on est en train de modifier.
+    var select = document.getElementById('badgeFormatSelect');
+    if (!Array.prototype.some.call(select.options, function (o) { return o.value === size; })) {
+      var ancien = document.createElement('option');
+      ancien.value = size;
+      ancien.textContent = (FORMAT_LABELS[size] || size) + ' (ancien format)';
+      select.insertBefore(ancien, select.firstChild);
+    }
+    select.value = size;
     document.getElementById('badgeDesignFormat').textContent = 'Designs pour ' + FORMAT_LABELS[size];
     document.querySelectorAll('.ed-tpl-card').forEach(function (card) {
       card.hidden = !card.dataset.formats.split(' ').includes(size);

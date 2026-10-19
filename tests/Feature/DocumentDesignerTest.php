@@ -447,11 +447,25 @@ it('déclare les formats de badge au MÊME endroit partout', function () {
     $libelles = $cles($lab[1] ?? '', "/'([a-z0-9-]+)':/");
 
     expect($menu)->toBe($pastilles, 'le menu déroulant doit proposer les mêmes formats que les pastilles')
-        ->and($dimensions)->toBe($pastilles, 'chaque format doit avoir ses dimensions')
-        ->and($libelles)->toBe($pastilles, 'chaque format doit avoir son libellé');
+        ->and($libelles)->toBe($dimensions, 'chaque format connu doit avoir son libellé');
+
+    // ⚠️ « PROPOSÉ » et « CONNU » sont deux choses. Tout format proposé doit être
+    // connu du JS (c'est le défaut d'origine : un menu qui offrait des formats que
+    // le script ignorait), mais l'inverse est faux - voir les A6 papier ci-dessous.
+    $inconnus = array_values(array_diff($pastilles, $dimensions));
+    expect($inconnus)->toBe([], 'formats proposés mais inconnus du concepteur : '.implode(', ', $inconnus));
 
     // Les formats du marché doivent être là, à leur taille réelle (96 dpi).
     expect($pastilles)->toContain('modele-303', 'modele-304', 'modele-106', 'a6-pochette', 'cr80');
+
+    // ⚠️⚠️ Les A6 PAPIER ne sont PLUS proposés (ce sont des formats de feuille, pas
+    // des porte-badges) mais restent CONNUS : `a6-portrait` est la taille de base de
+    // la page, et un badge enregistré avant ce retrait n'a aucune classe de format.
+    // Les effacer du JS rouvrirait ces badges à la mauvaise taille.
+    foreach (['a6-portrait', 'a6-landscape'] as $papier) {
+        expect($pastilles)->not->toContain($papier)
+            ->and($dimensions)->toContain($papier);
+    }
 
     // ⚠️ `a6-portrait` est la taille de BASE de la page : elle n'a pas de classe.
     // ⚠️ On RELÈVE les fautifs au lieu de passer un message à `toContain()` : il

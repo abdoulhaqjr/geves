@@ -284,6 +284,11 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
 
 ### Kit Tailwise (back-office & espace participant)
 
+Les en-têtes des layouts admin et participant restent visibles au défilement :
+`.ukc-admin-head` (enfant direct de `.ukc-main`, dans `tailwise.css`) et
+`.ukc-topbar` (dans `ukc.css`) sont collés en haut. Ne pas appliquer cette règle
+aux en-têtes internes des formulaires.
+
 Le **back-office admin ET l'espace participant** sont habillés avec le kit dashboard
 **Tailwise** (bundle ThemeForest acheté, dans `Downloads/…/Tailwise Bundle`). ⚠️ On
 **n'utilise pas** la chaîne d'outils Tailwind v3 du kit : Tailwise est adopté comme
@@ -4112,6 +4117,19 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
     2 × 100 = 200 mm, soit exactement la feuille moins ses marges. Une tolérance
     d'**1 px** (0,26 mm) évite qu'un arrondi coûte une colonne.
+  - ⚠️⚠️ **« PROPOSÉ » ET « CONNU » SONT DEUX CHOSES.** Les **A6 papier**
+    (`a6-portrait` 105 × 148, `a6-landscape` 148 × 105) ne sont **plus proposés** -
+    ce sont des formats de FEUILLE, pas des porte-badges - mais ils restent
+    **déclarés dans `FORMAT_DIMENSIONS`**, et il ne faut pas les en retirer :
+    `a6-portrait` est la **taille de BASE** de `.ed-page`, et un badge enregistré
+    avant ce retrait **n'a aucune classe de format** dans son `editor_state`. Les
+    effacer rouvrirait ces badges à la mauvaise taille, éléments débordant d'une
+    page plus petite - et un enregistrement depuis cet écran abîmerait le modèle.
+    ⚠️ Quand la page porte un format qu'on ne propose plus, `syncFormatControls()`
+    ajoute une option **« … (ancien format) »** : sans elle, le menu afficherait un
+    AUTRE format que celui de la page, donc mentirait sur ce qu'on modifie.
+    Garde : `DocumentDesignerTest` exige que tout format **proposé** soit **connu**,
+    et que les deux A6 papier soient **connus sans être proposés** (sabotage vérifié).
   - ⚠️⚠️ **UN FORMAT SE DÉCLARE À UN SEUL ENDROIT : `FORMAT_DIMENSIONS` +
     `FORMAT_LABELS` (`badge-designer.js`).** Les classes à retirer (`SIZE_CLASSES`)
     et la détection du format courant s'en **déduisent**. Il y avait QUATRE listes à
