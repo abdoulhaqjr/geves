@@ -141,11 +141,6 @@
                     <option value="{{ $s->id }}">{{ $s->atelier?->title ? $s->atelier->title.' - ' : '' }}{{ $s->label }}</option>
                 @endforeach
             </select>
-            <p class="ukc-hint" x-show="slotSeance(form.session_id)" x-cloak>
-                Jour, salle et heure sont ceux de la séance.
-                <span x-show="slotChoix(form.session_id, form.submission_id).axes.length"
-                      x-text="'Axes : ' + slotChoix(form.session_id, form.submission_id).axes.join(', ') + '.'"></span>
-            </p>
         </div>
         <div class="ukc-form-grid">
             <div class="ukc-form-row">
@@ -157,8 +152,6 @@
                 <label>Heure début</label>
                 <input type="time" name="slStart" x-model="form.start"
                        :min="slotFenetre(form.session_id).min" :max="slotFenetre(form.session_id).max">
-                <p class="ukc-hint" x-show="slotFenetre(form.session_id).min" x-cloak
-                   x-text="'Entre ' + slotFenetre(form.session_id).min + ' et ' + ((slotSeance(form.session_id) || {}).end || '-') + '.'"></p>
             </div>
         </div>
         <div class="ukc-form-row">
@@ -170,12 +163,10 @@
             <label>Communication (optionnel)</label>
             <select name="submission_id" x-model="form.submission_id">
                 <option value="">- Créneau libre -</option>
-                <template x-for="c in slotChoix(form.session_id, form.submission_id).options" :key="c.id">
+                <template x-for="c in slotChoix(form.session_id, form.submission_id)" :key="c.id">
                     <option :value="c.id" x-text="c.label + (c.horsAxe ? ' (hors axe)' : '')"></option>
                 </template>
             </select>
-            <p class="ukc-hint" x-show="slotChoix(form.session_id, form.submission_id).masquees" x-cloak
-               x-text="slotChoix(form.session_id, form.submission_id).masquees + ' communication(s) non proposée(s) : déjà placées sur un créneau, ou hors des axes de la séance.'"></p>
         </div>
         <div class="ukc-form-row"><label>Intitulé libre (si pas de communication)</label><input type="text" name="slTitle" x-model="form.title" placeholder="Ex. Pause-café"></div>
     </form>

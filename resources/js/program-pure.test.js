@@ -128,38 +128,30 @@ describe('ce que la séance impose au formulaire', () => {
 
 describe('les communications qu’on peut encore placer', () => {
   it('écarte celles qui sont déjà sur un créneau et celles d’un autre axe', () => {
-    const r = communicationsChoisissables(meta, '7', '');
-    expect(r.options.map((o) => o.id)).toEqual(['1']);
     // AA-002 est déjà placée, AA-003 est hors des axes, AA-004 n'a pas d'axe.
-    expect(r.masquees).toBe(3);
-    expect(r.axes).toEqual(['Santé', 'Sport']);
+    expect(communicationsChoisissables(meta, '7', '').map((o) => o.id)).toEqual(['1']);
   });
 
   it('offre toutes les communications libres quand la séance n’a pas d’axes', () => {
     // Une plénière ne porte pas d'atelier : filtrer sur un axe vide ne laisserait
     // rien à choisir, et le formulaire paraîtrait cassé.
-    const r = communicationsChoisissables(meta, '8', '');
-    expect(r.options.map((o) => o.id)).toEqual(['1', '3', '4']);
-    expect(r.masquees).toBe(1);
+    expect(communicationsChoisissables(meta, '8', '').map((o) => o.id)).toEqual(['1', '3', '4']);
   });
 
   it('garde le choix courant même déjà placé : c’est le créneau qu’on modifie', () => {
-    const r = communicationsChoisissables(meta, '7', '2');
-    expect(r.options.map((o) => o.id)).toEqual(['1', '2']);
+    expect(communicationsChoisissables(meta, '7', '2').map((o) => o.id)).toEqual(['1', '2']);
   });
 
   it('garde le choix courant hors axe, et le marque', () => {
     // On vient du vivier « Assigner » : la communication est choisie d'abord, la
     // séance ensuite. La faire disparaître effacerait l'intention en silence.
-    const r = communicationsChoisissables(meta, '7', '3');
-    expect(r.options.map((o) => [o.id, o.horsAxe])).toEqual([
+    expect(communicationsChoisissables(meta, '7', '3').map((o) => [o.id, o.horsAxe])).toEqual([
       ['1', false],
       ['3', true],
     ]);
   });
 
   it('ne filtre rien sans séance', () => {
-    const r = communicationsChoisissables(meta, '', '');
-    expect(r.options.map((o) => o.id)).toEqual(['1', '3', '4']);
+    expect(communicationsChoisissables(meta, '', '').map((o) => o.id)).toEqual(['1', '3', '4']);
   });
 });

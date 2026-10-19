@@ -4202,8 +4202,14 @@ lecture/édition-session (le placement des communications reste en Jour).
   - **Le formulaire propose** (`resources/js/program-pure.js`, règles pures couvertes
     par `program-pure.test.js` ; composant Alpine `ukcSlotForm` ; données servies par
     `ProgramController::slotFormMeta()`) : jour et salle remplis **en lecture seule**,
-    `min`/`max` sur l'heure, liste des communications restreinte, et un indice qui dit
-    combien sont masquées et pourquoi.
+    `min`/`max` sur l'heure, liste des communications restreinte.
+    - ⚠️ **Aucune légende sous les champs** : les trois qui expliquaient la déduction,
+      la fenêtre horaire et le nombre de communications écartées ont été **retirées**
+      à la demande de l'équipe - le panneau en portait plus que de champs. Ce sont
+      les champs eux-mêmes qui disent la règle (lecture seule, bornes du sélecteur
+      d'heure, liste courte). ⚠️ Revers assumé : une liste **vide** - toutes les
+      acceptées déjà placées - ne s'explique plus. Ne pas les réintroduire sans le
+      demander.
   - ⚠️ **Le serveur décide** (`ProgramController::slotFrame()`, appelé par `storeSlot`
     **et** `updateSlot`) : un champ en lecture seule se retire en deux clics. Le jour et
     la salle viennent de la séance dès qu'elle en porte, et une heure hors fenêtre est

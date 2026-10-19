@@ -101,7 +101,12 @@ export function cadreDeLaSeance(meta, form) {
  * séance ensuite) : il est alors marqué, jamais supprimé en silence. Hors axe
  * n'est d'ailleurs pas interdit - l'affectation automatique s'y replie elle aussi.
  *
- * @returns {{options: Array<{id: string, label: string, horsAxe: boolean}>, masquees: number, axes: Array<string>}}
+ * ⚠️ Rend la LISTE, rien d'autre. Elle a porté le nombre d'écartées et les axes
+ * de la séance, pour une légende posée sous le champ ; la légende retirée, ces
+ * deux valeurs n'avaient plus de lecteur - et une sortie que personne ne lit se
+ * périme sans qu'on s'en aperçoive.
+ *
+ * @returns {Array<{id: string, label: string, horsAxe: boolean}>}
  */
 export function communicationsChoisissables(meta, sessionId, choisie) {
   const s = seanceDe(meta, sessionId);
@@ -110,17 +115,14 @@ export function communicationsChoisissables(meta, sessionId, choisie) {
   const toutes = (meta && Array.isArray(meta.submissions) && meta.submissions) || [];
 
   const options = [];
-  let masquees = 0;
   toutes.forEach((c) => {
     const estCourante = c.id === courante && courante !== '';
     const horsAxe = axes.length > 0 && !axes.includes(c.track);
     if (!estCourante && (c.slot || horsAxe)) {
-      masquees++;
-
       return;
     }
     options.push({ id: c.id, label: c.label, horsAxe: horsAxe });
   });
 
-  return { options: options, masquees: masquees, axes: axes };
+  return options;
 }
