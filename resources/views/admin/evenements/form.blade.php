@@ -253,8 +253,8 @@
                             <div class="ukc-form-row" style="margin-top:12px;max-width:460px;">
                                 <label for="name_order">Format du nom des participants</label>
                                 <select id="name_order" name="name_order" x-model="f.name_order">
-                                    <option value="first_last">Prénom(s) + NOM — Awa KODJO</option>
-                                    <option value="last_first">NOM + Prénom(s) — KODJO Awa</option>
+                                    <option value="first_last">Prénom(s) + NOM - Awa KODJO</option>
+                                    <option value="last_first">NOM + Prénom(s) - KODJO Awa</option>
                                 </select>
                                 <p class="ukc-hint">Utilisé dans les listes, le programme, les badges, le livre des résumés, les nouveaux reçus, attestations et courriels de cet événement.</p>
                                 @error('name_order') <span class="error">{{ $message }}</span> @enderror

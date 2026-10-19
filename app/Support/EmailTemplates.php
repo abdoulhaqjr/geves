@@ -207,7 +207,12 @@ class EmailTemplates
         $tpl = self::raw('submission_'.$statusKey);
 
         $context = [
-            'prenom' => (string) ($submission->authors[0]['first_name'] ?? $submission->participant?->first_name ?? self::firstName($submission->correspondingAuthorName())),
+            // ⚠️ `data_get` pour le participant : l'analyse tient la relation pour
+            // non-nulle et refuse le nullsafe à gauche d'un `??`. Elle l'est
+            // pourtant - une soumission peut n'avoir aucune fiche rattachée.
+            'prenom' => (string) ($submission->authors[0]['first_name']
+                ?? data_get($submission, 'participant.first_name')
+                ?? self::firstName($submission->correspondingAuthorName())),
             'nom_complet' => (string) ($submission->correspondingAuthorName() ?? ''),
             'ref' => (string) $submission->ref_code,
             'titre' => (string) $submission->title,
