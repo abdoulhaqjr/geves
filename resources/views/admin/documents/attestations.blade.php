@@ -276,25 +276,6 @@
                         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="grid" :size="20" /></div><div class="lbl">Avec QR</div><div class="val">{{ $badgeStats['qr'] }}</div></div>
                     </div>
 
-                    <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--ukc-border);border-radius:10px;background:#f7f9fc;margin-bottom:14px;">
-                        <span style="color:var(--ukc-blue);flex:none;margin-top:1px;"><x-ukc.icon name="info" :size="18" /></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);line-height:1.5;">Un modèle par catégorie : le badge <strong>participant</strong> se débloque après paiement ; les badges de <strong>fonction</strong> suivent les affectations de l’événement. Choisissez une ligne pour voir son aperçu.</span>
-                    </div>
-
-                    <div class="ukc-toolbar" style="justify-content:flex-end;">
-                        @if ($badgeStats['recipients'] > 0)
-                            @if ($badgeStats['lots'] > 1)
-                                @include('admin.documents._badge-lots', ['lots' => $badgeStats['lots'], 'total' => $badgeStats['recipients'], 'routeName' => 'admin.documents.badges.all', 'params' => ['event' => $event->id]])
-                            @else
-                                <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges.all', ['event' => $event]) }}">
-                                    <x-ukc.icon name="download" :size="16" /> Imprimer tous les badges prêts ({{ $badgeStats['recipients'] }})
-                                </a>
-                            @endif
-                        @else
-                            <span style="font-size:12.5px;color:var(--ukc-muted);">Aucun badge prêt : les planches s’activent dès qu’une catégorie a des destinataires.</span>
-                        @endif
-                    </div>
-
                     <div class="badge-studio">
                         <div class="badge-studio__list">
                             <div class="ukc-table-wrap">
@@ -330,18 +311,8 @@
                                         <div style="position:absolute;top:0;left:0;width:{{ $b['w'] }}px;height:{{ $b['h'] }}px;transform:scale({{ round(260 / $b['w'], 4) }});transform-origin:top left;">{!! $b['preview'] !!}</div>
                                     </div>
                                     <div style="margin-top:12px;font-size:13px;"><strong>{{ $b['title'] }}</strong></div>
-                                    <div style="font-size:12px;color:var(--ukc-muted);margin-top:4px;line-height:1.5;">
-                                        {{ $b['format'] }} - taille réelle<br>
-                                        {{ $b['perPage'] }} par page A4 - {{ $b['count'] }} destinataire(s)<br>
-                                        {{ $b['qr'] ? 'Code QR de vérification' : 'Sans code QR' }}
-                                    </div>
                                     <div class="ukc-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
                                         @if ($b['count'] > 0)
-                                            @if ($b['lots'] > 1)
-                                                @include('admin.documents._badge-lots', ['lots' => $b['lots'], 'total' => $b['count'], 'routeName' => 'admin.documents.badges', 'params' => ['event' => $event->id, 'type' => $b['key']]])
-                                            @else
-                                                <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.badges', ['event' => $event, 'type' => $b['key']]) }}"><x-ukc.icon name="download" :size="16" /> Imprimer (PDF)</a>
-                                            @endif
                                             <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets', 'btype' => $b['key']]) }}"><x-ukc.icon name="users" :size="16" /> Choisir qui imprimer</a>
                                         @endif
                                         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge', 'type' => $b['key']]) }}"><x-ukc.icon name="pen" :size="16" /> Modifier le modèle</a>
