@@ -777,7 +777,10 @@
     groups = {};
     selected = null;
     hideFloatBar();
-    page.classList.remove('size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80', 'bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons', 'bg-co-line');
+    // ⚠️ Classes de format DÉDUITES (SIZE_CLASSES), jamais recopiées : une liste
+    // de plus à tenir d'accord, c'est un format oublié de plus.
+    SIZE_CLASSES.forEach(function (c) { page.classList.remove(c); });
+    page.classList.remove('bg-green', 'bg-split', 'bg-soft', 'bg-none', 'bg-co', 'bg-co-icons', 'bg-co-line');
     document.getElementById('pageBg').style.backgroundImage = '';
     document.getElementById('pageBg').style.background = '';
     page.style.width = ''; page.style.height = '';
@@ -816,43 +819,49 @@
       /* Badge participant par défaut (A6 portrait 397×560).
          ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). */
       co: function () {
-        var chip = document.querySelector('[data-size="a6-portrait"]');
+        // ⚠️ Modèle 303 (333 × 472 px = 88 × 125 mm) : la MÊME maquette que
+        // LayoutSanitizer::defaultBadge(). Toucher à l'un, c'est toucher à l'autre.
+        page.classList.add('size-modele-303');
+        var chip = document.querySelector('[data-size="modele-303"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
         // Les filets verts restent dans le cadre, tandis que le séparateur sombre
         // du pied est un calque horizontal indépendant.
-        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 24, y: 150, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
-        styled({ label: 'Nom', x: 20, y: 232, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 20, y: 276, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 40, y: 322, w: 317, h: 80, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.svg' });
-        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.svg' });
-        styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
+        imgEl({ label: 'Logo UK', x: 29, y: 45, w: 122, h: 34, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 171, y: 45, w: 133, h: 34, src: '/img/attestations/logo-parakou.png' });
+        styled({ label: 'Événement', x: 20, y: 126, w: 293, h: 45, text: '[edition.name]', size: 13, weight: 700, color: '#2e3440', lh: 1.25 });
+        styled({ label: 'Nom', x: 17, y: 196, w: 299, h: 34, text: '[recipient.name]', size: 18, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 17, y: 233, w: 299, h: 20, text: '[recipient.role]', size: 13, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 34, y: 271, w: 266, h: 67, text: '[edition.theme]', size: 9, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        barEl({ label: 'Séparateur', x: 91, y: 351, w: 152, h: 3, color: '#2e3440' });
+        imgEl({ label: 'Icône localisation', x: 59, y: 366, w: 20, h: 20, src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: 59, y: 398, w: 20, h: 20, src: '/img/badges/icon-calendar.svg' });
+        styled({ label: 'Lieu', x: 82, y: 369, w: 159, text: '[edition.location]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 82, y: 401, w: 159, text: '[edition.dates]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 247, y: 369, w: 65, qrUrl: DEFAULT_QR_URL });
       },
       /* Variante avec photo du même badge. Elle se choisit dans le designer
          et s'enregistre sur le modèle de la catégorie courante. */
       'co-photo': function () {
-        var chip = document.querySelector('[data-size="a6-portrait"]');
+        // ⚠️ Modèle 303 (333 × 472 px = 88 × 125 mm) : la MÊME maquette que
+        // LayoutSanitizer::defaultBadge(). Toucher à l'un, c'est toucher à l'autre.
+        page.classList.add('size-modele-303');
+        var chip = document.querySelector('[data-size="modele-303"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
-        imgEl({ label: 'Logo UK', x: 34, y: 53, w: 146, h: 40, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 204, y: 53, w: 158, h: 40, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 24, y: 108, w: 349, h: 54, text: '[edition.name]', size: 15, weight: 700, color: '#2e3440', lh: 1.25 });
-        createEl({ type: 'photo', label: 'Photo', x: 149, y: 156, w: 100 });
-        styled({ label: 'Nom', x: 20, y: 272, w: 357, h: 40, text: '[recipient.name]', size: 22, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 20, y: 316, w: 357, h: 24, text: '[recipient.role]', size: 15, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 40, y: 350, w: 317, h: 70, text: '[edition.theme]', size: 10, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        barEl({ label: 'Séparateur', x: 108, y: 417, w: 181, h: 4, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 70, y: 434, w: 24, h: 24, src: '/img/badges/icon-location.svg' });
-        imgEl({ label: 'Icône calendrier', x: 70, y: 472, w: 24, h: 24, src: '/img/badges/icon-calendar.svg' });
-        styled({ label: 'Lieu', x: 98, y: 438, w: 190, text: '[edition.location]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 98, y: 476, w: 190, text: '[edition.dates]', size: 12, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 295, y: 438, w: 78, qrUrl: DEFAULT_QR_URL });
+        imgEl({ label: 'Logo UK', x: 29, y: 45, w: 122, h: 34, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: 171, y: 45, w: 133, h: 34, src: '/img/attestations/logo-parakou.png' });
+        styled({ label: 'Événement', x: 20, y: 91, w: 293, h: 45, text: '[edition.name]', size: 13, weight: 700, color: '#2e3440', lh: 1.25 });
+        createEl({ type: 'photo', label: 'Photo', x: 125, y: 131, w: 84 });
+        styled({ label: 'Nom', x: 17, y: 229, w: 299, h: 34, text: '[recipient.name]', size: 18, weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: 17, y: 266, w: 299, h: 20, text: '[recipient.role]', size: 13, weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: 34, y: 295, w: 266, h: 59, text: '[edition.theme]', size: 9, weight: 700, color: '#111111', lh: 1.3, upper: true });
+        barEl({ label: 'Séparateur', x: 91, y: 351, w: 152, h: 3, color: '#2e3440' });
+        imgEl({ label: 'Icône localisation', x: 59, y: 366, w: 20, h: 20, src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: 59, y: 398, w: 20, h: 20, src: '/img/badges/icon-calendar.svg' });
+        styled({ label: 'Lieu', x: 82, y: 369, w: 159, text: '[edition.location]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: 82, y: 401, w: 159, text: '[edition.dates]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: 247, y: 369, w: 65, qrUrl: DEFAULT_QR_URL });
       },
       /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
@@ -1793,7 +1802,11 @@
   buildVariantThumbs();
   history = []; historyIndex = -1;
 
-  /* Une catégorie a un seul modèle ; la photo est un choix de design. */
+  /* Une catégorie a un seul modèle ; la photo est un choix de design.
+     ⚠️ On pose d'abord le format du modèle officiel : `loadTemplate` dessine à la
+     taille native puis REVIENT au format courant, donc partir de l'A6 aurait
+     agrandi la maquette 303 au lieu de la laisser à sa taille. */
+  applyFormat('modele-303', false);
   loadTemplate('co');
 
   /* ---------- Hydratation depuis le badge enregistré ---------- */

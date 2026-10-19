@@ -1,5 +1,6 @@
 <?php
 
+use App\Documents\BadgeSheet;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 
@@ -15,8 +16,17 @@ it('a un badge par défaut calqué sur le comité d’organisation', function ()
     $layout = LayoutSanitizer::default('badge');
 
     // A6 portrait + cadre décoratif vert/bleu en image de fond.
-    expect($layout['width'])->toBe(397);
-    expect($layout['height'])->toBe(560);
+    // ⚠️⚠️ Le badge par défaut est au format MODÈLE 303 (88 × 125 mm), la taille
+    // d'un porte-badge du commerce : c'est une dimension de SORTIE, et l'A4 en
+    // reçoit 4. L'A6 papier (397 × 560) n'en laissait imprimer qu'UN par page,
+    // 2 × 105 mm faisant la largeur entière de la feuille.
+    expect($layout['width'])->toBe(333);
+    expect($layout['height'])->toBe(472);
+
+    $plan = BadgeSheet::plan($layout['width'], $layout['height']);
+    expect($plan['label'])->toStartWith('Modèle 303')
+        ->and($plan['trueSize'])->toBeTrue()
+        ->and($plan['perPage'])->toBe(4);
     expect($layout['bg_image'])->toBe('/img/badges/badge-default-bg.png');
 
     // Jetons de la palette du concepteur ([espace.cle]), pas la forme plate.
@@ -58,8 +68,8 @@ it('a un modèle « Participant avec photo » : même maquette + une photo entre
     $photo = LayoutSanitizer::default('badge', 'participant_photo');
 
     // Même cadre, même taille que le badge participant.
-    expect($photo['width'])->toBe(397);
-    expect($photo['height'])->toBe(560);
+    expect($photo['width'])->toBe(333);
+    expect($photo['height'])->toBe(472);
     expect($photo['bg_image'])->toBe($base['bg_image']);
 
     // Un (et un seul) élément photo, rond, rempli par recipient.photo au rendu.

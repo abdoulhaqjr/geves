@@ -198,6 +198,13 @@ class LayoutSanitizer
      * (les mêmes assets que les attestations) en éléments, puis nom, rôle, thème,
      * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
      * décrit la MÊME maquette.
+     *
+     * ⚠️⚠️ **Dessiné au format MODÈLE 303 : 333 × 472 px, soit 88 × 125 mm à 96 dpi.**
+     * C'est la taille d'un porte-badge du commerce, donc une **dimension de SORTIE** :
+     * le badge s'imprime à cette taille pour entrer dans sa pochette, et l'A4 en reçoit
+     * **4 par feuille**. L'A6 papier (397 × 560) a été abandonné comme défaut : 2 × 105 mm
+     * font la largeur entière d'une A4, il ne restait rien pour les marges d'imprimante -
+     * on n'en imprimait donc qu'UN par page.
      */
     protected static function defaultBadge(bool $withPhoto = false): array
     {
@@ -215,18 +222,18 @@ class LayoutSanitizer
         // s'intercale entre l'événement et le nom, et nom/rôle/thème DESCENDENT pour lui
         // faire la place. La photo (élément `photo`) se remplit avec `recipient.photo`
         // (profil), sinon les initiales. Le concepteur (`co-photo`) décrit la MÊME maquette.
-        $eventY = $withPhoto ? 108 : 150;
-        $nameY = $withPhoto ? 272 : 232;
-        $roleY = $withPhoto ? 316 : 276;
-        $themeY = $withPhoto ? 350 : 322;
-        $themeH = $withPhoto ? 70 : 80;
+        $eventY = $withPhoto ? 91 : 126;
+        $nameY = $withPhoto ? 229 : 196;
+        $roleY = $withPhoto ? 266 : 233;
+        $themeY = $withPhoto ? 295 : 271;
+        $themeH = $withPhoto ? 59 : 67;
 
         $photo = $withPhoto
-            ? [['type' => 'photo', 'x' => 149, 'y' => 156, 'w' => 100, 'h' => 100]]
+            ? [['type' => 'photo', 'x' => 125, 'y' => 131, 'w' => 84, 'h' => 84]]
             : [];
 
         return [
-            'width' => 397, 'height' => 560, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'width' => 333, 'height' => 472, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
             'erase_default_rule' => true,
             'elements' => array_merge([
@@ -241,24 +248,24 @@ class LayoutSanitizer
                 // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h40), côte à
                 // côte et centrées sur le badge, la largeur suivant le format propre de
                 // chaque logo ; espacement resserré pour donner de la longueur aux filets.
-                ['type' => 'image', 'x' => 34, 'y' => 53, 'w' => 146, 'h' => 40, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 204, 'y' => 53, 'w' => 158, 'h' => 40, 'src' => '/img/attestations/logo-parakou.png'],
+                ['type' => 'image', 'x' => 29, 'y' => 45, 'w' => 122, 'h' => 34, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 171, 'y' => 45, 'w' => 133, 'h' => 34, 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
-                $t(['x' => 24, 'y' => $eventY, 'w' => 349, 'h' => 54, 'text' => '[edition.name]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 20, 'y' => $eventY, 'w' => 293, 'h' => 45, 'text' => '[edition.name]', 'size' => 13, 'weight' => 700, 'align' => 'center']),
             ], $photo, [
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
-                $t(['x' => 20, 'y' => $nameY, 'w' => 357, 'h' => 40, 'text' => '[recipient.name]', 'size' => 22, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
-                $t(['x' => 20, 'y' => $roleY, 'w' => 357, 'h' => 24, 'text' => '[recipient.role]', 'size' => 15, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => 17, 'y' => $nameY, 'w' => 299, 'h' => 34, 'text' => '[recipient.name]', 'size' => 18, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => 17, 'y' => $roleY, 'w' => 299, 'h' => 20, 'text' => '[recipient.role]', 'size' => 13, 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
-                $t(['x' => 40, 'y' => $themeY, 'w' => 317, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 10, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
-                ['type' => 'rect', 'shape' => 'line-h', 'x' => 108, 'y' => 417, 'w' => 181, 'h' => 4, 'color' => $dark, 'radius' => 2],
+                $t(['x' => 34, 'y' => $themeY, 'w' => 266, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 9, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => 91, 'y' => 351, 'w' => 152, 'h' => 3, 'color' => $dark, 'radius' => 2],
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
-                ['type' => 'image', 'x' => 70, 'y' => 434, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
-                ['type' => 'image', 'x' => 70, 'y' => 472, 'w' => 24, 'h' => 24, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => 59, 'y' => 366, 'w' => 20, 'h' => 20, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => 59, 'y' => 398, 'w' => 20, 'h' => 20, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
                 // Lieu et dates.
-                $t(['x' => 98, 'y' => 438, 'w' => 190, 'h' => 22, 'text' => '[edition.location]', 'size' => 12]),
-                $t(['x' => 98, 'y' => 476, 'w' => 190, 'h' => 22, 'text' => '[edition.dates]', 'size' => 12]),
-                ['type' => 'qr', 'x' => 295, 'y' => 438, 'size' => 78, 'value' => '{verify_url}'],
+                $t(['x' => 82, 'y' => 369, 'w' => 159, 'h' => 19, 'text' => '[edition.location]', 'size' => 10]),
+                $t(['x' => 82, 'y' => 401, 'w' => 159, 'h' => 19, 'text' => '[edition.dates]', 'size' => 10]),
+                ['type' => 'qr', 'x' => 247, 'y' => 369, 'size' => 65, 'value' => '{verify_url}'],
             ]),
         ];
     }

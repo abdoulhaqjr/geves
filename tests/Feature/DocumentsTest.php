@@ -457,7 +457,7 @@ it('la planche PDF utilise le modèle enregistré', function () {
     expect(pdfPageCount($res->getContent()))->toBe(2);
 });
 
-it('borne la planche en lots, et le hub annonce les lots', function () {
+it('borne la planche en lots, et « badges prêts » annonce les lots', function () {
     $staff = adminStaff();
     $event = openEdition();
     // ⚠️ Un lot BORNÉ : environ 2,5 Mo de mémoire par badge, et le rendu tombait
@@ -466,17 +466,11 @@ it('borne la planche en lots, et le hub annonce les lots', function () {
         participantRegle($event, 'P'.$i, 'Nom'.$i, 'p'.$i.'@example.tg');
     }
 
-    expect(BadgeSheet::LOT)->toBe(48);
+    // Le badge par défaut est au modèle 303 : 4 par feuille A4.
+    expect(BadgeSheet::LOT)->toBe(48)
+        ->and(BadgeSheet::plan(333, 472)['perPage'])->toBe(4);
 
-    // Modèle 303 (88 × 125 mm) : 4 badges par feuille A4.
-    DocumentTemplate::create([
-        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default',
-        'layout' => ['width' => 333, 'height' => 472, 'bg' => '#ffffff', 'accent' => '#223ea4',
-            'elements' => [['type' => 'text', 'x' => 20, 'y' => 40, 'w' => 280, 'h' => 30, 'text' => '{name}']]],
-    ]);
-    expect(BadgeSheet::plan(333, 472)['perPage'])->toBe(4);
-
-    // Lot 1 : 48 badges = 12 feuilles A4 (4 par page). Lot 2 : les 4 restants.
+    // Lot 1 : 48 badges = 12 feuilles A4. Lot 2 : les 4 restants.
     $lot1 = $this->actingAs($staff, 'web')->get(route('admin.documents.badges', [$event, 'type' => 'default']))->assertOk();
     expect(pdfPageCount($lot1->getContent()))->toBe(12);
 
@@ -484,9 +478,10 @@ it('borne la planche en lots, et le hub annonce les lots', function () {
     expect(pdfPageCount($lot2->getContent()))->toBe(1)
         ->and($lot2->headers->get('content-disposition'))->toContain('badges-default-lot2.pdf');
 
-    // ⚠️ Les cacher laisserait croire que « Imprimer » sort tout le monde.
+    // ⚠️ Les lots s'annoncent là où l'on imprime - l'onglet « Badges prêts » -,
+    // sinon on ne pourrait jamais atteindre le lot 2.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'prets']))
         ->assertOk()
         ->assertSee('Lot 1/2')
         ->assertSee('Lot 2/2');
@@ -506,9 +501,9 @@ it('le studio badges montre les KPI et l’aperçu SUR LA PAGE', function () {
         // L'aperçu est rendu sur la page, à côté de la liste.
         ->assertSee('badge-studio__preview', false)
         ->assertSee('Aperçu du modèle')
-        // Action groupée dès qu'une catégorie a des destinataires.
-        ->assertSee('Imprimer tous les badges prêts')
-        ->assertSee('badges-tous', false);
+        // Le format imprimé et le nombre par feuille se lisent dans la table.
+        ->assertSee('Modèle 303')
+        ->assertSee('par page A4');
 
     // ⚠️ Trois colonnes retirées : la vignette n'apprenait rien, et le libellé
     // porte déjà le type. Ne pas les réintroduire. (On vise l'en-tête EXACT du
@@ -923,7 +918,7 @@ it('sert chaque onglet principal de Documents par son URL (?tab=)', function () 
     // ⚠️ Plus de bouton « Nouveau modèle de badge » : il n'y a qu'UN modèle par
     // catégorie, provisionné d'office. On vise ce que l'onglet dit vraiment.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
-        ->assertOk()->assertSee('Un modèle par catégorie');
+        ->assertOk()->assertSee('Aperçu du modèle');
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre']))
         ->assertOk()->assertSee('Livre des résumés');

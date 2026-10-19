@@ -104,8 +104,8 @@ it('la génération assainie reste une mise en page de badge valide', function (
     $layout = app(GenerateDocumentLayout::class)->handle('badge', 'default', 'Peu importe');
 
     // Sortie vide -> retombe sur la maquette officielle du badge (A6 portrait, cadre).
-    expect($layout['width'])->toBe(397)
-        ->and($layout['height'])->toBe(560)
+    expect($layout['width'])->toBe(333)
+        ->and($layout['height'])->toBe(472)
         ->and($layout['bg_image'])->toBe('/img/badges/badge-default-bg.png')
         ->and($layout['elements'])->not->toBeEmpty();
 });

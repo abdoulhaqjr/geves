@@ -3895,8 +3895,18 @@ ajoutée par la vue, elle ne se saisit pas.
 
 **`LayoutSanitizer::defaultBadge()`** rend un badge **de participation**, calqué sur la
 maquette du badge du comité d'organisation (docx d'origine
-`Badges/CO/conception_initiale.docx`), adapté en badge **par personne** : **A6 portrait
-(397×560)**, cadre décoratif **vert/bleu** (coins diagonaux, filet d'en-tête, séparateur,
+`Badges/CO/conception_initiale.docx`), adapté en badge **par personne**.
+
+⚠️⚠️ **Il est dessiné au format MODÈLE 303 : 333 × 472 px, soit 88 × 125 mm à 96 dpi** -
+la taille d'un porte-badge du commerce, donc une **dimension de SORTIE** : le badge
+s'imprime à cette taille pour entrer dans sa pochette, et l'A4 en reçoit **4**.
+⚠️ **L'A6 papier (397 × 560) a été abandonné comme défaut** : 2 × 105 mm font la largeur
+entière d'une A4, il ne restait rien pour les marges d'imprimante - on n'en imprimait
+donc qu'**UN par page**. ⚠️ **Un modèle DÉJÀ ENREGISTRÉ garde sa taille** (`ensureFor()`
+ne recrée que si `layout` est vide) : pour qu'un événement existant passe au 303, il faut
+**supprimer son modèle** dans Documents, qui se recrée depuis le nouveau défaut.
+
+Le badge porte un cadre décoratif **vert/bleu** (coins diagonaux, filet d'en-tête, séparateur,
 pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
 `public/img/badges/badge-default-bg.png` ; puis **nom** (grand, bleu `#253c98`), **rôle**,
 **thème** (capitales), **lieu**, **dates**, et un **QR** (`{ref}`).
