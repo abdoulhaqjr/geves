@@ -3928,6 +3928,19 @@ photo, pictogrammes) et les corps de texte suivent le PLUS PETIT rapport** - sin
 cesse d'être carré et le texte déborde. Par feuille A4 : **303 → 4**, **304 → 4**,
 **106 → 9**, **A6 porte-badge (108 × 155) → 1**, **CR80 → 10**.
 
+⚠️⚠️ **LE FILET VERT DE DROITE DE LA CARTE EST UN ÉLÉMENT, PAS LE CADRE.** Sur le
+portrait, les deux filets verts sont **cuits dans `badge-default-bg.png`** et il ne
+faut pas les repasser en `rect` (ils laisseraient un jour à gauche). Mais le cadre
+s'étire en `100% 100%` : sur un format **PAYSAGE**, mesuré, celui de droite se réduit
+à un **moignon de 13 px collé au bord**, à cent vingt pixels du logo de Parakou - il
+ne relie plus rien. `badgeCarte()` le **prolonge** donc par un `rect` `#00be62` qui
+part après le logo et **va jusqu'au bord** (`$w`) : il mord sur le cadre, s'y soude,
+et **recouvre le moignon** - sinon on lirait deux traits parallèles. ⚠️ Même vert
+`#00be62` que le contour, **jamais** le `#009933` de la charte. Les **logos de la
+carte sont plus grands** que ceux du portrait rapportés à sa largeur, et **à la même
+hauteur** l'un que l'autre, comme sur l'attestation. Garde :
+`BadgeDefaultTemplateTest` (« soude le filet vert… », 3 sabotages vérifiés).
+
 ⚠️⚠️ **LE CR80 EST EN PAYSAGE (85,6 × 54 mm) ET A SA PROPRE MAQUETTE** :
 `badgeCarte()`, pas `badgePortrait()`. La pile verticale - logos, événement, nom,
 rôle, thème, pied - n'y tient pas ; la carte met les logos en tête, le texte dans la
@@ -3936,8 +3949,8 @@ c'est voulu** : cent caractères descendraient sous 2 mm de haut sur une carte d
 crédit - on afficherait de l'illisible pour faire nombre. Ne pas l'y remettre. Le
 choix se fait sur `$w > $h`, donc tout futur format paysage suit la carte.
 ⚠️ **L'A6 porte-badge n'entre qu'UNE fois par A4 en portrait** (2 × 108 = 216 mm,
-plus large que la feuille). En **A4 paysage** il en tiendrait **deux** : la planche
-ne sait pas encore tourner la feuille, c'est la piste si ce format est très utilisé. ⚠️ Le **303 sort exactement** comme la version écrite à la main avant cette
+plus large que la feuille) : la planche **tourne alors la feuille** et en pose deux
+en paysage (cf. « LA FEUILLE SE TOURNE… »). ⚠️ Le **303 sort exactement** comme la version écrite à la main avant cette
 composition : c'est la référence, et `BadgeDefaultTemplateTest` la gèle.
 ⚠️ **Le jumeau du concepteur compose à l'identique** (`T.officiel(format, withPhoto)` dans
 `badge-designer.js`, appelé par `co` / `co-photo` avec le format cible) : choisir un

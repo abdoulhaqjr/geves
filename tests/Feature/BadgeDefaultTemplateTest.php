@@ -227,6 +227,41 @@ it('compose le CR80 en CARTE, sans le thème', function () {
     expect($sansTheme)->toBe([], 'formats portrait sans thème : '.implode(', ', $sansTheme));
 });
 
+it('soude le filet vert de la carte au cadre, après le logo de Parakou', function () {
+    // ⚠️ Sur le portrait, les deux filets verts sont CUITS dans le cadre. Étiré sur
+    // un format PAYSAGE, celui de droite se réduit à un moignon de 13 px collé au
+    // bord, à cent vingt pixels du logo - il ne relie plus rien. La carte le
+    // prolonge donc par un élément.
+    $composer = new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge');
+    $composer->setAccessible(true);
+
+    foreach ([false, true] as $avecPhoto) {
+        $carte = $composer->invoke(null, $avecPhoto, 'cr80');
+        $elements = collect($carte['elements']);
+
+        $filets = $elements->where('type', 'rect')->where('color', '#00be62')->values();
+        expect($filets)->toHaveCount(1, 'un seul filet vert sur la carte');
+        $filet = $filets->first();
+
+        // ⚠️ Il va JUSQU'AU BORD : c'est ce qui le soude au cadre. Arrêté avant, il
+        // flotterait - le défaut déjà payé sur le badge portrait.
+        expect($filet['x'] + $filet['w'])->toBe($carte['width'], 'le filet doit toucher le bord');
+
+        // ⚠️ Et il COMMENCE APRÈS le logo de Parakou, sinon il le barrerait.
+        $logos = $elements->where('type', 'image')
+            ->filter(fn (array $el): bool => str_contains((string) $el['src'], 'logo'))
+            ->values();
+        expect($logos)->toHaveCount(2);
+        $parakou = $logos->last();
+        expect($filet['x'])->toBeGreaterThan($parakou['x'] + $parakou['w'], 'le filet ne barre pas le logo');
+
+        // Les deux logos restent à la MÊME hauteur (comme sur l'attestation) :
+        // des boîtes de hauteurs différentes en feraient paraître un plus grand.
+        expect($logos->first()['y'])->toBe($parakou['y'])
+            ->and($logos->first()['h'])->toBe($parakou['h']);
+    }
+});
+
 it('tient la maquette PHP et son jumeau du concepteur d’accord', function () {
     // ⚠️⚠️ « Chaque modèle PHP et son jumeau du concepteur décrivent la MÊME
     // maquette : toucher à l'un, c'est toucher à l'autre. » Les deux composent

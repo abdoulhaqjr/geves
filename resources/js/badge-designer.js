@@ -886,8 +886,12 @@
         var sepW = fx(withPhoto ? 0.2778 : 0.3086);
         var sepX = colX + Math.round((colW - sepW) / 2);
 
-        imgEl({ label: 'Logo UK', x: fx(0.0432), y: fy(0.0588), w: fx(0.2346), h: fy(0.0980), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: fx(0.2963), y: fy(0.0588), w: fx(0.2531), h: fy(0.0980), src: '/img/attestations/logo-parakou.png' });
+        imgEl({ label: 'Logo UK', x: fx(0.0432), y: fy(0.0588), w: fx(0.2870), h: fy(0.1225), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: fx(0.3549), y: fy(0.0588), w: fx(0.3086), h: fy(0.1225), src: '/img/attestations/logo-parakou.png' });
+        /* Filet vert de droite : le moignon cuit dans le cadre ne relie plus rien une
+           fois étiré en paysage, on le prolonge jusqu'au logo de Parakou. Il va
+           JUSQU'AU BORD pour se souder au cadre. */
+        barEl({ label: 'Filet vert', x: fx(0.6883), y: fy(0.1225), w: w - fx(0.6883), h: Math.max(2, fy(0.0147)), color: '#00be62' });
         if (withPhoto) {
           createEl({ type: 'photo', label: 'Photo', x: fx(0.0432), y: fy(0.2549), w: sq(70) });
         }

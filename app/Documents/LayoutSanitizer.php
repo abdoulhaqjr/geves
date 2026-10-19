@@ -373,8 +373,17 @@ class LayoutSanitizer
             'erase_default_rule' => true,
             'elements' => array_merge([
                 // Logos OFFICIELS, à la même hauteur, en tête de carte.
-                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.0588), 'w' => $fx(0.2346), 'h' => $fy(0.0980), 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => $fx(0.2963), 'y' => $fy(0.0588), 'w' => $fx(0.2531), 'h' => $fy(0.0980), 'src' => '/img/attestations/logo-parakou.png'],
+                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.0588), 'w' => $fx(0.2870), 'h' => $fy(0.1225), 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => $fx(0.3549), 'y' => $fy(0.0588), 'w' => $fx(0.3086), 'h' => $fy(0.1225), 'src' => '/img/attestations/logo-parakou.png'],
+                // ⚠️ FILET VERT DE DROITE, propre à la carte. Sur le portrait, les deux
+                // filets sont cuits dans le cadre ; étiré sur un format PAYSAGE, celui de
+                // droite se réduit à un moignon de 13 px collé au bord, à cent vingt pixels
+                // du logo de Parakou - il ne relie plus rien. L'élément le PROLONGE jusqu'au
+                // logo, et comme il va JUSQU'AU BORD (`$w`) il mord sur le cadre et se soude
+                // à lui, exactement comme les filets cuits. Même vert `#00be62` que le
+                // contour (pas le `#009933` de la charte), et même ligne que le moignon
+                // qu'il recouvre - sinon on lirait deux traits parallèles.
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => $fx(0.6883), 'y' => $fy(0.1225), 'w' => $w - $fx(0.6883), 'h' => max(2, $fy(0.0147)), 'color' => '#00be62'],
             ], $photo, [
                 // Identité, centrée.
                 $t(['x' => $colX, 'y' => $fy(0.1961), 'w' => $colW, 'h' => $fy(0.0637), 'text' => '[edition.name]', 'size' => $fs(8), 'weight' => 700, 'align' => 'center']),
