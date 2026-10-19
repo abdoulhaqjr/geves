@@ -95,7 +95,7 @@
                                     <tr>
                                         <td><strong>{{ $application->user?->name }}</strong><div style="color:var(--ukc-muted);font-size:12px;">{{ $application->user?->email }}</div></td>
                                         <td>{{ $application->grade }}</td>
-                                        <td><span class="ukc-pill">Non confirmé · en attente d’acceptation</span></td>
+                                        <td><span class="ukc-pill">Non confirmé - en attente d’acceptation</span></td>
                                         <td>
                                             @if ($canWrite)
                                                 <form method="POST" action="{{ route('admin.evenements.reviewers.applications.accept', [$event, $application]) }}">

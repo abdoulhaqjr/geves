@@ -267,7 +267,11 @@ it('réserve l’annuaire au copilote admin, jamais à l’assistante publique',
 
     foreach ((array) glob(app_path('**/*.php')) + (array) glob(app_path('*/*/*.php')) as $f) {
         $src = (string) file_get_contents((string) $f);
-        if (str_contains($src, 'UserDirectory')) {
+        // ⚠️ Le symbole ENTIER, pas le préfixe : `UserDirectorySearch` est le
+        // sélecteur de comptes du back-office, qui ne lit pas l'annuaire de
+        // l'assistant. Cherché en sous-chaîne, son nom faisait tomber la garde
+        // sur une homonymie - une alerte fausse qu'on finit par ignorer.
+        if (preg_match('/\bUserDirectory\b/', $src) === 1) {
             $appelants[] = basename((string) $f);
         }
     }

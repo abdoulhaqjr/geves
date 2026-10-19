@@ -22,7 +22,12 @@ class ReviewerRegistrationMail extends Mailable
             ? __('Votre candidature d’évaluateur a été acceptée')
             : __('Vous avez été ajouté comme évaluateur');
 
-        return new Envelope(subject: $subject.' - '.($this->reviewer->event?->title ?? __('Événement')));
+        // ⚠️ `data_get` plutôt que `->event?->title` : l'analyse tient la relation
+        // pour non-nulle et refuse le nullsafe à gauche d'un `??`. Elle l'est
+        // pourtant - un évaluateur ajouté hors événement n'en aurait pas.
+        $titre = trim((string) data_get($this->reviewer, 'event.title'));
+
+        return new Envelope(subject: $subject.' - '.($titre !== '' ? $titre : __('Événement')));
     }
 
     public function content(): Content

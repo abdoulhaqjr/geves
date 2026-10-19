@@ -14,11 +14,20 @@ class ReviewerApplication extends Model
         return ['approved_at' => 'datetime'];
     }
 
+    /**
+     * ⚠️ Les relations sont NOMMÉES : sans la forme générique, l'analyse ne voit
+     * qu'un `Model` au bout, et tout ce qu'on lit dessus (`->email`, `->name`…)
+     * devient une propriété inconnue chez l'appelant - neuf erreurs dans
+     * `SubmissionController` pour deux annotations manquantes ici.
+     *
+     * @return BelongsTo<Event, $this>
+     */
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -1134,5 +1134,9 @@
     "Référence opérateur": "Operator reference",
     "Document établi par :app et généré automatiquement.": "Document issued by :app and generated automatically.",
     "Il vaut reçu du règlement ci-dessus et ne nécessite pas de signature.": "It serves as a receipt for the payment above and requires no signature.",
-    "Livret (PDF)": "Book of abstracts (PDF)"
+    "Livret (PDF)": "Book of abstracts (PDF)",
+    "Devenir évaluateur": "Become a reviewer",
+    "Me proposer comme évaluateur": "Offer to review",
+    "Votre candidature pour cet événement est en attente de validation par le gestionnaire.": "Your application for this event is awaiting approval by the organiser.",
+    "Votre grade vous permet de proposer votre aide pour évaluer des communications de cet événement.": "Your academic rank lets you offer to review papers for this event."
 }
