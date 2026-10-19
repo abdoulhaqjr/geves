@@ -2,27 +2,27 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Documents\BadgeLayout;
+use App\Documents\BadgePdfRenderer;
 use App\Documents\BadgeSheet;
 use App\Documents\BrandedPdf;
-use App\Documents\LayoutRenderer;
-use App\Documents\LayoutSanitizer;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
-use App\Models\DocumentTemplate;
+use App\Jobs\GenerateBadgeExport;
+use App\Models\BadgeExport;
 use App\Models\Event;
-use App\Models\Submission;
+use App\Services\BadgeExportWorkerLauncher;
 use App\Support\BadgeCatalog;
 use App\Support\EventSettings;
 use App\Support\SessionDocLayout;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -237,7 +237,7 @@ class DocumentController extends Controller
         }
 
         return $this->badgeSheetPdf(
-            [$this->renderGroup($event, $type, $people->all())],
+            [['type' => $type, 'people' => $people->all()]],
             $event,
             'badges-'.$type.($lot > 1 ? '-lot'.$lot : '').'.pdf',
         );
@@ -270,7 +270,7 @@ class DocumentController extends Controller
 
         $groups = [];
         foreach ($paires->groupBy('type') as $type => $lignes) {
-            $groups[] = $this->renderGroup($event, (string) $type, $lignes->pluck('person')->all());
+            $groups[] = ['type' => (string) $type, 'people' => $lignes->pluck('person')->all()];
         }
 
         return $this->badgeSheetPdf($groups, $event, 'badges-tous'.($lot > 1 ? '-lot'.$lot : '').'.pdf');
@@ -310,78 +310,80 @@ class DocumentController extends Controller
         }
 
         return $this->badgeSheetPdf(
-            [$this->renderGroup($event, $type, $people->all())],
+            [['type' => $type, 'people' => $people->all()]],
             $event,
             'badges-'.$type.'-selection.pdf',
         );
     }
 
-    /**
-     * Une catégorie rendue à la taille de cellule du tuilage, prête à être posée
-     * sur la planche.
-     *
-     * ⚠️ Les destinataires arrivent en TABLEAU, pas en `Collection` : celle-ci
-     * n'est pas covariante pour l'analyse, donc une liste dont chaque entrée est
-     * décrite champ par champ (ce que rend `BadgeCatalog::recipients()`) ne « vaut »
-     * pas une liste de `array<string, mixed>`. Même remède que `roleUsageLines` :
-     * tableau dans l'aide, `->all()` au point d'appel.
-     *
-     * @param  list<array<string, mixed>>  $people
-     * @return array{label: string, plan: array<string, mixed>, badges: list<string>}
-     */
-    private function renderGroup(Event $event, string $type, array $people): array
+    /** Prépare tous les badges de la catégorie en arrière-plan, par lots de 48. */
+    public function startBadgeExport(Request $request, Event $event, BadgeExportWorkerLauncher $launcher): RedirectResponse
     {
-        // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
-        // que l'admin ne pouvait ni voir ni modifier.
-        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge', $type, BadgeCatalog::TYPES[$type]['title']);
-        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', $type);
+        $type = (string) $request->input('type', 'default');
+        abort_unless(BadgeCatalog::valid($type), 404);
 
-        $plan = BadgeSheet::plan((int) $layout['width'], (int) $layout['height']);
+        $latest = BadgeExport::query()->where('event_id', $event->id)->where('user_id', $request->user()->id)
+            ->where('type', $type)->latest()->first();
+        if ($latest && in_array($latest->status, ['queued', 'running'], true) && $latest->updated_at->gt(now()->subMinutes(65))) {
+            return back()->with('ukc_status', 'La préparation du PDF complet est déjà en cours.');
+        }
 
-        // ⚠️ Plus de valeur de repli : `BadgeCatalog::recipients()` pose TOUJOURS
-        // la photo (chaîne vide à défaut) et son mode (« with » à défaut). Un `??`
-        // ici laisserait croire que la préférence peut manquer - et c'est en la
-        // croyant absente qu'on finit par ne jamais la respecter.
-        $badges = array_map(function (array $person) use ($event, $type, $layout, $plan): string {
-            // La variante (avec / sans photo) se choisit sur la maquette NATIVE,
-            // puis seulement on la redessine à la taille de la cellule.
-            $recipientLayout = BadgeLayout::forRecipient($layout, $type, $person['photo'], $person['photo_mode'] !== 'without');
+        $count = BadgeCatalog::recipients($event, $type)->count();
+        if ($count === 0) {
+            return back()->with('ukc_error', 'Aucun badge prêt pour cette catégorie.');
+        }
 
-            return LayoutRenderer::render(
-                BadgeSheet::scaleLayout($recipientLayout, $plan['scale'], $plan['cellW'], $plan['cellH']),
-                $this->badgeVars($event, $type, $person),
-                pdf: true,
-                badge: true,
-            );
-        }, $people);
+        $export = BadgeExport::query()->create([
+            'id' => (string) Str::uuid(),
+            'event_id' => $event->id,
+            'user_id' => $request->user()->id,
+            'type' => $type,
+            'status' => 'queued',
+            'badge_count' => $count,
+        ]);
 
-        return ['label' => BadgeCatalog::label($type), 'plan' => $plan, 'badges' => $badges];
+        try {
+            GenerateBadgeExport::dispatch($export->id);
+            $launcher->launch();
+        } catch (\Throwable $exception) {
+            $export->update(['status' => 'failed', 'error' => 'Impossible de démarrer le traitement.']);
+            report($exception);
+
+            return back()->with('ukc_error', 'Impossible de démarrer l’export. Réessayez dans un instant.');
+        }
+
+        return back()->with('ukc_status', 'Le PDF complet est en préparation. Le téléchargement apparaîtra ici une fois terminé.');
     }
 
-    /**
-     * Jetons PLATS du badge (le concepteur de badges n'emploie pas la palette
-     * `[espace.cle]`).
-     *
-     * @param  array<string, mixed>  $person
-     * @return array<string, string>
-     */
-    private function badgeVars(Event $event, string $type, array $person): array
+    /** État lisible par la page, sans exposer les exports d'un autre gestionnaire. */
+    public function badgeExportStatus(Request $request, Event $event, BadgeExport $export): JsonResponse
     {
-        return [
-            'org' => $event->series?->name ?? '',
-            'event' => (string) ($event->title ?? ''),
-            'year' => (string) ($event->year ?: ''),
-            'theme' => (string) ($event->theme ?? ''),
-            'dates' => $event->dateRangeLabel() ?? '',
-            'location' => (string) ($event->location ?? ''),
-            'name' => (string) $person['name'],
-            'role' => BadgeCatalog::role($type),
-            'institution' => (string) $person['institution'],
-            'ref' => (string) $person['ref'],
-            'verify_url' => url('/verifier?ref='.urlencode((string) $person['ref']).'&ed='.$event->id),
-            // Photo de profil pour le modèle « Participant avec photo » (élément photo).
-            'recipient.photo' => (string) $person['photo'],
-        ];
+        $this->authorizeBadgeExport($request, $event, $export);
+        if (in_array($export->status, ['queued', 'running'], true) && $export->updated_at->lt(now()->subMinutes(65))) {
+            $export->update(['status' => 'failed', 'error' => 'Le traitement a été interrompu. Relancez l’export.']);
+        }
+
+        return response()->json([
+            'status' => $export->status,
+            'processed' => $export->processed_count,
+            'total' => $export->badge_count,
+            'error' => $export->status === 'failed' ? $export->error : null,
+            'downloadUrl' => $export->status === 'ready' ? route('admin.documents.badges.export.download', ['event' => $event, 'export' => $export]) : null,
+        ]);
+    }
+
+    /** Envoie le fichier privé terminé au seul gestionnaire qui l'a demandé. */
+    public function downloadBadgeExport(Request $request, Event $event, BadgeExport $export): Response
+    {
+        $this->authorizeBadgeExport($request, $event, $export);
+        abort_unless($export->status === 'ready' && $export->path && Storage::disk('local')->exists($export->path), 404);
+
+        return Storage::disk('local')->download($export->path, 'badges-'.$export->type.'-complets.pdf');
+    }
+
+    private function authorizeBadgeExport(Request $request, Event $event, BadgeExport $export): void
+    {
+        abort_unless((int) $export->event_id === (int) $event->id && (int) $export->user_id === (int) $request->user()->id, 404);
     }
 
     /**
@@ -389,33 +391,11 @@ class DocumentController extends Controller
      * page. ⚠️ Le PDF est produit par dompdf, pas par l'impression du navigateur -
      * c'est lui qui fait foi à l'impression.
      *
-     * @param  list<array{label: string, plan: array<string, mixed>, badges: list<string>}>  $groups
+     * @param  list<array{type: string, people: list<array<string, mixed>>}>  $groups
      */
     private function badgeSheetPdf(array $groups, Event $event, string $filename): Response
     {
-        $sheets = [];
-        foreach ($groups as $group) {
-            $plan = $group['plan'];
-            foreach (array_chunk($group['badges'], max(1, (int) $plan['perPage'])) as $page) {
-                $sheets[] = [
-                    'cols' => (int) $plan['cols'],
-                    'cellW' => (int) $plan['cellW'],
-                    'cellH' => (int) $plan['cellH'],
-                    'gutterX' => (int) $plan['gutterX'],
-                    'gutterY' => (int) $plan['gutterY'],
-                    'originLeft' => (int) $plan['originLeft'],
-                    'originTop' => (int) $plan['originTop'],
-                    'pageW' => (int) $plan['pageW'],
-                    'pageH' => (int) $plan['pageH'],
-                    'badges' => $page,
-                ];
-            }
-        }
-
-        $pdf = Pdf::loadView('pdf.badges-sheet', ['sheets' => $sheets])
-            ->setPaper('a4', 'portrait');
-
-        return BrandedPdf::stamp($pdf, 'Badges - '.$event->title)->download($filename);
+        return app(BadgePdfRenderer::class)->pdf($event, $groups)->download($filename);
     }
 
     /** Les planches chargent les photos et dessinent jusqu'à 48 badges avant Dompdf. */

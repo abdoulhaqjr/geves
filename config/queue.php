@@ -44,6 +44,17 @@ return [
             'after_commit' => false,
         ],
 
+        // Un rendu complet peut durer plusieurs minutes : le job ne doit pas
+        // redevenir disponible pendant que son travailleur assemble les lots.
+        'badge_exports' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'badge-exports',
+            'retry_after' => 3660,
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

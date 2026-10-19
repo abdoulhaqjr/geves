@@ -4150,6 +4150,14 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     raison que `AttestationExportController::LOT`. `prepareBadgeExport()` relève
     **avant le dessin des badges** la limite à 512 Mo et le délai PHP à 300 s :
     le rendu Dompdf d'une grande sélection dépassait le défaut de 30 s.
+    Pour obtenir un seul fichier de toute une catégorie, `badge_exports` conserve
+    l'état d'une demande privée du gestionnaire. `GenerateBadgeExport` dessine
+    chaque tranche de 48 avec `BadgePdfRenderer`, puis assemble les PDF avec FPDI.
+    `BadgeExportWorkerLauncher` démarre un travailleur éphémère caché sous Windows ;
+    la connexion `badge_exports` a un `retry_after` supérieur au timeout du job.
+    L'interface vérifie l'état et propose le téléchargement du fichier privé une
+    fois prêt. La pagination des badges prêts accepte 20, 48, 100 ou 200 lignes,
+    sans changer la limite de 48 par rendu PDF.
     ⚠️ Le découpage de `badgesAll` se fait sur la liste **à plat** (catégorie,
     destinataire) : un plafond appliqué catégorie par catégorie en laisserait en arrière.
     ⚠️ **L'interface ANNONCE les lots** (`_badge-lots.blade.php`, « Lot 1/5 ») dès qu'il y

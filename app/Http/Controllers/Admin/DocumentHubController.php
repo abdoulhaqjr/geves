@@ -14,6 +14,7 @@ use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
+use App\Models\BadgeExport;
 use App\Models\DocumentTemplate;
 use App\Models\Event;
 use App\Models\Formation;
@@ -730,17 +731,24 @@ class DocumentHubController extends Controller
             $badgeType = 'default';
         }
         $people = $event ? BadgeCatalog::recipients($event, $badgeType) : collect();
+        $badgeCategoryCount = $people->count();
         $badgeSearch = trim((string) $request->query('bsearch', ''));
         if ($badgeSearch !== '') {
             $people = $people->filter(fn (array $person) => mb_stripos($person['name'].' '.$person['email'], $badgeSearch) !== false)->values();
         }
         $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = (int) $request->query('bper', 20);
+        $perPage = in_array($perPage, [20, 48, 100, 200], true) ? $perPage : 20;
 
         return [
-            'badgeReady' => (new LengthAwarePaginator($people->forPage($page, 20)->values(), $people->count(), 20, $page))
+            'badgeReady' => (new LengthAwarePaginator($people->forPage($page, $perPage)->values(), $people->count(), $perPage, $page))
                 ->withPath($request->url())->appends($request->query()),
             'badgeType' => $badgeType,
             'badgeSearch' => $badgeSearch,
+            'badgeCategoryCount' => $badgeCategoryCount,
+            'badgePerPage' => $perPage,
+            'badgeExport' => $event ? BadgeExport::query()->where('event_id', $event->id)
+                ->where('user_id', $request->user()->id)->where('type', $badgeType)->latest()->first() : null,
         ];
     }
 

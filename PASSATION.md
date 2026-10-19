@@ -2581,3 +2581,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Export des badges volumineux (19 octobre 2026)
 
 - Les trois exports de badges (`badges`, `badgesAll`, `badgesSelection`) appellent `prepareBadgeExport()` avant tout rendu : 300 s pour PHP et 512 Mo pour Dompdf. Une sélection supérieure à `BadgeSheet::LOT` (48) est désormais refusée avec un message orientant vers les liens de lots ; l'ancien `take(48)` la tronquait sans avertissement. Le lot reste borné pour limiter la mémoire, même lorsqu'un format occupe une feuille A4 par badge.
+
+### PDF complet des badges et pagination (19 octobre 2026)
+
+- Dans **Documents → Badges → Badges prêts**, le gestionnaire peut choisir 20, 48, 100 ou 200 lignes par page. Au-delà de 48 destinataires dans une catégorie, « Préparer le PDF complet » crée une demande `badge_exports`, lance le travailleur éphémère `badge_exports` puis suit son avancement. `GenerateBadgeExport` rend chaque tranche de 48 badges avec `BadgePdfRenderer` et assemble les PDF avec FPDI en un fichier privé téléchargeable uniquement par le demandeur. La limite de 48 reste celle de chaque rendu Dompdf, pas du PDF final. Appliquer la migration `2026_10_19_000500_create_badge_exports_table` ; la connexion de queue dédiée garde le job réservé pendant 3660 s. En cas d'échec, l'état et le message sont affichés sur la même page.

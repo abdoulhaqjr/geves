@@ -600,6 +600,9 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/{event}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
             Route::get('/editions/{event}/badges-tous', [DocumentController::class, 'badgesAll'])->name('admin.documents.badges.all');
             Route::post('/editions/{event}/badges-selection', [DocumentController::class, 'badgesSelection'])->name('admin.documents.badges.selection');
+            Route::post('/editions/{event}/badges-export', [DocumentController::class, 'startBadgeExport'])->name('admin.documents.badges.export.start');
+            Route::get('/editions/{event}/badges-export/{export}/statut', [DocumentController::class, 'badgeExportStatus'])->name('admin.documents.badges.export.status');
+            Route::get('/editions/{event}/badges-export/{export}/telecharger', [DocumentController::class, 'downloadBadgeExport'])->name('admin.documents.badges.export.download');
             Route::get('/editions/{event}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
             Route::get('/editions/{event}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
             Route::get('/editions/{event}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
