@@ -3,6 +3,7 @@
 use App\Documents\BadgeSheet;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
+use App\Models\DocumentTemplate;
 
 /**
  * Badge par défaut, calqué sur le badge officiel du comité d'organisation
@@ -248,4 +249,40 @@ it('tient la maquette PHP et son jumeau du concepteur d’accord', function () {
 
     expect($cotePhp)->not->toBeEmpty()
         ->and($coteJs)->toBe($cotePhp, 'le concepteur et le badge délivré doivent partager les mêmes proportions');
+});
+
+it('ramène les modèles jamais ouverts sur un porte-badge, et respecte les autres', function () {
+    // ⚠️ Les badges se dessinaient sur la taille de BASE de l'éditeur (105 × 148 mm,
+    // une demi-feuille A4), qui n'est plus un format proposé : les modèles déjà
+    // enregistrés sortaient à 1 par feuille A4. La migration les ramène au 303.
+    $event = openEdition();
+
+    $vierge = DocumentTemplate::create([
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'moderation', 'title' => 'Badge',
+        'layout' => ['width' => 397, 'height' => 560, 'bg' => '#ffffff', 'elements' => []],
+    ]);
+
+    // ⚠️ Un modèle OUVERT dans le concepteur ne change pas sous les pieds de qui
+    // l'a dessiné : c'est la règle de `consolidate_participant_badge_models`.
+    $perso = DocumentTemplate::create([
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'rapporteur', 'title' => 'Badge',
+        'layout' => ['width' => 397, 'height' => 560, 'bg' => '#ffffff', 'elements' => []],
+        'editor_state' => ['page' => '<div></div>'],
+    ]);
+
+    // Déjà sur un porte-badge : rien à faire (c'est ce qui rend le rejeu sans effet).
+    $dejaBon = DocumentTemplate::create([
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'accueil', 'title' => 'Badge',
+        'layout' => ['width' => 246, 'height' => 359, 'bg' => '#ffffff', 'elements' => []],
+    ]);
+
+    $migration = require database_path('migrations/2026_10_19_000600_retarget_badge_templates_to_pouch_formats.php');
+    $migration->up();
+    $migration->up(); // rejouable
+
+    expect(((array) $vierge->fresh()->layout)['width'])->toBe(333)
+        ->and(((array) $vierge->fresh()->layout)['height'])->toBe(472)
+        ->and(((array) $vierge->fresh()->layout)['elements'])->not->toBe([])
+        ->and(((array) $perso->fresh()->layout)['width'])->toBe(397)
+        ->and(((array) $dejaBon->fresh()->layout)['width'])->toBe(246);
 });

@@ -4139,6 +4139,16 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
     2 × 100 = 200 mm, soit exactement la feuille moins ses marges. Une tolérance
     d'**1 px** (0,26 mm) évite qu'un arrondi coûte une colonne.
+  - ⚠️ **Les modèles DÉJÀ ENREGISTRÉS étaient tous à 105 × 148 mm** (397 × 560 px,
+    la taille de BASE de l'éditeur, une demi-feuille A4) : un format que le
+    concepteur ne propose plus, et qui ne sortait qu'à **1 par feuille**. La
+    migration **`2026_10_19_000600_retarget_badge_templates_to_pouch_formats`** les
+    recompose au **modèle 303**. ⚠️ Elle ne touche **que ce que personne n'a
+    ouvert** (`editor_state IS NULL`, même règle que
+    `consolidate_participant_badge_models`) et laisse intact tout modèle déjà posé
+    sur un format offert - ce qui la rend **rejouable** sans effet. Un modèle
+    personnalisé resté sur l'ancien format se change dans le concepteur, qui lui
+    ajoute une option **« (ancien format) »**.
   - ⚠️⚠️ **« PROPOSÉ » ET « CONNU » SONT DEUX CHOSES.** **Quatre formats** -
     `a6-portrait` (105 × 148), `a6-landscape` (148 × 105), `a7-portrait` (74 × 105)
     et `card-landscape` (90 × 55) - ne sont **plus proposés** : ce sont des formats
