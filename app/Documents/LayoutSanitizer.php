@@ -313,8 +313,14 @@ class LayoutSanitizer
 
     /**
      * Maquette CARTE (CR80, 85,6 × 54 mm) : le badge est en PAYSAGE, donc la pile
-     * verticale du portrait n'y tient pas. Les logos coiffent la carte, le texte
-     * occupe la colonne de gauche et le QR la droite.
+     * verticale du portrait n'y tient pas.
+     *
+     * ⚠️ **Présentation CENTRÉE** : les logos coiffent la carte, puis l'événement,
+     * le NOM et la fonction sont centrés sous un filet court ; le lieu et les dates
+     * occupent le pied à gauche, le QR le coin bas-droit. C'est la mise en page
+     * retenue après comparaison de trois rendus - une version alignée à gauche
+     * laissait un vide à droite, et le filet y passait pour un soulignement de la
+     * fonction.
      *
      * ⚠️ **Le thème du colloque n'y figure pas**, et c'est voulu : une phrase de
      * cent caractères descendrait sous 2 mm de haut sur une carte de crédit - on
@@ -346,17 +352,20 @@ class LayoutSanitizer
 
         $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
 
-        // AVEC PHOTO : elle prend la gauche, et le bloc de texte se décale à sa
-        // droite - la colonne pleine largeur ne serait plus lisible à côté d'elle.
-        $colX = $withPhoto ? 0.2963 : 0.0432;   // x96 ou x14 sur 324
-        $colW = $withPhoto ? 0.4321 : 0.6481;   // w140 ou w210
+        // AVEC PHOTO : elle prend la gauche, et le bloc centré se resserre sur la
+        // place qui reste - le centrer sur la carte entière le ferait chevaucher.
+        $colX = $fx($withPhoto ? 0.2963 : 0.0432);
+        $colW = $fx($withPhoto ? 0.6605 : 0.9136);
+
+        // Le filet se centre SOUS le bloc, quelle que soit sa largeur.
+        $sepW = $fx($withPhoto ? 0.2778 : 0.3086);
+        $sepX = $colX + (int) round(($colW - $sepW) / 2);
 
         $photo = $withPhoto
-            ? [['type' => 'photo', 'x' => $fx(0.0432), 'y' => $fy(0.2255), 'w' => $sq(70), 'h' => $sq(70)]]
+            ? [['type' => 'photo', 'x' => $fx(0.0432), 'y' => $fy(0.2549), 'w' => $sq(70), 'h' => $sq(70)]]
             : [];
 
         $icon = $sq(13);
-        $qr = $sq(70);
 
         return [
             'width' => $w, 'height' => $h, 'bg' => '#ffffff', 'accent' => '#223ea4',
@@ -364,20 +373,21 @@ class LayoutSanitizer
             'erase_default_rule' => true,
             'elements' => array_merge([
                 // Logos OFFICIELS, à la même hauteur, en tête de carte.
-                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.0588), 'w' => $fx(0.2469), 'h' => $fy(0.1078), 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => $fx(0.3148), 'y' => $fy(0.0588), 'w' => $fx(0.2654), 'h' => $fy(0.1078), 'src' => '/img/attestations/logo-parakou.png'],
+                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.0588), 'w' => $fx(0.2346), 'h' => $fy(0.0980), 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => $fx(0.2963), 'y' => $fy(0.0588), 'w' => $fx(0.2531), 'h' => $fy(0.0980), 'src' => '/img/attestations/logo-parakou.png'],
             ], $photo, [
-                $t(['x' => $fx($colX), 'y' => $fy(0.2157), 'w' => $fx($colW), 'h' => $fy(0.0735), 'text' => '[edition.name]', 'size' => $fs(8), 'weight' => 700]),
-                $t(['x' => $fx($colX), 'y' => $fy(0.3137), 'w' => $fx($colW), 'h' => $fy(0.1176), 'text' => '[recipient.name]', 'size' => $fs(15), 'weight' => 800, 'color' => '#253c98']),
-                $t(['x' => $fx($colX), 'y' => $fy(0.4510), 'w' => $fx($colW), 'h' => $fy(0.0686), 'text' => '[recipient.role]', 'size' => $fs(9), 'weight' => 700]),
-                ['type' => 'rect', 'shape' => 'line-h', 'x' => $fx($colX), 'y' => $fy(0.5588), 'w' => $fx($withPhoto ? 0.3395 : 0.3704), 'h' => max(2, $fy(0.0098)), 'color' => $dark, 'radius' => 2],
-                // Lieu et dates, chacun derrière son pictogramme.
-                ['type' => 'image', 'x' => $fx($colX), 'y' => $fy(0.6176), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
-                ['type' => 'image', 'x' => $fx($colX), 'y' => $fy(0.7157), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
-                $t(['x' => $fx($colX + 0.0556), 'y' => $fy(0.6225), 'w' => $fx($colW - 0.0556), 'h' => $fy(0.0588), 'text' => '[edition.location]', 'size' => $fs(8)]),
-                $t(['x' => $fx($colX + 0.0556), 'y' => $fy(0.7206), 'w' => $fx($colW - 0.0556), 'h' => $fy(0.0588), 'text' => '[edition.dates]', 'size' => $fs(8)]),
-                // QR à droite, hors de la colonne de texte.
-                ['type' => 'qr', 'x' => $fx(0.7531), 'y' => $fy(0.5784), 'size' => $qr, 'value' => '{verify_url}'],
+                // Identité, centrée.
+                $t(['x' => $colX, 'y' => $fy(0.1961), 'w' => $colW, 'h' => $fy(0.0637), 'text' => '[edition.name]', 'size' => $fs(8), 'weight' => 700, 'align' => 'center']),
+                $t(['x' => $colX, 'y' => $fy(0.2941), 'w' => $colW, 'h' => $fy(0.1569), 'text' => '[recipient.name]', 'size' => $fs(21), 'weight' => 800, 'color' => '#253c98', 'align' => 'center']),
+                $t(['x' => $colX, 'y' => $fy(0.4608), 'w' => $colW, 'h' => $fy(0.0784), 'text' => '[recipient.role]', 'size' => $fs(11), 'weight' => 700, 'align' => 'center']),
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => $sepX, 'y' => $fy(0.5784), 'w' => $sepW, 'h' => max(2, $fy(0.0098)), 'color' => $dark, 'radius' => 1],
+                // Pied : lieu et dates à gauche, chacun derrière son pictogramme.
+                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.6667), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.7941), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
+                $t(['x' => $fx(0.1019), 'y' => $fy(0.6716), 'w' => $fx(0.5864), 'h' => $fy(0.0588), 'text' => '[edition.location]', 'size' => $fs(8)]),
+                $t(['x' => $fx(0.1019), 'y' => $fy(0.7990), 'w' => $fx(0.5864), 'h' => $fy(0.0588), 'text' => '[edition.dates]', 'size' => $fs(8)]),
+                // QR dans le coin bas-droit, hors du pied.
+                ['type' => 'qr', 'x' => $fx(0.7469), 'y' => $fy(0.6275), 'size' => $sq(62), 'value' => '{verify_url}'],
             ]),
         ];
     }

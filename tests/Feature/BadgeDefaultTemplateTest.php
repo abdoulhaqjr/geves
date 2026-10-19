@@ -204,10 +204,11 @@ it('compose le CR80 en CARTE, sans le thème', function () {
         ->and($textes)->toContain('[recipient.name]', '[recipient.role]', '[edition.name]')
         ->and($textes)->toContain('[edition.location]', '[edition.dates]');
 
-    // Le QR vit à DROITE de la colonne de texte : sinon il la recouvrirait.
+    // ⚠️ La carte est CENTRÉE : le QR vit SOUS le bloc d'identité (et non plus à
+    // sa droite), sinon il le recouvrirait.
     $qr = $carte->firstWhere('type', 'qr');
-    $nom = $carte->firstWhere('text', '[recipient.name]');
-    expect($qr['x'])->toBeGreaterThanOrEqual($nom['x'] + $nom['w']);
+    $role = $carte->firstWhere('text', '[recipient.role]');
+    expect($qr['y'])->toBeGreaterThanOrEqual($role['y'] + $role['h']);
 
     // Les formats portrait, eux, portent bien le thème.
     // ⚠️ On RELÈVE les fautifs : `toContain()` prend plusieurs AIGUILLES, pas un

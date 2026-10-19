@@ -869,8 +869,10 @@
         styled({ label: 'Dates', x: fx(0.2462), y: fy(0.8496), w: fx(0.4775), h: fy(0.0403), text: '[edition.dates]', size: fs(10), weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7417), y: fy(0.7818), w: sq(65), qrUrl: DEFAULT_QR_URL });
       },
-      /* ⚠️ CR80 : le thème du colloque n'y figure pas, et c'est voulu - cent
-         caractères descendraient sous 2 mm sur une carte de crédit. */
+      /* ⚠️ CR80 : présentation CENTRÉE (logos, puis événement / NOM / fonction
+         centrés sous un filet court, pied à gauche, QR au coin bas-droit). Le thème
+         du colloque n'y figure pas, et c'est voulu - cent caractères descendraient
+         sous 2 mm sur une carte de crédit. Mêmes proportions que badgeCarte(). */
       officielCarte: function (w, h, withPhoto) {
         var fx = function (f) { return Math.round(f * w); };
         var fy = function (f) { return Math.round(f * h); };
@@ -878,23 +880,26 @@
         var sq = function (b) { return Math.max(1, Math.round(b * r)); };
         var fs = function (b) { return Math.max(6, Math.round(b * r)); };
 
-        var colX = withPhoto ? 0.2963 : 0.0432;
-        var colW = withPhoto ? 0.4321 : 0.6481;
+        // Avec photo, le bloc centré se resserre sur la place qui reste.
+        var colX = fx(withPhoto ? 0.2963 : 0.0432);
+        var colW = fx(withPhoto ? 0.6605 : 0.9136);
+        var sepW = fx(withPhoto ? 0.2778 : 0.3086);
+        var sepX = colX + Math.round((colW - sepW) / 2);
 
-        imgEl({ label: 'Logo UK', x: fx(0.0432), y: fy(0.0588), w: fx(0.2469), h: fy(0.1078), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: fx(0.3148), y: fy(0.0588), w: fx(0.2654), h: fy(0.1078), src: '/img/attestations/logo-parakou.png' });
+        imgEl({ label: 'Logo UK', x: fx(0.0432), y: fy(0.0588), w: fx(0.2346), h: fy(0.0980), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: fx(0.2963), y: fy(0.0588), w: fx(0.2531), h: fy(0.0980), src: '/img/attestations/logo-parakou.png' });
         if (withPhoto) {
-          createEl({ type: 'photo', label: 'Photo', x: fx(0.0432), y: fy(0.2255), w: sq(70) });
+          createEl({ type: 'photo', label: 'Photo', x: fx(0.0432), y: fy(0.2549), w: sq(70) });
         }
-        styled({ label: 'Événement', x: fx(colX), y: fy(0.2157), w: fx(colW), h: fy(0.0735), text: '[edition.name]', size: fs(8), weight: 700, color: '#2e3440', align: 'left' });
-        styled({ label: 'Nom', x: fx(colX), y: fy(0.3137), w: fx(colW), h: fy(0.1176), text: '[recipient.name]', size: fs(15), weight: 800, color: '#253c98', align: 'left' });
-        styled({ label: 'Rôle', x: fx(colX), y: fy(0.4510), w: fx(colW), h: fy(0.0686), text: '[recipient.role]', size: fs(9), weight: 700, color: '#2e3440', align: 'left' });
-        barEl({ label: 'Séparateur', x: fx(colX), y: fy(0.5588), w: fx(withPhoto ? 0.3395 : 0.3704), h: Math.max(2, fy(0.0098)), color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: fx(colX), y: fy(0.6176), w: sq(13), h: sq(13), src: '/img/badges/icon-location.svg' });
-        imgEl({ label: 'Icône calendrier', x: fx(colX), y: fy(0.7157), w: sq(13), h: sq(13), src: '/img/badges/icon-calendar.svg' });
-        styled({ label: 'Lieu', x: fx(colX + 0.0556), y: fy(0.6225), w: fx(colW - 0.0556), h: fy(0.0588), text: '[edition.location]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: fx(colX + 0.0556), y: fy(0.7206), w: fx(colW - 0.0556), h: fy(0.0588), text: '[edition.dates]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7531), y: fy(0.5784), w: sq(70), qrUrl: DEFAULT_QR_URL });
+        styled({ label: 'Événement', x: colX, y: fy(0.1961), w: colW, h: fy(0.0637), text: '[edition.name]', size: fs(8), weight: 700, color: '#2e3440' });
+        styled({ label: 'Nom', x: colX, y: fy(0.2941), w: colW, h: fy(0.1569), text: '[recipient.name]', size: fs(21), weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: colX, y: fy(0.4608), w: colW, h: fy(0.0784), text: '[recipient.role]', size: fs(11), weight: 700, color: '#2e3440' });
+        barEl({ label: 'Séparateur', x: sepX, y: fy(0.5784), w: sepW, h: Math.max(2, fy(0.0098)), color: '#2e3440' });
+        imgEl({ label: 'Icône localisation', x: fx(0.0432), y: fy(0.6667), w: sq(13), h: sq(13), src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: fx(0.0432), y: fy(0.7941), w: sq(13), h: sq(13), src: '/img/badges/icon-calendar.svg' });
+        styled({ label: 'Lieu', x: fx(0.1019), y: fy(0.6716), w: fx(0.5864), h: fy(0.0588), text: '[edition.location]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: fx(0.1019), y: fy(0.7990), w: fx(0.5864), h: fy(0.0588), text: '[edition.dates]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7469), y: fy(0.6275), w: sq(62), qrUrl: DEFAULT_QR_URL });
       },
       co: function (format) {
         T.officiel(format, false);
