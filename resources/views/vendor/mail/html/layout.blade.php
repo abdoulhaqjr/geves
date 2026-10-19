@@ -33,6 +33,7 @@ border-radius: 0 !important;
 .body {
 background-color: #ffffff !important;
 border-color: #ffffff !important;
+padding: 0 !important;
 }
 
 .content-cell {

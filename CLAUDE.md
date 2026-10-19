@@ -936,11 +936,20 @@ et **habillés à la charte de l'Université de Kara** :
     la largeur du contenu et les deux coins hauts de la carte (Outlook ignore
     l'arrondi : angles droits, le bandeau reste un bandeau).
   - ⚠️ **Sur téléphone, l'e-mail va BORD À BORD** (media query ≤600px) : la carte
-    prend toute la largeur, perd ses coins arrondis, son ombre et le cadre gris de
-    la page (`background #ffffff`), et son rembourrage tombe à `20px 16px`. ⚠️ Mais
-    **ce qui reste autour n'est pas à nous** : l'application Gmail pose sa propre
-    marge autour de tout message, et aucun gabarit ne l'enlève - mesuré sur les
-    captures du 19/10/2026.
+    prend toute la largeur, perd ses coins arrondis, son ombre, le cadre gris de la
+    page (`background #ffffff`) **et son rembourrage haut**, et son espace intérieur
+    tombe à `20px 16px`. **Mesuré dans l'aperçu à 380px : carte et bandeau à
+    `x=0, y=0, largeur 380`, `body` sans marge ni rembourrage** - notre HTML ne pose
+    donc **aucune** marge sur les quatre côtés.
+    - ⚠️⚠️ **LA BORDURE BLANCHE QUI RESTE DANS GMAIL EST CELLE DE GMAIL** (≈16dp
+      autour de tout message, dans son application). Aucun gabarit ne l'enlève, et
+      ce n'est pas faute d'avoir cherché - on l'a mesurée des deux côtés. La seule
+      manière de ne plus la **voir** serait de supprimer la couleur au bord : un
+      en-tête blanc (logo en version couleur) sur téléphone, où le gouttière blanche
+      de Gmail se fondrait. C'est un choix de présentation, pas un correctif.
+  - ⚠️ **Sur grand écran, le gris de la page respire au-dessus de la carte**
+    (`.body { padding: 24px 0 0 }`) : collée au bord, elle donnait l'impression d'un
+    bandeau bleu posé à même la boîte de réception.
 - Tests : `tests/Feature/AccountMailLocalizationTest.php` (langue suit le compte + rendu
   FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription ;
   `TypographieTest` garde l'absence des caractères proscrits (sujets compris) ;

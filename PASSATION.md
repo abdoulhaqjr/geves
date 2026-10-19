@@ -65,9 +65,19 @@ extérieure, il s'étirait sur toute la largeur de la fenêtre pendant que le
 message restait à 570px, et l'e-mail se lisait comme deux objets empilés.
 
 ⚠️ **Sur téléphone, l'e-mail va bord à bord** : la carte prend toute la largeur,
-perd ses coins arrondis, son ombre et le cadre gris de la page, et son
-rembourrage tombe à `20px 16px`. ⚠️ Ce qui reste autour **n'est pas à nous** :
-l'application Gmail pose sa propre marge autour de tout message.
+perd ses coins arrondis, son ombre, le cadre gris de la page et son rembourrage
+haut ; l'espace intérieur tombe à `20px 16px`. Mesuré à 380px : carte et bandeau
+à `x=0, y=0, largeur 380`, `body` sans marge - notre HTML ne pose **aucune**
+marge sur les quatre côtés.
+
+⚠️⚠️ **La bordure blanche qui reste dans Gmail est celle de Gmail** (≈16dp autour
+de tout message, dans son application) : aucun gabarit ne l'enlève. La seule
+manière de ne plus la voir serait de retirer la couleur au bord - un en-tête
+blanc sur téléphone, qui se fondrait dans la gouttière. C'est un choix de
+présentation, pas un correctif.
+
+⚠️ **Sur grand écran, le gris de la page respire au-dessus de la carte**
+(`.body { padding: 24px 0 0 }`).
 
 8 cas Pest (`ApercuEmailTest`), **trois sabotages vérifiés**.
 

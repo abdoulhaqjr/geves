@@ -127,9 +127,22 @@ it('va bord à bord sur un téléphone', function () {
     $html = mailAvecBouton();
 
     expect($html)->toContain('max-width: 600px');
-    foreach (['border-radius: 0 !important', 'background-color: #ffffff !important', 'padding: 20px 16px !important'] as $regle) {
+    foreach ([
+        'border-radius: 0 !important',
+        'background-color: #ffffff !important',
+        'padding: 20px 16px !important',
+        // ⚠️ Le rembourrage haut de la page est RETIRÉ ici : il n'a de sens que
+        // sur grand écran, où il laisse voir le gris au-dessus de la carte.
+        'padding: 0 !important',
+    ] as $regle) {
         expect($html)->toContain($regle);
     }
+});
+
+it('laisse voir le gris de la page au-dessus de la carte, sur grand écran', function () {
+    // Collée au bord, la carte donnait l'impression d'un bandeau bleu posé à même
+    // la boîte de réception.
+    expect(mailAvecBouton())->toContain('padding: 24px 0 0');
 });
 
 it('resserre l’espace intérieur du message', function () {

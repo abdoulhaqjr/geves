@@ -147,6 +147,9 @@ img {
 
 /* Body */
 
+/* ⚠️ Le rembourrage haut laisse voir le GRIS DE LA PAGE au-dessus de la carte :
+   collée au bord, elle donnait l'impression d'un bandeau bleu posé à même la
+   boîte de réception. Il est retiré sous 600px, où l'e-mail va bord à bord. */
 .body {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
@@ -155,7 +158,7 @@ img {
     border-bottom: 1px solid #eef2f6;
     border-top: 1px solid #eef2f6;
     margin: 0;
-    padding: 0;
+    padding: 24px 0 0;
     width: 100%;
 }
 
