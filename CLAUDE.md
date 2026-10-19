@@ -3989,6 +3989,9 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   planche d'impression `admin.documents.badges?type=...`. Le tableau Modèles,
   le designer, l'aperçu et Badges prêts utilisent le même type ; ne jamais
   afficher une ligne de rôle sans raccorder aussi ses destinataires et son rendu.
+  Pour modérateur et rapporteur, une séance sans adresse e-mail de fonction ne
+  crée pas de badge prêt : son libellé peut être collectif ou historique. Les
+  affectations liées par e-mail sont dédoublonnées par personne.
 - **Un compte peut cumuler des badges sur le même événement** :
   `BadgeCatalog::forAccount()` conserve le badge participant et ajoute chaque
   fonction dont l'adresse e-mail correspond au compte ou à sa fiche participant.

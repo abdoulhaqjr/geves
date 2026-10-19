@@ -75,7 +75,13 @@
                             </tr>
                         @empty
                             <tr><td colspan="6" style="padding:28px;text-align:center;color:var(--ukc-muted);">
-                                Aucun destinataire pour cette catégorie.
+                                @if ($badgeSearch !== '')
+                                    Aucun destinataire ne correspond à cette recherche.
+                                @elseif (in_array($badgeType, ['moderation', 'rapporteur'], true))
+                                    Aucun {{ $badgeType === 'moderation' ? 'modérateur' : 'rapporteur' }} avec une adresse e-mail renseignée dans le programme.
+                                @else
+                                    Aucun destinataire pour cette catégorie.
+                                @endif
                             </td></tr>
                         @endforelse
                     </tbody>

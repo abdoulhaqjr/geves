@@ -137,12 +137,18 @@ class BadgeCatalog
         if (in_array($type, ['moderation', 'rapporteur'], true)) {
             $prefix = $type === 'moderation' ? 'moderator' : 'rapporteur';
 
-            $people = $event->sessions()->get()->map(fn ($session) => [
-                'name' => trim((string) $session->{$prefix.'_name'}),
-                'email' => trim((string) $session->{$prefix.'_email'}),
-                'institution' => (string) '',
-                'ref' => self::reference($event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) ($session->{$prefix.'_email'} ?: $session->{$prefix.'_name'}))))),
-            ])->all();
+            // Le programme peut conserver des libellés collectifs ou des noms
+            // historiques sans compte lié. Seule l'adresse d'affectation ouvre
+            // réellement l'espace de fonction et rend la personne éligible à
+            // son badge (même règle que pour les attestations de fonction).
+            $people = $event->sessions()->get()
+                ->filter(fn ($session) => filter_var(trim((string) $session->{$prefix.'_email'}), FILTER_VALIDATE_EMAIL))
+                ->map(fn ($session) => [
+                    'name' => trim((string) $session->{$prefix.'_name'}),
+                    'email' => trim((string) $session->{$prefix.'_email'}),
+                    'institution' => (string) '',
+                    'ref' => self::reference($event->id.'-'.$type.'-'.md5(mb_strtolower(trim((string) $session->{$prefix.'_email'})))),
+                ])->values()->all();
 
             return collect(self::unique(self::withCurrentAccountNames($event, $type, $people)));
         }

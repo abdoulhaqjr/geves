@@ -2573,3 +2573,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 
 - Dans l'onglet Général d'une édition, `settings.name_order` choisit « Prénom(s) + NOM » (valeur par défaut) ou « NOM + Prénom(s) ». `EventNameFormat` applique la règle aux participants et aux auteurs structurés, sans réécrire les noms enregistrés. Les badges, listes, programmes, reçus, courriels et livres de résumés reprennent l'ordre choisi.
 - Les auteurs historiques qui n'ont qu'un champ `name` gardent cette valeur. Les attestations déjà émises conservent leur `recipient_name` signé ; les nouvelles prennent le format actif lors de l'émission.
+
+### Badges de modération et de rapporteur (19 octobre 2026)
+
+- `BadgeCatalog::recipients()` retient pour ces deux fonctions les séances dont l'adresse e-mail de fonction est valide, puis dédoublonne par e-mail. Les libellés collectifs ou noms historiques sans adresse restent visibles dans le programme mais ne produisent plus de badge prêt. Cela rejoint la liaison des espaces de fonction et des attestations par e-mail. Dans l'événement 4, les six lignes de modération se ramènent ainsi aux deux comptes désignés ; aucun enregistrement de séance n'est modifié.
