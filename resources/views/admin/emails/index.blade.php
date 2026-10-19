@@ -12,6 +12,32 @@
 
     <div class="admin-page admin-emails" x-data="{
             tab: 'scheduled', pv: null, sched: false, tpv: null, tedit: null, log: null, tnew: false,
+            pvw: 'desk',
+            // Ouvre l'aperçu et demande le message rendu au serveur.
+            // ⚠️ On POSTE et on pose le HTML reçu dans `srcdoc`, plutôt que de
+            // viser le cadre par le `target` d'un formulaire : le corps peut
+            // faire 5 000 caractères (donc pas de GET), et un cadre cloisonné
+            // visé par un formulaire se fait bloquer par le navigateur.
+            async apercu(t) {
+                this.tpv = t;
+                await this.$nextTick();
+                const cadre = this.$refs.pvFrame;
+                cadre.srcdoc = '';
+                try {
+                    const corps = new FormData();
+                    corps.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '');
+                    corps.append('subject', t.subject || '');
+                    corps.append('body', t.body || '');
+                    const res = await fetch('{{ route('admin.emails.templates.preview') }}', {
+                        method: 'POST', body: corps, headers: { 'X-Requested-With': 'fetch' },
+                    });
+                    if (! res.ok) throw new Error('http');
+                    cadre.srcdoc = await res.text();
+                } catch (e) {
+                    window.ukcToast?.('Aperçu indisponible.', 'err');
+                    this.tpv = null;
+                }
+            },
             mergeTags: {{ \Illuminate\Support\Js::from(\App\Support\EmailTemplates::MERGE_TAGS) }},
             triggerOptions: {{ \Illuminate\Support\Js::from(\App\Support\EmailTemplates::TRIGGER_OPTIONS) }},
             insertTag(t) {
@@ -172,9 +198,9 @@
                                                         'subject' => $t['subject'], 'body' => $t['body'], 'active' => $t['active'],
                                                     ]) }}"><x-ukc.icon name="pen" :size="16" /></button>
                                             <button type="button" class="ukc-btn--icon" title="Aperçu"
-                                                    @click="tpv = {{ \Illuminate\Support\Js::from([
+                                                    @click="apercu({{ \Illuminate\Support\Js::from([
                                                         'subject' => $t['subject'], 'body' => $t['body'],
-                                                    ]) }}"><x-ukc.icon name="eye" :size="16" /></button>
+                                                    ]) }})"><x-ukc.icon name="eye" :size="16" /></button>
                                             <form method="POST" action="{{ route('admin.emails.templates.store') }}" style="display:inline;">
                                                 @csrf
                                                 <input type="hidden" name="label" value="Copie de {{ \Illuminate\Support\Str::limit($t['label'], 100, '') }}">
@@ -294,7 +320,7 @@
                             </div>
                         </template>
                         <div class="box-foot">
-                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="tpv = { subject: tedit.subject, body: tedit.body }">Aperçu</button>
+                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="apercu({ subject: tedit.subject, body: tedit.body })">Aperçu</button>
                             <button type="button" class="ukc-btn ukc-btn--ghost" @click="tedit = null">Annuler</button>
                             <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         </div>
@@ -351,7 +377,7 @@
                         <input type="hidden" name="active" value="0">
                         <label class="ukc-check"><input type="checkbox" name="active" value="1" x-model="f.active"> Modèle actif</label>
                         <div class="box-foot">
-                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="tpv = { subject: f.subject, body: f.body }">Aperçu</button>
+                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="apercu({ subject: f.subject, body: f.body })">Aperçu</button>
                             <button type="button" class="ukc-btn ukc-btn--ghost" @click="tnew = false">Annuler</button>
                             <button type="submit" class="ukc-btn ukc-btn--blue">Créer</button>
                         </div>
@@ -360,18 +386,45 @@
             </div>
         </div>
 
-        {{-- ===== Modale : Aperçu e-mail (fidèle au mockup) ===== --}}
+        {{-- ===== Modale : Aperçu e-mail =====
+             ⚠️ Le message est rendu par le SERVEUR, avec le vrai gabarit de marque
+             (bandeau, bouton, pied), et posé dans un cadre isolé : les styles de
+             l'e-mail sont faits pour une boîte de réception, pas pour cet écran.
+             Le cadre ne reçoit aucun droit (`sandbox`) - un aperçu ne navigue pas,
+             n'exécute rien, et le corps y arrive déjà échappé par le gabarit. --}}
         <div class="ukc-modal" x-show="tpv" x-cloak @click.self="tpv = null" style="display:none;">
-            <div class="box narrow">
+            <div class="box wide">
                 <div class="box-head">
                     <span>Aperçu e-mail</span>
                     <button type="button" @click="tpv = null" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">&times;</button>
                 </div>
                 <div class="box-body">
                     <div class="mail-preview">
-                        <div class="subj" x-text="tpv?.subject || 'Objet'"></div>
-                        <div class="body" x-text="tpv?.body || 'Corps'"></div>
+                        <div class="mp-bar">
+                            <div class="mp-meta">
+                                <div><span class="k">De</span> {{ config('mail.from.name') ?: config('app.name') }} &lt;{{ config('mail.from.address') }}&gt;</div>
+                                <div><span class="k">Objet</span> <strong x-text="tpv?.subject || '(sans objet)'"></strong></div>
+                            </div>
+                            <div class="mp-sizes">
+                                <button type="button" :class="{ on: pvw === 'desk' }" @click="pvw = 'desk'">Ordinateur</button>
+                                <button type="button" :class="{ on: pvw === 'phone' }" @click="pvw = 'phone'">Téléphone</button>
+                            </div>
+                        </div>
+                        <div class="mp-stage">
+                            {{-- ⚠️ `allow-same-origin` SEUL : les scripts, les formulaires et
+                                 la navigation restent interdits (c'est `allow-scripts` qui les
+                                 ouvrirait), mais le document garde notre origine - sans quoi le
+                                 LOGO du bandeau ne se charge pas, et l'aperçu montre une image
+                                 cassée là où le destinataire verra la marque. --}}
+                            <iframe x-ref="pvFrame" title="Aperçu de l’e-mail" class="mp-frame"
+                                    sandbox="allow-same-origin" :style="pvw === 'phone' ? 'width:380px;' : 'width:100%;'"></iframe>
+                        </div>
                     </div>
+                    <p class="ukc-hint">
+                        Message d’exemple : « Awa Kodjo », inscrite à un événement de démonstration.
+                        Une balise que l’envoi ne sait pas remplir apparaît vide ici - c’est ce que
+                        le destinataire recevrait.
+                    </p>
                     <div class="box-foot">
                         <button type="button" class="ukc-btn ukc-btn--blue" @click="tpv = null">Fermer</button>
                     </div>

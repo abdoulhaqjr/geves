@@ -901,9 +901,72 @@ et **habillés à la charte de l'Université de Kara** :
     **caractère proscrit** (cf. TypographieTest), au même titre que le cadratin (U+2014)
     et le demi-cadratin (U+2013). Séparateur = tiret simple ` - `. Les sujets des
     notifications l'employaient : repris en tiret simple.
+  - ⚠️⚠️ **LE BOUTON SE DÉFEND DU MODE SOMBRE DE GMAIL** (2026-10-19). Gmail
+    (application Android/iOS) **repeint** ce qu'il trouve : il éclaircit un fond
+    sombre et assombrit le texte clair posé dessus. Le bouton bleu `#223ea4` à
+    texte blanc ressortait en **lavande pâle à texte bleu foncé**, quasi illisible -
+    constaté sur un vrai envoi, capture à l'appui.
+    - **Le fond est doublé d'un `background-image`** (dégradé d'une seule couleur,
+      donc un aplat à l'œil) : Gmail ne retouche **pas** les images de fond.
+      ⚠️ Ce n'est pas un décor, et la règle « pas de dégradé » ci-dessus tient
+      toujours : Outlook ignore les dégradés et retombe sur `background-color`, de
+      la même couleur exactement.
+    - ⚠️ **Le rembourrage est un vrai `padding`**, plus le jeu de bordures de la
+      couleur du fond que posait Laravel : une bordure se recolore indépendamment
+      du fond, et c'est elle qui dessinait le halo pâle. **Contrepartie assumée** :
+      le moteur Word d'Outlook n'applique pas le rembourrage d'un lien, le bouton y
+      est donc serré (la `line-height`, qu'il honore, lui rend sa hauteur). On
+      choisit l'écran où le défaut a été CONSTATÉ. Le remède complet serait un
+      bouton en `<td>` (VML), donc un `button.blade.php` publié - **pas** le retour
+      des bordures.
+    - ⚠️ **Rien de tout cela ne se vérifie en local** : il faut un envoi réel lu
+      dans Gmail, en mode sombre, sur téléphone.
+  - ⚠️ **`word-break: break-all` ne vaut que pour l'adresse copiée-collée**
+    (`.break-all`, sous le bouton). Posée sur tous les liens de la carte, elle
+    s'appliquait à l'intitulé du bouton, qui se coupait en plein mot.
+  - ⚠️ **L'espace intérieur est SERRÉ** : 36px de rembourrage partout mangeaient un
+    cinquième d'un écran de téléphone, et le pied en ajoutait autant sous la carte
+    (corps `26px 24px`, pied `16px 24px 20px`, bandeau `18px`, paragraphes
+    `line-height 1.5` + marge basse **écrite** à 14px - laissée au client, elle vaut
+    `1em` et chacun en décide autrement). ⚠️ **Ce qui entoure l'e-mail dans Gmail
+    n'est PAS à nous** : l'application pose sa propre marge autour du message, et
+    aucun gabarit ne l'enlève.
 - Tests : `tests/Feature/AccountMailLocalizationTest.php` (langue suit le compte + rendu
   FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription ;
-  `TypographieTest` garde l'absence des caractères proscrits (sujets compris).
+  `TypographieTest` garde l'absence des caractères proscrits (sujets compris) ;
+  **`ApercuEmailTest`** (aperçu + bouclier de mode sombre + espacements).
+
+### Aperçu d'un modèle d'e-mail = le VRAI message, rendu par le serveur
+
+⚠️⚠️ L'aperçu de `admin/emails` affichait l'objet et le corps **en texte brut** : on
+y relisait sa prose, on n'y voyait ni la mise en page, ni ce que les balises de
+fusion allaient donner. Il POSTE désormais sur **`admin.emails.templates.preview`**
+(`EmailTemplateController::preview`, cap `emails`), qui rend le **même mailable**
+(`CampaignMail`) avec le **même thème de marque** - bandeau, bouton, pied compris -
+et le pose dans un cadre isolé. Même grammaire que l'aperçu verrouillé du reçu.
+
+- ⚠️⚠️ **La substitution est CELLE DE L'ENVOI** : `QueueEmailCampaign::fill()` est
+  devenue publique et l'aperçu l'appelle sur un participant d'exemple
+  (`EmailTemplates::sampleParticipant()`, non enregistré, relation `event` **posée**).
+  Une seconde table de valeurs propre à l'aperçu finirait par promettre autre chose
+  que ce qui part.
+- ⚠️ **Une balise que l'envoi ne sait pas remplir se voit VIDE** - et c'est
+  l'information la plus utile de cet écran : **sept balises de la palette sur douze**
+  (`{{communication_title}}`, `{{amount}}`, `{{payment_ref}}`, `{{attestation_url}}`,
+  `{{badge_url}}`, `{{session_date}}`, `{{session_room}}`) sont encore remplacées par
+  du vide. L'éditeur les propose pourtant en puces cliquables : « Montant dû :
+  {{amount}} FCFA » part en « Montant dû :  FCFA ». **À trancher** : les alimenter,
+  ou les retirer de la palette.
+- ⚠️ **`{{login_url}}` pointait sur `/mon-espace`, qui n'existe pas** : toute
+  campagne l'employant envoyait ses destinataires sur une page d'erreur. C'est
+  `route('account.dashboard')`.
+- ⚠️ Le rendu arrive par `fetch` + `srcdoc`, pas par le `target` d'un formulaire :
+  le corps peut faire 5 000 caractères (donc pas de GET), et un cadre cloisonné visé
+  par un formulaire se fait **bloquer** par le navigateur (mesuré).
+- ⚠️ Le cadre porte **`sandbox="allow-same-origin"` SEUL** : scripts, formulaires et
+  navigation restent interdits (c'est `allow-scripts` qui les ouvrirait), mais le
+  document garde notre origine - sans quoi le **logo du bandeau ne se charge pas** et
+  l'aperçu montre une image cassée là où le destinataire verra la marque.
 
 ### Impersonation (« se connecter en tant que »)
 

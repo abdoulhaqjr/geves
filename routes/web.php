@@ -469,6 +469,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/emails/{email}', [EmailController::class, 'cancel'])->name('admin.emails.cancel');
             Route::post('/emails/annuler-campagne', [EmailController::class, 'cancelBatch'])->name('admin.emails.cancel-batch');
             Route::post('/emails/relancer-campagne', [EmailController::class, 'retryBatch'])->name('admin.emails.retry-batch');
+            Route::post('/emails/modeles/apercu', [EmailTemplateController::class, 'preview'])->name('admin.emails.templates.preview');
             Route::put('/emails/modeles', [EmailTemplateController::class, 'update'])->name('admin.emails.templates.update');
             Route::post('/emails/modeles/nouveau', [EmailTemplateController::class, 'store'])->name('admin.emails.templates.store');
             Route::delete('/emails/modeles/{key}', [EmailTemplateController::class, 'destroy'])->name('admin.emails.templates.destroy');

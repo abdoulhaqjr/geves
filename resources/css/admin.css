@@ -1195,9 +1195,20 @@
   cursor: pointer; font-family: var(--ukc-mono);
 }
 .admin-emails .merge-tags button:hover { border-color: var(--ukc-blue); background: #eef2ff; }
-.admin-emails .mail-preview { border: 1px solid var(--ukc-border); border-radius: 10px; background: #f8fafc; padding: 16px; font-size: 13.5px; line-height: 1.55; }
-.admin-emails .mail-preview .subj { font-weight: 800; font-size: 14px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--ukc-border); }
-.admin-emails .mail-preview .body { white-space: pre-wrap; color: var(--ukc-text); }
+/* Aperçu d'un e-mail : une barre « boîte de réception » (expéditeur, objet,
+   largeur) puis le message RÉEL rendu par le serveur dans un cadre isolé.
+   ⚠️ Le cadre a un fond propre et une hauteur bornée : les styles d'un e-mail
+   sont écrits pour une boîte de réception, pas pour une modale, et le message
+   est plus haut qu'elle. */
+.admin-emails .mail-preview { border: 1px solid var(--ukc-border); border-radius: 10px; overflow: hidden; background: #f8fafc; }
+.admin-emails .mail-preview .mp-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--ukc-border); background: #fff; }
+.admin-emails .mail-preview .mp-meta { font-size: 12.5px; line-height: 1.6; color: var(--ukc-text); min-width: 0; }
+.admin-emails .mail-preview .mp-meta .k { display: inline-block; min-width: 42px; color: var(--ukc-muted); }
+.admin-emails .mail-preview .mp-sizes { display: flex; gap: 4px; flex-shrink: 0; }
+.admin-emails .mail-preview .mp-sizes button { border: 1px solid var(--ukc-border); background: #fff; color: var(--ukc-muted); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.admin-emails .mail-preview .mp-sizes button.on { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+.admin-emails .mail-preview .mp-stage { display: flex; justify-content: center; padding: 12px; background: #eef2f6; }
+.admin-emails .mail-preview .mp-frame { height: 460px; max-width: 100%; border: 0; border-radius: 6px; background: #fff; }
 .admin-emails .ukc-actions { flex-wrap: nowrap; }
 .admin-emails .ukc-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .admin-emails .ukc-toolbar .sep { width: 1px; height: 24px; background: var(--ukc-border); margin: 0 4px; }

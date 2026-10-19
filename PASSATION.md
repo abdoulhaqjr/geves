@@ -25,6 +25,42 @@ arrivent sur `/csp-report`, avec limitation, déduplication et journalisation
 sans URL de page. La suite dépend des violations observées (Turnstile, visio,
 FedaPay, scripts et styles intégrés) ; voir `DEPLOIEMENT.md` avant de durcir
 HSTS ou d'activer la politique complète.
+### L'aperçu montre le vrai e-mail, et le bouton tient en mode sombre (2026-10-19)
+
+**L'aperçu n'était pas un aperçu.** `admin/emails` affichait l'objet et le corps
+**en texte brut** : on y relisait sa prose, on n'y voyait ni la mise en page, ni
+ce que les balises de fusion allaient donner. Il rend désormais le **vrai
+message**, par le **même mailable** et le **même thème de marque** que l'envoi -
+bandeau, bouton, pied compris - dans un cadre isolé.
+
+⚠️⚠️ **La substitution est celle de l'envoi** (`QueueEmailCampaign::fill`, sur un
+participant d'exemple) : une seconde table de valeurs propre à l'aperçu finirait
+par promettre autre chose que ce qui part. Conséquence voulue : une balise que
+l'envoi laisse vide **se voit vide**.
+
+⚠️ **Et sept balises sur douze sont dans ce cas** (`{{amount}}`,
+`{{payment_ref}}`, `{{communication_title}}`, `{{attestation_url}}`,
+`{{badge_url}}`, `{{session_date}}`, `{{session_room}}`), alors que l'éditeur les
+propose en puces cliquables : « Montant dû : {{amount}} FCFA » part en « Montant
+dû :  FCFA ». À trancher - les alimenter ou les retirer de la palette.
+⚠️ **`{{login_url}}` menait à `/mon-espace`, qui n'existe pas** : corrigé en
+`route('account.dashboard')`.
+
+⚠️⚠️ **Le bouton se défend du mode sombre de Gmail.** L'application repeint ce
+qu'elle trouve : le bouton bleu à texte blanc ressortait en **lavande pâle à
+texte bleu foncé**. Son fond est doublé d'une **image** (dégradé d'une seule
+couleur), que Gmail ne retouche pas, et son rembourrage est un vrai `padding` -
+le jeu de bordures de Laravel se recolorait indépendamment du fond, et c'est lui
+qui dessinait le halo. ⚠️ Contrepartie assumée : Outlook pour Windows n'applique
+pas le rembourrage d'un lien, le bouton y est serré. ⚠️ **Rien de tout cela ne se
+vérifie en local** : il faut un envoi réel, lu dans Gmail en mode sombre.
+
+**Espacements resserrés** : corps `36px` → `26px 24px`, pied `36px` →
+`16px 24px 20px`, bandeau `24px` → `18px`, paragraphes en `1.5` avec une marge
+basse écrite. ⚠️ Ce qui entoure l'e-mail **dans Gmail** n'est pas à nous :
+l'application pose sa propre marge, et aucun gabarit ne l'enlève.
+
+8 cas Pest (`ApercuEmailTest`), **trois sabotages vérifiés**.
 
 ### Les salles du programme sont des espaces déclarés (2026-10-19)
 

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\QueueEmailCampaign;
 use App\Http\Controllers\Controller;
+use App\Mail\CampaignMail;
 use App\Support\EmailTemplates;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 /**
@@ -17,6 +20,43 @@ use Illuminate\Support\Str;
  */
 class EmailTemplateController extends Controller
 {
+    /**
+     * Aperçu d'un modèle : le message tel que le destinataire le recevra.
+     *
+     * ⚠️⚠️ **C'EST LE VRAI GABARIT QUI EST RENDU**, pas une imitation : même
+     * mailable (`CampaignMail`), même thème de marque, donc bandeau, bouton et
+     * pied compris. L'aperçu montrait l'objet et le corps **en texte brut** - on
+     * y relisait sa prose, on n'y voyait ni la mise en page, ni ce que les
+     * balises de fusion allaient donner.
+     *
+     * ⚠️ **Et la substitution est celle de l'ENVOI** (`QueueEmailCampaign::fill`,
+     * sur un participant d'exemple non enregistré) : une seconde table de valeurs
+     * propre à l'aperçu finirait par promettre autre chose que ce qui part. Une
+     * balise que l'envoi laisse vide se voit donc vide ici - c'est l'information
+     * la plus utile de cet écran.
+     */
+    public function preview(Request $request, QueueEmailCampaign $campagne): Response
+    {
+        $data = $request->validate([
+            'subject' => ['nullable', 'string', 'max:200'],
+            'body' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $exemple = EmailTemplates::sampleParticipant();
+        $remplir = fn (string $texte): string => $campagne->fill($texte, $exemple);
+
+        $mail = new CampaignMail(
+            $remplir(trim((string) ($data['subject'] ?? ''))),
+            $remplir(trim((string) ($data['body'] ?? ''))),
+        );
+
+        // ⚠️ Le corps est posé par `{{ }}` dans le gabarit, donc échappé : ce que
+        // l'admin tape reste du texte, y compris une balise HTML.
+        return response((string) $mail->render())
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('X-Robots-Tag', 'noindex');
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $request->validate([

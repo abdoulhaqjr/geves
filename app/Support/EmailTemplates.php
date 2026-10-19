@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Actions\QueueEmailCampaign;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;
@@ -90,6 +92,34 @@ class EmailTemplates
         'participant_invitation' => 'Invitation (manuel)',
         'report_reminder' => 'Relance rapport (manuel)',
     ];
+
+    /**
+     * Destinataire d'EXEMPLE pour l'aperçu d'un modèle : un participant qui
+     * n'est pas enregistré, rattaché à un événement qui ne l'est pas davantage.
+     *
+     * ⚠️ Il ne sert qu'à faire tourner la **vraie** substitution
+     * ({@see QueueEmailCampaign::fill()}) : l'aperçu montre donc ce
+     * que l'envoi produirait, balises laissées vides comprises.
+     * ⚠️ Sa relation `event` est POSÉE, pas déduite : sans elle, l'ordre des noms
+     * irait chercher l'événement en base pour un identifiant qui n'existe pas.
+     */
+    public static function sampleParticipant(): Participant
+    {
+        $event = new Event([
+            'title' => 'Colloque international de l’Université de Kara',
+            'date_start' => '2026-11-11',
+            'date_end' => '2026-11-13',
+        ]);
+
+        $participant = new Participant([
+            'first_name' => 'Awa',
+            'last_name' => 'Kodjo',
+            'email' => 'awa.kodjo@example.tg',
+        ]);
+        $participant->setRelation('event', $event);
+
+        return $participant;
+    }
 
     /** Modèles personnalisés créés depuis le back-office (hors modèles intégrés). */
     public static function customKeys(): array

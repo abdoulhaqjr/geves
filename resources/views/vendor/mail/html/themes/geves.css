@@ -68,10 +68,14 @@ h3 {
     text-align: left;
 }
 
+/* ⚠️ La marge basse est ÉCRITE : laissée au défaut du client, un paragraphe
+   prend `1em` (16px) et les clients ne s'accordent pas dessus. Avec l'interligne,
+   c'est ce qui donnait à l'e-mail son air de brouillon aéré. */
 p {
     font-size: 16px;
-    line-height: 1.6em;
+    line-height: 1.5em;
     margin-top: 0;
+    margin-bottom: 14px;
     text-align: left;
 }
 
@@ -109,7 +113,7 @@ img {
 .header {
     background-color: #223ea4;
     border-bottom: 3px solid #ffd700;
-    padding: 24px 0;
+    padding: 18px 0;
     text-align: center;
 }
 
@@ -165,16 +169,17 @@ img {
     width: 570px;
 }
 
-.inner-body a {
-    word-break: break-all;
-}
+/* ⚠️ La coupure « n'importe où » est réservée aux ADRESSES copiées-collées
+   (`.break-all`, le lien de secours sous le bouton). Posée sur tous les liens de
+   la carte, elle s'appliquait aussi à l'intitulé du bouton : « Réinitialiser mon
+   mot de passe » se coupe alors en plein mot dès que la largeur manque. */
 
 /* Subcopy */
 
 .subcopy {
     border-top: 1px solid #e3e8f0;
-    margin-top: 25px;
-    padding-top: 25px;
+    margin-top: 18px;
+    padding-top: 18px;
 }
 
 .subcopy p {
@@ -230,9 +235,17 @@ img {
     padding: 10px 0;
 }
 
+/* ⚠️ L'ESPACE INTÉRIEUR EST SERRÉ (36px partout auparavant) : sur un téléphone,
+   36px de chaque côté mangeaient un cinquième de la largeur, et le pied en
+   ajoutait autant sous la carte. Le corps et le pied ne prennent pas la même
+   valeur - le pied ne porte que deux lignes grises. */
 .content-cell {
     max-width: 100vw;
-    padding: 36px;
+    padding: 26px 24px;
+}
+
+.footer .content-cell {
+    padding: 16px 24px 20px;
 }
 
 /* Buttons */
@@ -241,48 +254,63 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    margin: 30px auto;
+    margin: 22px auto;
     padding: 0;
     text-align: center;
     width: 100%;
     float: unset;
 }
 
+/* ⚠️⚠️ LE BOUTON SE DÉFEND DU MODE SOMBRE DE GMAIL.
+   Gmail (application Android/iOS) REPEINT les couleurs qu'il trouve : il éclaircit
+   un fond sombre et assombrit le texte clair posé dessus. Le bouton bleu `#223ea4`
+   en blanc ressortait donc en **lavande pâle à texte bleu foncé**, quasi illisible
+   - constaté sur un vrai envoi, capture à l'appui.
+   - Le fond est doublé d'un `background-image` (dégradé d'une seule couleur, donc
+     un aplat à l'œil) : Gmail ne retouche PAS les images de fond, et le bouton
+     garde son bleu. ⚠️ Ce n'est pas un décor - Outlook ignore les dégradés et
+     retombe sur `background-color`, de la même couleur exactement. La règle
+     « pas de dégradé » du thème vaut pour l'ALLURE, et elle est respectée.
+   - Le rembourrage est un VRAI `padding`, plus un jeu de bordures de la couleur
+     du fond : une bordure se recolore indépendamment du fond, et c'est elle qui
+     dessinait le halo pâle autour du texte.
+   - `color` est écrit en six chiffres (`#ffffff`) : certains clients ignorent la
+     forme courte lorsqu'elle est inlinée.
+   ⚠️ **Contrepartie assumée** : le moteur Word d'Outlook pour Windows n'applique
+   pas le rembourrage d'un lien - c'est précisément pourquoi Laravel dessinait ces
+   bordures. Le bouton y reste coloré, lisible et cliquable, mais serré. On choisit
+   l'écran où le défaut a été CONSTATÉ (Gmail sur téléphone) plutôt qu'un client où
+   il ne l'a pas été ; la `line-height` lui rend un peu de hauteur, que Word honore.
+   Si un jour Outlook pèse plus lourd, le remède est un bouton en `<td>` (VML),
+   donc un `button.blade.php` publié - pas le retour des bordures. */
 .button {
     -webkit-text-size-adjust: none;
     border-radius: 8px;
-    color: #fff;
+    color: #ffffff;
     display: inline-block;
-    overflow: hidden;
+    padding: 0 26px;
+    font-size: 15px;
     font-weight: 600;
+    line-height: 44px;
     text-decoration: none;
 }
 
 .button-blue,
 .button-primary {
     background-color: #223ea4;
-    border-bottom: 9px solid #223ea4;
-    border-left: 20px solid #223ea4;
-    border-right: 20px solid #223ea4;
-    border-top: 9px solid #223ea4;
+    background-image: linear-gradient(#223ea4, #223ea4);
 }
 
 .button-green,
 .button-success {
     background-color: #009933;
-    border-bottom: 9px solid #009933;
-    border-left: 20px solid #009933;
-    border-right: 20px solid #009933;
-    border-top: 9px solid #009933;
+    background-image: linear-gradient(#009933, #009933);
 }
 
 .button-red,
 .button-error {
     background-color: #dc2626;
-    border-bottom: 9px solid #dc2626;
-    border-left: 20px solid #dc2626;
-    border-right: 20px solid #dc2626;
-    border-top: 9px solid #dc2626;
+    background-image: linear-gradient(#dc2626, #dc2626);
 }
 
 /* Panels */

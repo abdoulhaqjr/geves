@@ -53,8 +53,13 @@ class QueueEmailCampaign
     /**
      * Remplace les variables par les valeurs du participant : ancien style
      * `{prenom}` et balises de fusion du mockup `{{participant_name}}`.
+     *
+     * ⚠️ **Publique parce que l'APERÇU l'appelle** (cf.
+     * `EmailTemplateController::preview`, sur un participant d'exemple) : une
+     * seconde table de valeurs, propre à l'aperçu, finirait par promettre autre
+     * chose que ce qui part réellement.
      */
-    protected function fill(string $text, Participant $participant): string
+    public function fill(string $text, Participant $participant): string
     {
         $event = $participant->event;
         $dates = $event && $event->date_start
@@ -72,7 +77,11 @@ class QueueEmailCampaign
             '{{participant_email}}' => (string) $participant->email,
             '{{edition_name}}' => (string) ($event?->title ?? ''),
             '{{edition_dates}}' => $dates,
-            '{{login_url}}' => url('/mon-espace'),
+            // ⚠️ `/mon-espace` N'EXISTE PAS : toute campagne employant cette
+            // balise envoyait ses destinataires sur une page d'erreur. Le tableau
+            // de bord du participant est `account.dashboard` (`/compte`), et on
+            // passe par la route nommée pour que l'adresse suive si elle change.
+            '{{login_url}}' => route('account.dashboard'),
             '{{communication_title}}' => '',
             '{{amount}}' => '',
             '{{payment_ref}}' => '',
