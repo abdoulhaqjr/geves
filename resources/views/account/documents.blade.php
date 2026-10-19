@@ -163,7 +163,7 @@
                                             <h4><x-ukc.icon name="grid" :size="18" /> {{ __('Détails du QR code') }}</h4>
                                             <dl>
                                                 <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badge['ref'] }}</strong></dd>
-                                                <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} - {{ __('ID compte') }} #{{ $participant->id }}</dd>
+                                                <dt>{{ __('Participant') }}</dt><dd>{{ \App\Support\EventNameFormat::user($event, $account) }} - {{ __('ID compte') }} #{{ $participant->id }}</dd>
                                                 <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
                                                 <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
                                                 <dt>{{ __('Type d’accès') }}</dt><dd>{{ __($badge['role']) }} - {{ __('Sessions plénières + ateliers') }}</dd>

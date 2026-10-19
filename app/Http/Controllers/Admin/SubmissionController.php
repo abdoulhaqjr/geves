@@ -22,6 +22,7 @@ use App\Models\SubmissionAuthor;
 use App\Models\User;
 use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
+use App\Support\EventNameFormat;
 use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\ParticipantTypes;
@@ -221,7 +222,7 @@ class SubmissionController extends Controller
                 fputcsv($out, [
                     $s->ref_code,
                     $s->title,
-                    $s->participant?->full_name ?? ($s->authors[0]['name'] ?? ''),
+                    $s->participant?->full_name ?? $s->correspondingAuthorName(),
                     $s->type === 'poster' ? 'Poster' : 'Orale',
                     $s->presentationModeLabel() ?? '',
                     $s->participant?->participationModeLabel() ?? '',
@@ -357,14 +358,14 @@ class SubmissionController extends Controller
         if (Notifier::emailAllowed($user, 'authorship')) {
             Mail::to($user->email)->send(new AuthorLinkedMail(
                 $submission,
-                $user->full_name ?: (string) $user->name,
+                EventNameFormat::user($event, $user),
                 LinkSubmissionAuthors::roleLabel($link->role),
                 route('account.submissions.show', $submission),
                 route('author.decline', ['token' => $link->token]),
             ));
         }
 
-        return back()->with('ukc_status', 'Auteur rattaché au compte '.($user->full_name ?: $user->email).'.');
+        return back()->with('ukc_status', 'Auteur rattaché au compte '.EventNameFormat::user($event, $user).'.');
     }
 
     /** Détache un auteur d'un compte (rapprochement erroné). Le déposant est intouchable. */

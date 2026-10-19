@@ -6,7 +6,7 @@
         $authors = collect($s->authors ?? []);
         $mainAuthor = $authors->firstWhere('corresponding', true) ?? $authors->first();
         $coauthors = $authors->filter(fn ($a) => empty($a['corresponding']));
-        $fmtAuthor = fn ($a) => trim(($a['name'] ?? '').(filled($a['affiliation'] ?? null) ? ' ('.$a['affiliation'].')' : ''));
+        $fmtAuthor = fn ($a) => trim(\App\Support\EventNameFormat::author($s->event, $a).(filled($a['affiliation'] ?? null) ? ' ('.$a['affiliation'].')' : ''));
         $keywordSeparator = (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator();
         $kw = collect(\App\Support\SubmissionKeywords::parse($s->keywords, $keywordSeparator));
         $keywordHelp = match ($keywordSeparator) { 'semicolon' => 'Entrée ou point-virgule pour ajouter', 'both' => 'Entrée, virgule ou point-virgule pour ajouter', default => 'Entrée ou virgule pour ajouter' };
@@ -87,7 +87,7 @@
                             <div style="display:flex;flex-direction:column;gap:6px;">
                                 @foreach ($authors as $a)
                                     <div style="font-size:13.5px;">
-                                        <strong>{{ $a['name'] ?? '-' }}</strong>
+                                        <strong>{{ \App\Support\EventNameFormat::author($s->event, $a) ?: '-' }}</strong>
                                         @if (!empty($a['corresponding']))<span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Correspondant') }}</span>@endif
                                         @if (!empty($a['affiliation']))<span style="color:var(--ukc-muted);"> - {{ $a['affiliation'] }}@if (!empty($a['grade'])) - {{ $a['grade'] }}@endif</span>@endif
                                     </div>

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\EventType;
 use App\Support\EventArtwork;
+use App\Support\EventNameFormat;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -47,6 +48,7 @@ class SaveEventRequest extends FormRequest
             'short_desc' => ['nullable', 'string', 'max:2000'],
             'format' => ['nullable', 'string', 'max:80'],
             'main_language' => ['nullable', 'string', 'max:60'],
+            'name_order' => ['nullable', Rule::in([EventNameFormat::FIRST_LAST, EventNameFormat::LAST_FIRST])],
             'languages' => ['array'],
             'languages.*' => ['nullable', 'string', 'max:60'],
             'tracks' => ['nullable', 'string', 'max:3000'],

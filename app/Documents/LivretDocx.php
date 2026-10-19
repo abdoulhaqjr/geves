@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Support\EventNameFormat;
 use App\Support\EventSettings;
 use App\Support\SubmissionFormConfig;
 use App\Support\SubmissionKeywords;
@@ -915,7 +916,7 @@ class LivretDocx
         $authors = collect($sl->submission->authors ?? []);
         $corr = $authors->firstWhere('corresponding', true) ?? $authors->first();
 
-        return $corr ? $this->displayName($this->mapName(trim((string) ($corr['name'] ?? '')))) : '';
+        return $corr ? $this->authorName($corr) : '';
     }
 
     /**
@@ -1031,7 +1032,7 @@ class LivretDocx
         }
 
         return collect($sl->submission->authors ?? [])->map(function ($a) {
-            $name = $this->displayName($this->mapName(trim((string) ($a['name'] ?? ''))));
+            $name = $this->authorName($a);
             $aff = $this->mapAff(trim((string) ($a['affiliation'] ?? '')));
 
             return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
@@ -1169,7 +1170,7 @@ class LivretDocx
         // Auteurs + affiliations numérotées (exposants) + auteur correspondant (*).
         // ⚠️ Nom affiché en MAJUSCULES (convention du livret).
         $people = collect($s->authors ?? [])->map(fn ($a) => [
-            'name' => $this->displayName($this->mapName((string) ($a['name'] ?? ''))),
+            'name' => $this->authorName($a),
             'aff' => $this->mapAff(trim((string) ($a['affiliation'] ?? ''))),
             'email' => trim((string) ($a['email'] ?? '')),
             'phone' => trim((string) ($a['phone'] ?? '')),
@@ -1495,6 +1496,18 @@ class LivretDocx
     private function displayName(string $name): string
     {
         return self::authorCase($name, $this->isGeneral());
+    }
+
+    /** Applique l'ordre de l'événement avant la casse du modèle de livre. */
+    private function authorName(array $author): string
+    {
+        $original = trim((string) ($author['name'] ?? ''));
+        $hasParts = filled($author['first_name'] ?? null) || filled($author['last_name'] ?? null);
+        $name = $hasParts
+            ? EventNameFormat::author($this->event, $author)
+            : $this->mapName($original);
+
+        return $this->displayName($name);
     }
 
     /**

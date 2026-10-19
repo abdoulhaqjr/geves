@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Mail\CoauthorPaymentInvitationMail;
 use App\Models\Email;
 use App\Models\Submission;
+use App\Support\EventNameFormat;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -48,7 +49,7 @@ class NotifyCoauthorsForPayment
             $seen[$key] = true;
 
             $url = route('public.coauthor', ['slug' => $slug, 'email' => $email]);
-            $mail = new CoauthorPaymentInvitationMail($submission, (string) ($author['name'] ?? ''), $url);
+            $mail = new CoauthorPaymentInvitationMail($submission, EventNameFormat::author($event, $author), $url);
 
             Mail::to($email)->send($mail);
 

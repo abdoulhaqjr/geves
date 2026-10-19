@@ -14,6 +14,7 @@ use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\EventNameFormat;
 use App\Support\ListSort;
 use App\Support\MeetingTranscript;
 use App\Support\Notifier;
@@ -1477,10 +1478,13 @@ class ProgramController extends Controller
         }
 
         $users = UserDirectorySearch::find($q);
+        $event = $this->currentEdition($request);
 
         return response()->json([
             'people' => $users->map(fn (User $u) => [
-                'name' => $u->full_name ?: (string) ($u->name ?: $u->email),
+                'name' => $event
+                    ? EventNameFormat::user($event, $u)
+                    : ($u->full_name ?: (string) ($u->name ?: $u->email)),
                 'email' => (string) $u->email,
             ])->values(),
         ]);

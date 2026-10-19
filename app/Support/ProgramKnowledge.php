@@ -131,8 +131,8 @@ class ProgramKnowledge
                 $room = filled($sl->room) ? (string) $sl->room : self::room($sl->session);
                 $title = Str::limit((string) (data_get($sl, 'submission.title') ?? 'Communication'), 80);
                 $ref = data_get($sl, 'submission.ref_code');
-                $author = data_get($sl, 'submission.participant.user.full_name')
-                    ?? data_get($sl, 'participant.user.full_name');
+                $author = data_get($sl, 'submission.participant.full_name')
+                    ?? data_get($sl, 'participant.full_name');
                 $meta = array_filter([
                     $hours,
                     $room !== '' ? 'salle '.$room : '',

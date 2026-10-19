@@ -163,7 +163,7 @@ class BadgeCatalog
 
         $people = $event->team()->wherePivotIn('role', $teamRoles)->get()
             ->map(fn ($user): array => [
-                'name' => trim((string) $user->first_name.' '.(string) $user->last_name) ?: (string) $user->name,
+                'name' => EventNameFormat::user($event, $user),
                 'email' => (string) $user->email,
                 'institution' => (string) $user->affiliation,
                 'ref' => self::reference($event->id.'-'.$type.'-user-'.$user->id),
@@ -220,7 +220,7 @@ class BadgeCatalog
             ->whereIn('user_id', $accounts->pluck('id'))
             ->get()->keyBy('user_id');
 
-        return array_map(function (array $person) use ($accounts, $participants, $type, $sansCompte) {
+        return array_map(function (array $person) use ($accounts, $participants, $type, $sansCompte, $event) {
             $person = $sansCompte($person);
             $account = $accounts->get(mb_strtolower(trim((string) ($person['email'] ?? ''))));
             if ($account) {
@@ -232,7 +232,7 @@ class BadgeCatalog
                     $person['photo'] = $participation->displayPhotoUrl();
                     $prefs = (array) (($participation->meta ?? [])['badge_photo_preferences'] ?? []);
                 } else {
-                    $person['name'] = self::accountName($account);
+                    $person['name'] = self::accountName($account, $event);
                     $person['photo'] = $account->photo_path ? Storage::url($account->photo_path) : '';
                     $prefs = [];
                 }
@@ -244,10 +244,12 @@ class BadgeCatalog
         }, $people);
     }
 
-    public static function accountName(User $account): string
+    public static function accountName(User $account, ?Event $event = null): string
     {
-        return trim(trim((string) $account->first_name).' '.trim((string) $account->last_name))
-            ?: (trim((string) $account->name) ?: (string) $account->email);
+        return $event
+            ? EventNameFormat::user($event, $account)
+            : EventNameFormat::parts((string) $account->first_name, (string) $account->last_name,
+                EventNameFormat::FIRST_LAST, trim((string) $account->name) ?: (string) $account->email);
     }
 
     /** Clé courte et stable, commune à l'aperçu participant et à la planche admin. */

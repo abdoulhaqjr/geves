@@ -4,6 +4,7 @@ namespace App\Documents;
 
 use App\Models\Event;
 use App\Models\Submission;
+use App\Support\EventNameFormat;
 use App\Support\EventSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -91,7 +92,7 @@ final class LivretView
                     // ⚠️ Casse SELON LE STYLE, via la source unique partagée avec le
                     // .docx (majuscules pour default/fss, « NOM Prénom » tel quel pour
                     // general) - ne pas remettre un mb_strtoupper inconditionnel ici.
-                    $name = LivretDocx::authorCase((string) ($auteur['name'] ?? ''), $general);
+                    $name = LivretDocx::authorCase(EventNameFormat::author($event, $auteur), $general);
                     if ($name !== '') {
                         $authorIndex[$name][] = $ref;
                     }

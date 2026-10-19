@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\SaveEventRequest;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Support\EventArtwork;
+use App\Support\EventNameFormat;
 use App\Support\EventStorage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -175,6 +176,7 @@ class SaveEvent
                 'short_desc' => ($data['short_desc'] ?? null) ?: null,
                 'format' => ($data['format'] ?? null) ?: null,
                 'main_language' => ($data['main_language'] ?? null) ?: null,
+                'name_order' => $data['name_order'] ?? $existingSettings['name_order'] ?? EventNameFormat::FIRST_LAST,
                 'languages' => $languages,
                 'tracks' => $tracks,
                 'key_dates' => $keyDates,

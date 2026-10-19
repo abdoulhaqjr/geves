@@ -26,7 +26,7 @@
         // Auteur correspondant : prérempli avec le compte connecté, éditable.
         // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par événement).
         'account' => [
-            'name' => $account->full_name,
+            'name' => \App\Support\EventNameFormat::user($event, $account),
             'first_name' => $account->first_name,
             'last_name' => $account->last_name,
             'email' => $account->email,
@@ -103,7 +103,7 @@
                     </div>
                 </div>
                 <div style="min-width:0;flex:1;">
-                    <div style="font-weight:800;">{{ $account->full_name }}
+                    <div style="font-weight:800;">{{ \App\Support\EventNameFormat::user($event, $account) }}
                         <span style="font-weight:500;color:var(--ukc-muted);">- {{ $account->grade }}</span>
                     </div>
                     <div style="font-size:.85rem;color:var(--ukc-muted);">

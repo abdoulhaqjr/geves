@@ -31,7 +31,7 @@
                     <div style="margin-bottom:18px;break-inside:avoid;">
                         <div style="font-weight:700;font-size:1.02rem;">{{ $s->title }}</div>
                         <div style="font-size:.85rem;color:var(--ukc-muted);margin:2px 0 6px;">
-                            {{ collect($s->authors ?? [])->pluck('name')->filter()->join(', ') }}
+                            {{ collect($s->authors ?? [])->map(fn ($a) => \App\Support\EventNameFormat::author($event, $a))->filter()->join(', ') }}
                         </div>
                         <div class="ukc-rte" style="font-size:.92rem;line-height:1.6;text-align:justify;">{!! \App\Support\Html::render($s->abstract) !!}</div>
                     </div>

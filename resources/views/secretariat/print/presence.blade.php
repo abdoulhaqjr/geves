@@ -9,13 +9,13 @@
         @else
             <table class="grid">
                 <thead>
-                    <tr><th class="num">#</th><th>Nom et prénom</th><th>Institution</th><th>Catégorie</th><th class="sign">Émargement</th></tr>
+                    <tr><th class="num">#</th><th>Participant</th><th>Institution</th><th>Catégorie</th><th class="sign">Émargement</th></tr>
                 </thead>
                 <tbody>
                     @foreach ($participants as $i => $p)
                         <tr>
                             <td class="num">{{ $i + 1 }}</td>
-                            <td>{{ trim($p->last_name.' '.$p->first_name) ?: $p->email }}</td>
+                            <td>{{ $p->full_name ?: $p->email }}</td>
                             <td>{{ $p->institution }}</td>
                             <td>{{ $p->title }}</td>
                             <td class="sign"></td>

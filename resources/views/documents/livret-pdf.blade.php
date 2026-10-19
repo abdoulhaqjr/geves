@@ -287,7 +287,7 @@
                             $auth = collect($sl->submission?->authors ?? [])->map(function ($a) use ($isGen) {
                                 // Même casse que le .docx (source unique) ; ce bloc n'est
                                 // atteint que hors « general » (le general n'a pas d'auteurs ici).
-                                $name = \App\Documents\LivretDocx::authorCase((string) ($a['name'] ?? ''), $isGen);
+                                $name = \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::author($event, $a), $isGen);
                                 $aff = trim((string) ($a['affiliation'] ?? ''));
                                 return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
                             })->filter()->implode('; ');
@@ -329,7 +329,7 @@
                 $people = collect($s->authors ?? [])->map(fn ($a) => [
                     // Casse SELON LE STYLE, via la source unique partagée avec le .docx
                     // (« NOM Prénom » tel quel pour general, MAJUSCULES pour default/fss).
-                    'name' => \App\Documents\LivretDocx::authorCase((string) ($a['name'] ?? ''), $isGen),
+                    'name' => \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::author($event, $a), $isGen),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
                     'phone' => trim((string) ($a['phone'] ?? '')),

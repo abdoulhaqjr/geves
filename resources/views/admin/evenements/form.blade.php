@@ -27,7 +27,7 @@
                 theme: @js($v('theme')), year: @js($v('year')), date_start: @js($v('date_start')), date_end: @js($v('date_end')),
                 submission_deadline: @js($v('submission_deadline')), location: @js($v('location')), slug: @js($v('slug')),
                 status: @js($v('status')), intro: @js($v('intro')), short_name: @js($v('short_name')), short_desc: @js($v('short_desc')),
-                format: @js($v('format')), main_language: @js($v('main_language')), languages: @js(old('languages', $languages)),
+                format: @js($v('format')), main_language: @js($v('main_language')), name_order: @js($v('name_order')), languages: @js(old('languages', $languages)),
                 submission_open: @js((bool) $v('submission_open')),
             },
             arrays: @js(['fees' => $fees, 'partners' => $partners, 'faq' => $faq, 'comOrg' => $comOrg, 'comSci' => $comSci, 'comSup' => $comSup, 'keyDates' => $keyDates, 'axes' => $axes, 'why' => $why, 'infoCards' => $infoCards, 'stats' => $stats])
@@ -249,6 +249,15 @@
                                     <option>Français</option>
                                     <option>Anglais</option>
                                 </select>
+                            </div>
+                            <div class="ukc-form-row" style="margin-top:12px;max-width:460px;">
+                                <label for="name_order">Format du nom des participants</label>
+                                <select id="name_order" name="name_order" x-model="f.name_order">
+                                    <option value="first_last">Prénom(s) + NOM — Awa KODJO</option>
+                                    <option value="last_first">NOM + Prénom(s) — KODJO Awa</option>
+                                </select>
+                                <p class="ukc-hint">Utilisé dans les listes, le programme, les badges, le livre des résumés, les nouveaux reçus, attestations et courriels de cet événement.</p>
+                                @error('name_order') <span class="error">{{ $message }}</span> @enderror
                             </div>
                         </div>
 

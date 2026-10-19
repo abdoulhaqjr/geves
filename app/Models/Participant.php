@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\ParticipantObserver;
+use App\Support\EventNameFormat;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -148,7 +149,7 @@ class Participant extends Model
 
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name.' '.$this->last_name);
+        return EventNameFormat::participant($this);
     }
 
     /**
@@ -181,7 +182,12 @@ class Participant extends Model
             $photoPath = (string) ($snap['photo_path'] ?? '');
 
             return [
-                'name' => (string) ($snap['name'] ?? ''),
+                'name' => EventNameFormat::parts(
+                    (string) ($snap['first_name'] ?? ''),
+                    (string) ($snap['last_name'] ?? ''),
+                    EventNameFormat::orderForId($this->event_id),
+                    (string) ($snap['name'] ?? ''),
+                ),
                 'civility' => (string) ($snap['civility'] ?? ''),
                 'title' => (string) ($snap['title'] ?? ''),
                 'institution' => (string) ($snap['institution'] ?? ''),
@@ -208,6 +214,8 @@ class Participant extends Model
         // déclenche nullsafe.neverNull. On passe donc par une branche explicite.
         $user = $this->user;
 
+        $firstName = (string) $this->first_name;
+        $lastName = (string) $this->last_name;
         $name = $this->full_name;
         $civility = '';
         $grade = '';
@@ -217,9 +225,10 @@ class Participant extends Model
         $photoPath = '';
 
         if ($user) {
-            // Même règle d'affichage que BadgeCatalog::accountName().
-            $name = trim(trim((string) $user->first_name).' '.trim((string) $user->last_name))
-                ?: (trim((string) $user->name) ?: (string) $user->email);
+            $firstName = (string) ($user->first_name ?: $this->first_name);
+            $lastName = (string) ($user->last_name ?: $this->last_name);
+            $name = EventNameFormat::parts($firstName, $lastName, EventNameFormat::orderForId($this->event_id),
+                trim((string) $user->name) ?: (string) $user->email);
             $civility = (string) $user->civility;
             $grade = (string) $user->grade;
             $affiliation = (string) $user->affiliation;
@@ -230,6 +239,8 @@ class Participant extends Model
 
         return [
             'name' => $name,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
             'civility' => $civility,
             // Le grade est capté PAR ÉVÉNEMENT (participant.title) ; repli sur le profil.
             'title' => (string) ($this->title ?: $grade),

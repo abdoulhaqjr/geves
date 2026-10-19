@@ -2531,3 +2531,8 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Terminologie des évaluateurs (18 octobre 2026)
 
 - La navigation, les réglages, l'espace participant, les notifications, les rapports, les courriels par défaut et les traductions emploient **évaluateur** et **évaluation**. Les identifiants `reviewer`/`review` et les URL historiques contenant `relecteur` ou `relecture` restent inchangés pour conserver les liens et les données. Les textes personnalisés déjà saisis dans les modèles de courriel ne sont pas remplacés automatiquement.
+
+### Ordre des noms par événement (19 octobre 2026)
+
+- Dans l'onglet Général d'une édition, `settings.name_order` choisit « Prénom(s) + NOM » (valeur par défaut) ou « NOM + Prénom(s) ». `EventNameFormat` applique la règle aux participants et aux auteurs structurés, sans réécrire les noms enregistrés. Les badges, listes, programmes, reçus, courriels et livres de résumés reprennent l'ordre choisi.
+- Les auteurs historiques qui n'ont qu'un champ `name` gardent cette valeur. Les attestations déjà émises conservent leur `recipient_name` signé ; les nouvelles prennent le format actif lors de l'émission.

@@ -111,7 +111,7 @@
                                         - {{ count($s->authors ?? []) ?: 1 }} auteur(s){{ $words ? ' - '.$words.' mots' : '' }}
                                     </div>
                                 </td>
-                                <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-') }}
+                                <td>{{ $s->participant?->full_name ?? ($s->correspondingAuthorName() ?: '-') }}
                                     @if (($s->unlinked_authors_count ?? 0) > 0)
                                         <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché(s)</span>
                                     @endif
@@ -145,7 +145,7 @@
                                     @php
                                         $pvData = [
                                             'ref' => $s->ref_code,
-                                            'author' => $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-'),
+                                            'author' => $s->participant?->full_name ?? ($s->correspondingAuthorName() ?: '-'),
                                             'type' => $s->type === 'poster' ? 'Poster' : 'Orale',
                                             'presentationMode' => $s->presentationModeLabel() ?? '-',
                                             'participationMode' => $s->participant?->participationModeLabel() ?? '-',
@@ -155,7 +155,7 @@
                                             'date' => $s->created_at?->format('d/m/Y') ?? '-',
                                             'title' => $s->title,
                                             'coauthors' => collect($s->authors ?? [])->filter(fn ($a) => empty($a['corresponding']))
-                                                ->map(fn ($a) => trim((string) ($a['name'] ?? '')))->filter()->values()->all(),
+                                                ->map(fn ($a) => \App\Support\EventNameFormat::author($s->event, $a))->filter()->values()->all(),
                                             'keywords' => \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()) ?? '',
                                             'abstract' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))),
                                             'url' => route('admin.submissions.show', $s),

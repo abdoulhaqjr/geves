@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\SubmissionStatus;
 use App\Observers\SubmissionObserver;
+use App\Support\EventNameFormat;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -128,7 +129,9 @@ class Submission extends Model
     /** Nom de l'auteur correspondant (1er des authors). */
     public function correspondingAuthorName(): ?string
     {
-        return $this->authors[0]['name'] ?? $this->participant?->full_name;
+        return isset($this->authors[0])
+            ? EventNameFormat::author($this->event, $this->authors[0])
+            : $this->participant?->full_name;
     }
 
     /** E-mail de l'auteur correspondant (pour les notifications). */

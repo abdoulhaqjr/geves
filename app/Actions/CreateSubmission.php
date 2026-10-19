@@ -6,6 +6,7 @@ use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Event;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\EventNameFormat;
 use App\Support\EventStorage;
 use App\Support\Html;
 use App\Support\Notifier;
@@ -132,7 +133,7 @@ class CreateSubmission
         Notifier::staff(
             kind: 'submission_new',
             title: 'Nouvelle communication',
-            body: '« '.$submission->title.' » - '.$account->full_name,
+            body: '« '.$submission->title.' » - '.EventNameFormat::user($event, $account),
             url: route('admin.submissions.show', $submission),
             icon: 'inbox',
         );

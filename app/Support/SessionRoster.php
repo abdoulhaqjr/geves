@@ -70,7 +70,7 @@ class SessionRoster
             }
 
             foreach ((array) ($submission->authors ?? []) as $auteur) {
-                $nom = trim((string) ($auteur['name'] ?? ''));
+                $nom = EventNameFormat::author($session->event, $auteur);
                 $email = self::key($auteur['email'] ?? '');
 
                 if ($nom === '' && $email === '') {

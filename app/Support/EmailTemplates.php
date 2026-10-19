@@ -207,7 +207,7 @@ class EmailTemplates
         $tpl = self::raw('submission_'.$statusKey);
 
         $context = [
-            'prenom' => self::firstName($submission->correspondingAuthorName()),
+            'prenom' => (string) ($submission->authors[0]['first_name'] ?? $submission->participant?->first_name ?? self::firstName($submission->correspondingAuthorName())),
             'nom_complet' => (string) ($submission->correspondingAuthorName() ?? ''),
             'ref' => (string) $submission->ref_code,
             'titre' => (string) $submission->title,

@@ -50,9 +50,9 @@
                         @foreach (($s->authors ?? []) as $i => $author)
                             @php($link = $links[$i] ?? null)
                             <li>
-                                <div class="av">{{ $initials($author['name'] ?? '?') }}</div>
+                                <div class="av">{{ $initials(\App\Support\EventNameFormat::author($s->event, $author) ?: '?') }}</div>
                                 <div>
-                                    <div class="name">{{ $author['name'] ?? '-' }}
+                                    <div class="name">{{ \App\Support\EventNameFormat::author($s->event, $author) ?: '-' }}
                                         @if (!empty($author['corresponding']))
                                             <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Correspondant</span>
                                         @endif
@@ -72,7 +72,7 @@
                                     @if (!empty($author['email']))<div class="aff">{{ $author['email'] }}</div>@endif
                                     @if ($link && $link->user)
                                         <div class="aff" style="color:var(--ukc-green);">
-                                            <x-ukc.icon name="check" :size="13" /> {{ $link->user->full_name ?: $link->user->name }}
+                                            <x-ukc.icon name="check" :size="13" /> {{ \App\Support\EventNameFormat::user($s->event, $link->user) }}
                                             @if ($link->match_type && ($matchLabels[$link->match_type] ?? null))
                                                 <span style="color:var(--ukc-muted);">- {{ $matchLabels[$link->match_type] }}</span>
                                             @endif

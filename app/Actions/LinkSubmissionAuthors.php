@@ -9,6 +9,7 @@ use App\Models\SubmissionAuthor;
 use App\Models\User;
 use App\Sms\SmsManager;
 use App\Support\AuthorMatcher;
+use App\Support\EventNameFormat;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -113,7 +114,7 @@ class LinkSubmissionAuthors
         );
 
         if (Notifier::emailAllowed($user, 'authorship')) {
-            Mail::to($user->email)->send(new AuthorLinkedMail($submission, $user->full_name ?: (string) $user->name, $roleLabel, $url, $declineUrl));
+            Mail::to($user->email)->send(new AuthorLinkedMail($submission, EventNameFormat::user($event, $user), $roleLabel, $url, $declineUrl));
         }
 
         $this->maybeSms($link->phone ?: $user->phone, __('Vous êtes associé(e) à la communication « :t » pour :e. Détails dans votre espace.', ['t' => Str::limit($submission->title, 60), 'e' => $event->title ?? '']));

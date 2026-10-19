@@ -14,6 +14,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
 use App\Support\EventMeetingConfig;
+use App\Support\EventNameFormat;
 use App\Support\EventPaymentConfig;
 use App\Support\Locales;
 use App\Support\ParticipantTypes;
@@ -553,6 +554,7 @@ class EventFormController extends Controller
             'short_desc' => (string) ($s['short_desc'] ?? ''),
             'format' => (string) ($s['format'] ?? 'Présentiel & hybride'),
             'main_language' => (string) ($s['main_language'] ?? 'Français'),
+            'name_order' => (string) ($s['name_order'] ?? EventNameFormat::FIRST_LAST),
             // Soumissions : préfixe des références + attestations
             'ref_prefix_mode' => (string) ($s['ref_prefix_mode'] ?? 'global'),
             'ref_prefix' => (string) ($s['ref_prefix'] ?? 'R-'),

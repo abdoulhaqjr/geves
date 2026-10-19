@@ -468,11 +468,11 @@
                                         <div class="pool-item" x-show="visibleIds.includes({{ $sub->id }})" data-filter-row
                                              draggable="true" data-sub-id="{{ $sub->id }}"
                                              data-id="{{ $sub->id }}" data-axe="{{ $sub->track }}" data-paid="{{ $isPaid($sub) ? 'paid' : 'due' }}"
-                                             data-text="{{ Str::lower($sub->title.' '.($sub->participant?->full_name ?? '')) }}"
+                                             data-text="{{ Str::lower($sub->title.' '.($sub->participant?->full_name ?? $sub->correspondingAuthorName() ?? '')) }}"
                                              @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })" title="Glisser sur un créneau libre du board, ou cliquer pour créer un créneau">
                                             <div class="t">{{ Str::limit($sub->title, 60) }}</div>
                                             <div class="m">
-                                                <span>{{ $sub->participant?->full_name ?: 'Auteur' }}</span>
+                                                <span>{{ $sub->participant?->full_name ?: ($sub->correspondingAuthorName() ?: 'Auteur') }}</span>
                                                 @if ($sub->track)<span class="ukc-pill ukc-pill--info">{{ Str::limit($sub->track, 24) }}</span>@endif
                                                 <span class="ukc-pill ukc-pill--{{ $isPaid($sub) ? 'ok' : 'warn' }}">{{ $isPaid($sub) ? 'Payé' : 'En attente' }}</span>
                                             </div>
@@ -1036,7 +1036,7 @@
                                     <tr>
                                         <td>{{ $sub->ref_code }}</td>
                                         <td>{{ Str::limit($sub->title, 50) }}</td>
-                                        <td>{{ $sub->participant?->full_name ?: '-' }}</td>
+                                        <td>{{ $sub->participant?->full_name ?: ($sub->correspondingAuthorName() ?: '-') }}</td>
                                         <td>{{ $sub->track ?: '-' }}</td>
                                         <td>@if ($isPaid($sub))<span class="ukc-pill ukc-pill--ok">Payé</span>@else<span class="ukc-pill ukc-pill--warn">En attente</span>@endif</td>
                                         <td style="text-align:right;">

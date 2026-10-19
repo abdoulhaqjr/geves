@@ -124,7 +124,7 @@ class SessionDocLayout
         return match ($key) {
             'horaire' => $slot->starts_at?->format('H:i') ?? '-',
             'titre' => (string) $sub->title,
-            'auteurs' => collect($sub->authors ?? [])->pluck('name')->filter()->join(', '),
+            'auteurs' => collect($sub->authors ?? [])->map(fn ($author) => EventNameFormat::author($sub->event, $author))->filter()->join(', '),
             'reference' => (string) $sub->ref_code,
             'type' => $sub->type === 'poster' ? 'Poster' : 'Orale',
             'duree' => ($slot->starts_at && $slot->ends_at)
