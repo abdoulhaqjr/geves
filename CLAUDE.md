@@ -3914,7 +3914,18 @@ maquette **une seule fois en proportions** (`LayoutSanitizer::BADGE_FORMATS` don
 tailles) : positions et boîtes suivent **chacune leur axe**, tandis que les **carrés (QR,
 photo, pictogrammes) et les corps de texte suivent le PLUS PETIT rapport** - sinon le QR
 cesse d'être carré et le texte déborde. Par feuille A4 : **303 → 4**, **304 → 4**,
-**106 → 9**. ⚠️ Le **303 sort exactement** comme la version écrite à la main avant cette
+**106 → 9**, **A6 porte-badge (108 × 155) → 1**, **CR80 → 10**.
+
+⚠️⚠️ **LE CR80 EST EN PAYSAGE (85,6 × 54 mm) ET A SA PROPRE MAQUETTE** :
+`badgeCarte()`, pas `badgePortrait()`. La pile verticale - logos, événement, nom,
+rôle, thème, pied - n'y tient pas ; la carte met les logos en tête, le texte dans la
+colonne de gauche et le QR à droite. ⚠️ **Le thème du colloque n'y figure PAS, et
+c'est voulu** : cent caractères descendraient sous 2 mm de haut sur une carte de
+crédit - on afficherait de l'illisible pour faire nombre. Ne pas l'y remettre. Le
+choix se fait sur `$w > $h`, donc tout futur format paysage suit la carte.
+⚠️ **L'A6 porte-badge n'entre qu'UNE fois par A4 en portrait** (2 × 108 = 216 mm,
+plus large que la feuille). En **A4 paysage** il en tiendrait **deux** : la planche
+ne sait pas encore tourner la feuille, c'est la piste si ce format est très utilisé. ⚠️ Le **303 sort exactement** comme la version écrite à la main avant cette
 composition : c'est la référence, et `BadgeDefaultTemplateTest` la gèle.
 ⚠️ **Le jumeau du concepteur compose à l'identique** (`T.officiel(format, withPhoto)` dans
 `badge-designer.js`, appelé par `co` / `co-photo` avec le format cible) : choisir un

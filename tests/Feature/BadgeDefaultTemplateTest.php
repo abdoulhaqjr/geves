@@ -133,6 +133,8 @@ it('compose la maquette officielle pour chaque porte-badge', function () {
         'modele-303' => [333, 472, 4],
         'modele-304' => [378, 510, 4],
         'modele-106' => [246, 359, 9],
+        'a6-pochette' => [408, 586, 1],   // 2 x 108 mm > 210 : un seul par feuille
+        'cr80' => [324, 204, 10],         // PAYSAGE : maquette de carte
     ];
 
     foreach ($attendu as $format => [$w, $h, $parPage]) {
@@ -168,7 +170,7 @@ it('garde le QR carré et le texte lisible sur le plus petit badge', function ()
     $composer = new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge');
     $composer->setAccessible(true);
 
-    foreach (['modele-303', 'modele-304', 'modele-106'] as $format) {
+    foreach (array_keys(LayoutSanitizer::BADGE_FORMATS) as $format) {
         $elements = collect($composer->invoke(null, false, $format)['elements']);
 
         $qr = $elements->firstWhere('type', 'qr');
@@ -185,6 +187,41 @@ it('garde le QR carré et le texte lisible sur le plus petit badge', function ()
             expect($picto['w'])->toBe($picto['h'], $format.' : pictogramme déformé');
         }
     }
+});
+
+it('compose le CR80 en CARTE, sans le thème', function () {
+    // ⚠️⚠️ Le CR80 est en PAYSAGE (85,6 × 54 mm) : la pile verticale du portrait
+    // n'y tient pas. Et le thème en est absent À DESSEIN - cent caractères
+    // descendraient sous 2 mm sur une carte de crédit, on afficherait de
+    // l'illisible pour faire nombre.
+    $composer = new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge');
+    $composer->setAccessible(true);
+
+    $carte = collect($composer->invoke(null, false, 'cr80')['elements']);
+    $textes = $carte->where('type', 'text')->pluck('text');
+
+    expect($textes)->not->toContain('[edition.theme]')
+        ->and($textes)->toContain('[recipient.name]', '[recipient.role]', '[edition.name]')
+        ->and($textes)->toContain('[edition.location]', '[edition.dates]');
+
+    // Le QR vit à DROITE de la colonne de texte : sinon il la recouvrirait.
+    $qr = $carte->firstWhere('type', 'qr');
+    $nom = $carte->firstWhere('text', '[recipient.name]');
+    expect($qr['x'])->toBeGreaterThanOrEqual($nom['x'] + $nom['w']);
+
+    // Les formats portrait, eux, portent bien le thème.
+    // ⚠️ On RELÈVE les fautifs : `toContain()` prend plusieurs AIGUILLES, pas un
+    // message - passer le nom du format en second argument en ferait une aiguille
+    // de plus, et le cas échouerait pour la mauvaise raison (piège de CLAUDE.md).
+    $sansTheme = [];
+    foreach (['modele-303', 'modele-304', 'modele-106', 'a6-pochette'] as $portrait) {
+        $textes = collect($composer->invoke(null, false, $portrait)['elements'])->where('type', 'text')->pluck('text');
+        if (! $textes->contains('[edition.theme]')) {
+            $sansTheme[] = $portrait;
+        }
+    }
+
+    expect($sansTheme)->toBe([], 'formats portrait sans thème : '.implode(', ', $sansTheme));
 });
 
 it('tient la maquette PHP et son jumeau du concepteur d’accord', function () {

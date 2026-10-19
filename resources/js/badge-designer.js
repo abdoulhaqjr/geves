@@ -819,25 +819,32 @@
       /* Badge participant par défaut (A6 portrait 397×560).
          ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). */
       /* ⚠️⚠️ La maquette officielle est COMPOSÉE pour le format demandé, jamais
-         étirée : les trois porte-badges n'ont pas le même rapport (303 : 0,704 ;
-         304 : 0,741 ; 106 : 0,684), et agrandir l'un pour obtenir l'autre
-         ovaliserait le QR et déformerait les boîtes. Mêmes proportions que
+         étirée : les porte-badges n'ont pas le même rapport (303 : 0,704 ;
+         304 : 0,741 ; 106 : 0,684 ; A6 : 0,697), et agrandir l'un pour obtenir
+         l'autre ovaliserait le QR et déformerait les boîtes. Mêmes proportions que
          LayoutSanitizer::defaultBadge() - toucher à l'un, c'est toucher à l'autre. */
       officiel: function (format, withPhoto) {
         var fmt = FORMAT_DIMENSIONS[format] ? format : 'modele-303';
         var dims = FORMAT_DIMENSIONS[fmt];
         var w = dims[0], h = dims[1];
+
+        if (fmt !== 'a6-portrait') page.classList.add('size-' + fmt);
+        var chip = document.querySelector('[data-size="' + fmt + '"]');
+        if (chip) chip.classList.add('active');
+        page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
+
+        // ⚠️ Un badge PAYSAGE (CR80) ne se compose pas comme un portrait : la pile
+        // verticale n'y tient pas, on bascule sur une maquette de CARTE.
+        if (w > h) T.officielCarte(w, h, withPhoto);
+        else T.officielPortrait(w, h, withPhoto);
+      },
+      officielPortrait: function (w, h, withPhoto) {
         var fx = function (f) { return Math.round(f * w); };
         var fy = function (f) { return Math.round(f * h); };
         // Un seul rapport pour ce qui doit rester carré ou lisible.
         var r = Math.min(w / 333, h / 472);
         var sq = function (b) { return Math.max(1, Math.round(b * r)); };
         var fs = function (b) { return Math.max(6, Math.round(b * r)); };
-
-        if (fmt !== 'a6-portrait') page.classList.add('size-' + fmt);
-        var chip = document.querySelector('[data-size="' + fmt + '"]');
-        if (chip) chip.classList.add('active');
-        page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
 
         var eventY = fy(withPhoto ? 0.1928 : 0.2669);
         var nameY = fy(withPhoto ? 0.4852 : 0.4153);
@@ -861,6 +868,33 @@
         styled({ label: 'Lieu', x: fx(0.2462), y: fy(0.7818), w: fx(0.4775), h: fy(0.0403), text: '[edition.location]', size: fs(10), weight: 600, color: '#2e3440', align: 'left' });
         styled({ label: 'Dates', x: fx(0.2462), y: fy(0.8496), w: fx(0.4775), h: fy(0.0403), text: '[edition.dates]', size: fs(10), weight: 600, color: '#2e3440', align: 'left' });
         createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7417), y: fy(0.7818), w: sq(65), qrUrl: DEFAULT_QR_URL });
+      },
+      /* ⚠️ CR80 : le thème du colloque n'y figure pas, et c'est voulu - cent
+         caractères descendraient sous 2 mm sur une carte de crédit. */
+      officielCarte: function (w, h, withPhoto) {
+        var fx = function (f) { return Math.round(f * w); };
+        var fy = function (f) { return Math.round(f * h); };
+        var r = Math.min(w / 324, h / 204);
+        var sq = function (b) { return Math.max(1, Math.round(b * r)); };
+        var fs = function (b) { return Math.max(6, Math.round(b * r)); };
+
+        var colX = withPhoto ? 0.2963 : 0.0432;
+        var colW = withPhoto ? 0.4321 : 0.6481;
+
+        imgEl({ label: 'Logo UK', x: fx(0.0432), y: fy(0.0588), w: fx(0.2469), h: fy(0.1078), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: fx(0.3148), y: fy(0.0588), w: fx(0.2654), h: fy(0.1078), src: '/img/attestations/logo-parakou.png' });
+        if (withPhoto) {
+          createEl({ type: 'photo', label: 'Photo', x: fx(0.0432), y: fy(0.2255), w: sq(70) });
+        }
+        styled({ label: 'Événement', x: fx(colX), y: fy(0.2157), w: fx(colW), h: fy(0.0735), text: '[edition.name]', size: fs(8), weight: 700, color: '#2e3440', align: 'left' });
+        styled({ label: 'Nom', x: fx(colX), y: fy(0.3137), w: fx(colW), h: fy(0.1176), text: '[recipient.name]', size: fs(15), weight: 800, color: '#253c98', align: 'left' });
+        styled({ label: 'Rôle', x: fx(colX), y: fy(0.4510), w: fx(colW), h: fy(0.0686), text: '[recipient.role]', size: fs(9), weight: 700, color: '#2e3440', align: 'left' });
+        barEl({ label: 'Séparateur', x: fx(colX), y: fy(0.5588), w: fx(withPhoto ? 0.3395 : 0.3704), h: Math.max(2, fy(0.0098)), color: '#2e3440' });
+        imgEl({ label: 'Icône localisation', x: fx(colX), y: fy(0.6176), w: sq(13), h: sq(13), src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: fx(colX), y: fy(0.7157), w: sq(13), h: sq(13), src: '/img/badges/icon-calendar.svg' });
+        styled({ label: 'Lieu', x: fx(colX + 0.0556), y: fy(0.6225), w: fx(colW - 0.0556), h: fy(0.0588), text: '[edition.location]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: fx(colX + 0.0556), y: fy(0.7206), w: fx(colW - 0.0556), h: fy(0.0588), text: '[edition.dates]', size: fs(8), weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7531), y: fy(0.5784), w: sq(70), qrUrl: DEFAULT_QR_URL });
       },
       co: function (format) {
         T.officiel(format, false);

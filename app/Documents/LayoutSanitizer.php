@@ -198,6 +198,8 @@ class LayoutSanitizer
         'modele-303' => [333, 472],  // 88 × 125 mm
         'modele-304' => [378, 510],  // 100 × 135 mm
         'modele-106' => [246, 359],  // 65 × 95 mm
+        'a6-pochette' => [408, 586], // 108 × 155 mm
+        'cr80' => [324, 204],        // 85,6 × 54 mm (PAYSAGE : maquette de carte)
     ];
 
     /**
@@ -219,6 +221,23 @@ class LayoutSanitizer
     protected static function defaultBadge(bool $withPhoto = false, string $format = 'modele-303'): array
     {
         [$w, $h] = self::BADGE_FORMATS[$format] ?? self::BADGE_FORMATS['modele-303'];
+
+        // ⚠️ Un badge PAYSAGE (CR80) ne se compose pas comme un portrait : la pile
+        // verticale - logos, événement, nom, rôle, thème, pied - n'y tient pas. On
+        // bascule sur une maquette de CARTE, pensée pour cette largeur.
+        return $w > $h
+            ? self::badgeCarte($w, $h, $withPhoto)
+            : self::badgePortrait($w, $h, $withPhoto);
+    }
+
+    /**
+     * Maquette PORTRAIT (modèles 303, 304, 106, A6 porte-badge), décrite en
+     * proportions et composée pour le format demandé.
+     *
+     * @return array<string, mixed>
+     */
+    private static function badgePortrait(int $w, int $h, bool $withPhoto): array
+    {
 
         $dark = '#2e3440';
 
@@ -288,6 +307,77 @@ class LayoutSanitizer
                 $t(['x' => $fx(0.2462), 'y' => $fy(0.7818), 'w' => $fx(0.4775), 'h' => $fy(0.0403), 'text' => '[edition.location]', 'size' => $fs(10)]),
                 $t(['x' => $fx(0.2462), 'y' => $fy(0.8496), 'w' => $fx(0.4775), 'h' => $fy(0.0403), 'text' => '[edition.dates]', 'size' => $fs(10)]),
                 ['type' => 'qr', 'x' => $fx(0.7417), 'y' => $fy(0.7818), 'size' => $qr, 'value' => '{verify_url}'],
+            ]),
+        ];
+    }
+
+    /**
+     * Maquette CARTE (CR80, 85,6 × 54 mm) : le badge est en PAYSAGE, donc la pile
+     * verticale du portrait n'y tient pas. Les logos coiffent la carte, le texte
+     * occupe la colonne de gauche et le QR la droite.
+     *
+     * ⚠️ **Le thème du colloque n'y figure pas**, et c'est voulu : une phrase de
+     * cent caractères descendrait sous 2 mm de haut sur une carte de crédit - on
+     * afficherait quelque chose d'illisible pour faire nombre. La carte porte ce
+     * qu'on lit à un mètre : l'événement, le NOM, la fonction, le lieu, les dates
+     * et le QR.
+     *
+     * Proportions décrites sur 324 × 204 px, composées pour le format demandé.
+     *
+     * @return array<string, mixed>
+     */
+    private static function badgeCarte(int $w, int $h, bool $withPhoto): array
+    {
+        $dark = '#2e3440';
+
+        $fx = fn (float $f): int => (int) round($f * $w);
+        $fy = fn (float $f): int => (int) round($f * $h);
+
+        // ⚠️ Un seul rapport pour les carrés et les corps de texte : suivre les deux
+        // axes séparément ovaliserait le QR et étirerait le texte.
+        $r = min($w / 324, $h / 204);
+        $sq = fn (int $base): int => max(1, (int) round($base * $r));
+        $fs = fn (int $base): int => max(6, (int) round($base * $r));
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => $fs(8), 'weight' => 600, 'color' => $dark,
+            'align' => 'left', 'font' => 'jost', 'italic' => false, 'leading' => 1.2, 'upper' => false,
+        ];
+
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
+        // AVEC PHOTO : elle prend la gauche, et le bloc de texte se décale à sa
+        // droite - la colonne pleine largeur ne serait plus lisible à côté d'elle.
+        $colX = $withPhoto ? 0.2963 : 0.0432;   // x96 ou x14 sur 324
+        $colW = $withPhoto ? 0.4321 : 0.6481;   // w140 ou w210
+
+        $photo = $withPhoto
+            ? [['type' => 'photo', 'x' => $fx(0.0432), 'y' => $fy(0.2255), 'w' => $sq(70), 'h' => $sq(70)]]
+            : [];
+
+        $icon = $sq(13);
+        $qr = $sq(70);
+
+        return [
+            'width' => $w, 'height' => $h, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'bg_image' => '/img/badges/badge-default-bg.png',
+            'erase_default_rule' => true,
+            'elements' => array_merge([
+                // Logos OFFICIELS, à la même hauteur, en tête de carte.
+                ['type' => 'image', 'x' => $fx(0.0432), 'y' => $fy(0.0588), 'w' => $fx(0.2469), 'h' => $fy(0.1078), 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => $fx(0.3148), 'y' => $fy(0.0588), 'w' => $fx(0.2654), 'h' => $fy(0.1078), 'src' => '/img/attestations/logo-parakou.png'],
+            ], $photo, [
+                $t(['x' => $fx($colX), 'y' => $fy(0.2157), 'w' => $fx($colW), 'h' => $fy(0.0735), 'text' => '[edition.name]', 'size' => $fs(8), 'weight' => 700]),
+                $t(['x' => $fx($colX), 'y' => $fy(0.3137), 'w' => $fx($colW), 'h' => $fy(0.1176), 'text' => '[recipient.name]', 'size' => $fs(15), 'weight' => 800, 'color' => '#253c98']),
+                $t(['x' => $fx($colX), 'y' => $fy(0.4510), 'w' => $fx($colW), 'h' => $fy(0.0686), 'text' => '[recipient.role]', 'size' => $fs(9), 'weight' => 700]),
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => $fx($colX), 'y' => $fy(0.5588), 'w' => $fx($withPhoto ? 0.3395 : 0.3704), 'h' => max(2, $fy(0.0098)), 'color' => $dark, 'radius' => 2],
+                // Lieu et dates, chacun derrière son pictogramme.
+                ['type' => 'image', 'x' => $fx($colX), 'y' => $fy(0.6176), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => $fx($colX), 'y' => $fy(0.7157), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
+                $t(['x' => $fx($colX + 0.0556), 'y' => $fy(0.6225), 'w' => $fx($colW - 0.0556), 'h' => $fy(0.0588), 'text' => '[edition.location]', 'size' => $fs(8)]),
+                $t(['x' => $fx($colX + 0.0556), 'y' => $fy(0.7206), 'w' => $fx($colW - 0.0556), 'h' => $fy(0.0588), 'text' => '[edition.dates]', 'size' => $fs(8)]),
+                // QR à droite, hors de la colonne de texte.
+                ['type' => 'qr', 'x' => $fx(0.7531), 'y' => $fy(0.5784), 'size' => $qr, 'value' => '{verify_url}'],
             ]),
         ];
     }
