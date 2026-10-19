@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\BadgePdfRenderer;
 use App\Documents\BadgeSheet;
+use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
 use App\Documents\LivretDocx;
 use App\Models\Attestation;
@@ -254,14 +256,15 @@ it('imprime chaque badge à sa TAILLE RÉELLE et le dispose sur l’A4', functio
     // donc il ne se rétrécit pas pour en faire tenir davantage. Notre travail est
     // de les DISPOSER en tenant compte de la zone non imprimable des imprimantes.
     $attendu = [
-        'Modèle 303' => [333, 472, 4],
-        'Modèle 304' => [378, 510, 4],
-        'Modèle 106' => [246, 359, 9],
-        'A6 porte-badge' => [408, 586, 1],
-        'CR80' => [324, 204, 10],
+        'Modèle 303' => [333, 472, 4, 'portrait'],
+        'Modèle 304' => [378, 510, 4, 'portrait'],
+        'Modèle 106' => [246, 359, 9, 'portrait'],
+        // ⚠️ 2 × 108 mm = 216 mm, plus large qu'une A4 portrait : on TOURNE la feuille.
+        'A6 porte-badge' => [408, 586, 2, 'landscape'],
+        'CR80' => [324, 204, 10, 'portrait'],
     ];
 
-    foreach ($attendu as $nom => [$w, $h, $parPage]) {
+    foreach ($attendu as $nom => [$w, $h, $parPage, $orientation]) {
         $p = BadgeSheet::plan($w, $h);
 
         expect($p['scale'])->toBe(1.0, $nom.' doit sortir à sa taille réelle')
@@ -269,6 +272,7 @@ it('imprime chaque badge à sa TAILLE RÉELLE et le dispose sur l’A4', functio
             ->and($p['cellW'])->toBe($w)
             ->and($p['cellH'])->toBe($h)
             ->and($p['perPage'])->toBe($parPage, $nom)
+            ->and($p['orientation'])->toBe($orientation, $nom)
             ->and($p['label'])->toStartWith($nom);
 
         // La planche entière tient dans la zone imprimable (marges comprises).
@@ -277,6 +281,76 @@ it('imprime chaque badge à sa TAILLE RÉELLE et le dispose sur l’A4', functio
             ->and($p['originLeft'] + $p['sheetW'])->toBeLessThanOrEqual($p['pageW'] - $p['minMarginPx'], $nom)
             ->and($p['originTop'] + $p['sheetH'])->toBeLessThanOrEqual($p['pageH'] - $p['minMarginPx'], $nom);
     }
+});
+
+/** Dimensions de la première page, en points (dompdf écrit un MediaBox par page). */
+function pdfPageSize(string $bytes): array
+{
+    preg_match('~/MediaBox\s*\[\s*0(?:\.\d+)?\s+0(?:\.\d+)?\s+([\d.]+)\s+([\d.]+)~', $bytes, $m);
+
+    return [(float) ($m[1] ?? 0), (float) ($m[2] ?? 0)];
+}
+
+it('tourne la feuille quand elle rend davantage de badges', function () {
+    // ⚠️ L'A6 porte-badge fait 108 mm de large : 2 × 108 = 216 mm, plus que les
+    // 210 mm d'une A4 portrait. En paysage, deux badges tiennent côte à côte -
+    // une feuille gâchée par badge, sinon.
+    $portrait = BadgeSheet::plan(408, 586, 'portrait');
+    $paysage = BadgeSheet::plan(408, 586, 'landscape');
+
+    expect($portrait['perPage'])->toBe(1)
+        ->and($paysage['perPage'])->toBe(2)
+        ->and(BadgeSheet::plan(408, 586)['orientation'])->toBe('landscape');
+
+    // ⚠️ À ÉGALITÉ on garde le portrait : tourner la feuille sans rien y gagner
+    // donnerait une planche à l'orientation surprenante.
+    foreach ([[333, 472], [378, 510], [246, 359], [324, 204]] as [$w, $h]) {
+        $p = BadgeSheet::plan($w, $h);
+        expect($p['orientation'])->toBe('portrait', "{$w}x{$h}")
+            ->and($p['perPage'])->toBeGreaterThanOrEqual(BadgeSheet::plan($w, $h, 'landscape')['perPage'], "{$w}x{$h}");
+    }
+
+    // Les deux orientations posent leur grille DANS la zone imprimable.
+    foreach ([$portrait, $paysage] as $p) {
+        expect($p['originLeft'])->toBeGreaterThanOrEqual($p['minMarginPx'])
+            ->and($p['originLeft'] + $p['sheetW'])->toBeLessThanOrEqual($p['pageW'] - $p['minMarginPx'])
+            ->and($p['originTop'] + $p['sheetH'])->toBeLessThanOrEqual($p['pageH'] - $p['minMarginPx']);
+    }
+});
+
+it('le PDF est dans l’orientation du plan, et un lot mixte retombe en portrait', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+    participantRegle($event, 'Awa', 'Kodjo', 'awa@example.tg');
+
+    $pochette = (new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge'));
+    $pochette->setAccessible(true);
+    DocumentTemplate::ensureFor((int) $event->id, 'badge', 'default', 'Badge')
+        ->forceFill(['layout' => $pochette->invoke(null, false, 'a6-pochette')])->save();
+
+    // Une seule catégorie au format A6 porte-badge : la feuille est en paysage.
+    $seul = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.badges', [$event, 'type' => 'default']))->assertOk();
+
+    [$w, $h] = pdfPageSize($seul->getContent());
+    expect($w)->toBeGreaterThan($h, 'A6 porte-badge : feuille en paysage');
+
+    // ⚠️⚠️ UNE FEUILLE N'A QU'UNE ORIENTATION : un lot « tous les badges prêts »
+    // mêle des formats, donc on impose le PORTRAIT **et** on recalcule les plans
+    // concernés. Sans ce recalcul, les positions viseraient une feuille qui n'est
+    // pas celle du PDF et les badges sortiraient hors page.
+    $qui = [['name' => 'Awa Kodjo', 'institution' => 'UK', 'ref' => 'BDG-1', 'photo' => '', 'photo_mode' => 'without']];
+    $mixte = (new BadgePdfRenderer)->pdf($event, [
+        ['type' => 'default', 'people' => $qui],      // A6 porte-badge -> paysage
+        ['type' => 'moderation', 'people' => $qui],   // modèle 303 -> portrait
+    ]);
+
+    [$tw, $th] = pdfPageSize($mixte->output());
+    expect($th)->toBeGreaterThan($tw, 'lot mixte : feuille en portrait');
+
+    $replie = BadgeSheet::plan(408, 586, 'portrait');
+    expect($replie['originLeft'] + $replie['sheetW'])->toBeLessThanOrEqual($replie['pageW'] - $replie['minMarginPx'])
+        ->and($replie['originTop'] + $replie['sheetH'])->toBeLessThanOrEqual($replie['pageH'] - $replie['minMarginPx']);
 });
 
 it('ne réduit un badge que s’il est plus grand que la feuille', function () {

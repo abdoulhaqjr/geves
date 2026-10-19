@@ -14,10 +14,26 @@ final class BadgePdfRenderer
     /** @param list<array{type: string, people: list<array<string, mixed>>}> $groups */
     public function pdf(Event $event, array $groups): PDF
     {
-        $sheets = [];
+        $rendus = [];
         foreach ($groups as $group) {
-            $rendered = $this->renderGroup($event, $group['type'], $group['people']);
+            $rendus[] = $this->renderGroup($event, $group['type'], $group['people']);
+        }
+
+        // ⚠️⚠️ UNE FEUILLE N'A QU'UNE ORIENTATION. Un format peut gagner à la tourner
+        // - l'A6 porte-badge (108 × 155 mm) n'entre qu'UNE fois sur une A4 portrait,
+        // mais DEUX sur une A4 paysage. Un lot « toutes catégories » peut donc mêler
+        // des orientations : on impose alors le PORTRAIT et on RECALCULE les plans
+        // concernés, sinon leurs positions viseraient une feuille qui n'est pas
+        // celle du PDF et les badges sortiraient hors page.
+        $orientations = array_unique(array_map(fn (array $r) => (string) $r['plan']['orientation'], $rendus));
+        $orientation = count($orientations) === 1 ? (string) reset($orientations) : 'portrait';
+
+        $sheets = [];
+        foreach ($rendus as $rendered) {
             $plan = $rendered['plan'];
+            if ((string) $plan['orientation'] !== $orientation) {
+                $plan = BadgeSheet::plan((int) $plan['cellW'], (int) $plan['cellH'], $orientation);
+            }
             foreach (array_chunk($rendered['badges'], max(1, (int) $plan['perPage'])) as $page) {
                 $sheets[] = [
                     'cols' => (int) $plan['cols'],
@@ -35,7 +51,7 @@ final class BadgePdfRenderer
         }
 
         return BrandedPdf::stamp(
-            PdfFacade::loadView('pdf.badges-sheet', ['sheets' => $sheets])->setPaper('a4', 'portrait'),
+            PdfFacade::loadView('pdf.badges-sheet', ['sheets' => $sheets])->setPaper('a4', $orientation),
             'Badges - '.$event->title,
         );
     }
@@ -69,7 +85,9 @@ final class BadgePdfRenderer
     private function badgeVars(Event $event, string $type, array $person): array
     {
         return [
-            'org' => $event->series?->name ?? '',
+            // ⚠️ Larastan type un BelongsTo comme NON-NUL : `?->` y déclenche
+            // `nullsafe.neverNull`, alors que la série est bien nullable au runtime.
+            'org' => (string) data_get($event, 'series.name', ''),
             'event' => (string) ($event->title ?? ''),
             'year' => (string) ($event->year ?: ''),
             'theme' => (string) ($event->theme ?? ''),

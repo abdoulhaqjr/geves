@@ -133,7 +133,8 @@ it('compose la maquette officielle pour chaque porte-badge', function () {
         'modele-303' => [333, 472, 4],
         'modele-304' => [378, 510, 4],
         'modele-106' => [246, 359, 9],
-        'a6-pochette' => [408, 586, 1],   // 2 x 108 mm > 210 : un seul par feuille
+        // 2 x 108 mm = 216 mm, plus large qu'une A4 portrait : la feuille se TOURNE.
+        'a6-pochette' => [408, 586, 2],
         'cr80' => [324, 204, 10],         // PAYSAGE : maquette de carte
     ];
 

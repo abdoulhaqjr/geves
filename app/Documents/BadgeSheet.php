@@ -68,7 +68,31 @@ final class BadgeSheet
      *               sheetW:int, sheetH:int, pageW:int, pageH:int, minMarginPx:int,
      *               trueSize:bool, label:string}
      */
-    public static function plan(int $w, int $h): array
+    public static function plan(int $w, int $h, ?string $orientation = null): array
+    {
+        if ($orientation !== null) {
+            return $orientation === 'landscape'
+                ? self::planSur($w, $h, self::PAGE_H, self::PAGE_W, 'landscape')
+                : self::planSur($w, $h, self::PAGE_W, self::PAGE_H, 'portrait');
+        }
+
+        $portrait = self::planSur($w, $h, self::PAGE_W, self::PAGE_H, 'portrait');
+        $paysage = self::planSur($w, $h, self::PAGE_H, self::PAGE_W, 'landscape');
+
+        // ⚠️ On TOURNE LA FEUILLE quand elle rend davantage de badges : l'A6
+        // porte-badge (108 × 155 mm) n'entre qu'UNE fois sur une A4 portrait -
+        // 2 × 108 = 216 mm, plus large que 210 - mais DEUX fois sur une A4 paysage.
+        // ⚠️ À égalité on garde le PORTRAIT : c'est l'orientation attendue d'une
+        // planche, et tourner la feuille pour le même rendement n'apporte rien.
+        return $paysage['perPage'] > $portrait['perPage'] ? $paysage : $portrait;
+    }
+
+    /**
+     * Plan sur une feuille d'orientation donnée.
+     *
+     * @return array<string, mixed>
+     */
+    private static function planSur(int $w, int $h, float $pageW, float $pageH, string $orientation): array
     {
         $w = max(1, $w);
         $h = max(1, $h);
@@ -77,8 +101,8 @@ final class BadgeSheet
         $minMargin = self::MIN_MARGIN_MM * $mm;
         $prefGutter = self::GUTTER_MM * $mm;
 
-        $usableW = self::PAGE_W - 2 * $minMargin;
-        $usableH = self::PAGE_H - 2 * $minMargin;
+        $usableW = $pageW - 2 * $minMargin;
+        $usableH = $pageH - 2 * $minMargin;
 
         // ⚠️ Taille réelle par défaut. On ne réduit QUE si le badge ne tient pas
         // une seule fois sur la feuille - sinon il sortirait rogné.
@@ -109,10 +133,11 @@ final class BadgeSheet
             'sheetH' => $sheetH,
             // La grille est CENTRÉE : le reliquat se partage entre les deux bords
             // plutôt que de tout laisser d'un côté.
-            'originLeft' => max(0, (int) round((self::PAGE_W - $sheetW) / 2)),
-            'originTop' => max(0, (int) round((self::PAGE_H - $sheetH) / 2)),
-            'pageW' => (int) round(self::PAGE_W),
-            'pageH' => (int) round(self::PAGE_H),
+            'originLeft' => max(0, (int) round(($pageW - $sheetW) / 2)),
+            'originTop' => max(0, (int) round(($pageH - $sheetH) / 2)),
+            'pageW' => (int) round($pageW),
+            'pageH' => (int) round($pageH),
+            'orientation' => $orientation,
             'minMarginPx' => (int) floor($minMargin),
             'trueSize' => $scale >= 1.0,
             'label' => self::formatLabel($w, $h),

@@ -4113,12 +4113,27 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
   - **Formats de porte-badges, et ce qu'ils donnent par feuille A4** (mesuré) :
     **Modèle 303** 88 × 125 mm → **4/page** ; **Modèle 304** 100 × 135 mm →
     **4/page** ; **Modèle 106** 65 × 95 mm → **9/page** ; **CR80** 85,6 × 54 mm →
-    **10/page** ; **A6 porte-badge** 108 × 155 mm → **1/page** (2 × 108 = 216 mm,
-    plus large que l'A4 : c'est physique, pas un défaut) ; **A6 papier**
+    **10/page** ; **A6 porte-badge** 108 × 155 mm → **2/page en PAYSAGE** (2 × 108 =
+    216 mm, plus large qu'une A4 portrait - mais la feuille se TOURNE, cf. ci-dessous) ;
+    **A6 papier**
     105 × 148 mm → **1/page** (2 × 105 = 210 mm = la feuille entière, il ne reste
     rien pour les marges). Ces formats sont des **pastilles du concepteur**
     (`badge-designer.blade.php` + `.ed-page.size-*` dans `badge-designer.css`), et
     **la planche suit ce que le modèle déclare** - c'est là qu'on change la taille.
+  - ⚠️⚠️ **LA FEUILLE SE TOURNE QUAND ELLE REND DAVANTAGE DE BADGES.**
+    `BadgeSheet::plan()` calcule les **deux** orientations et garde la meilleure
+    (clé **`orientation`**). L'A6 porte-badge n'entrait qu'**une** fois par A4
+    portrait - une feuille gâchée par badge - et en tient **deux** en paysage.
+    ⚠️ **À ÉGALITÉ on garde le PORTRAIT** : c'est l'orientation attendue d'une
+    planche, et tourner la feuille sans rien y gagner surprendrait. Un appelant
+    peut imposer l'orientation : `plan($w, $h, 'portrait')`.
+  - ⚠️⚠️ **UNE FEUILLE N'A QU'UNE ORIENTATION**, et c'est `BadgePdfRenderer::pdf()`
+    qui en décide pour tout le document (`setPaper('a4', $orientation)`). Un lot
+    **« tous les badges prêts »** mêle des catégories, donc des formats : quand
+    leurs plans ne s'accordent pas, on **impose le portrait ET on RECALCULE** les
+    plans concernés. Sans ce recalcul, leurs coordonnées viseraient une feuille qui
+    n'est pas celle du PDF et les badges sortiraient hors page - le même défaut que
+    les positions absolues qui ignoraient `@page { margin }`.
   - ⚠️ **Deux badges peuvent partager leur trait de coupe** (`BadgeSheet::axe()`) :
     on essaie d'abord avec l'espace souhaité (5 mm), puis **sans**, parce que c'est
     souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
