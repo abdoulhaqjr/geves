@@ -44,6 +44,12 @@
 }
 .ukc-shell--admin { --ukc-sidebar: 260px; }
 .ukc-shell--admin .ukc-main { margin-top: 0; }
+/* Seul l'en-tête du layout reste visible, pas les en-têtes internes des formulaires. */
+.ukc-shell--admin > .ukc-main > .ukc-admin-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
 
 .ukc-shell .ukc-sidebar-brand {
     padding: 18px 18px 14px;
