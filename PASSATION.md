@@ -13,6 +13,43 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Les salles du programme sont des espaces déclarés (2026-10-19)
+
+**Deux listes voisines, dont une qu'on ne pouvait pas toucher.** La gestion des
+espaces affichait « Aucun espace déclaré » au-dessus de neuf pastilles « salles
+utilisées (dérivées du programme) » - Auditorium, Grand amphithéâtre, Salle 1 à
+6. Ces salles existaient donc pour le programme sans exister pour la gestion des
+espaces : nulle part où leur donner une capacité, un bâtiment, et surtout **nulle
+part d'où les renommer**.
+
+Toute salle que le programme emploie est désormais **déclarée en espace d'office**
+(`App\Support\ProgramSpaces`), et la fiche dit ce qu'elle accueille (« 4 séance(s),
+25 créneau(x) »).
+
+⚠️⚠️ **Le nom est le seul lien** : séances, créneaux et ateliers portent le **nom**
+de la salle, pas un identifiant. Renommer un espace **renomme donc la salle
+partout** ; écrire la seule ligne de configuration l'aurait laissée sur l'ancien
+nom, aussitôt redéclaré en espace - une fiche renommée, un doublon créé, et le
+programme annonçant toujours l'ancien nom.
+
+⚠️ La réécriture passe par le **query builder**, donc sans journal de
+reprogrammation : renommer une salle ne déplace personne, et l'assistance ne doit
+pas annoncer à deux cents auteurs un changement de lieu qui n'a pas eu lieu.
+
+⚠️ **Renommer sur un espace existant le rejoint** - c'est ainsi qu'on répare deux
+graphies de la même salle ; la fiche d'arrivée garde ses renseignements.
+
+⚠️ **Un espace au programme ne se supprime pas** (il reviendrait au rendu suivant),
+et le bouton n'est pas offert sur ces fiches : `data-ajax-msg` se dit sur toute
+réponse, donc un refus serveur aurait quand même affiché « Espace supprimé. »
+
+⚠️ **Hors périmètre, et c'est dit** : `formations.room` reste une saisie libre, sans
+rapport avec les espaces - renommer un espace ne la touche pas.
+
+9 cas Pest (`EspacesDuProgrammeTest`), **cinq sabotages vérifiés** - séances non
+renommées, ateliers non renommés, garde de suppression, déclaration d'office, et
+le bouton de suppression remis sur une salle occupée.
+
 ### Candidatures spontanées des évaluateurs (2026-10-18)
 
 Dans **Soumissions → Options**, le gestionnaire active, par édition, les candidatures et choisit les grades autorisés. L'option est désactivée par défaut. Le tableau de bord participant n'affiche « Me proposer comme évaluateur » que si le compte possède une fiche de participant liée à cette édition et si son grade d'édition (`participants.title`, avec repli sur `users.grade`) est autorisé. Le POST revalide ces conditions. Les demandes sont uniques par compte/édition dans `reviewer_applications` et restent hors du vivier d'attribution tant qu'elles sont en attente.

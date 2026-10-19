@@ -540,6 +540,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/synthese', [ProgramController::class, 'saveSynthesis'])->name('admin.program.synthesis');
             Route::post('/programme/synthese/generer', [ProgramController::class, 'generateFromSynthesis'])->name('admin.program.synthesis.generate');
             Route::post('/programme/espaces', [ProgramController::class, 'storeSpace'])->name('admin.program.spaces.store');
+            Route::put('/programme/espaces/{index}', [ProgramController::class, 'updateSpace'])->name('admin.program.spaces.update');
             Route::delete('/programme/espaces/{index}', [ProgramController::class, 'deleteSpace'])->name('admin.program.spaces.destroy');
         });
 

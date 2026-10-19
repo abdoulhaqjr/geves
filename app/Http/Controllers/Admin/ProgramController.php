@@ -19,6 +19,7 @@ use App\Support\ListSort;
 use App\Support\MeetingTranscript;
 use App\Support\Notifier;
 use App\Support\ProgramConflicts;
+use App\Support\ProgramSpaces;
 use App\Support\UserDirectorySearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -332,9 +333,34 @@ class ProgramController extends Controller
         // persistée dans edition->settings['program'].
         $config = $this->programConfig($event);
 
-        // Salles physiquement utilisées (dérivées des sessions/créneaux).
-        $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
-            ->filter()->unique()->sort()->values();
+        // ⚠️⚠️ TOUTE SALLE QUE LE PROGRAMME EMPLOIE EST DÉCLARÉE EN ESPACE. Une
+        // salle saisie sur une séance existait pour le programme sans l'être pour
+        // la gestion des espaces, qui montrait une liste vide à côté d'un
+        // programme tournant dans neuf salles - et il n'y avait donc nulle part
+        // où lui donner sa capacité, ni d'où la renommer.
+        // ⚠️ La déclaration se fait AU RENDU, comme la réconciliation du statut
+        // de visio juste au-dessus : les salles arrivent par cinq chemins
+        // (saisie d'une séance, d'un créneau, salle d'atelier, génération depuis
+        // le programme synthétique, import), et un seul oublié laisserait des
+        // salles orphelines sans que rien ne le signale. L'écriture n'a lieu que
+        // s'il en manque (sinon no-op).
+        if ($event) {
+            $aDeclarer = ProgramSpaces::missing(
+                $config['spaces'],
+                ProgramSpaces::used($sessions, $slots, $config['atelier_rooms']),
+            );
+            if ($aDeclarer !== []) {
+                $this->writeProgramConfig($event, ['spaces' => array_merge($config['spaces'], array_map(
+                    fn (string $name) => ['name' => $name, 'capacity' => null, 'building' => null, 'note' => null, 'auto' => true],
+                    $aDeclarer,
+                ))]);
+                $config = $this->programConfig($event);
+            }
+        }
+
+        // Ce que chaque salle accueille : la fiche d'un espace le dit, et c'est
+        // ce qui empêche de supprimer une salle où des séances se tiennent.
+        $roomUsage = ProgramSpaces::usage($sessions, $slots, $config['atelier_rooms']);
 
         $tabs = ['apercu', 'planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'discussions', 'auto', 'options'];
         $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'apercu';
@@ -390,7 +416,10 @@ class ProgramController extends Controller
             'config' => $config,
             'spaces' => $config['spaces'],
             'atelierRooms' => $config['atelier_rooms'],
-            'usedRooms' => $usedRooms,
+            // ⚠️ Plus de liste « salles utilisées » à côté des espaces : elles SONT
+            // les espaces, déclarées d'office ci-dessus. Deux listes voisines dont
+            // l'une n'est pas modifiable, c'est la question « où je la renomme ? ».
+            'roomUsage' => $roomUsage,
             'discussions' => $discussions,
             'stats' => [
                 'ateliers' => $ateliers->count(),
@@ -1347,9 +1376,18 @@ class ProgramController extends Controller
         ]);
 
         $spaces = $this->programConfig($event)['spaces'];
+        $nom = trim($data['spaceName']);
+
+        // ⚠️ Un nom ne sert qu'une fois : c'est LUI qui relie l'espace aux séances
+        // et aux créneaux. Deux lignes du même nom donneraient deux fiches pour une
+        // seule salle, dont une seule serait suivie au renommage.
+        if ($this->spaceIndexNamed($spaces, $nom) !== null) {
+            return back()->with('ukc_error', 'L’espace « '.$nom.' » est déjà déclaré.');
+        }
+
         $spaces[] = [
-            'name' => $data['spaceName'],
-            'capacity' => $data['spaceCapacity'] ?? null,
+            'name' => $nom,
+            'capacity' => ($data['spaceCapacity'] ?? '') !== '' ? (int) $data['spaceCapacity'] : null,
             'building' => $data['spaceBuilding'] ?? null,
             'note' => $data['spaceNote'] ?? null,
         ];
@@ -1359,7 +1397,84 @@ class ProgramController extends Controller
         return back()->with('ukc_status', 'Espace ajouté.');
     }
 
-    /** Retire un espace de la config programme (par index). */
+    /**
+     * Modifie un espace (par index) - et, si son NOM change, renomme la salle
+     * partout où le programme la nomme.
+     *
+     * ⚠️⚠️ **Le nom est le seul lien** : les séances et les créneaux portent le
+     * nom de la salle, pas un identifiant. Écrire la seule ligne de configuration
+     * les laisserait sur l'ancien nom, qui serait aussitôt redéclaré en espace -
+     * on aurait renommé une fiche et créé un doublon, pendant que le programme
+     * continue d'annoncer l'ancien nom.
+     *
+     * ⚠️ Renommer SUR un espace existant le REJOINT (c'est ainsi qu'on répare
+     * « Salle1 » en « Salle 1 ») : la fiche d'arrivée garde ses renseignements,
+     * la fiche renommée disparaît, et le message le dit - une fusion silencieuse
+     * ferait croire à une disparition.
+     */
+    public function updateSpace(Request $request, int $index): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back();
+        }
+
+        $data = $request->validate([
+            'spaceName' => ['required', 'string', 'max:150'],
+            'spaceCapacity' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'spaceBuilding' => ['nullable', 'string', 'max:150'],
+            'spaceNote' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $config = $this->programConfig($event);
+        $spaces = $config['spaces'];
+        if (! isset($spaces[$index])) {
+            return back()->with('ukc_error', 'Cet espace n’existe plus.');
+        }
+
+        $avant = trim((string) ($spaces[$index]['name'] ?? ''));
+        $apres = trim($data['spaceName']);
+        $rejoint = $apres !== $avant ? $this->spaceIndexNamed($spaces, $apres) : null;
+
+        $spaces[$index] = [
+            'name' => $apres,
+            'capacity' => ($data['spaceCapacity'] ?? '') !== '' ? (int) $data['spaceCapacity'] : null,
+            'building' => $data['spaceBuilding'] ?? null,
+            'note' => $data['spaceNote'] ?? null,
+        ] + array_intersect_key($spaces[$index], ['auto' => true]);
+
+        $patch = [];
+        $message = 'Espace mis à jour.';
+
+        if ($apres !== $avant && $avant !== '') {
+            $ecrit = ProgramSpaces::rename($event, $avant, $apres, $config['atelier_rooms']);
+            if ($ecrit['ateliers'] !== []) {
+                $patch['atelier_rooms'] = $ecrit['ateliers'];
+            }
+            if ($rejoint !== null) {
+                // La fiche d'arrivée fait foi : on retire celle qu'on vient de
+                // renommer dessus (souvent la ligne déclarée d'office, sans
+                // capacité ni bâtiment).
+                unset($spaces[$index]);
+            }
+            $message = 'Lieu « '.$avant.' » renommé « '.$apres.' » : '
+                .$ecrit['sessions'].' séance(s) et '.$ecrit['slots'].' créneau(x) mis à jour.'
+                .($rejoint !== null ? ' Il rejoint l’espace « '.$apres.' » déjà déclaré.' : '');
+        }
+
+        $patch['spaces'] = array_values($spaces);
+        $this->writeProgramConfig($event, $patch);
+
+        return back()->with('ukc_status', $message);
+    }
+
+    /**
+     * Retire un espace de la config programme (par index).
+     *
+     * ⚠️ **Un espace que le programme emploie ne se supprime pas** : il serait
+     * redéclaré d'office au rendu suivant, et l'admin verrait revenir ce qu'il
+     * vient d'effacer sans comprendre pourquoi. On dit ce qui l'occupe.
+     */
     public function deleteSpace(Request $request, int $index): RedirectResponse
     {
         $event = $this->currentEdition($request);
@@ -1367,12 +1482,42 @@ class ProgramController extends Controller
             return back();
         }
 
-        $spaces = $this->programConfig($event)['spaces'];
-        unset($spaces[$index]);
+        $config = $this->programConfig($event);
+        $spaces = $config['spaces'];
+        $nom = trim((string) ($spaces[$index]['name'] ?? ''));
 
+        $usage = ProgramSpaces::usage(
+            $event->sessions()->get(),
+            $event->slots()->get(),
+            $config['atelier_rooms'],
+        )[$nom] ?? null;
+
+        if ($usage !== null) {
+            return back()->with('ukc_error', 'Le lieu « '.$nom.' » est au programme ('
+                .$usage['sessions'].' séance(s), '.$usage['slots'].' créneau(x))'
+                .' : renommez-le, ou libérez-le d’abord.');
+        }
+
+        unset($spaces[$index]);
         $this->writeProgramConfig($event, ['spaces' => array_values($spaces)]);
 
         return back()->with('ukc_status', 'Espace supprimé.');
+    }
+
+    /**
+     * L'index de l'espace portant ce nom, ou null.
+     *
+     * @param  array<int, array<string, mixed>>  $spaces
+     */
+    private function spaceIndexNamed(array $spaces, string $name): ?int
+    {
+        foreach ($spaces as $i => $space) {
+            if (trim((string) ($space['name'] ?? '')) === $name) {
+                return (int) $i;
+            }
+        }
+
+        return null;
     }
 
     /**

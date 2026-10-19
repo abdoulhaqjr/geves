@@ -67,7 +67,11 @@
             openAtelier(a) { this.form = a ? {...a} : { id:'', title:'', tracks:[], room:'' }; this.modal='atelier'; },
             openSession(s) { this.form = s ? { moderator_email:'', rapporteur_email:'', ...s } : { id:'', type:'atelier', atelier_id:'', label:'', day:'', start:'', end:'', room:'', moderator:'', moderator_email:'', rapporteur:'', rapporteur_email:'' }; this.peopleField=null; this.peopleResults=[]; this.modal='session'; },
             openSlot(s) { this.form = s ? {...s} : { id:'', session_id:'', day:'', start:'', room:'', submission_id:'', title:'' }; this.modal='slot'; },
-            openSpace() { this.form = { name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
+            // ⚠️ L'index d'un espace est posé en CHAÎNE (`i`), et la bascule
+            // « créer / modifier » l'éprouve par `!== ''` : le premier espace
+            // porte l'index 0, et `form.i ? … : …` le rangerait du côté de la
+            // création - modifier la première salle en ajouterait une seconde.
+            openSpace(s) { this.form = s ? { i:'', ...s } : { i:'', name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
             openRoom(a) { this.form = { ...a }; this.modal='room'; },
          }"
          @keydown.escape.window="modal=null">
@@ -984,39 +988,45 @@
                     @php($linkedRooms = collect($atelierRooms)->values()->all())
                     @forelse ($spaces as $i => $space)
                         @php($isLinked = in_array($space['name'], $linkedRooms, true))
+                        @php($usage = $roomUsage[$space['name']] ?? null)
                         <div class="entity-card">
                             <h3>
                                 {{ $space['name'] }}
                                 @if ($isLinked)<span class="ukc-pill ukc-pill--info">Liée</span>
-                                @else<span class="ukc-pill ukc-pill--ok">Actif</span>@endif
+                                @elseif ($usage)<span class="ukc-pill ukc-pill--ok">Au programme</span>
+                                @else<span class="ukc-pill ukc-pill--muted">Libre</span>@endif
                             </h3>
                             <div class="meta">
                                 @php($bits = array_filter([
                                     ! empty($space['capacity']) ? 'Capacité '.$space['capacity'] : null,
                                     $space['building'] ?? null,
                                     $space['note'] ?? null,
+                                    $usage ? $usage['sessions'].' séance(s), '.$usage['slots'].' créneau(x)' : null,
                                 ]))
                                 {{ implode(' - ', $bits) ?: '-' }}
                             </div>
                             <div class="ukc-actions row-actions">
-                                <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?event_id={{ $event_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="ukc-btn--icon danger" title="Supprimer l’espace"><x-ukc.icon name="trash" :size="15" /></button>
-                                </form>
+                                <button type="button" class="ukc-btn--icon" title="Modifier l’espace"
+                                        @click="openSpace({ i:'{{ $i }}', name:@js($space['name']), capacity:@js($space['capacity'] ?? ''), building:@js($space['building'] ?? ''), note:@js($space['note'] ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
+                                {{-- ⚠️ Un lieu au programme n'offre PAS le bouton : la suppression
+                                     est refusée côté serveur, et le retour AJAX annoncerait quand
+                                     même « Espace supprimé. » (`data-ajax-msg` se dit sur toute
+                                     réponse). On masque l'action et on dit pourquoi, plutôt que de
+                                     laisser un bouton qui ment. --}}
+                                @if ($usage)
+                                    <button type="button" class="ukc-btn--icon" disabled
+                                            title="Ce lieu est au programme : renommez-le, ou libérez-le d’abord."><x-ukc.icon name="trash" :size="15" /></button>
+                                @else
+                                    <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?event_id={{ $event_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="ukc-btn--icon danger" title="Supprimer l’espace"><x-ukc.icon name="trash" :size="15" /></button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     @empty
-                        <p style="font-size:13px;color:var(--ukc-muted);">Aucun espace déclaré. Ajoutez-en, ou utilisez les salles saisies sur les sessions.</p>
+                        <p style="font-size:13px;color:var(--ukc-muted);">Aucun espace déclaré. Ajoutez-en : toute salle saisie sur une séance ou un créneau apparaît ici d’elle-même.</p>
                     @endforelse
-
-                    @if ($usedRooms->isNotEmpty())
-                        <div class="settings-box" style="margin-top:16px;">
-                            <h3>Salles utilisées (dérivées du programme)</h3>
-                            <div class="chip-list">
-                                @foreach ($usedRooms as $room)<span class="ukc-pill ukc-pill--muted">{{ $room }}</span>@endforeach
-                            </div>
-                        </div>
-                    @endif
                 </div>
             </div>
 

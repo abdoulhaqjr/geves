@@ -1,5 +1,8 @@
 @php
-    $roomOptions = collect($spaces)->pluck('name')->merge($usedRooms)->filter()->unique()->values();
+    // ⚠️ Les espaces SUFFISENT : toute salle employée par le programme y est
+    // déclarée d'office (cf. ProgramController::index). Rajouter ici une liste
+    // de « salles utilisées » remettrait un nom qu'on ne peut pas renommer.
+    $roomOptions = collect($spaces)->pluck('name')->filter()->unique()->values();
 @endphp
 
 <datalist id="roomsList">
@@ -199,9 +202,6 @@
                 @foreach ($spaces as $space)
                     <option value="{{ $space['name'] }}">{{ $space['name'] }}@if (! empty($space['capacity'])) - cap. {{ $space['capacity'] }}@endif</option>
                 @endforeach
-                @foreach ($usedRooms as $r)
-                    @unless (collect($spaces)->pluck('name')->contains($r))<option value="{{ $r }}">{{ $r }}</option>@endunless
-                @endforeach
             </select>
             <p class="ukc-hint">La salle est appliquée à l’atelier, à ses sessions et à leurs créneaux.</p>
         </div>
@@ -216,10 +216,16 @@
 
 {{-- ===== Panneau latéral Espace (slideover) ===== --}}
 <x-ukc.slideover open="modal==='space'" onClose="modal=null" width="420px">
-    <x-slot:header><span x-text="form.id ? 'Modifier l’espace' : 'Ajouter un espace'"></span></x-slot:header>
+    <x-slot:header><span x-text="form.i !== '' ? 'Modifier l’espace' : 'Ajouter un espace'"></span></x-slot:header>
 
-    <form method="POST" id="spaceForm" action="{{ route('admin.program.spaces.store') }}?event_id={{ $event_id }}">
+    {{-- ⚠️ `form.i !== ''` et non `form.i` : l'index du premier espace vaut 0. --}}
+    <form method="POST" id="spaceForm"
+          :action="(form.i !== '' ? '{{ url('admin/programme/espaces') }}/'+form.i : '{{ route('admin.program.spaces.store') }}')+'?event_id={{ $event_id }}'">
         @csrf
+        <template x-if="form.i !== ''"><input type="hidden" name="_method" value="PUT"></template>
+        <p class="ukc-hint" x-show="form.i !== ''" x-cloak>
+            Renommer ce lieu le renomme aussi sur les séances et les créneaux qui s’y tiennent.
+        </p>
         <div class="ukc-form-row"><label>Nom de l’espace</label><input type="text" name="spaceName" x-model="form.name" required placeholder="Ex. Amphithéâtre principal"></div>
         <div class="ukc-form-grid">
             <div class="ukc-form-row"><label>Capacité</label><input type="number" name="spaceCapacity" x-model="form.capacity" min="0"></div>

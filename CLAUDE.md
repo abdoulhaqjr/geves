@@ -4226,6 +4226,42 @@ lecture/édition-session (le placement des communications reste en Jour).
     formulaire était son seul lecteur, et il ne propose plus toutes les acceptées.
   - Gardes : `CreneauDansSaSeanceTest` (9 cas, 4 sabotages vérifiés) + `program-pure.test.js`
     (16 cas, 2 sabotages vérifiés).
+- ⚠️⚠️ **UNE SALLE EMPLOYÉE PAR LE PROGRAMME EST UN ESPACE DÉCLARÉ**
+  (`App\Support\ProgramSpaces`). Les salles vivaient en deux listes voisines : les
+  **espaces** de `settings.program.spaces`, et les « salles utilisées (dérivées du
+  programme) », simples pastilles qu'on ne pouvait **ni renseigner ni renommer**.
+  Les neuf salles du colloque de démonstration étaient dans la seconde.
+  - ⚠️⚠️ **LE NOM EST LE SEUL LIEN** : `event_sessions.room`, `slots.room` et la
+    carte `atelier_rooms` portent le **nom** de la salle, pas un identifiant. Deux
+    conséquences, et ce sont elles qui portent tout le reste.
+  - **Déclaration d'office, AU RENDU** de `ProgramController::index()`, comme la
+    réconciliation du statut de visio juste au-dessus : les salles arrivent par cinq
+    chemins (séance, créneau, salle d'atelier, génération depuis le programme
+    synthétique, import), et un seul oublié laisserait des salles orphelines sans
+    que rien ne le signale. L'écriture n'a lieu **que s'il en manque**.
+  - ⚠️ **Renommer un espace renomme la salle PARTOUT** (`ProgramSpaces::rename()` :
+    séances, créneaux, `atelier_rooms`). Écrire la seule ligne de configuration les
+    laisserait sur l'ancien nom, **aussitôt redéclaré en espace** - on aurait
+    renommé une fiche et créé un doublon, pendant que le programme continue
+    d'annoncer l'ancien nom.
+  - ⚠️ **La réécriture passe par le query builder**, donc sans `Slot::updated` ni
+    journal de reprogrammation - **et c'est voulu** : renommer une salle ne déplace
+    personne, et l'assistance ne doit pas annoncer à deux cents auteurs un
+    changement de lieu qui n'a pas eu lieu.
+  - ⚠️ **Renommer SUR un espace existant le REJOINT** (c'est ainsi qu'on répare
+    « Salle1 » en « Salle 1 ») : la fiche d'arrivée garde ses renseignements, la
+    fiche renommée disparaît, et le message le dit.
+  - ⚠️ **Un espace au programme ne se supprime pas** : il serait redéclaré au rendu
+    suivant, et on verrait revenir ce qu'on vient d'effacer. Le bouton n'est donc
+    **pas offert** sur ces fiches - `data-ajax-msg` se dit sur **toute** réponse, et
+    un refus serveur aurait quand même affiché « Espace supprimé. »
+  - ⚠️ **L'index du premier espace vaut 0, et 0 est faux** : le panneau éprouve
+    `form.i !== ''` (pas `form.id ? …`), sinon modifier la première salle en
+    ajoutait une seconde.
+  - ⚠️ **Hors périmètre, et c'est dit** : `formations.room` est une saisie libre,
+    sans rapport avec les espaces - renommer un espace ne la touche pas (elle ne
+    figurait pas davantage dans les « salles utilisées »).
+  - Gardes : `EspacesDuProgrammeTest` (9 cas, 5 sabotages vérifiés).
 - **Tous les formulaires du Programme = panneau latéral (slideover)**, plus de `.ukc-modal` :
   `openAtelier/openSession/openSlot/openSpace/openRoom` posent `modal='…'` et
   `_modals.blade.php` rend un `<x-ukc.slideover open="modal==='…'">` par cas (atelier, session,
