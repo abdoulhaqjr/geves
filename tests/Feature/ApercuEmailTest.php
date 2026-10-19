@@ -105,6 +105,33 @@ it('ne coupe plus l’intitulé du bouton en plein mot', function () {
     expect($html)->toContain('word-break: break-all');
 });
 
+it('coiffe la carte du bandeau, au lieu de l’étirer sur toute la fenêtre', function () {
+    // ⚠️ Posé dans la table extérieure, le bandeau s'étirait sur toute la largeur
+    // de la fenêtre pendant que le message restait à 570px : l'e-mail se lisait
+    // comme deux objets empilés. Il est DANS la carte, donc à sa largeur.
+    $html = mailAvecBouton();
+
+    $carte = mb_strpos($html, 'class="inner-body"');
+    $bandeau = mb_strpos($html, 'class="header"');
+
+    expect($carte)->not->toBeFalse();
+    expect($bandeau)->not->toBeFalse();
+    expect($bandeau)->toBeGreaterThan($carte);
+    // Et il en épouse les deux coins hauts.
+    expect($html)->toContain('border-radius: 12px 12px 0 0');
+});
+
+it('va bord à bord sur un téléphone', function () {
+    // Les coins arrondis, le cadre gris et les 24px de côté se lisaient comme une
+    // marge autour du message. ⚠️ Ce qui reste autour est la marge de Gmail.
+    $html = mailAvecBouton();
+
+    expect($html)->toContain('max-width: 600px');
+    foreach (['border-radius: 0 !important', 'background-color: #ffffff !important', 'padding: 20px 16px !important'] as $regle) {
+        expect($html)->toContain($regle);
+    }
+});
+
 it('resserre l’espace intérieur du message', function () {
     // 36 px de rembourrage de chaque côté mangeaient un cinquième d'un écran de
     // téléphone, et le pied en ajoutait autant sous la carte.

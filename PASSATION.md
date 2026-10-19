@@ -58,8 +58,16 @@ vérifie en local** : il faut un envoi réel, lu dans Gmail en mode sombre.
 
 **Espacements resserrés** : corps `36px` → `26px 24px`, pied `36px` →
 `16px 24px 20px`, bandeau `24px` → `18px`, paragraphes en `1.5` avec une marge
-basse écrite. ⚠️ Ce qui entoure l'e-mail **dans Gmail** n'est pas à nous :
-l'application pose sa propre marge, et aucun gabarit ne l'enlève.
+basse écrite.
+
+⚠️⚠️ **Le bandeau est DANS la carte**, pas au-dessus d'elle : posé dans la table
+extérieure, il s'étirait sur toute la largeur de la fenêtre pendant que le
+message restait à 570px, et l'e-mail se lisait comme deux objets empilés.
+
+⚠️ **Sur téléphone, l'e-mail va bord à bord** : la carte prend toute la largeur,
+perd ses coins arrondis, son ombre et le cadre gris de la page, et son
+rembourrage tombe à `20px 16px`. ⚠️ Ce qui reste autour **n'est pas à nous** :
+l'application Gmail pose sa propre marge autour de tout message.
 
 8 cas Pest (`ApercuEmailTest`), **trois sabotages vérifiés**.
 

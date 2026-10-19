@@ -110,9 +110,13 @@ img {
 
 /* Header - bandeau bleu charte, filet or, logo blanc centré */
 
+/* ⚠️ Le bandeau coiffe LA CARTE (cf. `layout.blade.php`) : il en épouse donc la
+   largeur et ses deux coins hauts. Outlook ignore l'arrondi et rend des angles
+   droits - le bandeau reste un bandeau. */
 .header {
     background-color: #223ea4;
     border-bottom: 3px solid #ffd700;
+    border-radius: 12px 12px 0 0;
     padding: 18px 0;
     text-align: center;
 }

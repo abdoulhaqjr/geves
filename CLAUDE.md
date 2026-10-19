@@ -928,9 +928,19 @@ et **habillés à la charte de l'Université de Kara** :
     cinquième d'un écran de téléphone, et le pied en ajoutait autant sous la carte
     (corps `26px 24px`, pied `16px 24px 20px`, bandeau `18px`, paragraphes
     `line-height 1.5` + marge basse **écrite** à 14px - laissée au client, elle vaut
-    `1em` et chacun en décide autrement). ⚠️ **Ce qui entoure l'e-mail dans Gmail
-    n'est PAS à nous** : l'application pose sa propre marge autour du message, et
-    aucun gabarit ne l'enlève.
+    `1em` et chacun en décide autrement).
+  - ⚠️⚠️ **LE BANDEAU EST DANS LA CARTE**, pas au-dessus d'elle (`layout.blade.php` :
+    la ligne d'en-tête vit dans `table.inner-body`). Posé dans la table extérieure,
+    il s'étirait sur **toute la largeur de la fenêtre** pendant que le message
+    restait à 570px - l'e-mail se lisait comme deux objets empilés. Il épouse donc
+    la largeur du contenu et les deux coins hauts de la carte (Outlook ignore
+    l'arrondi : angles droits, le bandeau reste un bandeau).
+  - ⚠️ **Sur téléphone, l'e-mail va BORD À BORD** (media query ≤600px) : la carte
+    prend toute la largeur, perd ses coins arrondis, son ombre et le cadre gris de
+    la page (`background #ffffff`), et son rembourrage tombe à `20px 16px`. ⚠️ Mais
+    **ce qui reste autour n'est pas à nous** : l'application Gmail pose sa propre
+    marge autour de tout message, et aucun gabarit ne l'enlève - mesuré sur les
+    captures du 19/10/2026.
 - Tests : `tests/Feature/AccountMailLocalizationTest.php` (langue suit le compte + rendu
   FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription ;
   `TypographieTest` garde l'absence des caractères proscrits (sujets compris) ;
