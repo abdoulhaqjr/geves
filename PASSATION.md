@@ -13,6 +13,19 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### En-têtes de sécurité HTTP (2026-10-19)
+
+Le rapport de production signalait six en-têtes absents. `public/.htaccess`
+ajoute les protections communes ; le middleware Laravel pose un HSTS initial de
+300 secondes, uniquement pour `geves.univkara.tg` servi en HTTPS par l'origine.
+Les pages HTML reçoivent
+une CSP immédiatement applicable limitée à `base-uri`, `object-src` et
+`frame-ancestors`, ainsi qu'une CSP plus stricte en mode Report-Only. Les rapports
+arrivent sur `/csp-report`, avec limitation, déduplication et journalisation
+sans URL de page. La suite dépend des violations observées (Turnstile, visio,
+FedaPay, scripts et styles intégrés) ; voir `DEPLOIEMENT.md` avant de durcir
+HSTS ou d'activer la politique complète.
+
 ### Les salles du programme sont des espaces déclarés (2026-10-19)
 
 **Deux listes voisines, dont une qu'on ne pouvait pas toucher.** La gestion des

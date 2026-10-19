@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\EnsureEditionAccess;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -18,10 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('account.login'));
 
         // Les webhooks de paiement sont des appels serveur-à-serveur (pas de CSRF).
-        $middleware->validateCsrfTokens(except: ['webhooks/*']);
+        $middleware->validateCsrfTokens(except: ['webhooks/*', 'csp-report']);
 
         // Langue de la requête (i18n) : compte → session → navigateur → défaut.
         $middleware->web(append: SetLocale::class);
+        $middleware->web(append: ContentSecurityPolicy::class);
 
         // Étanchéité d'accès par événement (staff affecté à un colloque).
         $middleware->alias(['edition.cap' => EnsureEditionAccess::class]);

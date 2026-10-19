@@ -485,6 +485,45 @@ base.
 
 ---
 
+# En-têtes de sécurité HTTP
+
+`public/.htaccess` pose les en-têtes communs sur les pages, fichiers et erreurs :
+`nosniff`, `SAMEORIGIN`, politique de référent et permissions non utilisées.
+Caméra et micro restent libres pour la visio intégrée, notamment Jitsi. La
+syntaxe conditionnelle Apache de `Header` est évitée : o2switch peut utiliser
+LiteSpeed, qui ne la traite pas toujours comme Apache.
+
+Le middleware Laravel ne pose HSTS que pour `geves.univkara.tg`, si la
+connexion **à l'origine** est elle-même en HTTPS, avec `max-age=300` pour la
+première mise en service. Si Cloudflare sert le HTTPS au navigateur mais contacte
+l'origine en HTTP, HSTS reste absent : passer d'abord Cloudflare en **Full
+(strict)**, puis vérifier le certificat de l'origine. Ne pas ajouter en
+parallèle une seconde règle HSTS Cloudflare sans retirer celle de Laravel. Ne
+pas appliquer `includeSubDomains`/`preload` à `univkara.tg`.
+
+`App\Http\Middleware\ContentSecurityPolicy` pose sur les réponses HTML une CSP
+immédiate limitée (`base-uri`, `object-src`, `frame-ancestors`) et une politique
+plus stricte en **Report-Only**. Les rapports vont à `POST /csp-report` (sans
+CSRF, limité à 20 requêtes/minute/IP). Seuls la directive et le domaine de la
+ressource bloquée sont inscrits dans les journaux, une fois par combinaison et
+par heure ; aucune URL de page, paramètre ou charge utile brute n'est journalisée.
+
+Après le déploiement, vérifier les en-têtes sur l'accueil, une page admin, une
+page participant, un PDF, un fichier statique et une erreur HTTP. `curl -sSI`
+permet de lire les en-têtes sans afficher le corps. Sur les pages HTML, vérifier
+`Content-Security-Policy` et `Content-Security-Policy-Report-Only` séparément ;
+sur les fichiers statiques, les en-têtes de `.htaccess` suffisent. Contrôler
+Turnstile, FedaPay, Jitsi/LiveKit, le livre PDF et les éditeurs de modèles dans
+le navigateur. Lire ensuite les entrées `CSP report-only violation` des journaux
+Laravel et corriger les sources, scripts et styles intégrés avant de faire
+respecter une CSP complète.
+
+Si HSTS apparaît bien et que HTTPS reste stable, augmenter sa durée par paliers
+(`300` → `86400` → `31536000` secondes). Ne pas augmenter la durée avant d'avoir
+vérifié la production après chaque palier.
+
+---
+
 # Ce qui ne fonctionnera pas sur un mutualisé
 
 - ⚠️ **La production des vidéos de prise en main.** Le rendu réclame **FFmpeg**

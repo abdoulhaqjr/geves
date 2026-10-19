@@ -582,6 +582,13 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
 
 ### Mise en ligne = `DEPLOIEMENT.md`
 
+Les en-têtes HTTP de production sont répartis entre `public/.htaccess`
+(protections communes) et `App\Http\Middleware\ContentSecurityPolicy` (HSTS court
+pour GEVES si l'origine est en HTTPS, CSP HTML minimale + Report-Only).
+Le bilan `POST /csp-report` est borné et dédupliqué. Voir « En-têtes de sécurité
+HTTP » dans `DEPLOIEMENT.md` avant d'augmenter HSTS ou d'activer une CSP complète ;
+la visio, Turnstile et le paiement dépendent de permissions/sources externes.
+
 ⚠️ **Une modification de CSS seule ne se déploie PAS par `git pull`.**
 `public/build/` est dans `.gitignore` : le dépôt porte les sources
 (`resources/css/*.css`), pas l'habillage construit. Sur le serveur, `git pull`

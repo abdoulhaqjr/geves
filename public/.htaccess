@@ -23,3 +23,13 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+<IfModule mod_headers.c>
+    # En-têtes communs aux pages Laravel, aux fichiers et aux réponses d'erreur.
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # La visio utilise caméra et micro, y compris via un fournisseur en iframe.
+    Header always set Permissions-Policy "geolocation=(), usb=(), serial=()"
+
+</IfModule>

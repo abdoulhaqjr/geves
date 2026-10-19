@@ -57,6 +57,7 @@ use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialControll
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\AuthorLinkController;
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Internal\TutorialCaptureController;
@@ -78,6 +79,7 @@ use App\Models\Event;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::post('/csp-report', CspReportController::class)->middleware('throttle:20,1')->name('csp.report');
 
 // Page publique d'un événement de colloque.
 Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
