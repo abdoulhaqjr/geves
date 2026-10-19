@@ -191,81 +191,103 @@ class LayoutSanitizer
     }
 
     /**
-     * Badge par défaut, calqué sur le badge officiel du comité d'organisation
-     * (UK x Université de Parakou) : A6 portrait (397×560), cadre décoratif
-     * vert/bleu en image de fond (coins diagonaux et filets d'en-tête),
-     * séparateur, pictogrammes lieu + dates et logos OFFICIELS UK + Parakou
-     * (les mêmes assets que les attestations) en éléments, puis nom, rôle, thème,
-     * lieu et dates. Le concepteur de badges (badge-designer.js, modèle `co`)
-     * décrit la MÊME maquette.
-     *
-     * ⚠️⚠️ **Dessiné au format MODÈLE 303 : 333 × 472 px, soit 88 × 125 mm à 96 dpi.**
-     * C'est la taille d'un porte-badge du commerce, donc une **dimension de SORTIE** :
-     * le badge s'imprime à cette taille pour entrer dans sa pochette, et l'A4 en reçoit
-     * **4 par feuille**. L'A6 papier (397 × 560) a été abandonné comme défaut : 2 × 105 mm
-     * font la largeur entière d'une A4, il ne restait rien pour les marges d'imprimante -
-     * on n'en imprimait donc qu'UN par page.
+     * Formats de porte-badge pour lesquels la maquette officielle est composée.
+     * Largeur × hauteur en px à 96 dpi (1 px = 1/96 pouce).
      */
-    protected static function defaultBadge(bool $withPhoto = false): array
+    public const BADGE_FORMATS = [
+        'modele-303' => [333, 472],  // 88 × 125 mm
+        'modele-304' => [378, 510],  // 100 × 135 mm
+        'modele-106' => [246, 359],  // 65 × 95 mm
+    ];
+
+    /**
+     * Maquette officielle du badge, COMPOSÉE pour le format demandé.
+     *
+     * ⚠️⚠️ **Les trois porte-badges n'ont pas le même rapport** (303 : 0,704 ;
+     * 304 : 0,741 ; 106 : 0,684). Agrandir le 303 pour obtenir les autres les
+     * DÉFORMERAIT - un cadre plus large étiré en hauteur, un QR ovalisé. La
+     * maquette est donc décrite **une seule fois en proportions** et composée pour
+     * chaque format : positions et boîtes suivent chacune leur axe, tandis que les
+     * **carrés (QR, photo, pictogrammes) et les corps de texte suivent le PLUS
+     * PETIT rapport** - sinon le QR cesserait d'être carré et le texte déborderait.
+     *
+     * ⚠️ Le 303 sort EXACTEMENT comme avant cette composition (mêmes entiers) :
+     * c'est la référence, et `BadgeDefaultTemplateTest` la gèle.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function defaultBadge(bool $withPhoto = false, string $format = 'modele-303'): array
     {
+        [$w, $h] = self::BADGE_FORMATS[$format] ?? self::BADGE_FORMATS['modele-303'];
+
         $dark = '#2e3440';
 
+        // Proportions de la maquette : fractions de la largeur et de la hauteur.
+        $fx = fn (float $f): int => (int) round($f * $w);
+        $fy = fn (float $f): int => (int) round($f * $h);
+
+        // ⚠️ Un seul rapport pour ce qui doit rester carré ou lisible.
+        $r = min($w / 333, $h / 472);
+        $sq = fn (int $base): int => max(1, (int) round($base * $r));
+        $fs = fn (int $base): int => max(6, (int) round($base * $r));
+
         $t = fn (array $e): array => $e + [
-            'type' => 'text', 'size' => 12, 'weight' => 600, 'color' => $dark,
+            'type' => 'text', 'size' => $fs(12), 'weight' => 600, 'color' => $dark,
             'align' => 'left', 'font' => 'jost', 'italic' => false, 'leading' => 1.25, 'upper' => false,
         ];
 
         // Logo UK large (suit le réglage des Réglages) ; chemin relatif pour le PDF.
         $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
 
-        // Variante AVEC PHOTO du même badge : le nom de l'événement REMONTE, une photo ronde
+        // Variante AVEC PHOTO du même badge : le nom de l'événement REMONTE, une photo
         // s'intercale entre l'événement et le nom, et nom/rôle/thème DESCENDENT pour lui
         // faire la place. La photo (élément `photo`) se remplit avec `recipient.photo`
         // (profil), sinon les initiales. Le concepteur (`co-photo`) décrit la MÊME maquette.
-        $eventY = $withPhoto ? 91 : 126;
-        $nameY = $withPhoto ? 229 : 196;
-        $roleY = $withPhoto ? 266 : 233;
-        $themeY = $withPhoto ? 295 : 271;
-        $themeH = $withPhoto ? 59 : 67;
+        $eventY = $fy($withPhoto ? 0.1928 : 0.2669);
+        $nameY = $fy($withPhoto ? 0.4852 : 0.4153);
+        $roleY = $fy($withPhoto ? 0.5636 : 0.4936);
+        $themeY = $fy($withPhoto ? 0.6250 : 0.5742);
+        $themeH = $fy($withPhoto ? 0.1250 : 0.1420);
 
+        $photoSize = $sq(84);
         $photo = $withPhoto
-            ? [['type' => 'photo', 'x' => 125, 'y' => 131, 'w' => 84, 'h' => 84]]
+            ? [['type' => 'photo', 'x' => (int) round(($w - $photoSize) / 2), 'y' => $fy(0.2775), 'w' => $photoSize, 'h' => $photoSize]]
             : [];
 
+        $icon = $sq(20);
+        $qr = $sq(65);
+
         return [
-            'width' => 333, 'height' => 472, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'width' => $w, 'height' => $h, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/badges/badge-default-bg.png',
             'erase_default_rule' => true,
             'elements' => array_merge([
                 // ⚠️ Les deux filets verts (gauche cadre→UK, droite Parakou→cadre) sont
-                // désormais CUITS DANS LE CADRE de l'image de fond (badge-default-bg.png),
-                // dans la même matière que le contour : ils y sont donc TOUJOURS soudés, sans
-                // la moindre fente - un filet posé en élément par-dessus laissait un jour à
-                // gauche dans le concepteur. Ils s'étirent avec le cadre au changement de
-                // format (100% 100%), comme le reste du contour. Ne PAS les repasser en
-                // `rect` : c'est précisément ce qui ne « collait » pas.
-                // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages)
-                // et le logo large de Parakou. Deux boîtes à la MÊME hauteur (h40), côte à
-                // côte et centrées sur le badge, la largeur suivant le format propre de
-                // chaque logo ; espacement resserré pour donner de la longueur aux filets.
-                ['type' => 'image', 'x' => 29, 'y' => 45, 'w' => 122, 'h' => 34, 'src' => (string) $ukLogo],
-                ['type' => 'image', 'x' => 171, 'y' => 45, 'w' => 133, 'h' => 34, 'src' => '/img/attestations/logo-parakou.png'],
+                // CUITS DANS LE CADRE de l'image de fond (badge-default-bg.png), dans la
+                // même matière que le contour : ils y sont donc TOUJOURS soudés, sans la
+                // moindre fente - un filet posé en élément par-dessus laissait un jour à
+                // gauche dans le concepteur. Ils s'étirent avec le cadre (100% 100%).
+                // Ne PAS les repasser en `rect` : c'est précisément ce qui ne « collait » pas.
+                // Logos OFFICIELS, les mêmes que les attestations : UK large (réglages) et
+                // le logo large de Parakou, à la MÊME hauteur, côte à côte et centrés.
+                ['type' => 'image', 'x' => $fx(0.0871), 'y' => $fy(0.0953), 'w' => $fx(0.3664), 'h' => $fy(0.0720), 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => $fx(0.5135), 'y' => $fy(0.0953), 'w' => $fx(0.3994), 'h' => $fy(0.0720), 'src' => '/img/attestations/logo-parakou.png'],
                 // Nom de l'événement (série + édition).
-                $t(['x' => 20, 'y' => $eventY, 'w' => 293, 'h' => 45, 'text' => '[edition.name]', 'size' => 13, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => $fx(0.0601), 'y' => $eventY, 'w' => $fx(0.8799), 'h' => $fy(0.0953), 'text' => '[edition.name]', 'size' => $fs(13), 'weight' => 700, 'align' => 'center']),
             ], $photo, [
                 // Bénéficiaire (grand, bleu) + fonction/rôle juste en dessous.
-                $t(['x' => 17, 'y' => $nameY, 'w' => 299, 'h' => 34, 'text' => '[recipient.name]', 'size' => 18, 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
-                $t(['x' => 17, 'y' => $roleY, 'w' => 299, 'h' => 20, 'text' => '[recipient.role]', 'size' => 13, 'weight' => 700, 'align' => 'center']),
+                $t(['x' => $fx(0.0511), 'y' => $nameY, 'w' => $fx(0.8979), 'h' => $fy(0.0720), 'text' => '[recipient.name]', 'size' => $fs(18), 'weight' => 800, 'align' => 'center', 'color' => '#253c98']),
+                $t(['x' => $fx(0.0511), 'y' => $roleY, 'w' => $fx(0.8979), 'h' => $fy(0.0424), 'text' => '[recipient.role]', 'size' => $fs(13), 'weight' => 700, 'align' => 'center']),
                 // Thème du colloque, en capitales.
-                $t(['x' => 34, 'y' => $themeY, 'w' => 266, 'h' => $themeH, 'text' => '[edition.theme]', 'size' => 9, 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
-                ['type' => 'rect', 'shape' => 'line-h', 'x' => 91, 'y' => 351, 'w' => 152, 'h' => 3, 'color' => $dark, 'radius' => 2],
+                $t(['x' => $fx(0.1021), 'y' => $themeY, 'w' => $fx(0.7988), 'h' => $themeH, 'text' => '[edition.theme]', 'size' => $fs(9), 'weight' => 700, 'align' => 'center', 'color' => '#111111', 'leading' => 1.3, 'upper' => true]),
+                ['type' => 'rect', 'shape' => 'line-h', 'x' => $fx(0.2733), 'y' => $fy(0.7436), 'w' => $fx(0.4565), 'h' => max(2, $fy(0.0064)), 'color' => $dark, 'radius' => 2],
                 // Les pictogrammes sont des éléments indépendants, comme les logos.
-                ['type' => 'image', 'x' => 59, 'y' => 366, 'w' => 20, 'h' => 20, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
-                ['type' => 'image', 'x' => 59, 'y' => 398, 'w' => 20, 'h' => 20, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => $fx(0.1772), 'y' => $fy(0.7754), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-location.svg', 'color' => $dark],
+                ['type' => 'image', 'x' => $fx(0.1772), 'y' => $fy(0.8432), 'w' => $icon, 'h' => $icon, 'src' => '/img/badges/icon-calendar.svg', 'color' => $dark],
                 // Lieu et dates.
-                $t(['x' => 82, 'y' => 369, 'w' => 159, 'h' => 19, 'text' => '[edition.location]', 'size' => 10]),
-                $t(['x' => 82, 'y' => 401, 'w' => 159, 'h' => 19, 'text' => '[edition.dates]', 'size' => 10]),
-                ['type' => 'qr', 'x' => 247, 'y' => 369, 'size' => 65, 'value' => '{verify_url}'],
+                $t(['x' => $fx(0.2462), 'y' => $fy(0.7818), 'w' => $fx(0.4775), 'h' => $fy(0.0403), 'text' => '[edition.location]', 'size' => $fs(10)]),
+                $t(['x' => $fx(0.2462), 'y' => $fy(0.8496), 'w' => $fx(0.4775), 'h' => $fy(0.0403), 'text' => '[edition.dates]', 'size' => $fs(10)]),
+                ['type' => 'qr', 'x' => $fx(0.7417), 'y' => $fy(0.7818), 'size' => $qr, 'value' => '{verify_url}'],
             ]),
         ];
     }

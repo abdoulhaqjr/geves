@@ -818,52 +818,58 @@
     var T = {
       /* Badge participant par défaut (A6 portrait 397×560).
          ⚠️ Doit rester identique à LayoutSanitizer::defaultBadge() (PHP). */
-      co: function () {
-        // ⚠️ Modèle 303 (333 × 472 px = 88 × 125 mm) : la MÊME maquette que
-        // LayoutSanitizer::defaultBadge(). Toucher à l'un, c'est toucher à l'autre.
-        page.classList.add('size-modele-303');
-        var chip = document.querySelector('[data-size="modele-303"]');
+      /* ⚠️⚠️ La maquette officielle est COMPOSÉE pour le format demandé, jamais
+         étirée : les trois porte-badges n'ont pas le même rapport (303 : 0,704 ;
+         304 : 0,741 ; 106 : 0,684), et agrandir l'un pour obtenir l'autre
+         ovaliserait le QR et déformerait les boîtes. Mêmes proportions que
+         LayoutSanitizer::defaultBadge() - toucher à l'un, c'est toucher à l'autre. */
+      officiel: function (format, withPhoto) {
+        var fmt = FORMAT_DIMENSIONS[format] ? format : 'modele-303';
+        var dims = FORMAT_DIMENSIONS[fmt];
+        var w = dims[0], h = dims[1];
+        var fx = function (f) { return Math.round(f * w); };
+        var fy = function (f) { return Math.round(f * h); };
+        // Un seul rapport pour ce qui doit rester carré ou lisible.
+        var r = Math.min(w / 333, h / 472);
+        var sq = function (b) { return Math.max(1, Math.round(b * r)); };
+        var fs = function (b) { return Math.max(6, Math.round(b * r)); };
+
+        if (fmt !== 'a6-portrait') page.classList.add('size-' + fmt);
+        var chip = document.querySelector('[data-size="' + fmt + '"]');
         if (chip) chip.classList.add('active');
         page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
-        // Les filets verts restent dans le cadre, tandis que le séparateur sombre
-        // du pied est un calque horizontal indépendant.
-        imgEl({ label: 'Logo UK', x: 29, y: 45, w: 122, h: 34, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 171, y: 45, w: 133, h: 34, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 20, y: 126, w: 293, h: 45, text: '[edition.name]', size: 13, weight: 700, color: '#2e3440', lh: 1.25 });
-        styled({ label: 'Nom', x: 17, y: 196, w: 299, h: 34, text: '[recipient.name]', size: 18, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 17, y: 233, w: 299, h: 20, text: '[recipient.role]', size: 13, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 34, y: 271, w: 266, h: 67, text: '[edition.theme]', size: 9, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        barEl({ label: 'Séparateur', x: 91, y: 351, w: 152, h: 3, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 59, y: 366, w: 20, h: 20, src: '/img/badges/icon-location.svg' });
-        imgEl({ label: 'Icône calendrier', x: 59, y: 398, w: 20, h: 20, src: '/img/badges/icon-calendar.svg' });
-        styled({ label: 'Lieu', x: 82, y: 369, w: 159, text: '[edition.location]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 82, y: 401, w: 159, text: '[edition.dates]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 247, y: 369, w: 65, qrUrl: DEFAULT_QR_URL });
+
+        var eventY = fy(withPhoto ? 0.1928 : 0.2669);
+        var nameY = fy(withPhoto ? 0.4852 : 0.4153);
+        var roleY = fy(withPhoto ? 0.5636 : 0.4936);
+        var themeY = fy(withPhoto ? 0.6250 : 0.5742);
+        var themeH = fy(withPhoto ? 0.1250 : 0.1420);
+
+        imgEl({ label: 'Logo UK', x: fx(0.0871), y: fy(0.0953), w: fx(0.3664), h: fy(0.0720), src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
+        imgEl({ label: 'Logo Parakou', x: fx(0.5135), y: fy(0.0953), w: fx(0.3994), h: fy(0.0720), src: '/img/attestations/logo-parakou.png' });
+        styled({ label: 'Événement', x: fx(0.0601), y: eventY, w: fx(0.8799), h: fy(0.0953), text: '[edition.name]', size: fs(13), weight: 700, color: '#2e3440', lh: 1.25 });
+        if (withPhoto) {
+          var photo = sq(84);
+          createEl({ type: 'photo', label: 'Photo', x: Math.round((w - photo) / 2), y: fy(0.2775), w: photo });
+        }
+        styled({ label: 'Nom', x: fx(0.0511), y: nameY, w: fx(0.8979), h: fy(0.0720), text: '[recipient.name]', size: fs(18), weight: 800, color: '#253c98' });
+        styled({ label: 'Rôle', x: fx(0.0511), y: roleY, w: fx(0.8979), h: fy(0.0424), text: '[recipient.role]', size: fs(13), weight: 700, color: '#2e3440' });
+        styled({ label: 'Thème', x: fx(0.1021), y: themeY, w: fx(0.7988), h: themeH, text: '[edition.theme]', size: fs(9), weight: 700, color: '#111111', lh: 1.3, upper: true });
+        barEl({ label: 'Séparateur', x: fx(0.2733), y: fy(0.7436), w: fx(0.4565), h: Math.max(2, fy(0.0064)), color: '#2e3440' });
+        imgEl({ label: 'Icône localisation', x: fx(0.1772), y: fy(0.7754), w: sq(20), h: sq(20), src: '/img/badges/icon-location.svg' });
+        imgEl({ label: 'Icône calendrier', x: fx(0.1772), y: fy(0.8432), w: sq(20), h: sq(20), src: '/img/badges/icon-calendar.svg' });
+        styled({ label: 'Lieu', x: fx(0.2462), y: fy(0.7818), w: fx(0.4775), h: fy(0.0403), text: '[edition.location]', size: fs(10), weight: 600, color: '#2e3440', align: 'left' });
+        styled({ label: 'Dates', x: fx(0.2462), y: fy(0.8496), w: fx(0.4775), h: fy(0.0403), text: '[edition.dates]', size: fs(10), weight: 600, color: '#2e3440', align: 'left' });
+        createEl({ type: 'qr', label: 'QR Badge', x: fx(0.7417), y: fy(0.7818), w: sq(65), qrUrl: DEFAULT_QR_URL });
+      },
+      co: function (format) {
+        T.officiel(format, false);
       },
       /* Variante avec photo du même badge. Elle se choisit dans le designer
          et s'enregistre sur le modèle de la catégorie courante. */
-      'co-photo': function () {
-        // ⚠️ Modèle 303 (333 × 472 px = 88 × 125 mm) : la MÊME maquette que
-        // LayoutSanitizer::defaultBadge(). Toucher à l'un, c'est toucher à l'autre.
-        page.classList.add('size-modele-303');
-        var chip = document.querySelector('[data-size="modele-303"]');
-        if (chip) chip.classList.add('active');
-        page.classList.add('bg-co', 'bg-co-icons', 'bg-co-line');
-        imgEl({ label: 'Logo UK', x: 29, y: 45, w: 122, h: 34, src: ((window.UKC_EDITOR || {}).logos || {}).uk || '/img/logo-uk.png' });
-        imgEl({ label: 'Logo Parakou', x: 171, y: 45, w: 133, h: 34, src: '/img/attestations/logo-parakou.png' });
-        styled({ label: 'Événement', x: 20, y: 91, w: 293, h: 45, text: '[edition.name]', size: 13, weight: 700, color: '#2e3440', lh: 1.25 });
-        createEl({ type: 'photo', label: 'Photo', x: 125, y: 131, w: 84 });
-        styled({ label: 'Nom', x: 17, y: 229, w: 299, h: 34, text: '[recipient.name]', size: 18, weight: 800, color: '#253c98' });
-        styled({ label: 'Rôle', x: 17, y: 266, w: 299, h: 20, text: '[recipient.role]', size: 13, weight: 700, color: '#2e3440' });
-        styled({ label: 'Thème', x: 34, y: 295, w: 266, h: 59, text: '[edition.theme]', size: 9, weight: 700, color: '#111111', lh: 1.3, upper: true });
-        barEl({ label: 'Séparateur', x: 91, y: 351, w: 152, h: 3, color: '#2e3440' });
-        imgEl({ label: 'Icône localisation', x: 59, y: 366, w: 20, h: 20, src: '/img/badges/icon-location.svg' });
-        imgEl({ label: 'Icône calendrier', x: 59, y: 398, w: 20, h: 20, src: '/img/badges/icon-calendar.svg' });
-        styled({ label: 'Lieu', x: 82, y: 369, w: 159, text: '[edition.location]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
-        styled({ label: 'Dates', x: 82, y: 401, w: 159, text: '[edition.dates]', size: 10, weight: 600, color: '#2e3440', align: 'left' });
-        createEl({ type: 'qr', label: 'QR Badge', x: 247, y: 369, w: 65, qrUrl: DEFAULT_QR_URL });
+      'co-photo': function (format) {
+        T.officiel(format, true);
       },
-      /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
@@ -895,7 +901,7 @@
       }
     };
 
-    (T[key] || T.co)();
+    (T[key] || T.co)(targetFormat);
     applyFormat(targetFormat, false);
     refreshLayers();
     pushHistory();
@@ -1749,6 +1755,9 @@
   var THUMB_W_FALLBACK = 252;
   function thumbNativeFormat(formats) {
     // Format dans lequel le modèle est dessiné (évite une mise à l'échelle qui déforme).
+    // ⚠️ Le modèle 303 passe devant : c'est le format du badge officiel, donc la
+    // vignette montre ce que l'on obtient vraiment.
+    if (formats.indexOf('modele-303') !== -1) return 'modele-303';
     if (formats.indexOf('a6-portrait') !== -1) return 'a6-portrait';
     if (formats.indexOf('card-landscape') !== -1) return 'card-landscape';
     return formats[0] || 'a6-portrait';

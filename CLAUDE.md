@@ -3906,6 +3906,22 @@ donc qu'**UN par page**. ⚠️ **Un modèle DÉJÀ ENREGISTRÉ garde sa taille*
 ne recrée que si `layout` est vide) : pour qu'un événement existant passe au 303, il faut
 **supprimer son modèle** dans Documents, qui se recrée depuis le nouveau défaut.
 
+⚠️⚠️ **LA MAQUETTE EST COMPOSÉE PAR FORMAT, JAMAIS ÉTIRÉE.** Les trois porte-badges n'ont
+pas le même rapport - **303** 88 × 125 (0,704), **304** 100 × 135 (0,741), **106**
+65 × 95 (0,684) - donc agrandir l'un pour obtenir l'autre **ovaliserait le QR** et
+déformerait les boîtes. `LayoutSanitizer::defaultBadge($withPhoto, $format)` décrit la
+maquette **une seule fois en proportions** (`LayoutSanitizer::BADGE_FORMATS` donne les
+tailles) : positions et boîtes suivent **chacune leur axe**, tandis que les **carrés (QR,
+photo, pictogrammes) et les corps de texte suivent le PLUS PETIT rapport** - sinon le QR
+cesse d'être carré et le texte déborde. Par feuille A4 : **303 → 4**, **304 → 4**,
+**106 → 9**. ⚠️ Le **303 sort exactement** comme la version écrite à la main avant cette
+composition : c'est la référence, et `BadgeDefaultTemplateTest` la gèle.
+⚠️ **Le jumeau du concepteur compose à l'identique** (`T.officiel(format, withPhoto)` dans
+`badge-designer.js`, appelé par `co` / `co-photo` avec le format cible) : choisir un
+format puis réappliquer le design **recompose** au lieu d'étirer. Un cas compare les
+**proportions des deux fichiers** et échoue si elles divergent (sabotage vérifié) - c'est
+la garde qui rend tenable la règle « toucher à l'un, c'est toucher à l'autre ».
+
 Le badge porte un cadre décoratif **vert/bleu** (coins diagonaux, filet d'en-tête, séparateur,
 pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
 `public/img/badges/badge-default-bg.png` ; puis **nom** (grand, bleu `#253c98`), **rôle**,

@@ -121,3 +121,92 @@ it('rend le badge par défaut avec les valeurs du participant', function () {
         ->toContain('Du 06 au 10 octobre 2025')
         ->toContain('/img/badges/badge-default-bg.png');
 });
+
+it('compose la maquette officielle pour chaque porte-badge', function () {
+    // ⚠️⚠️ Les trois pochettes n'ont PAS le même rapport (303 : 0,704 ; 304 : 0,741 ;
+    // 106 : 0,684). Agrandir le 303 pour obtenir les autres les déformerait - c'est
+    // pourquoi la maquette est composée par format, pas mise à l'échelle.
+    $composer = new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge');
+    $composer->setAccessible(true);
+
+    $attendu = [
+        'modele-303' => [333, 472, 4],
+        'modele-304' => [378, 510, 4],
+        'modele-106' => [246, 359, 9],
+    ];
+
+    foreach ($attendu as $format => [$w, $h, $parPage]) {
+        foreach ([false, true] as $avecPhoto) {
+            $layout = $composer->invoke(null, $avecPhoto, $format);
+
+            expect($layout['width'])->toBe($w, $format)
+                ->and($layout['height'])->toBe($h, $format);
+
+            // Rien ne doit sortir du badge : un élément hors cadre serait rogné.
+            $dehors = [];
+            foreach ($layout['elements'] as $el) {
+                $ew = $el['w'] ?? $el['size'] ?? 0;
+                $eh = $el['h'] ?? $el['size'] ?? 0;
+                if ($el['x'] < 0 || $el['y'] < 0 || $w < $el['x'] + $ew || $h < $el['y'] + $eh) {
+                    $dehors[] = $el['type'].'@'.$el['x'].','.$el['y'];
+                }
+            }
+            expect($dehors)->toBe([], $format.' : éléments hors cadre - '.implode(' ', $dehors));
+        }
+
+        // La planche dispose ce format à sa taille réelle.
+        $plan = BadgeSheet::plan($w, $h);
+        expect($plan['trueSize'])->toBeTrue($format)
+            ->and($plan['perPage'])->toBe($parPage, $format);
+    }
+});
+
+it('garde le QR carré et le texte lisible sur le plus petit badge', function () {
+    // ⚠️ Le QR doit rester CARRÉ (il se scanne) et le corps du texte ne doit pas
+    // tomber sous le plancher : c'est ce qui arriverait si la composition suivait
+    // la largeur et la hauteur séparément.
+    $composer = new ReflectionMethod(LayoutSanitizer::class, 'defaultBadge');
+    $composer->setAccessible(true);
+
+    foreach (['modele-303', 'modele-304', 'modele-106'] as $format) {
+        $elements = collect($composer->invoke(null, false, $format)['elements']);
+
+        $qr = $elements->firstWhere('type', 'qr');
+        expect($qr)->not->toBeNull($format)
+            // 11 mm : en deçà, un QR portant une URL ne se scanne plus de façon fiable.
+            ->and($qr['size'] / 96 * 25.4)->toBeGreaterThan(11.0, $format.' : QR trop petit');
+
+        foreach ($elements->where('type', 'text') as $texte) {
+            expect($texte['size'])->toBeGreaterThanOrEqual(6, $format.' : texte sous le plancher');
+        }
+
+        // Les pictogrammes restent carrés.
+        foreach ($elements->where('type', 'image')->where('color', '#2e3440') as $picto) {
+            expect($picto['w'])->toBe($picto['h'], $format.' : pictogramme déformé');
+        }
+    }
+});
+
+it('tient la maquette PHP et son jumeau du concepteur d’accord', function () {
+    // ⚠️⚠️ « Chaque modèle PHP et son jumeau du concepteur décrivent la MÊME
+    // maquette : toucher à l'un, c'est toucher à l'autre. » Les deux composent
+    // désormais à partir des mêmes proportions - ce cas vérifie qu'elles le restent.
+    $php = file_get_contents(app_path('Documents/LayoutSanitizer.php'));
+    $js = file_get_contents(resource_path('js/badge-designer.js'));
+
+    $fractions = function (string $sujet, string $motif): array {
+        preg_match_all($motif, $sujet, $m);
+        $liste = array_values(array_unique($m[1]));
+        sort($liste);
+
+        return $liste;
+    };
+
+    // Proportions de la maquette PHP (fx(...) / fy(...)).
+    $cotePhp = $fractions($php, '/\$f[xy]\((0\.\d{4})\)/');
+    // Les mêmes côté concepteur.
+    $coteJs = $fractions($js, '/f[xy]\((0\.\d{4})\)/');
+
+    expect($cotePhp)->not->toBeEmpty()
+        ->and($coteJs)->toBe($cotePhp, 'le concepteur et le badge délivré doivent partager les mêmes proportions');
+});
