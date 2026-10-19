@@ -4072,6 +4072,17 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     souvent ce qui fait tenir une colonne de plus - un badge de 100 mm donne
     2 × 100 = 200 mm, soit exactement la feuille moins ses marges. Une tolérance
     d'**1 px** (0,26 mm) évite qu'un arrondi coûte une colonne.
+  - ⚠️⚠️ **UN FORMAT SE DÉCLARE À UN SEUL ENDROIT : `FORMAT_DIMENSIONS` +
+    `FORMAT_LABELS` (`badge-designer.js`).** Les classes à retirer (`SIZE_CLASSES`)
+    et la détection du format courant s'en **déduisent**. Il y avait QUATRE listes à
+    tenir d'accord - pastilles, menu déroulant, dimensions, libellés - et c'est le
+    **menu déroulant** qui a fini par ignorer les formats ajoutés : il proposait
+    encore les cinq anciens pendant que les pastilles en montraient neuf. Ajouter un
+    format = une ligne dans chacune des deux tables, une pastille, une option, une
+    règle `.ed-page.size-*`. Garde : `DocumentDesignerTest` compare les quatre
+    listes et exige la règle CSS (sabotage vérifié).
+    ⚠️ Et les **cartes de design** (`data-formats`) doivent lister le nouveau format,
+    sinon le panneau « Modèles de design » s'ouvre vide sur ce format.
   - ⚠️ **`BadgeSheet::formatLabel()` est la source unique du nom d'un format**
     (« Modèle 303 - 88 × 125 mm ») : le hub l'affiche avec le **nombre par page**,
     pour qu'on voie tout de suite qu'un modèle mal dimensionné n'en sort qu'un.

@@ -915,22 +915,35 @@
     });
   });
 
-  var SIZE_CLASSES = ['size-a6-landscape', 'size-a7-portrait', 'size-card-landscape', 'size-cr80'];
+  // ⚠️ Les badges s'impriment à leur TAILLE RÉELLE : ces dimensions sont celles du
+  // porte-badge, en px à 96 dpi (1 px = 1/96 pouce), et la planche A4 dispose ce
+  // que le modèle déclare. Ajouter un format = une ligne ici et une dans
+  // FORMAT_LABELS ; tout le reste s'en déduit.
   var FORMAT_DIMENSIONS = {
+    'modele-303': [333, 472], 'modele-304': [378, 510], 'modele-106': [246, 359],
+    'a6-pochette': [408, 586], 'cr80': [324, 204],
     'a6-portrait': [397, 560], 'a6-landscape': [560, 397],
-    'a7-portrait': [280, 397], 'card-landscape': [340, 208], 'cr80': [324, 204]
+    'a7-portrait': [280, 397], 'card-landscape': [340, 208]
   };
   var FORMAT_LABELS = {
+    'modele-303': 'Modèle 303', 'modele-304': 'Modèle 304', 'modele-106': 'Modèle 106',
+    'a6-pochette': 'A6 porte-badge', 'cr80': 'CR80',
     'a6-portrait': 'A6 Portrait', 'a6-landscape': 'A6 Paysage',
-    'a7-portrait': 'A7 Portrait', 'card-landscape': 'Carte 90×55', 'cr80': 'CR80'
+    'a7-portrait': 'A7 Portrait', 'card-landscape': 'Carte 90×55'
   };
+  // ⚠️ DÉDUITES des formats déclarés, jamais recopiées : quatre listes devaient
+  // rester d'accord (pastilles, menu déroulant, dimensions, libellés), et c'est le
+  // menu déroulant qui a fini par ignorer les formats ajoutés.
+  var SIZE_CLASSES = Object.keys(FORMAT_DIMENSIONS)
+    .filter(function (key) { return key !== 'a6-portrait'; })
+    .map(function (key) { return 'size-' + key; });
 
   function getCurrentFormat() {
+    // `a6-portrait` est la taille de base de la page : elle n'a pas de classe.
     var size = 'a6-portrait';
-    if (page.classList.contains('size-a6-landscape')) size = 'a6-landscape';
-    else if (page.classList.contains('size-a7-portrait')) size = 'a7-portrait';
-    else if (page.classList.contains('size-card-landscape')) size = 'card-landscape';
-    else if (page.classList.contains('size-cr80')) size = 'cr80';
+    Object.keys(FORMAT_DIMENSIONS).forEach(function (key) {
+      if (key !== 'a6-portrait' && page.classList.contains('size-' + key)) size = key;
+    });
     return size;
   }
   function syncFormatControls() {

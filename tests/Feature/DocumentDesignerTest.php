@@ -3,6 +3,7 @@
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
+use App\Documents\BadgeSheet;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\DocumentTemplate;
@@ -412,4 +413,83 @@ it('propose la variante de design « avec photo » (co-photo) pour un badge', fu
         ->assertSee('Cadre vert/bleu avec photo')
         // L'aperçu d'un badge à photo utilise une photo d'exemple (galerie des assistantes).
         ->assertSee('awa-3.webp');
+});
+
+it('déclare les formats de badge au MÊME endroit partout', function () {
+    // ⚠️⚠️ LE DÉFAUT QUE CE CAS EXISTE POUR ATTRAPER : les formats étaient déclarés
+    // à QUATRE endroits (pastilles, menu déroulant, dimensions JS, libellés JS), et
+    // le menu déroulant a fini par ignorer les formats ajoutés - il proposait encore
+    // les cinq anciens. Les quatre listes doivent coïncider exactement.
+    $blade = file_get_contents(resource_path('views/admin/documents/badge-designer.blade.php'));
+    $js = file_get_contents(resource_path('js/badge-designer.js'));
+    $css = file_get_contents(resource_path('css/badge-designer.css'));
+
+    $cles = function (string $sujet, string $motif): array {
+        preg_match_all($motif, $sujet, $m);
+        $liste = array_unique($m[1]);
+        sort($liste);
+
+        return $liste;
+    };
+
+    // Pastilles de la barre d'outils.
+    $pastilles = $cles($blade, '/data-size="([a-z0-9-]+)"/');
+
+    // Menu déroulant : on se borne au bloc du sélecteur de format.
+    preg_match('/id="badgeFormatSelect".*?<\/select>/s', $blade, $bloc);
+    expect($bloc)->not->toBeEmpty();
+    $menu = $cles($bloc[0], '/<option value="([a-z0-9-]+)"/');
+
+    // Dimensions et libellés côté JS.
+    preg_match('/var FORMAT_DIMENSIONS = \{(.*?)\};/s', $js, $dim);
+    preg_match('/var FORMAT_LABELS = \{(.*?)\};/s', $js, $lab);
+    $dimensions = $cles($dim[1] ?? '', "/'([a-z0-9-]+)':/");
+    $libelles = $cles($lab[1] ?? '', "/'([a-z0-9-]+)':/");
+
+    expect($menu)->toBe($pastilles, 'le menu déroulant doit proposer les mêmes formats que les pastilles')
+        ->and($dimensions)->toBe($pastilles, 'chaque format doit avoir ses dimensions')
+        ->and($libelles)->toBe($pastilles, 'chaque format doit avoir son libellé');
+
+    // Les formats du marché doivent être là, à leur taille réelle (96 dpi).
+    expect($pastilles)->toContain('modele-303', 'modele-304', 'modele-106', 'a6-pochette', 'cr80');
+
+    // ⚠️ `a6-portrait` est la taille de BASE de la page : elle n'a pas de classe.
+    // ⚠️ On RELÈVE les fautifs au lieu de passer un message à `toContain()` : il
+    // prend plusieurs AIGUILLES, pas un message, donc le cas ne mordrait jamais
+    // (piège déjà payé dans ce projet, cf. CLAUDE.md).
+    $sansRegle = [];
+    foreach ($pastilles as $format) {
+        if ($format !== 'a6-portrait' && ! str_contains($css, '.ed-page.size-'.$format)) {
+            $sansRegle[] = $format;
+        }
+    }
+
+    expect($sansRegle)->toBe([], 'formats sans règle CSS : '.implode(', ', $sansRegle));
+});
+
+it('tient les dimensions du concepteur et celles de la planche d’accord', function () {
+    // ⚠️ Le concepteur déclare la taille en px, la planche A4 dispose à cette
+    // taille : les deux doivent nommer le même format, sinon le hub afficherait
+    // « 333 × 472 px » là où l'admin a choisi « Modèle 303 ».
+    $js = file_get_contents(resource_path('js/badge-designer.js'));
+    preg_match('/var FORMAT_DIMENSIONS = \{(.*?)\};/s', $js, $m);
+
+    preg_match_all("/'([a-z0-9-]+)': \[(\d+), (\d+)\]/", $m[1] ?? '', $formats, PREG_SET_ORDER);
+    expect($formats)->not->toBeEmpty();
+
+    $attendus = [
+        'modele-303' => 'Modèle 303',
+        'modele-304' => 'Modèle 304',
+        'modele-106' => 'Modèle 106',
+        'a6-pochette' => 'A6 porte-badge',
+        'cr80' => 'CR80',
+    ];
+
+    foreach ($formats as [, $cle, $w, $h]) {
+        if (! isset($attendus[$cle])) {
+            continue;
+        }
+        expect(BadgeSheet::formatLabel((int) $w, (int) $h))
+            ->toStartWith($attendus[$cle], $cle.' doit être reconnu par la planche');
+    }
 });

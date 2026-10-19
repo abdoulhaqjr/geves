@@ -82,15 +82,15 @@
           <div class="ed-panel-section" id="badgeDesignFormat">A6 Portrait</div>
           {{-- L'aperçu (.mini) est rendu par le JS depuis le modèle réel (T[tpl]),
                rempli des valeurs d'exemple - même rendu que « Mes badges ». --}}
-          <div class="ed-tpl-card active" data-tpl="co" data-formats="a6-portrait a7-portrait">
+          <div class="ed-tpl-card active" data-tpl="co" data-formats="a6-portrait a7-portrait modele-303 modele-304 modele-106 a6-pochette">
             <div class="mini"></div>
             Cadre vert/bleu UK x Parakou
           </div>
-          <div class="ed-tpl-card" data-tpl="co-photo" data-formats="a6-portrait a7-portrait">
+          <div class="ed-tpl-card" data-tpl="co-photo" data-formats="a6-portrait a7-portrait modele-303 modele-304 modele-106 a6-pochette">
             <div class="mini"></div>
             Cadre vert/bleu avec photo UK x Parakou
           </div>
-          <div class="ed-tpl-card" data-tpl="participant" data-formats="a6-portrait a6-landscape a7-portrait card-landscape cr80">
+          <div class="ed-tpl-card" data-tpl="participant" data-formats="a6-portrait a6-landscape a7-portrait card-landscape cr80 modele-303 modele-304 modele-106 a6-pochette">
             <div class="mini"></div>
             Bandeau bleu - photo - nom - QR
           </div>
@@ -243,11 +243,18 @@
           <button type="button" class="chip" data-size="card-landscape" title="90 × 55 mm">Carte 90×55</button>
         </div>
         <select class="ed-format-select" id="badgeFormatSelect" aria-label="Format du badge">
+          {{-- ⚠️ Mêmes formats que les pastilles ci-dessus ET que FORMAT_DIMENSIONS
+               (badge-designer.js) : un cas de garde vérifie que les trois listes
+               restent d'accord - c'est ce menu qui avait été oublié. --}}
+          <option value="modele-303">Modèle 303</option>
+          <option value="modele-304">Modèle 304</option>
+          <option value="modele-106">Modèle 106</option>
+          <option value="a6-pochette">A6 porte-badge</option>
+          <option value="cr80">CR80</option>
           <option value="a6-portrait">A6 Portrait</option>
           <option value="a6-landscape">A6 Paysage</option>
           <option value="a7-portrait">A7 Portrait</option>
           <option value="card-landscape">Carte 90×55</option>
-          <option value="cr80">CR80</option>
         </select>
         <span class="spacer"></span>
         <div class="ed-zoom-bar">
