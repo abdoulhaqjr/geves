@@ -845,10 +845,50 @@ première fermeture et avale tout ce qui les sépare. Et ne nommez pas ces direc
 toutes lettres, même dans un commentaire - Blade les compile **avant** de retirer les
 commentaires. Toute logique de cet écran se calcule dans le contrôleur.
 
+⚠️⚠️ **LA FICHE D'UN COMPTE (`admin/utilisateurs/{user}/modifier`) NE PROMET PLUS
+D'ACCÈS QU'ELLE NE DONNE.** Elle alignait **douze cases à cocher** sous la phrase « La
+matrice d'accès en découle ». C'est faux pour **onze d'entre elles** : les capacités
+d'une fonction ne sont lues que par `edition.cap:` → `canOnEdition()`, donc depuis
+`event_user` ; et les **trois** gardes `can:` du back-office (Réglages, Utilisateurs &
+rôles, Témoignages) portent sur des permissions que **seul `administrator` détient**.
+Cocher « Secrétariat » là n'ouvrait donc **aucune page** - ça posait une étiquette (liste
+et filtres), et rien d'autre.
+
+- Les rôles sont **groupés par famille**, chacun avec **sa description** (`StaffRoles`) et
+  l'écran dit en toutes lettres que seul « Administrateur colloque » change ce que le
+  compte peut faire. ⚠️ Les onze autres restent **cochables** : ils alimentent la liste et
+  ses filtres, et les retirer est une décision produit, pas un correctif.
+- ⚠️ **Le NIVEAU D'ACCÈS est sorti des champs d'identité** : c'était un `<select>` entre
+  « Nouveau mot de passe » et « Notes internes », sous une légende d'une ligne pour les
+  trois choix confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Trois
+  choix, chacun disant ce qu'il ouvre (`User::accessLevelHints()`).
+- ⚠️ **La fiche montre enfin l'ACCÈS RÉEL** : les affectations `event_user` du compte
+  (colloque, fonction, nombre de capacités, lien vers l'onglet Équipe de l'événement), en
+  lecture seule. On y réglait des rôles de plateforme sans jamais voir à quels colloques
+  la personne est rattachée - c'est-à-dire sans voir ce à quoi elle accède.
+- ⚠️⚠️ **`destroy()` gardait la porte, `update()` laissait la fenêtre ouverte.** La
+  suppression interdit depuis toujours d'effacer son propre compte et le dernier
+  administrateur ; l'enregistrement de la fiche ne vérifiait **rien**, alors qu'il mène au
+  même endroit : décocher « Administrateur colloque » sur le dernier administrateur,
+  rétrograder le dernier super-administrateur, se désactiver soi-même - après quoi plus
+  personne n'ouvre `admin/utilisateurs` pour revenir en arrière.
+  `UserController::refusDeFermeture()` refuse les quatre cas. ⚠️ **Sur soi-même c'est
+  interdit même quand d'autres administrateurs existent**, comme la suppression de son
+  propre compte : un collègue le fait, en connaissance de cause.
+- ⚠️ **`User::$access_level` est annoncé `string|null`** : son défaut `'user'` vit en
+  BASE, donc une instance tout juste créée le porte à `null`. Annoncé `string`, il faisait
+  passer tout contrôle de nullité pour « toujours vrai » à l'analyse - qui invitait donc à
+  retirer précisément la garde qui tient ce cas.
+- ⚠️ La fiche était écrite en **styles EN LIGNE** (une trentaine de `style=`), donc
+  inadaptable en étroit (un style en ligne l'emporte sur toute règle, media query
+  comprise) : sa mise en page vit sous `.admin-user-form` dans `admin.css`.
+
 Gardes : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
 l'équipe attachée à UN événement, les rôles déduits et non stockés, et l'accord des deux
-portails. Et **`OngletRolesTest`** pour l'écran : compteurs, familles, couleur par famille,
-absence du rôle `editor`.
+portails. **`OngletRolesTest`** pour la liste : compteurs, familles, couleur par famille,
+absence du rôle `editor`. Et **`FicheDuCompteStaffTest`** pour la fiche (11 cas, 3
+sabotages vérifiés), dont celui qui **fige la règle** : `routes/web.php` ne garde que
+`settings`, `testimonials` et `users_roles` par `can:`, et seul `administrator` les porte.
 
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 

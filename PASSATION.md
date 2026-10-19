@@ -13,6 +13,46 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### La fiche d'un compte dit enfin ce qu'elle donne (2026-10-19)
+
+**Onze cases sur douze n'ouvraient rien.** La fiche d'un compte staff alignait
+les douze rôles `StaffRoles` en cases à cocher, sous la phrase « Un utilisateur
+peut cumuler plusieurs rôles. La matrice d'accès en découle. » C'est faux pour
+onze d'entre eux : les capacités d'une fonction ne sont lues que par
+`edition.cap:` → `canOnEdition()`, donc depuis **`event_user`** - une affectation
+à UN événement - et les **trois** gardes `can:` de tout le back-office (Réglages,
+Utilisateurs & rôles, Témoignages) portent sur des permissions que seul
+`administrator` détient. Cocher « Secrétariat » ici posait une étiquette, et
+c'est tout. L'écran le dit désormais, et c'est un **cas de garde** qui le tient :
+si quelqu'un ajoute un `can:` ailleurs, la promesse de la fiche change avec, et
+le test le signale.
+
+Quatre autres travers, trouvés en relisant l'écran :
+
+- **Le niveau d'accès était un `<select>`** rangé entre « Nouveau mot de passe »
+  et « Notes internes », sous une légende d'une ligne pour les trois choix
+  confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Il a sa
+  carte, et chaque choix dit ce qu'il ouvre (`User::accessLevelHints()`).
+- **La fiche ne montrait pas l'accès réel.** On y réglait des rôles de plateforme
+  sans jamais voir à quels colloques la personne est rattachée. Un bloc en
+  lecture seule liste ses affectations (colloque, fonction, nombre de capacités)
+  et renvoie vers l'onglet Équipe de l'événement, où elles se confient.
+- ⚠️⚠️ **`destroy()` gardait la porte, `update()` laissait la fenêtre ouverte.**
+  La suppression interdit depuis toujours d'effacer son propre compte et le
+  dernier administrateur ; l'enregistrement de la fiche ne vérifiait **rien**,
+  alors qu'il mène au même endroit par un autre chemin. Quatre refus
+  (`refusDeFermeture()`), dont trois sur soi-même - comme pour la suppression,
+  un collègue le fait.
+- ⚠️ **`User::$access_level` annoncé `string|null`** : son défaut vit en BASE, et
+  l'annotation `string` faisait passer tout contrôle de nullité pour « toujours
+  vrai » à l'analyse, qui invitait donc à retirer la garde qui tient ce cas.
+
+⚠️ **Les onze rôles restent cochables** : ils alimentent la liste des
+utilisateurs et ses filtres. Les retirer de la palette est une décision produit -
+**à trancher**, comme les sept balises de fusion toujours remplacées par du vide.
+
+Gardes : `FicheDuCompteStaffTest` (11 cas, 3 sabotages vérifiés).
+
 ### En-têtes de sécurité HTTP (2026-10-19)
 
 Le rapport de production signalait six en-têtes absents. `public/.htaccess`

@@ -500,6 +500,64 @@
 .admin-users .ukc-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .admin-users .ukc-check input { width: auto; margin-top: 3px; }
 
+/* ---- Fiche d'un compte staff ----
+   ⚠️ La fiche était écrite en styles EN LIGNE, une trentaine d'attributs
+   `style=` portant toute sa mise en page. Un style en ligne l'emporte sur toute
+   règle de feuille, media query comprise : la fiche ne pouvait donc pas
+   s'adapter en étroit, et deux blocs voisins ne pouvaient pas se ressembler
+   autrement qu'en recopiant les mêmes déclarations. */
+.admin-user-form { max-width: 980px; }
+
+/* En-tête : avatar, identité, pastilles, et les dates à droite. */
+.admin-user-form .uf-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.admin-user-form .uf-head .av { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 50%; background: #e0e7ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; }
+.admin-user-form .uf-head__id { flex: 1; min-width: 220px; }
+.admin-user-form .uf-head__name { font-size: 18px; font-weight: 800; line-height: 1.2; }
+.admin-user-form .uf-head__mail { color: var(--ukc-muted); font-size: 14px; }
+.admin-user-form .uf-head__pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.admin-user-form .uf-head__meta { flex: 0 0 auto; text-align: right; font-size: 12.5px; color: var(--ukc-muted); line-height: 1.7; }
+.admin-user-form .uf-head__meta div + div { margin-top: 6px; }
+.admin-user-form .uf-head__meta strong { color: var(--ukc-text); }
+
+/* Ligne « pictogramme - intitulé - action » : affectations ET actions du compte,
+   qui dessinaient chacune la leur. */
+.admin-user-form .uf-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 0; }
+.admin-user-form .uf-row--sep { border-top: 1px solid var(--ukc-border); }
+.admin-user-form .uf-row__ico { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 9px; background: #eef2ff; color: var(--ukc-blue); display: inline-flex; align-items: center; justify-content: center; }
+.admin-user-form .uf-row--danger .uf-row__ico { background: #fef2f2; color: #dc2626; }
+.admin-user-form .uf-row__body { flex: 1; min-width: 220px; }
+.admin-user-form .uf-row__title { font-weight: 700; }
+.admin-user-form .uf-row__sub { color: var(--ukc-muted); font-size: 13px; }
+.admin-user-form .uf-row__year { color: var(--ukc-light); font-weight: 600; }
+
+.admin-user-form .uf-note { display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; }
+.admin-user-form .uf-note--all { background: #eef2ff; color: #1e3a8a; }
+.admin-user-form .uf-note--none { background: #f8fafc; color: var(--ukc-muted); }
+
+/* Un choix = sa case, son intitulé et CE QU'IL FAIT. Le niveau d'accès et les
+   rôles partagent la même carte : ce sont deux fois la même question. */
+.admin-user-form .uf-levels { display: grid; gap: 10px; }
+.admin-user-form .uf-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.admin-user-form .uf-family { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin: 14px 0 8px; }
+.admin-user-form .uf-choice { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 12px 14px; background: #fff; cursor: pointer; }
+.admin-user-form .uf-choice:hover { border-color: var(--ukc-blue); }
+.admin-user-form .uf-choice:has(input:checked) { border-color: var(--ukc-blue); background: #f5f8ff; }
+.admin-user-form .uf-choice input { width: auto; margin: 2px 0 0; flex: 0 0 auto; }
+.admin-user-form .uf-choice__body { display: block; min-width: 0; }
+.admin-user-form .uf-choice__label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; font-weight: 700; }
+.admin-user-form .uf-choice__hint { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 400; color: var(--ukc-muted); line-height: 1.45; }
+.admin-user-form .uf-choice--strong { border-color: #fcd34d; background: #fffbeb; }
+.admin-user-form .uf-choice--strong:has(input:checked) { border-color: #f59e0b; background: #fef3c7; }
+
+.admin-user-form .uf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ⚠️ Deux colonnes de rôles ne tiennent pas en étroit : l'intitulé et sa
+   description s'y écrasent sur quatre lignes chacun. */
+@media (max-width: 760px) {
+    .admin-user-form .uf-roles { grid-template-columns: 1fr; }
+    .admin-user-form .uf-head__meta { text-align: left; }
+}
+
 /* ---- Documents (hub attestations / badges / livre) ---- */
 .admin-documents .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
 .admin-documents .ukc-nav-docs button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; }

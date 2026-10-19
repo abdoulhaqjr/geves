@@ -35,12 +35,18 @@ use Spatie\Permission\Traits\HasRoles;
  * Vérifiable par e-mail (le renvoi du lien est déclenché depuis la page
  * Utilisateurs) - non bloquant à la connexion.
  *
+ * ⚠️ **`access_level` est annoncé NULLABLE**, et ce n'est pas de la prudence :
+ * son défaut `'user'` vit en BASE, pas dans le modèle, donc une instance tout
+ * juste créée le porte à `null` jusqu'au rechargement. Annoncé `string`, il
+ * faisait passer tout contrôle de nullité pour « toujours vrai » à l'analyse -
+ * si bien qu'on était invité à retirer précisément la garde qui tient ce cas.
+ *
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  * @property array<string, mixed>|null $meta
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
  * @property bool $is_active
- * @property string $access_level
+ * @property string|null $access_level
  * @property string|null $notes
  * @property string|null $first_name
  * @property string|null $last_name
@@ -123,6 +129,25 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             self::ACCESS_SUPER_ADMIN => 'Super administrateur',
             self::ACCESS_COLLOQUE_ADMIN => 'Administrateur de colloque',
             self::ACCESS_USER => 'Utilisateur',
+        ];
+    }
+
+    /**
+     * Ce que chaque niveau ouvre VRAIMENT, pour l'écran qui le choisit.
+     *
+     * ⚠️ Le niveau d'accès est le réglage le plus lourd de la fiche d'un compte :
+     * {@see isColloqueSuperAdmin()} en découle, et le `Gate::before` ouvre alors
+     * TOUT. Il était pourtant proposé comme une liste déroulante parmi les champs
+     * d'identité, sous une légende d'une ligne qui confondait les trois choix.
+     *
+     * @return array<string, string> niveau => ce qu'il ouvre
+     */
+    public static function accessLevelHints(): array
+    {
+        return [
+            self::ACCESS_SUPER_ADMIN => 'Toute la plateforme : tous les colloques, les comptes, les rôles et les réglages. À réserver.',
+            self::ACCESS_COLLOQUE_ADMIN => 'Crée et gère ses propres colloques, et y nomme l’équipe. N’atteint ni les comptes ni les réglages de la plateforme.',
+            self::ACCESS_USER => 'Aucun accès global : n’ouvre que les colloques où le compte est affecté, et seulement ce que sa fonction y permet. C’est le niveau de l’immense majorité.',
         ];
     }
 
