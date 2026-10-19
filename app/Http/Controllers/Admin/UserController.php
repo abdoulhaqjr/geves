@@ -198,46 +198,31 @@ class UserController extends Controller
 
     public function create(): View
     {
-        return view('admin.users.form', $this->formData(new User(['is_active' => true]), []));
+        return view('admin.users.form', $this->formData(new User(['is_active' => true])));
     }
 
     /**
      * Ce que la fiche d'un compte a besoin de montrer.
      *
-     * ⚠️ **Les rôles de cette page sont GLOBAUX, et un seul ouvre quelque chose.**
-     * Les douze cases servaient le même traitement à tout le monde, sous la
-     * promesse « la matrice d'accès en découle ». C'est faux pour onze d'entre
-     * elles : les capacités d'une fonction d'équipe ne sont lues que par
-     * `edition.cap:` → `canOnEdition()`, qui part de `event_user` - donc d'une
-     * affectation à UN événement. Les trois gardes `can:` du back-office
-     * (Réglages, Utilisateurs & rôles, Témoignages) portent sur des permissions
-     * que seul « Administrateur colloque » détient. Cocher « Secrétariat » ici
-     * n'ouvre donc **aucune** page : ça pose une étiquette, et c'est tout ce que
-     * l'écran doit promettre. {@see affectationsDe()} montre, à côté, l'accès
-     * réel - celui qu'on venait chercher.
+     * ⚠️⚠️ **UN COMPTE N'A PAS DE RÔLE GLOBAL - il a un NIVEAU D'ACCÈS.** La
+     * fiche proposait les douze fonctions de `StaffRoles` en cases à cocher, à
+     * l'échelle de la plateforme. C'est le modèle même du projet qu'elle
+     * contredisait : il n'y a que **trois** niveaux globaux
+     * ({@see User::accessLevels()}), et tout le reste - gestionnaire,
+     * co-gestionnaire, comités, secrétariat, comptabilité, accueil - se confie
+     * **par événement**, dans `event_user`. Les douze cases ne faisaient donc
+     * rien d'autre que poser une étiquette : les capacités d'une fonction ne
+     * sont lues que par `edition.cap:` → `canOnEdition()`, qui part de
+     * l'affectation. L'admin crée l'événement et y nomme son gestionnaire ;
+     * c'est le gestionnaire qui forme l'équipe. {@see affectationsDe()} montre
+     * le résultat, en lecture seule.
      *
-     * @param  list<string>  $assignedRoles
      * @return array<string, mixed>
      */
-    private function formData(User $user, array $assignedRoles): array
+    private function formData(User $user): array
     {
-        // Les fonctions rangées par famille, chacune avec sa description et le
-        // nombre de capacités qu'elle porte : la page les alignait sans un mot.
-        $groupes = [];
-        foreach (StaffRoles::ROLES as $name => $meta) {
-            $groupes[$meta['category']][$name] = [
-                'label' => $meta['label'],
-                'description' => $meta['description'],
-                'caps' => count($meta['permissions']),
-                'pill' => $meta['pill'],
-            ];
-        }
-
         return [
             'user' => $user,
-            'assignedRoles' => $assignedRoles,
-            'roleOptions' => StaffRoles::options(),
-            'roleGroups' => $groupes,
             'accessHints' => User::accessLevelHints(),
             'affectations' => $this->affectationsDe($user),
         ];
@@ -291,7 +276,6 @@ class UserController extends Controller
             'access_level' => $data['access_level'],
             'notes' => $data['notes'] ?? null,
         ]);
-        $user->syncRoles($request->input('roles', []));
 
         if ($request->boolean('send_verification')) {
             $user->sendStaffEmailVerificationNotification();
@@ -303,7 +287,7 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        return view('admin.users.form', $this->formData($user, $user->roles->pluck('name')->all()));
+        return view('admin.users.form', $this->formData($user));
     }
 
     public function update(User $user, Request $request): RedirectResponse
@@ -324,7 +308,11 @@ class UserController extends Controller
         if (! empty($data['password'])) {
             $user->update(['password' => Hash::make($data['password'])]);
         }
-        $user->syncRoles($request->input('roles', []));
+
+        // ⚠️ Aucun `syncRoles()` ici, et ce n'est pas un oubli : cette fiche ne
+        // distribue plus de rôle global (cf. formData()). Les rôles déjà posés
+        // en base sont laissés en place - ils alimentent encore les pastilles et
+        // le filtre de la liste - mais plus rien ne les crée depuis cet écran.
 
         return redirect()->route('admin.users.edit', $user)->with('ukc_status', 'Utilisateur mis à jour.');
     }
@@ -336,11 +324,13 @@ class UserController extends Controller
      * La suppression interdit depuis toujours d'effacer son propre compte et le
      * dernier administrateur ; l'enregistrement de la fiche, lui, ne vérifiait
      * **rien** - alors qu'il mène exactement au même endroit par un autre
-     * chemin : décocher « Administrateur colloque » sur le dernier
-     * administrateur, rétrograder le dernier super-administrateur, ou se
-     * désactiver soi-même. Après quoi plus personne n'ouvre
-     * `admin/utilisateurs` pour revenir en arrière, et la réparation se fait en
-     * base.
+     * chemin : rétrograder le dernier super-administrateur, ou se désactiver
+     * soi-même. Après quoi plus personne n'ouvre `admin/utilisateurs` pour
+     * revenir en arrière, et la réparation se fait en base.
+     *
+     * ⚠️ **Le niveau d'accès est la SEULE chose à garder ici**, depuis que la
+     * fiche ne distribue plus de rôle global : c'est lui qui porte la totalité
+     * du pouvoir de plateforme, et `Gate::before` en découle.
      *
      * ⚠️ **Sur soi-même, c'est interdit même quand d'autres administrateurs
      * existent** : la suppression de son propre compte l'est déjà sans
@@ -351,7 +341,6 @@ class UserController extends Controller
      */
     private function refusDeFermeture(User $user, Request $request, array $data): ?string
     {
-        $roles = (array) $request->input('roles', []);
         $niveau = (string) $data['access_level'];
 
         if ($user->id === Auth::id()) {
@@ -363,15 +352,6 @@ class UserController extends Controller
             if ($user->access_level !== null && $niveau !== $user->access_level) {
                 return 'Vous ne pouvez pas changer votre propre niveau d’accès : demandez-le à un autre administrateur.';
             }
-            if ($user->hasRole('administrator') && ! in_array('administrator', $roles, true)) {
-                return 'Vous ne pouvez pas retirer votre propre rôle d’administrateur : demandez-le à un autre administrateur.';
-            }
-        }
-
-        if ($user->hasRole('administrator')
-            && ! in_array('administrator', $roles, true)
-            && User::role('administrator')->count() <= 1) {
-            return 'Impossible de retirer le rôle au dernier administrateur.';
         }
 
         if ($user->access_level === User::ACCESS_SUPER_ADMIN
@@ -452,9 +432,9 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$user ? 'nullable' : 'nullable', 'string', 'min:8'],
             'notes' => ['nullable', 'string', 'max:500'],
+            // ⚠️ Plus de règle `roles` : la fiche n'en poste plus, et un champ
+            // qu'on valide est un champ qu'on promet d'accepter.
             'access_level' => ['required', Rule::in(array_keys(User::accessLevels()))],
-            'roles' => ['array'],
-            'roles.*' => [Rule::in(array_keys(StaffRoles::ROLES))],
         ]);
     }
 }

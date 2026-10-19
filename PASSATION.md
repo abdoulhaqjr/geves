@@ -13,43 +13,55 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
-### La fiche d'un compte dit enfin ce qu'elle donne (2026-10-19)
+### La fiche d'un compte n'invente plus de rôles globaux (2026-10-19)
 
-**Onze cases sur douze n'ouvraient rien.** La fiche d'un compte staff alignait
-les douze rôles `StaffRoles` en cases à cocher, sous la phrase « Un utilisateur
-peut cumuler plusieurs rôles. La matrice d'accès en découle. » C'est faux pour
-onze d'entre eux : les capacités d'une fonction ne sont lues que par
-`edition.cap:` → `canOnEdition()`, donc depuis **`event_user`** - une affectation
-à UN événement - et les **trois** gardes `can:` de tout le back-office (Réglages,
-Utilisateurs & rôles, Témoignages) portent sur des permissions que seul
-`administrator` détient. Cocher « Secrétariat » ici posait une étiquette, et
-c'est tout. L'écran le dit désormais, et c'est un **cas de garde** qui le tient :
-si quelqu'un ajoute un `can:` ailleurs, la promesse de la fiche change avec, et
-le test le signale.
+**Le système n'a que trois rôles globaux : super-administrateur, administrateur
+de colloque, utilisateur.** La fiche d'un compte staff en offrait **douze de
+plus** - les fonctions de `StaffRoles` en cases à cocher, à l'échelle de la
+plateforme - sous la phrase « Un utilisateur peut cumuler plusieurs rôles. La
+matrice d'accès en découle. » Elle décrivait un système qui n'existe pas : tout
+ce qui n'est pas ces trois niveaux se confie **par événement** (`event_user`), et
+les capacités d'une fonction ne sont lues que par `edition.cap:` →
+`canOnEdition()`, donc depuis l'affectation. Cocher « Secrétariat » là posait une
+étiquette, et rien de plus.
 
-Quatre autres travers, trouvés en relisant l'écran :
+Le parcours réel, que l'écran raconte désormais : l'**administrateur** crée
+l'événement et y nomme **gestionnaire** et/ou **co-gestionnaire** ; ce sont eux
+qui paramètrent l'événement, forment l'équipe et montent le programme.
 
+- Le bloc de rôles est **retiré**, `syncRoles()` ne s'appelle plus depuis cette
+  fiche et la règle de validation `roles` a disparu - un champ qu'on valide est
+  un champ qu'on promet d'accepter. Un cas vérifie qu'un rôle **posté quand même**
+  est ignoré.
+- ⚠️ Les rôles **déjà en base** sont laissés en place : ils alimentent encore les
+  pastilles et le filtre de la liste, et une correction d'adresse e-mail ne doit
+  pas les effacer au passage. **À trancher** : les purger, et retirer avec eux le
+  filtre de la liste, l'onglet Rôles et la matrice d'accès.
+- ⚠️⚠️ **Deux colonnes.** Vérification d'adresse, mot de passe et suppression
+  vivaient **sous le bouton « Enregistrer »** : après la fin apparente de la
+  page, donc lues comme une suite du formulaire. Elles ne peuvent pas y entrer -
+  chacune a le sien, et deux formulaires ne s'imbriquent pas - alors elles
+  passent **à côté**, dans une colonne qui repasse dessous sous 1040px.
 - **Le niveau d'accès était un `<select>`** rangé entre « Nouveau mot de passe »
   et « Notes internes », sous une légende d'une ligne pour les trois choix
   confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Il a sa
   carte, et chaque choix dit ce qu'il ouvre (`User::accessLevelHints()`).
-- **La fiche ne montrait pas l'accès réel.** On y réglait des rôles de plateforme
-  sans jamais voir à quels colloques la personne est rattachée. Un bloc en
-  lecture seule liste ses affectations (colloque, fonction, nombre de capacités)
-  et renvoie vers l'onglet Équipe de l'événement, où elles se confient.
+- **La fiche ne montrait pas l'accès réel.** Un bloc en lecture seule liste les
+  affectations du compte (colloque, fonction, nombre de capacités) et renvoie
+  vers l'onglet Équipe de l'événement, où elles se confient.
 - ⚠️⚠️ **`destroy()` gardait la porte, `update()` laissait la fenêtre ouverte.**
   La suppression interdit depuis toujours d'effacer son propre compte et le
   dernier administrateur ; l'enregistrement de la fiche ne vérifiait **rien**,
-  alors qu'il mène au même endroit par un autre chemin. Quatre refus
-  (`refusDeFermeture()`), dont trois sur soi-même - comme pour la suppression,
-  un collègue le fait.
+  alors qu'il mène au même endroit. `refusDeFermeture()` refuse de rétrograder le
+  dernier super-administrateur et de se retirer ses propres accès - comme pour la
+  suppression, un collègue le fait.
 - ⚠️ **`User::$access_level` annoncé `string|null`** : son défaut vit en BASE, et
   l'annotation `string` faisait passer tout contrôle de nullité pour « toujours
   vrai » à l'analyse, qui invitait donc à retirer la garde qui tient ce cas.
 
-⚠️ **Les onze rôles restent cochables** : ils alimentent la liste des
-utilisateurs et ses filtres. Les retirer de la palette est une décision produit -
-**à trancher**, comme les sept balises de fusion toujours remplacées par du vide.
+⚠️ **Nommer un gestionnaire n'envoie aucun e-mail** : `attachTeamMember()` attache
+la ligne et redirige. La personne n'apprend sa nomination que si on la prévient à
+la main, alors que c'est elle qui doit prendre l'événement en charge. **À faire.**
 
 Gardes : `FicheDuCompteStaffTest` (11 cas, 3 sabotages vérifiés).
 

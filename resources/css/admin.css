@@ -506,7 +506,30 @@
    règle de feuille, media query comprise : la fiche ne pouvait donc pas
    s'adapter en étroit, et deux blocs voisins ne pouvaient pas se ressembler
    autrement qu'en recopiant les mêmes déclarations. */
-.admin-user-form { max-width: 980px; }
+.admin-user-form { max-width: 1120px; }
+
+/* ⚠️ Ce qui se MODIFIE à gauche, ce qui se CONSTATE et s'actionne à droite.
+   Les actions du compte vivaient SOUS le bouton « Enregistrer » : après la fin
+   apparente de la page, donc prises pour une suite du formulaire. Elles ne
+   peuvent pas y entrer (chacune a le sien, et deux formulaires ne s'imbriquent
+   pas) - d'où la colonne. `align-items: start` empêche la colonne courte de
+   s'étirer à la hauteur de l'autre. */
+.admin-user-form .uf-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.admin-user-form .uf-grid--solo { grid-template-columns: minmax(0, 1fr); }
+.admin-user-form .uf-main { min-width: 0; }
+.admin-user-form .uf-side { min-width: 0; }
+.admin-user-form .uf-side .ukc-card { margin-bottom: 16px; }
+.admin-user-form .uf-side .ukc-card:last-child { margin-bottom: 0; }
+/* ⚠️ À 340px, l'action ne tient pas sur la ligne de l'intitulé. C'est ELLE qui
+   passe en dessous, sur toute la largeur - pas le pictogramme, qui doit rester
+   au regard de son titre : laisser le corps réclamer 100% le reléguait seul sur
+   sa ligne, et la rangée se lisait comme trois blocs sans rapport. */
+.admin-user-form .uf-side .uf-row { padding: 12px 0; gap: 10px; align-items: flex-start; }
+.admin-user-form .uf-side .uf-row__body { flex: 1 1 0; min-width: 0; }
+.admin-user-form .uf-side .uf-row > form,
+.admin-user-form .uf-side .uf-row > .ukc-btn,
+.admin-user-form .uf-side .uf-row > .ukc-pill { flex: 0 0 100%; }
+.admin-user-form .uf-side .uf-row > .ukc-pill { align-self: flex-start; flex-basis: auto; }
 
 /* En-tête : avatar, identité, pastilles, et les dates à droite. */
 .admin-user-form .uf-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
@@ -534,11 +557,8 @@
 .admin-user-form .uf-note--all { background: #eef2ff; color: #1e3a8a; }
 .admin-user-form .uf-note--none { background: #f8fafc; color: var(--ukc-muted); }
 
-/* Un choix = sa case, son intitulé et CE QU'IL FAIT. Le niveau d'accès et les
-   rôles partagent la même carte : ce sont deux fois la même question. */
+/* Un choix = sa case, son intitulé et CE QU'IL OUVRE. */
 .admin-user-form .uf-levels { display: grid; gap: 10px; }
-.admin-user-form .uf-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.admin-user-form .uf-family { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin: 14px 0 8px; }
 .admin-user-form .uf-choice { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 12px 14px; background: #fff; cursor: pointer; }
 .admin-user-form .uf-choice:hover { border-color: var(--ukc-blue); }
 .admin-user-form .uf-choice:has(input:checked) { border-color: var(--ukc-blue); background: #f5f8ff; }
@@ -546,15 +566,17 @@
 .admin-user-form .uf-choice__body { display: block; min-width: 0; }
 .admin-user-form .uf-choice__label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; font-weight: 700; }
 .admin-user-form .uf-choice__hint { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 400; color: var(--ukc-muted); line-height: 1.45; }
-.admin-user-form .uf-choice--strong { border-color: #fcd34d; background: #fffbeb; }
-.admin-user-form .uf-choice--strong:has(input:checked) { border-color: #f59e0b; background: #fef3c7; }
-
 .admin-user-form .uf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* ⚠️ Deux colonnes de rôles ne tiennent pas en étroit : l'intitulé et sa
-   description s'y écrasent sur quatre lignes chacun. */
+/* ⚠️ La colonne latérale passe SOUS le formulaire avant d'être illisible : à
+   340px fixes dans une fenêtre étroite, c'est la colonne principale qui
+   s'écrase. */
+@media (max-width: 1040px) {
+    .admin-user-form .uf-grid { grid-template-columns: minmax(0, 1fr); }
+    .admin-user-form .uf-side .uf-row__body { min-width: 220px; }
+}
+
 @media (max-width: 760px) {
-    .admin-user-form .uf-roles { grid-template-columns: 1fr; }
     .admin-user-form .uf-head__meta { text-align: left; }
 }
 

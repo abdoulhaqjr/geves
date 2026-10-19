@@ -1,9 +1,8 @@
 @php($editing = $user->exists)
 @php($initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->map(fn ($w) => \Illuminate\Support\Str::substr($w, 0, 1))->take(2)->implode('') ?: 'U')
 @php($lvl = old('access_level', $user->access_level ?? \App\Models\User::ACCESS_USER))
-@php($coche = old('roles', $assignedRoles))
 <x-layouts.admin :title="$editing ? 'Modifier - '.$user->name : 'Associer un utilisateur'"
-                 :subtitle="'Compte staff - rôles '.config('app.name').' & permissions'">
+                 :subtitle="'Compte staff - niveau d’accès & affectations'">
     <x-slot:actions>
         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Utilisateurs</a>
     </x-slot:actions>
@@ -45,198 +44,175 @@
                     @endif
                 </div>
             </div>
-
-            {{-- ===== Ce que le compte ouvre VRAIMENT =====
-                 ⚠️ En lecture seule, et volontairement AVANT le formulaire : on
-                 règle plus bas des rôles de plateforme, et la question qu'on se
-                 pose en arrivant sur cette fiche est « à quoi cette personne
-                 a-t-elle accès ? ». La réponse est ici, et elle ne venait de
-                 nulle part. --}}
-            <div class="ukc-card">
-                <h2>Accès aux colloques</h2>
-                <div class="desc">Les fonctions d’équipe se confient <strong>par colloque</strong>, depuis l’onglet Équipe de l’événement. Ce sont elles qui ouvrent les pages du back-office.</div>
-
-                @if ($user->access_level === \App\Models\User::ACCESS_SUPER_ADMIN)
-                    <div class="uf-note uf-note--all">
-                        <x-ukc.icon name="shield" :size="18" />
-                        <div><strong>Tous les colloques.</strong> Ce compte est super administrateur : il ouvre la plateforme entière, affectation ou pas.</div>
-                    </div>
-                @endif
-
-                @forelse ($affectations as $a)
-                    <div class="uf-row">
-                        <span class="uf-row__ico"><x-ukc.icon name="calendar" :size="18" /></span>
-                        <div class="uf-row__body">
-                            <div class="uf-row__title">{{ $a['title'] }}@if ($a['year']) <span class="uf-row__year">{{ $a['year'] }}</span>@endif</div>
-                            <div class="uf-row__sub">{{ trans_choice(':count capacité|:count capacités', $a['caps'], ['count' => $a['caps']]) }} sur ce colloque</div>
-                        </div>
-                        <span class="ukc-pill ukc-pill--{{ $a['pill'] }}">{{ $a['label'] }}</span>
-                        <a href="{{ route('admin.evenements.edit', ['event' => $a['event_id'], 'tab' => 'team']) }}"
-                           class="ukc-btn ukc-btn--outline ukc-btn--sm">Équipe</a>
-                    </div>
-                @empty
-                    @if ($user->access_level !== \App\Models\User::ACCESS_SUPER_ADMIN)
-                        <div class="uf-note uf-note--none">
-                            <x-ukc.icon name="info" :size="18" />
-                            <div>Aucune affectation : ce compte n’ouvre <strong>aucun colloque</strong>. Ajoutez-le à l’équipe d’un événement pour lui confier une fonction.</div>
-                        </div>
-                    @endif
-                @endforelse
-            </div>
         @endif
 
-        <form method="POST" action="{{ $editing ? route('admin.users.update', $user) : route('admin.users.store') }}">
-            @csrf
-            @if ($editing)@method('PUT')@endif
+        {{-- ⚠️ DEUX COLONNES : ce qui se MODIFIE à gauche, ce qui se CONSTATE et
+             s'actionne à droite. Les actions du compte (vérification, mot de
+             passe, suppression) vivaient SOUS le bouton « Enregistrer », donc
+             après la fin apparente de la page : on les prenait pour une suite du
+             formulaire, et le bouton ne terminait plus rien. Elles ne pourront
+             jamais être DANS ce formulaire - chacune a le sien, et deux
+             formulaires ne s'imbriquent pas - alors elles passent à côté. --}}
+        <div class="uf-grid {{ $editing ? '' : 'uf-grid--solo' }}">
+            <form class="uf-main" method="POST" action="{{ $editing ? route('admin.users.update', $user) : route('admin.users.store') }}">
+                @csrf
+                @if ($editing)@method('PUT')@endif
 
-            <div class="ukc-card">
-                <h2>Identité</h2>
-                <div class="ukc-form-grid">
-                    <div class="ukc-field">
-                        <label for="name">Nom complet <span class="req">*</span></label>
-                        <input type="text" id="name" name="name" value="{{ old('name', $user->name) }}" required>
-                    </div>
-                    <div class="ukc-field">
-                        <label for="email">Adresse e-mail <span class="req">*</span></label>
-                        <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required>
-                    </div>
-                    <div class="ukc-field">
-                        <label for="password">{{ $editing ? 'Nouveau mot de passe' : 'Mot de passe' }} <span class="hint">({{ $editing ? 'laisser vide pour ne pas changer' : 'optionnel - sinon généré' }})</span></label>
-                        <input type="password" id="password" name="password" autocomplete="new-password">
-                    </div>
-                    <div class="ukc-field">
-                        <label for="notes">Notes internes</label>
-                        <input type="text" id="notes" name="notes" value="{{ old('notes', $user->notes) }}" placeholder="Optionnel">
-                    </div>
-                    <div class="ukc-field full">
-                        <label class="ukc-check">
-                            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $user->is_active ?? true))>
-                            Compte actif pour {{ config('app.name') }}
-                        </label>
-                        @unless ($editing)
+                <div class="ukc-card">
+                    <h2>Identité</h2>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="name">Nom complet <span class="req">*</span></label>
+                            <input type="text" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                        </div>
+                        <div class="ukc-field">
+                            <label for="email">Adresse e-mail <span class="req">*</span></label>
+                            <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required>
+                        </div>
+                        <div class="ukc-field">
+                            <label for="password">{{ $editing ? 'Nouveau mot de passe' : 'Mot de passe' }} <span class="hint">({{ $editing ? 'laisser vide pour ne pas changer' : 'optionnel - sinon généré' }})</span></label>
+                            <input type="password" id="password" name="password" autocomplete="new-password">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="notes">Notes internes</label>
+                            <input type="text" id="notes" name="notes" value="{{ old('notes', $user->notes) }}" placeholder="Optionnel">
+                        </div>
+                        <div class="ukc-field full">
                             <label class="ukc-check">
-                                <input type="checkbox" name="send_verification" value="1" checked>
-                                Envoyer un e-mail de vérification à l’utilisateur
+                                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $user->is_active ?? true))>
+                                Compte actif pour {{ config('app.name') }}
                             </label>
-                        @endunless
+                            @unless ($editing)
+                                <label class="ukc-check">
+                                    <input type="checkbox" name="send_verification" value="1" checked>
+                                    Envoyer un e-mail de vérification à l’utilisateur
+                                </label>
+                            @endunless
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- ===== Niveau d'accès =====
-                 ⚠️ Sorti des champs d'identité, où il était une liste déroulante
-                 voisine des « Notes internes ». C'est le réglage le plus lourd de
-                 la fiche : il décide de ce que le compte ouvre sur la plateforme
-                 entière, et chaque choix dit désormais ce qu'il ouvre. --}}
-            <div class="ukc-card">
-                <h2>Niveau d’accès</h2>
-                <div class="desc">Ce que le compte ouvre sur la plateforme, indépendamment des colloques.</div>
-                <div class="uf-levels">
-                    @foreach (\App\Models\User::accessLevels() as $key => $label)
-                        <label class="uf-choice">
-                            <input type="radio" name="access_level" value="{{ $key }}" @checked($lvl === $key) required>
-                            <span class="uf-choice__body">
-                                <span class="uf-choice__label">{{ $label }}</span>
-                                <span class="uf-choice__hint">{{ $accessHints[$key] ?? '' }}</span>
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- ===== Rôles globaux =====
-                 ⚠️⚠️ ONZE DE CES DOUZE CASES N'OUVRENT RIEN, et l'écran le dit
-                 désormais au lieu de promettre « la matrice d'accès en découle ».
-                 Les capacités d'une fonction sont lues par `edition.cap:` →
-                 `canOnEdition()`, donc depuis `event_user` - une affectation à un
-                 événement. Les trois gardes `can:` du back-office portent sur des
-                 permissions que seul « Administrateur colloque » détient. --}}
-            <div class="ukc-card">
-                <h2>Rôles globaux</h2>
-                <div class="desc">
-                    Rôles de <strong>plateforme</strong>, valables sur tous les colloques à la fois.
-                    Seul <strong>Administrateur colloque</strong> change ce que le compte peut faire ;
-                    les autres sont des étiquettes, qui classent le compte dans la liste et ses filtres
-                    sans lui ouvrir de page. Pour donner un accès, affectez la personne à l’équipe d’un colloque.
-                </div>
-
-                @foreach ($roleGroups as $famille => $fonctions)
-                    <div class="uf-family">{{ $famille }}</div>
-                    <div class="uf-roles">
-                        @foreach ($fonctions as $key => $meta)
-                            <label class="uf-choice {{ $key === 'administrator' ? 'uf-choice--strong' : '' }}">
-                                <input type="checkbox" name="roles[]" value="{{ $key }}" @checked(in_array($key, $coche, true))>
+                {{-- ===== Niveau d'accès =====
+                     ⚠️⚠️ C'EST LE SEUL RÔLE GLOBAL DU SYSTÈME. La fiche portait en
+                     plus douze cases « Rôles GEVES » valables sur toute la
+                     plateforme : elles contredisaient le modèle du projet, où tout
+                     ce qui n'est pas ces trois niveaux se confie PAR ÉVÉNEMENT. Le
+                     niveau, lui, était relégué en liste déroulante entre le mot de
+                     passe et les notes internes - alors qu'il décide de tout. --}}
+                <div class="ukc-card">
+                    <h2>Niveau d’accès</h2>
+                    <div class="desc">
+                        Le seul rôle global du système. Tout le reste - gestionnaire, comité,
+                        secrétariat, accueil - se confie <strong>par colloque</strong> : l’administrateur
+                        crée l’événement et y nomme son gestionnaire, qui forme ensuite son équipe.
+                    </div>
+                    <div class="uf-levels">
+                        @foreach (\App\Models\User::accessLevels() as $key => $label)
+                            <label class="uf-choice">
+                                <input type="radio" name="access_level" value="{{ $key }}" @checked($lvl === $key) required>
                                 <span class="uf-choice__body">
-                                    <span class="uf-choice__label">
-                                        {{ $meta['label'] }}
-                                        @if ($key === 'administrator')
-                                            <span class="ukc-pill ukc-pill--warn">Accès complet</span>
-                                        @endif
-                                    </span>
-                                    <span class="uf-choice__hint">{{ $meta['description'] }}</span>
+                                    <span class="uf-choice__label">{{ $label }}</span>
+                                    <span class="uf-choice__hint">{{ $accessHints[$key] ?? '' }}</span>
                                 </span>
                             </label>
                         @endforeach
                     </div>
-                @endforeach
-            </div>
+                </div>
 
-            <div class="ukc-form-actions uf-actions">
-                <button type="submit" class="ukc-btn ukc-btn--blue">
-                    <x-ukc.icon name="check" :size="16" /> {{ $editing ? 'Enregistrer' : 'Créer l’utilisateur' }}
-                </button>
-                <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
-            </div>
-        </form>
+                <div class="ukc-form-actions uf-actions">
+                    <button type="submit" class="ukc-btn ukc-btn--blue">
+                        <x-ukc.icon name="check" :size="16" /> {{ $editing ? 'Enregistrer' : 'Créer l’utilisateur' }}
+                    </button>
+                    <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
+                </div>
+            </form>
 
-        {{-- ===== Actions sur le compte (édition) ===== --}}
+            @if ($editing)
+                <aside class="uf-side">
+                    {{-- ===== Ce que le compte ouvre VRAIMENT =====
+                         ⚠️ En lecture seule : une affectation se confie depuis
+                         l'onglet Équipe de l'événement, qui est aussi l'écran où
+                         l'on voit qui d'autre s'y trouve. La fiche ne montrait
+                         rien de cela - on y réglait des accès sans jamais voir
+                         ceux dont le compte dispose. --}}
+                    <div class="ukc-card">
+                        <h2>Accès aux colloques</h2>
+
+                        @if ($user->access_level === \App\Models\User::ACCESS_SUPER_ADMIN)
+                            <div class="uf-note uf-note--all">
+                                <x-ukc.icon name="shield" :size="18" />
+                                <div><strong>Tous les colloques.</strong> Super administrateur : la plateforme entière, affectation ou pas.</div>
+                            </div>
+                        @endif
+
+                        @forelse ($affectations as $a)
+                            <div class="uf-row">
+                                <span class="uf-row__ico"><x-ukc.icon name="calendar" :size="18" /></span>
+                                <div class="uf-row__body">
+                                    <div class="uf-row__title">{{ $a['title'] }}@if ($a['year']) <span class="uf-row__year">{{ $a['year'] }}</span>@endif</div>
+                                    <div class="uf-row__sub">{{ $a['label'] }} - {{ trans_choice(':count capacité|:count capacités', $a['caps'], ['count' => $a['caps']]) }}</div>
+                                </div>
+                                <a href="{{ route('admin.evenements.edit', ['event' => $a['event_id'], 'tab' => 'team']) }}"
+                                   class="ukc-btn ukc-btn--outline ukc-btn--sm">Équipe</a>
+                            </div>
+                        @empty
+                            @if ($user->access_level !== \App\Models\User::ACCESS_SUPER_ADMIN)
+                                <div class="uf-note uf-note--none">
+                                    <x-ukc.icon name="info" :size="18" />
+                                    <div>Aucune affectation : ce compte n’ouvre <strong>aucun colloque</strong>. Ajoutez-le à l’équipe d’un événement pour lui confier une fonction.</div>
+                                </div>
+                            @endif
+                        @endforelse
+                    </div>
+
+                    {{-- ===== Actions sur le compte ===== --}}
+                    <div class="ukc-card">
+                        <h2>Actions sur le compte</h2>
+
+                        <div class="uf-row">
+                            <span class="uf-row__ico"><x-ukc.icon name="mail" :size="18" /></span>
+                            <div class="uf-row__body">
+                                <div class="uf-row__title">Vérification de l’adresse</div>
+                                <div class="uf-row__sub">{{ $user->hasVerifiedEmail() ? 'L’adresse est confirmée.' : 'L’adresse n’est pas confirmée : renvoyez le lien.' }}</div>
+                            </div>
+                            @if ($user->hasVerifiedEmail())
+                                <span class="ukc-pill ukc-pill--ok">Vérifiée</span>
+                            @else
+                                <form method="POST" action="{{ route('admin.users.resend', $user) }}"
+                                      data-confirm="Renvoyer l’e-mail de vérification à {{ $user->email }} ?">
+                                    @csrf
+                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Renvoyer le lien</button>
+                                </form>
+                            @endif
+                        </div>
+
+                        <div class="uf-row uf-row--sep">
+                            <span class="uf-row__ico"><x-ukc.icon name="key" :size="18" /></span>
+                            <div class="uf-row__body">
+                                <div class="uf-row__title">Mot de passe</div>
+                                <div class="uf-row__sub">Envoie un lien pour définir un nouveau mot de passe.</div>
+                            </div>
+                            <form method="POST" action="{{ route('admin.users.password-reset', $user) }}"
+                                  data-confirm="Envoyer un e-mail de réinitialisation du mot de passe à {{ $user->email }} ?">
+                                @csrf
+                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="key" :size="15" /> Envoyer le lien</button>
+                            </form>
+                        </div>
+
+                        <div class="uf-row uf-row--sep uf-row--danger">
+                            <span class="uf-row__ico"><x-ukc.icon name="trash" :size="18" /></span>
+                            <div class="uf-row__body">
+                                <div class="uf-row__title">Supprimer le compte</div>
+                                <div class="uf-row__sub">Retire l’accès au back-office. Suppression douce, réversible en base ; vous confirmerez par mot de passe.</div>
+                            </div>
+                            <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="delOpen = true"><x-ukc.icon name="trash" :size="15" /> Supprimer</button>
+                        </div>
+                    </div>
+                </aside>
+            @endif
+        </div>
+
         @if ($editing)
-            <div class="ukc-card">
-                <h2>Actions sur le compte</h2>
-
-                {{-- Vérification de l'adresse --}}
-                <div class="uf-row">
-                    <span class="uf-row__ico"><x-ukc.icon name="mail" :size="18" /></span>
-                    <div class="uf-row__body">
-                        <div class="uf-row__title">Vérification de l’adresse</div>
-                        <div class="uf-row__sub">{{ $user->hasVerifiedEmail() ? 'L’adresse est confirmée.' : 'L’adresse n’est pas confirmée : renvoyez le lien de vérification.' }}</div>
-                    </div>
-                    @if ($user->hasVerifiedEmail())
-                        <span class="ukc-pill ukc-pill--ok">Vérifiée</span>
-                    @else
-                        <form method="POST" action="{{ route('admin.users.resend', $user) }}"
-                              data-confirm="Renvoyer l’e-mail de vérification à {{ $user->email }} ?">
-                            @csrf
-                            <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Renvoyer le mail de vérification</button>
-                        </form>
-                    @endif
-                </div>
-
-                {{-- Réinitialisation du mot de passe --}}
-                <div class="uf-row uf-row--sep">
-                    <span class="uf-row__ico"><x-ukc.icon name="key" :size="18" /></span>
-                    <div class="uf-row__body">
-                        <div class="uf-row__title">Mot de passe</div>
-                        <div class="uf-row__sub">Envoie à l’utilisateur un lien pour définir un nouveau mot de passe.</div>
-                    </div>
-                    <form method="POST" action="{{ route('admin.users.password-reset', $user) }}"
-                          data-confirm="Envoyer un e-mail de réinitialisation du mot de passe à {{ $user->email }} ?">
-                        @csrf
-                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="key" :size="15" /> Envoyer un lien de réinitialisation</button>
-                    </form>
-                </div>
-
-                {{-- Suppression --}}
-                <div class="uf-row uf-row--sep uf-row--danger">
-                    <span class="uf-row__ico"><x-ukc.icon name="trash" :size="18" /></span>
-                    <div class="uf-row__body">
-                        <div class="uf-row__title">Supprimer le compte</div>
-                        <div class="uf-row__sub">Retire l’accès au back-office. Suppression douce (réversible en base) ; vous confirmerez par mot de passe.</div>
-                    </div>
-                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="delOpen = true"><x-ukc.icon name="trash" :size="15" /> Supprimer</button>
-                </div>
-            </div>
-
             @include('admin.users._delete-modal')
         @endif
     </div>

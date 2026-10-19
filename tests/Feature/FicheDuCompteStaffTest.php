@@ -71,32 +71,43 @@ it('explique chaque niveau d’accès au lieu d’une liste déroulante', functi
     }
 });
 
-it('décrit chaque fonction et la range dans sa famille', function () {
+it('ne propose AUCUN rôle global', function () {
+    // ⚠️⚠️ Le modèle du projet n'a que TROIS rôles globaux - les trois niveaux
+    // d'accès. La fiche en offrait douze de plus, à l'échelle de la plateforme :
+    // gestionnaire, comités, secrétariat, comptabilité, accueil… qui se confient
+    // tous PAR ÉVÉNEMENT. Les cases ne faisaient rien d'autre que poser une
+    // étiquette, et elles racontaient un système qui n'existe pas.
     $admin = ficheAdmin();
 
-    $reponse = $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))->assertOk();
-
-    $reponse->assertSee('Organisation')->assertSee('Appui');
-    foreach (StaffRoles::ROLES as $meta) {
-        $reponse->assertSee($meta['description']);
-    }
-});
-
-it('ne promet plus que les rôles globaux ouvrent des pages', function () {
-    // ⚠️ C'est le cœur de cet écran : onze des douze cases n'accordent RIEN.
-    $admin = ficheAdmin();
-
-    $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))
+    $html = $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))
+        ->assertOk()
+        ->assertDontSee('Rôles globaux')
         ->assertDontSee('matrice d’accès en découle')
-        ->assertSee('sans lui ouvrir de page');
+        ->getContent();
+
+    expect($html)->not->toContain('name="roles[]"');
 });
 
-it('n’accorde une capacité globale qu’à l’administrateur', function () {
-    // ⚠️ La règle que la phrase ci-dessus repose : le Gate spatie ne garde que
-    // TROIS capacités dans tout le back-office, et seul « Administrateur
-    // colloque » les porte. Tout le reste passe par `edition.cap:` →
-    // `canOnEdition()`, donc par une affectation dans `event_user`. Qu'on ajoute
-    // un `can:` ailleurs, et la promesse de la fiche change avec.
+it('ignore un rôle global qu’on lui posterait quand même', function () {
+    // Retirer le champ ne suffit pas : une requête se forge.
+    $admin = ficheAdmin();
+    $u = User::factory()->create();
+
+    $this->actingAs($admin, 'web')->put(route('admin.users.update', $u), [
+        'name' => $u->name, 'email' => $u->email,
+        'access_level' => User::ACCESS_USER, 'is_active' => '1', 'roles' => ['administrator'],
+    ])->assertRedirect(route('admin.users.edit', $u));
+
+    expect($u->fresh()->getRoleNames()->all())->toBe([]);
+});
+
+it('ne laisse le niveau d’accès ouvrir que trois capacités de plateforme', function () {
+    // ⚠️ Ce qui rend la règle tenable : le Gate spatie ne garde que TROIS
+    // capacités dans tout le back-office, et aucune FONCTION d'équipe ne les
+    // porte - seul `administrator`, qui double le niveau super-administrateur.
+    // Tout le reste passe par `edition.cap:` → `canOnEdition()`, donc par une
+    // affectation dans `event_user`. Qu'on ajoute un `can:` ailleurs, et une
+    // fonction d'équipe se mettrait à ouvrir une page de plateforme.
     $parGate = [];
     foreach (file(base_path('routes/web.php')) as $ligne) {
         if (preg_match_all('/can:([a-z_]+)/', $ligne, $m)) {
@@ -118,18 +129,29 @@ it('n’accorde une capacité globale qu’à l’administrateur', function () {
     expect($porteurs)->toBe(['administrator']);
 });
 
-it('refuse de retirer le rôle au dernier administrateur', function () {
-    // ⚠️ `destroy()` gardait la porte depuis toujours ; `update()` menait au même
-    // endroit par la fenêtre, et ne vérifiait rien.
+it('pose les actions du compte À CÔTÉ du formulaire, pas après lui', function () {
+    // ⚠️ Vérification, mot de passe et suppression vivaient SOUS le bouton
+    // « Enregistrer » : après la fin apparente de la page, donc lues comme une
+    // suite du formulaire. Elles ne peuvent pas y entrer - chacune a le sien, et
+    // deux formulaires ne s'imbriquent pas - alors elles passent en colonne.
+    // (L'allure se juge au navigateur ; ce cas tient la STRUCTURE.)
     $admin = ficheAdmin();
-    $autre = adminStaff();
 
-    $this->actingAs($autre, 'web')->put(route('admin.users.update', $admin), [
-        'name' => $admin->name, 'email' => $admin->email,
-        'access_level' => User::ACCESS_SUPER_ADMIN, 'roles' => [], 'is_active' => '1',
-    ])->assertSessionHas('ukc_error');
+    $html = $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))
+        ->assertOk()->getContent();
 
-    expect($admin->fresh()->hasRole('administrator'))->toBeTrue();
+    expect($html)->toContain('class="uf-grid');
+
+    $debutFormulaire = (int) mb_strpos($html, 'class="uf-main"');
+    $finFormulaire = (int) mb_strpos($html, '</form>', $debutFormulaire);
+    $panneau = (int) mb_strpos($html, 'class="uf-side"');
+    $suppression = (int) mb_strpos($html, 'Supprimer le compte');
+
+    // Le panneau est hors du formulaire, et la suppression est dedans.
+    expect($panneau)->toBeGreaterThan($finFormulaire);
+    expect($suppression)->toBeGreaterThan($panneau);
+    // Et le formulaire garde son propre bouton d'enregistrement.
+    expect(mb_substr($html, $debutFormulaire, $finFormulaire - $debutFormulaire))->toContain('Enregistrer');
 });
 
 it('refuse de rétrograder le dernier super administrateur', function () {
@@ -165,9 +187,12 @@ it('enregistre une modification ordinaire', function () {
 
     $this->actingAs($admin, 'web')->put(route('admin.users.update', $u), [
         'name' => 'Awa Kodjo', 'email' => $u->email,
-        'access_level' => User::ACCESS_USER, 'roles' => ['secretariat'], 'is_active' => '1',
+        'access_level' => User::ACCESS_USER, 'is_active' => '1',
     ])->assertRedirect(route('admin.users.edit', $u));
 
     expect($u->fresh()->name)->toBe('Awa Kodjo');
-    expect($u->fresh()->getRoleNames()->all())->toBe(['secretariat']);
+    // ⚠️ Un rôle global DÉJÀ POSÉ en base n'est pas balayé au passage : la fiche
+    // ne les distribue plus, elle ne se met pas à les retirer dans le dos de
+    // qui corrige une adresse e-mail.
+    expect($u->fresh()->getRoleNames()->all())->toBe(['reception']);
 });

@@ -845,36 +845,46 @@ première fermeture et avale tout ce qui les sépare. Et ne nommez pas ces direc
 toutes lettres, même dans un commentaire - Blade les compile **avant** de retirer les
 commentaires. Toute logique de cet écran se calcule dans le contrôleur.
 
-⚠️⚠️ **LA FICHE D'UN COMPTE (`admin/utilisateurs/{user}/modifier`) NE PROMET PLUS
-D'ACCÈS QU'ELLE NE DONNE.** Elle alignait **douze cases à cocher** sous la phrase « La
-matrice d'accès en découle ». C'est faux pour **onze d'entre elles** : les capacités
-d'une fonction ne sont lues que par `edition.cap:` → `canOnEdition()`, donc depuis
-`event_user` ; et les **trois** gardes `can:` du back-office (Réglages, Utilisateurs &
-rôles, Témoignages) portent sur des permissions que **seul `administrator` détient**.
-Cocher « Secrétariat » là n'ouvrait donc **aucune page** - ça posait une étiquette (liste
-et filtres), et rien d'autre.
+⚠️⚠️ **LA FICHE D'UN COMPTE (`admin/utilisateurs/{user}/modifier`) NE DISTRIBUE PLUS
+AUCUN RÔLE GLOBAL.** Elle offrait les **douze fonctions de `StaffRoles` en cases à
+cocher**, à l'échelle de la plateforme : elle contredisait donc le modèle ci-dessus,
+où les **seuls** rôles globaux sont les **trois niveaux d'accès**. Le reste -
+gestionnaire, co-gestionnaire, comités, secrétariat, comptabilité, appui, accueil - se
+confie **par événement** (`event_user`). Les cases ne faisaient rien d'autre que poser
+une étiquette : les capacités d'une fonction ne sont lues que par `edition.cap:` →
+`canOnEdition()`, donc depuis l'affectation.
 
-- Les rôles sont **groupés par famille**, chacun avec **sa description** (`StaffRoles`) et
-  l'écran dit en toutes lettres que seul « Administrateur colloque » change ce que le
-  compte peut faire. ⚠️ Les onze autres restent **cochables** : ils alimentent la liste et
-  ses filtres, et les retirer est une décision produit, pas un correctif.
-- ⚠️ **Le NIVEAU D'ACCÈS est sorti des champs d'identité** : c'était un `<select>` entre
-  « Nouveau mot de passe » et « Notes internes », sous une légende d'une ligne pour les
-  trois choix confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Trois
-  choix, chacun disant ce qu'il ouvre (`User::accessLevelHints()`).
-- ⚠️ **La fiche montre enfin l'ACCÈS RÉEL** : les affectations `event_user` du compte
-  (colloque, fonction, nombre de capacités, lien vers l'onglet Équipe de l'événement), en
-  lecture seule. On y réglait des rôles de plateforme sans jamais voir à quels colloques
-  la personne est rattachée - c'est-à-dire sans voir ce à quoi elle accède.
+- **Le parcours est celui-ci** : l'**administrateur de colloque** crée l'événement et y
+  nomme **gestionnaire** et/ou **co-gestionnaire** ; ce sont eux qui paramètrent
+  l'événement, forment l'équipe et montent le programme. Rien de tout cela ne passe par
+  la fiche d'un compte.
+- ⚠️ **`store()`/`update()` n'appellent plus `syncRoles()`**, et `validateUser()` n'a
+  plus de règle `roles` - un champ qu'on valide est un champ qu'on promet d'accepter. Les
+  rôles **déjà posés en base** sont laissés en place (ils alimentent encore les pastilles
+  et le filtre de la liste) : plus rien ne les crée, rien ne les efface non plus dans le
+  dos de qui corrige une adresse. ⚠️ **Reste à trancher** : purger ces rôles et retirer
+  le filtre de la liste, l'onglet Rôles et la matrice d'accès.
+- ⚠️ **Le NIVEAU D'ACCÈS a sa carte** : c'était un `<select>` entre « Nouveau mot de
+  passe » et « Notes internes », sous une légende d'une ligne pour les trois choix
+  confondus - alors que `super_admin` ouvre TOUT par `Gate::before`. Trois choix, chacun
+  disant ce qu'il ouvre (`User::accessLevelHints()`).
+- ⚠️ **La fiche montre l'ACCÈS RÉEL** : les affectations `event_user` du compte (colloque,
+  fonction, nombre de capacités, lien vers l'onglet Équipe de l'événement), en lecture
+  seule. On y réglait des accès sans jamais voir ceux dont le compte dispose.
+- ⚠️ **DEUX COLONNES : ce qui se modifie à gauche, ce qui se constate et s'actionne à
+  droite** (`.uf-grid`). Vérification d'adresse, mot de passe et suppression vivaient
+  **sous le bouton « Enregistrer »**, après la fin apparente de la page : on les lisait
+  comme une suite du formulaire. Elles ne peuvent pas y entrer - chacune a le sien, et
+  deux formulaires ne s'imbriquent pas - d'où la colonne. Elle repasse **sous** le
+  formulaire en dessous de 1040px.
 - ⚠️⚠️ **`destroy()` gardait la porte, `update()` laissait la fenêtre ouverte.** La
   suppression interdit depuis toujours d'effacer son propre compte et le dernier
   administrateur ; l'enregistrement de la fiche ne vérifiait **rien**, alors qu'il mène au
-  même endroit : décocher « Administrateur colloque » sur le dernier administrateur,
-  rétrograder le dernier super-administrateur, se désactiver soi-même - après quoi plus
-  personne n'ouvre `admin/utilisateurs` pour revenir en arrière.
-  `UserController::refusDeFermeture()` refuse les quatre cas. ⚠️ **Sur soi-même c'est
-  interdit même quand d'autres administrateurs existent**, comme la suppression de son
-  propre compte : un collègue le fait, en connaissance de cause.
+  même endroit : rétrograder le dernier super-administrateur, ou se désactiver soi-même -
+  après quoi plus personne n'ouvre `admin/utilisateurs` pour revenir en arrière.
+  `UserController::refusDeFermeture()` les refuse. ⚠️ **Sur soi-même c'est interdit même
+  quand d'autres administrateurs existent**, comme la suppression de son propre compte :
+  un collègue le fait, en connaissance de cause.
 - ⚠️ **`User::$access_level` est annoncé `string|null`** : son défaut `'user'` vit en
   BASE, donc une instance tout juste créée le porte à `null`. Annoncé `string`, il faisait
   passer tout contrôle de nullité pour « toujours vrai » à l'analyse - qui invitait donc à
@@ -883,12 +893,17 @@ et filtres), et rien d'autre.
   inadaptable en étroit (un style en ligne l'emporte sur toute règle, media query
   comprise) : sa mise en page vit sous `.admin-user-form` dans `admin.css`.
 
+⚠️ **Nommer un gestionnaire n'envoie AUCUN e-mail** (`EventFormController::attachTeamMember`
+attache la ligne et redirige) : la personne n'apprend sa nomination que si on la prévient
+à la main. **À faire.**
+
 Gardes : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
 l'équipe attachée à UN événement, les rôles déduits et non stockés, et l'accord des deux
 portails. **`OngletRolesTest`** pour la liste : compteurs, familles, couleur par famille,
 absence du rôle `editor`. Et **`FicheDuCompteStaffTest`** pour la fiche (11 cas, 3
-sabotages vérifiés), dont celui qui **fige la règle** : `routes/web.php` ne garde que
-`settings`, `testimonials` et `users_roles` par `can:`, et seul `administrator` les porte.
+sabotages vérifiés) : aucun rôle global proposé **ni accepté**, les actions du compte hors
+du formulaire, et la règle qui tient tout - `routes/web.php` ne garde que `settings`,
+`testimonials` et `users_roles` par `can:`, et **aucune fonction d'équipe** ne les porte.
 
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 

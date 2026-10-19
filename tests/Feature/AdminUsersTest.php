@@ -35,31 +35,34 @@ it('affiche la liste, les rôles et la matrice d’accès', function () {
         ->assertSee('Décision finale');
 });
 
-it('crée un utilisateur staff, l’associe à un rôle et envoie la vérification', function () {
+it('crée un utilisateur staff avec son niveau d’accès et envoie la vérification', function () {
     Notification::fake();
     $admin = usersAdmin();
 
     $this->actingAs($admin, 'web')->post(route('admin.users.store'), [
         'name' => 'Awa Kodjo', 'email' => 'awa.staff@univkara.tg',
-        'roles' => ['reviewer'], 'access_level' => 'user', 'is_active' => '1', 'send_verification' => '1',
+        'access_level' => 'user', 'is_active' => '1', 'send_verification' => '1',
     ])->assertRedirect();
 
     $u = User::where('email', 'awa.staff@univkara.tg')->firstOrFail();
-    expect($u->hasRole('reviewer'))->toBeTrue();
+    expect($u->access_level)->toBe(User::ACCESS_USER);
     expect($u->is_active)->toBeTrue();
     Notification::assertSentTo($u, StaffVerifyEmail::class);
 });
 
-it('met à jour les rôles d’un utilisateur depuis la page détail', function () {
+it('met à jour le niveau d’accès d’un utilisateur depuis la page détail', function () {
+    // ⚠️ Ce cas attribuait des RÔLES GLOBAUX (`organizer`, `accounting`) depuis
+    // cette page. Ils n'existent plus à cette échelle : un compte a un niveau
+    // d'accès, et ses fonctions se confient par événement.
     $admin = usersAdmin();
     $u = User::factory()->create();
-    $u->assignRole('reception');
 
     $this->actingAs($admin, 'web')->put(route('admin.users.update', $u), [
-        'name' => $u->name, 'email' => $u->email, 'access_level' => 'user', 'roles' => ['organizer', 'accounting'],
+        'name' => $u->name, 'email' => $u->email,
+        'access_level' => User::ACCESS_COLLOQUE_ADMIN, 'is_active' => '1',
     ])->assertRedirect(route('admin.users.edit', $u));
 
-    expect($u->fresh()->getRoleNames()->sort()->values()->all())->toBe(['accounting', 'organizer']);
+    expect($u->fresh()->access_level)->toBe(User::ACCESS_COLLOQUE_ADMIN);
 });
 
 it('renvoie le mail de vérification à un utilisateur non vérifié', function () {
