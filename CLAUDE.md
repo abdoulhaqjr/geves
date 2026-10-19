@@ -3928,6 +3928,32 @@ photo, pictogrammes) et les corps de texte suivent le PLUS PETIT rapport** - sin
 cesse d'être carré et le texte déborde. Par feuille A4 : **303 → 4**, **304 → 4**,
 **106 → 9**, **A6 porte-badge (108 × 155) → 1**, **CR80 → 10**.
 
+⚠️⚠️ **UN PIXEL TRANSPARENT PORTE QUAND MÊME UNE COULEUR, ET dompdf LA MÉLANGE.**
+À l'impression, deux **traits gris barraient le badge** en haut et en bas des logos -
+absents du concepteur, donc introuvables en relisant le code. Ils ne sont dans
+`badge-default-bg.png` **ni comme trait ni comme couleur** : le cadre porte, derrière
+les logos, un **rectangle de blanc opaque** entouré de transparence, et ses pixels
+transparents portaient du **noir** sous un alpha nul. Réduit de 794 px à 333, le
+filtre de dompdf moyenne alors ce blanc avec ce noir invisible et laisse un liseré
+gris d'**un tiers de pixel** - invisible à 600 dpi, bien visible à l'impression. Le
+navigateur, lui, compose autrement : d'où « ce n'est pas là au moment de la
+conception ».
+
+- ⚠️ **Le remède ne RETIRE rien** : les pixels transparents portent désormais du
+  **blanc**. Mesuré, **aucun alpha et aucun pixel visible n'a changé** - un alpha nul
+  ne se peint pas - et le mélange se fait blanc sur blanc. Effacer le rectangle blanc
+  aurait marché aussi, mais c'est retirer de la matière pour soigner un symptôme.
+- ⚠️ **Le PNG a été réécrit en RGBA sans perte**, par décodage/réencodage explicite :
+  passer par une bibliothèque qui **prémultiplie** l'alpha abîmerait les 932 pixels
+  **semi-transparents** des coins arrondis (constaté : 559 pixels visibles modifiés
+  au premier essai).
+- ⚠️ **La règle vaut pour toute image que dompdf réduit** : `logo-parakou.png` et les
+  deux pictogrammes portent encore du noir sous leur transparence. Ils ne donnent pas
+  de trait (pas de grande surface blanche opaque à côté), seulement un liseré possible
+  sur leurs propres contours - à mesurer avant d'y toucher.
+- Garde : `BadgeDefaultTemplateTest` (« ne laisse aucun noir sous les pixels
+  transparents du cadre », lue en GD, sabotage vérifié avec l'ancien fichier).
+
 ⚠️⚠️ **LE FILET VERT DE DROITE DE LA CARTE EST UN ÉLÉMENT, PAS LE CADRE.** Sur le
 portrait, les deux filets verts sont **cuits dans `badge-default-bg.png`** et il ne
 faut pas les repasser en `rect` (ils laisseraient un jour à gauche). Mais le cadre

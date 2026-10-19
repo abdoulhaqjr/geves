@@ -227,6 +227,40 @@ it('compose le CR80 en CARTE, sans le thème', function () {
     expect($sansTheme)->toBe([], 'formats portrait sans thème : '.implode(', ', $sansTheme));
 });
 
+it('ne laisse aucun noir sous les pixels transparents du cadre', function () {
+    // ⚠️⚠️ LE DÉFAUT : à l'impression, deux traits gris barraient le badge en haut
+    // et en bas des logos - absents du concepteur. Ils ne sont dans le cadre NI
+    // comme trait NI comme couleur : le cadre porte, derrière les logos, un
+    // rectangle de BLANC OPAQUE entouré de transparence, et ses pixels transparents
+    // portaient du NOIR sous un alpha nul. Réduit de 794 px à 333, le filtre de
+    // dompdf moyenne alors du blanc avec ce noir invisible et laisse un liseré gris
+    // d'un tiers de pixel - invisible à 600 dpi, bien visible à l'impression.
+    //
+    // ⚠️ Le remède ne RETIRE rien : les pixels transparents portent désormais du
+    // blanc. Rien de dessiné ne change (un alpha nul ne se peint pas), et le
+    // mélange se fait blanc sur blanc.
+    $image = imagecreatefrompng(public_path('img/badges/badge-default-bg.png'));
+    expect($image)->not->toBeFalse();
+
+    $largeur = imagesx($image);
+    $hauteur = imagesy($image);
+    $fautifs = 0;
+
+    for ($y = 0; $y < $hauteur; $y++) {
+        for ($x = 0; $x < $largeur; $x++) {
+            $couleur = imagecolorat($image, $x, $y);
+            // 127 = totalement transparent côté GD.
+            if ((($couleur >> 24) & 0x7F) === 127 && ($couleur & 0xFFFFFF) !== 0xFFFFFF) {
+                $fautifs++;
+            }
+        }
+    }
+
+    imagedestroy($image);
+
+    expect($fautifs)->toBe(0, $fautifs.' pixels transparents portent autre chose que du blanc : le cadre reliséré à la réduction');
+});
+
 it('soude le filet vert de la carte au cadre, après le logo de Parakou', function () {
     // ⚠️ Sur le portrait, les deux filets verts sont CUITS dans le cadre. Étiré sur
     // un format PAYSAGE, celui de droite se réduit à un moignon de 13 px collé au
