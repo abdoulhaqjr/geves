@@ -4132,12 +4132,14 @@ pictogrammes **lieu** + **dates**) **cuit dans l'image de fond**
     catégories ayant des destinataires, **groupées par format**, chaque format remplissant
     ses propres pages. ⚠️ **On ne mêle jamais deux formats sur une même feuille** (même
     règle que le lot d'attestations : la taille de page vient de la mise en page du modèle).
-  - ⚠️⚠️ **LE LOT EST BORNÉ : `BadgeSheet::LOT` = 48 badges** (12 feuilles A4).
-    **MESURÉ** : environ **2,5 Mo de mémoire par badge** et 6,9 s pour 48 ; une édition
+  - ⚠️⚠️ **LE LOT EST BORNÉ : `BadgeSheet::LOT` = 48 badges** (jusqu'à 48 feuilles
+    A4 quand le format n'en permet qu'un par page). **Mesure sur l'ancien format** :
+    environ **2,5 Mo de mémoire par badge** et 6,9 s pour 48 ; une édition
     de 191 inscrits faisait tomber dompdf **au milieu** du rendu (128 Mo dépassés), donc
     une page blanche après l'attente. Un lot borné échoue vite ou réussit vite - même
-    raison que `AttestationExportController::LOT`. `badgeSheetPdf()` relève **en plus**
-    la limite à 512 Mo : les deux, parce qu'un serveur peut être plus avare que le nôtre.
+    raison que `AttestationExportController::LOT`. `prepareBadgeExport()` relève
+    **avant le dessin des badges** la limite à 512 Mo et le délai PHP à 300 s :
+    le rendu Dompdf d'une grande sélection dépassait le défaut de 30 s.
     ⚠️ Le découpage de `badgesAll` se fait sur la liste **à plat** (catégorie,
     destinataire) : un plafond appliqué catégorie par catégorie en laisserait en arrière.
     ⚠️ **L'interface ANNONCE les lots** (`_badge-lots.blade.php`, « Lot 1/5 ») dès qu'il y

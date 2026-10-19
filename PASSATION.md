@@ -2577,3 +2577,7 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### Badges de modération et de rapporteur (19 octobre 2026)
 
 - `BadgeCatalog::recipients()` retient pour ces deux fonctions les séances dont l'adresse e-mail de fonction est valide, puis dédoublonne par e-mail. Les libellés collectifs ou noms historiques sans adresse restent visibles dans le programme mais ne produisent plus de badge prêt. Cela rejoint la liaison des espaces de fonction et des attestations par e-mail. Dans l'événement 4, les six lignes de modération se ramènent ainsi aux deux comptes désignés ; aucun enregistrement de séance n'est modifié.
+
+### Export des badges volumineux (19 octobre 2026)
+
+- Les trois exports de badges (`badges`, `badgesAll`, `badgesSelection`) appellent `prepareBadgeExport()` avant tout rendu : 300 s pour PHP et 512 Mo pour Dompdf. Une sélection supérieure à `BadgeSheet::LOT` (48) est désormais refusée avec un message orientant vers les liens de lots ; l'ancien `take(48)` la tronquait sans avertissement. Le lot reste borné pour limiter la mémoire, même lorsqu'un format occupe une feuille A4 par badge.

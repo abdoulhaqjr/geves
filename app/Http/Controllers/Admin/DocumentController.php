@@ -221,6 +221,8 @@ class DocumentController extends Controller
     /** Planche PDF des badges d'UNE catégorie, tuilée A4 avec gouttières. */
     public function badges(Request $request, Event $event): Response|RedirectResponse
     {
+        $this->prepareBadgeExport();
+
         $type = (string) $request->query('type', 'default');
         if ($type === 'participant_photo') {
             $type = 'default'; // Ancien lien : un seul modèle participant désormais.
@@ -248,6 +250,8 @@ class DocumentController extends Controller
      */
     public function badgesAll(Request $request, Event $event): Response|RedirectResponse
     {
+        $this->prepareBadgeExport();
+
         // Une liste à plat (catégorie, destinataire) : le lot se découpe sur
         // l'ensemble, sinon un plafond par catégorie en laisserait en arrière.
         $paires = [];
@@ -279,21 +283,26 @@ class DocumentController extends Controller
      */
     public function badgesSelection(Request $request, Event $event): Response|RedirectResponse
     {
+        $this->prepareBadgeExport();
+
         $type = (string) $request->input('type', 'default');
         abort_unless(BadgeCatalog::valid($type), 404);
 
-        $refs = array_values(array_filter(array_map(
+        $refs = array_values(array_unique(array_filter(array_map(
             fn ($ref) => is_string($ref) ? $ref : '',
             (array) $request->input('refs', []),
-        )));
+        ))));
 
         if ($refs === []) {
             return back()->with('ukc_error', 'Choisissez au moins un destinataire.');
         }
 
+        if (count($refs) > BadgeSheet::LOT) {
+            return back()->with('ukc_error', 'La sélection dépasse '.BadgeSheet::LOT.' badges. Utilisez les liens de lots pour imprimer toute la catégorie.');
+        }
+
         $people = BadgeCatalog::recipients($event, $type)
             ->filter(fn (array $person) => in_array($person['ref'], $refs, true))
-            ->take(BadgeSheet::LOT)
             ->values();
 
         if ($people->isEmpty()) {
@@ -384,12 +393,6 @@ class DocumentController extends Controller
      */
     private function badgeSheetPdf(array $groups, Event $event, string $filename): Response
     {
-        // ⚠️ MESURÉ : environ 2,5 Mo de mémoire par badge (48 badges, 12 feuilles,
-        // 6,9 s). Le défaut de 128 Mo tombait AU MILIEU du rendu - page blanche
-        // après l'attente. On borne le lot (BadgeSheet::LOT) ET on relève la
-        // limite : les deux, parce qu'un serveur peut être plus avare que le nôtre.
-        @ini_set('memory_limit', '512M');
-
         $sheets = [];
         foreach ($groups as $group) {
             $plan = $group['plan'];
@@ -413,5 +416,14 @@ class DocumentController extends Controller
             ->setPaper('a4', 'portrait');
 
         return BrandedPdf::stamp($pdf, 'Badges - '.$event->title)->download($filename);
+    }
+
+    /** Les planches chargent les photos et dessinent jusqu'à 48 badges avant Dompdf. */
+    private function prepareBadgeExport(): void
+    {
+        // Le délai PHP de 30 s coupait le rendu dans Dompdf pour les formats où
+        // un seul badge tient par feuille. Le relever AVANT de dessiner les badges.
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
     }
 }
