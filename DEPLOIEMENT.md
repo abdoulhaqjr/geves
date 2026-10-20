@@ -494,9 +494,12 @@ syntaxe conditionnelle Apache de `Header` est évitée : o2switch peut utiliser
 LiteSpeed, qui ne la traite pas toujours comme Apache.
 
 Le middleware Laravel ne pose HSTS que pour `geves.univkara.tg`, si la
-connexion **à l'origine** est elle-même en HTTPS, avec `max-age=300` pour la
-première mise en service. Si Cloudflare sert le HTTPS au navigateur mais contacte
-l'origine en HTTP, HSTS reste absent : passer d'abord Cloudflare en **Full
+connexion **à l'origine** est elle-même en HTTPS, avec `max-age=2592000`
+(30 jours). La première mise en service à 300 secondes a été vérifiée sur la
+production le 20 octobre 2026 ; Security Headers lui donnait la note A et ne
+signalait plus que la durée HSTS, inférieure à son minimum de 30 jours. Si
+Cloudflare sert le HTTPS au navigateur mais contacte l'origine en HTTP, HSTS
+reste absent : passer d'abord Cloudflare en **Full
 (strict)**, puis vérifier le certificat de l'origine. Ne pas ajouter en
 parallèle une seconde règle HSTS Cloudflare sans retirer celle de Laravel. Ne
 pas appliquer `includeSubDomains`/`preload` à `univkara.tg`.
@@ -518,9 +521,10 @@ le navigateur. Lire ensuite les entrées `CSP report-only violation` des journau
 Laravel et corriger les sources, scripts et styles intégrés avant de faire
 respecter une CSP complète.
 
-Si HSTS apparaît bien et que HTTPS reste stable, augmenter sa durée par paliers
-(`300` → `86400` → `31536000` secondes). Ne pas augmenter la durée avant d'avoir
-vérifié la production après chaque palier.
+Après la mise en production de cette durée, vérifier que la réponse HTTPS sert
+`Strict-Transport-Security: max-age=2592000`, puis relancer Security Headers.
+Ne passer à `31536000` secondes (un an) qu'après avoir confirmé la stabilité de
+HTTPS sur la production. Garder cette règle limitée à `geves.univkara.tg`.
 
 ---
 

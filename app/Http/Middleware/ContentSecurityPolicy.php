@@ -17,7 +17,7 @@ class ContentSecurityPolicy
         // l'origine en HTTPS. Ne pas se fier au seul X-Forwarded-Proto.
         if ($request->getHost() === 'geves.univkara.tg'
             && in_array(strtolower((string) $request->server('HTTPS')), ['on', '1'], true)) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=300');
+            $response->headers->set('Strict-Transport-Security', 'max-age=2592000');
         }
 
         if (! str_starts_with(strtolower((string) $response->headers->get('Content-Type')), 'text/html')) {

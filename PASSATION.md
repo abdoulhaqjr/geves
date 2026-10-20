@@ -107,11 +107,13 @@ qui tiennent la visibilité du super administrateur (liste, fiche, copilote).
 ### En-têtes de sécurité HTTP (2026-10-19)
 
 Le rapport de production signalait six en-têtes absents. `public/.htaccess`
-ajoute les protections communes ; le middleware Laravel pose un HSTS initial de
-300 secondes, uniquement pour `geves.univkara.tg` servi en HTTPS par l'origine.
-Les pages HTML reçoivent
-une CSP immédiatement applicable limitée à `base-uri`, `object-src` et
-`frame-ancestors`, ainsi qu'une CSP plus stricte en mode Report-Only. Les rapports
+ajoute les protections communes ; le middleware Laravel pose HSTS uniquement
+pour `geves.univkara.tg` servi en HTTPS par l'origine. Le premier palier à
+300 secondes a été vérifié en production le 20 octobre 2026 (note A, seule la
+durée HSTS restait insuffisante) ; le code prévoit maintenant 30 jours. Les
+pages HTML reçoivent une CSP immédiatement applicable limitée à `base-uri`,
+`object-src` et `frame-ancestors`, ainsi qu'une CSP plus stricte en mode
+Report-Only. Les rapports
 arrivent sur `/csp-report`, avec limitation, déduplication et journalisation
 sans URL de page. La suite dépend des violations observées (Turnstile, visio,
 FedaPay, scripts et styles intégrés) ; voir `DEPLOIEMENT.md` avant de durcir
