@@ -967,15 +967,22 @@ oubliée.
 attacher SON gestionnaire. Le geste reste pour les autres - un gestionnaire qui crée un
 événement en devient le gestionnaire, sinon il perdrait ce qu'il vient d'ouvrir.
 
-⚠️⚠️ **CONSÉQUENCE SUR LES DONNÉES, à vérifier en production.** `ColloqueEauTogoSeeder`
-posait `colloque_admin` sur les **deux gestionnaires réels** du colloque de l'eau, sur la
-foi d'un commentaire qui promettait « sans voir les colloques où il n'est pas affecté ».
-C'était vrai tant que ce niveau n'ouvrait rien ; aujourd'hui, c'était leur donner les
-comptes, les rôles et les réglages. Le seeder pose désormais `ACCESS_USER` - leur pouvoir
-vient de `event_user`, conformément à la règle « gérer un événement n'élève personne ».
-⚠️ **Mais le seeder est idempotent et ne retouche pas un compte existant** : les deux
-comptes DÉJÀ importés (dev comme production) portent encore `colloque_admin`. **À
-corriger à la main**, ou par une migration, avant la prochaine mise en ligne.
+⚠️⚠️ **CONSÉQUENCE SUR LES DONNÉES.** `ColloqueEauTogoSeeder` posait `colloque_admin` sur
+les **deux gestionnaires réels** du colloque de l'eau, sur la foi d'un commentaire qui
+promettait « sans voir les colloques où il n'est pas affecté ». C'était vrai tant que ce
+niveau n'ouvrait rien ; aujourd'hui, c'était leur donner les comptes, les rôles et les
+réglages. Le seeder pose désormais `ACCESS_USER` - leur pouvoir vient de `event_user`,
+conformément à la règle « gérer un événement n'élève personne ».
+
+⚠️ **Le seeder étant idempotent, le corriger ne corrige RIEN en base** : il ne retouche
+jamais un compte existant. D'où la migration
+**`2026_10_20_000100_retirer_le_niveau_administrateur_aux_comptes_importes`**, qui
+redescend les comptes déjà importés. Elle ne vise **que ce que l'import a promu** - la
+marque `meta.import_source`, que le seeder écrit dans le même geste que le niveau : un
+compte promu à la main depuis l'écran des niveaux n'en porte pas et n'est pas touché. Son
+`down()` est **vide** : une remontée de privilèges ne se « restaure » pas. ⚠️ Elle lit le
+JSON **en PHP**, pas en SQL - les fonctions de chemin JSON diffèrent entre MySQL et
+SQLite, et le défaut se découvrirait en ligne, au milieu d'un déploiement.
 
 ⚠️ Le défaut `'user'` d'`access_level` vit **en base**, pas dans le modèle : une
 instance tout juste créée porte `null` jusqu'au rechargement. Inoffensif (les

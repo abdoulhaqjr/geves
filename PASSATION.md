@@ -139,16 +139,28 @@ ouvre tous, et il crée l'événement pour y attacher SON gestionnaire. Le geste
 reste pour les autres - un gestionnaire qui crée un événement en devient le
 gestionnaire, sinon il perdrait ce qu'il vient d'ouvrir.
 
-⚠️⚠️ **À FAIRE AVANT LA PROCHAINE MISE EN LIGNE - deux comptes réels.**
+⚠️⚠️ **DEUX COMPTES RÉELS PORTAIENT LE NIVEAU SANS QUE PERSONNE NE L'AIT DÉCIDÉ.**
 `ColloqueEauTogoSeeder` posait `colloque_admin` sur les **deux gestionnaires du
 colloque de l'eau**, sur la foi d'un commentaire qui promettait « sans voir les
 colloques où il n'est pas affecté ». C'était vrai tant que ce niveau n'ouvrait
 rien ; aujourd'hui, c'était leur donner les comptes, les rôles et les réglages de
 toute la plateforme. Le seeder pose désormais `ACCESS_USER` - leur pouvoir vient
 de `event_user`, conformément à la règle « gérer un événement n'élève personne ».
-**Mais le seeder est idempotent et ne retouche jamais un compte existant** : les
-deux comptes déjà importés, en dev comme en production, portent encore
-`colloque_admin`. À corriger à la main ou par une migration.
+
+⚠️ **Mais le seeder est idempotent : le corriger ne corrige RIEN en base.** D'où
+la migration `2026_10_20_000100_retirer_le_niveau_administrateur_aux_comptes_importes`.
+Elle ne vise **que ce que l'import a promu**, et c'est la marque
+`meta.import_source` qui l'établit - le seeder écrit le niveau et la marque dans
+le même geste, à la création. Un compte promu à la main depuis l'écran des
+niveaux n'en porte pas : on ne défait pas une décision prise en connaissance de
+cause. ⚠️ La marque seule ne suffirait pas - le même import crée aussi les 44
+comptes d'auteurs, qui naissent en `ACCESS_USER` ; c'est la conjonction des deux
+conditions qui désigne l'équipe. ⚠️ Le JSON se lit **en PHP**, pas en SQL : les
+fonctions de chemin diffèrent entre MySQL et SQLite, et un `whereJsonContains` se
+découvrirait en ligne. ⚠️ `down()` **vide** : une remontée de privilèges ne se
+restaure pas. **Mesuré sur la base de dev** : les deux comptes redescendus,
+leurs fonctions `gerant` / `co_gerant` intactes, et le troisième
+`colloque_admin` - promu à la main - laissé en place.
 
 Gardes : `DroitsDeLAdministrateurTest` (11 cas, **5 sabotages vérifiés** : le
 `Gate::before` redescendu sur le super admin, l'accès aux événements, la
@@ -2039,8 +2051,9 @@ partie.
   rien ; l'administrateur ayant désormais accès à TOUTE la plateforme, c'était
   leur donner les comptes, les rôles et les réglages. Leur pouvoir vient de
   `event_user`, comme le veut la règle « gérer un événement n'élève personne ».
-  **Les comptes déjà importés gardent l'ancien niveau** (le seeder ne retouche
-  pas un compte existant) : à corriger à la main.
+  **Les comptes déjà importés** sont redescendus par la migration
+  `2026_10_20_000100_retirer_le_niveau_administrateur_aux_comptes_importes` (le
+  seeder, lui, ne retouche jamais un compte existant).
 - ⚠️ **Aucun mot de passe dans le dépôt** : les deux comptes naissent avec
   `must_reset_password`, comme les 44 comptes auteurs de cet import. Ils
   s'ouvrent par réinitialisation.
