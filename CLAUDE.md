@@ -1091,11 +1091,30 @@ et le pose dans un cadre isolé. Même grammaire que l'aperçu verrouillé du re
 `Admin\ImpersonationController` (`take`/`leave`). La bannière + le bouton « Quitter »
 vivent dans `components/layouts/participant.blade.php`.
 
+- ⚠⚠ **LE GESTE PART DE `/admin/utilisateurs`, PAS DES PARTICIPANTS** (2026-10-20).
+  On emprunte un **COMPTE**, pas une inscription à un événement : le bouton est une
+  action de la ligne, dans **Utilisateurs & rôles** (`admin.users.impersonate`), et le
+  contrôleur reçoit un `User`. L'ancienne route `admin.participants.impersonate` est
+  **supprimée** - une route laissée en place sans bouton serait une seconde porte que
+  personne ne surveille - et la fiche `admin/participants/preview` ne porte plus rien.
+  - ⚠️ **Ce déplacement ATTEINT ce que l'ancienne page ne pouvait pas** : elle partait
+    d'un `Participant`, donc un modérateur rapproché par e-mail ou un membre du staff -
+    inscrit à aucun événement - restait hors d'atteinte. La question « ce compte a-t-il
+    une fiche participant ? » ne se pose plus.
+  - ⚠️ **Et il RESSERRE l'accès** : la page est gardeée par `can:users_roles`, que
+    l'admin de colloque n'a pas par défaut - en pratique, seul le super-administrateur
+    impersonifie désormais. `canImpersonate()` reste la règle du modèle et le contrôleur
+    la revérifie : pour l'ouvrir à l'admin de colloque, c'est la **matrice d'accès** qu'on
+    coche, pas le code.
+  - ⚠️ **On ne s'impersonifie pas soi-même** : cela déconnecterait l'admin du back-office
+    pour le poser dans son propre espace participant, avec « quitter » pour seul retour -
+    et sa ligne est juste là dans la liste. Refusé côté serveur, bouton masqué côté vue.
+  - ⚠️ **Quitter ramène aux COMPTES** (`admin.users.index`), par les deux chemins :
+    `ImpersonationController::leave` **et** le filet d'`Account\LogoutController`.
 - ⚠️ **Qui peut impersonifier : UNIQUEMENT admin de colloque + super-admin**
   (`User::canImpersonate()` = **`isColloqueAdmin()`**). Un gestionnaire ou le secrétariat,
   même avec la capacité `participants`, ne le peut pas. Le bouton « Se connecter en tant
-  que » (fiche `admin/participants/preview`) est **gardé par `canImpersonate()`**, pas
-  seulement par la présence d'un compte lié.
+  que » est **gardé par `canImpersonate()`** en plus de la permission de la page.
 - ⚠️ **En impersonation, « se déconnecter » QUITTE l'impersonation, il ne déconnecte
   PAS.** Staff et compte impersonifié partagent la même session : `session()->invalidate()`
   déconnecterait aussi l'admin. `Account\LogoutController` détecte l'impersonation

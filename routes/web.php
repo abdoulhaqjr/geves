@@ -449,16 +449,18 @@ Route::prefix('admin')->group(function () {
             Route::post('/utilisateurs/{user}/verification', [UserController::class, 'resendVerification'])->name('admin.users.resend');
             Route::post('/utilisateurs/{user}/mot-de-passe', [UserController::class, 'sendPasswordReset'])->name('admin.users.password-reset');
             Route::delete('/utilisateurs/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+            // « Se connecter en tant que » : l'impersonation appartient à la page des
+            // COMPTES, pas à celle des participants - c'est un compte qu'on emprunte,
+            // pas une inscription. Le contrôleur revérifie `canImpersonate()`.
+            Route::post('/utilisateurs/{user}/impersonate', [ImpersonationController::class, 'take'])->name('admin.users.impersonate');
         });
 
-        // Participants (l'impersonation est en plus gardée par `manage_colloques`
-        // dans le contrôleur).
+        // Participants.
         Route::middleware('edition.cap:participants')->group(function () {
             Route::get('/participants', [ParticipantController::class, 'index'])->name('admin.participants.index');
             Route::post('/participants/inviter-payes', [ParticipantController::class, 'inviteBulk'])->name('admin.participants.invite-bulk');
             Route::post('/participants/{participant}/inviter', [ParticipantController::class, 'invite'])->name('admin.participants.invite');
             Route::get('/participants/{participant}/apercu', [ParticipantController::class, 'preview'])->name('admin.participants.preview');
-            Route::post('/participants/{participant}/impersonate', [ImpersonationController::class, 'take'])->name('admin.participants.impersonate');
         });
 
         // E-mails.

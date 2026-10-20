@@ -22,7 +22,7 @@ class LogoutController extends Controller
         if (app('impersonate')->isImpersonating()) {
             Auth::guard('account')->user()?->leaveImpersonation();
 
-            return redirect()->route('admin.participants.index')
+            return redirect()->route('admin.users.index')
                 ->with('ukc_status', 'Impersonation terminée.');
         }
 

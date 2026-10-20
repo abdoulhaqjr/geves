@@ -3,16 +3,16 @@
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // staffWithPermission() -> AdminEditionsTest
 
-it('permet au staff d’impersonifier un compte participant', function () {
+it('permet au staff d’impersonifier un compte depuis Utilisateurs & rôles', function () {
     $staff = staffWithPermission();
     $account = User::factory()->create();
-    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.participants.impersonate', $participant))
+        ->post(route('admin.users.impersonate', $account))
         ->assertRedirect(route('account.dashboard'));
 
     expect(app('impersonate')->isImpersonating())->toBeTrue();
@@ -22,9 +22,8 @@ it('permet au staff d’impersonifier un compte participant', function () {
 it('affiche la bannière d’impersonation dans l’espace participant', function () {
     $staff = staffWithPermission();
     $account = User::factory()->create();
-    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
-    $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
+    $this->actingAs($staff, 'web')->post(route('admin.users.impersonate', $account));
 
     $this->get(route('account.dashboard'))
         ->assertOk()
@@ -35,13 +34,13 @@ it('affiche la bannière d’impersonation dans l’espace participant', functio
 it('quitte l’impersonation et rend la main au staff', function () {
     $staff = staffWithPermission();
     $account = User::factory()->create();
-    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
-    $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
+    $this->actingAs($staff, 'web')->post(route('admin.users.impersonate', $account));
     expect(app('impersonate')->isImpersonating())->toBeTrue();
 
+    // ⚠️ On revient aux COMPTES, d'où le geste est parti - plus aux participants.
     $this->post(route('impersonation.leave'))
-        ->assertRedirect(route('admin.participants.index'));
+        ->assertRedirect(route('admin.users.index'));
 
     expect(app('impersonate')->isImpersonating())->toBeFalse();
     expect(Auth::guard('web')->id())->toBe($staff->id);
@@ -50,15 +49,14 @@ it('quitte l’impersonation et rend la main au staff', function () {
 it('la déconnexion en impersonation QUITTE l’impersonation sans déconnecter l’admin', function () {
     $staff = staffWithPermission();
     $account = User::factory()->create();
-    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
-    $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
+    $this->actingAs($staff, 'web')->post(route('admin.users.impersonate', $account));
     expect(app('impersonate')->isImpersonating())->toBeTrue();
 
     // Le bouton de déconnexion de l'espace participant poste sur account.logout :
     // en impersonation, on quitte seulement, on ne vide pas la session de l'admin.
     $this->post(route('account.logout'))
-        ->assertRedirect(route('admin.participants.index'));
+        ->assertRedirect(route('admin.users.index'));
 
     expect(app('impersonate')->isImpersonating())->toBeFalse();
     expect(Auth::guard('web')->id())->toBe($staff->id);
@@ -70,25 +68,60 @@ it('n’autorise que l’admin de colloque et le super-admin à impersonifier', 
         ->and(User::factory()->create(['access_level' => User::ACCESS_USER])->canImpersonate())->toBeFalse();
 });
 
-it('refuse l’impersonation d’un participant sans compte lié', function () {
+it('atteint un compte SANS fiche participant', function () {
+    // ⚠️ C'est ce que l'ancienne page ne savait pas faire : elle partait d'un
+    // `Participant`, donc un modérateur rapproché par e-mail ou un membre du
+    // staff - qui n'est inscrit à aucun événement - restait hors d'atteinte.
     $staff = staffWithPermission();
-    $participant = Participant::factory()->create(); // pas de account_id
+    $account = User::factory()->create();
+
+    expect(Participant::where('user_id', $account->id)->exists())->toBeFalse();
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.participants.impersonate', $participant))
+        ->post(route('admin.users.impersonate', $account))
+        ->assertRedirect(route('account.dashboard'));
+
+    expect(Auth::guard('account')->id())->toBe($account->id);
+});
+
+it('refuse de s’impersonifier soi-même', function () {
+    $staff = staffWithPermission();
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.users.impersonate', $staff))
         ->assertRedirect();
 
     expect(app('impersonate')->isImpersonating())->toBeFalse();
+    expect(Auth::guard('web')->id())->toBe($staff->id);
 });
 
 it('interdit l’impersonation sans la permission manage_colloques', function () {
     $user = User::factory()->create();
     $account = User::factory()->create();
-    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($user, 'web')
-        ->post(route('admin.participants.impersonate', $participant))
+        ->post(route('admin.users.impersonate', $account))
         ->assertForbidden();
 
     expect(app('impersonate')->isImpersonating())->toBeFalse();
+});
+
+it('le geste vit sur la liste des comptes, plus sur l’aperçu d’un participant', function () {
+    $staff = staffWithPermission();
+    $account = User::factory()->create(['name' => 'Awa Kodjo']);
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
+
+    $this->actingAs($staff, 'web')->get(route('admin.users.index'))
+        ->assertOk()
+        ->assertSee(route('admin.users.impersonate', $account), false);
+
+    $this->actingAs($staff, 'web')->get(route('admin.participants.preview', $participant))
+        ->assertOk()
+        ->assertDontSee('Se connecter en tant que');
+});
+
+it('n’expose plus l’ancienne route des participants', function () {
+    // ⚠️ Une route laissée en place serait une SECONDE porte, sans bouton pour la
+    // dire - donc une porte que personne ne surveille.
+    expect(Route::has('admin.participants.impersonate'))->toBeFalse();
 });

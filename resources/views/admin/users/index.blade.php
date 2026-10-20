@@ -118,6 +118,18 @@
                                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4h-10.35zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
                                                 </button>
                                             </form>
+                                            @if (auth('web')->user()?->canImpersonate() && auth('web')->id() !== $u->id)
+                                                {{-- « Se connecter en tant que » : on emprunte un COMPTE, donc le
+                                                     geste vit ici. Jamais sur sa propre ligne - cela déconnecterait
+                                                     l'admin du back-office pour le poser dans son propre espace. --}}
+                                                <form method="POST" action="{{ route('admin.users.impersonate', $u) }}"
+                                                      data-confirm="Se connecter en tant que {{ $u->name }} ? Vous verrez et agirez dans son espace jusqu’à ce que vous quittiez l’impersonation.">
+                                                    @csrf
+                                                    <button type="submit" class="ukc-btn--icon" title="Se connecter en tant que {{ $u->name }}">
+                                                        <x-ukc.icon name="login" :size="16" />
+                                                    </button>
+                                                </form>
+                                            @endif
                                             <button type="button" class="ukc-btn--icon danger" title="Supprimer"
                                                     @click="delUser = { url: @js(route('admin.users.destroy', $u)), name: @js($u->name) }; delConfirm = ''; delOpen = true">
                                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
