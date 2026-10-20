@@ -2,11 +2,15 @@
 
 use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\EnsureEditionAccess;
+use App\Http\Middleware\PrefixedCsrfCookie;
 use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\StartSessionWithLegacyCookie;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Les webhooks de paiement sont des appels serveur-à-serveur (pas de CSRF).
         $middleware->validateCsrfTokens(except: ['webhooks/*', 'csp-report']);
+
+        $middleware->web(replace: [
+            StartSession::class => StartSessionWithLegacyCookie::class,
+            PreventRequestForgery::class => PrefixedCsrfCookie::class,
+        ]);
 
         // Langue de la requête (i18n) : compte → session → navigateur → défaut.
         $middleware->web(append: SetLocale::class);

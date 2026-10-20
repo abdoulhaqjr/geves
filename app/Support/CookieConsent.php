@@ -31,7 +31,7 @@ final class CookieConsent
 
     public static function cookieName(): string
     {
-        return (string) config('cookies.cookie_name', 'geves_cookie_notice');
+        return FirstPartyCookieNames::notice((string) config('cookies.cookie_name', 'geves_cookie_notice'));
     }
 
     public static function lifetimeDays(): int
@@ -80,7 +80,7 @@ final class CookieConsent
                 'duration' => $sessionDuree,
             ],
             [
-                'name' => 'XSRF-TOKEN',
+                'name' => FirstPartyCookieNames::csrf(),
                 'party' => __('Première partie'),
                 'third' => false,
                 'purpose' => __('Jeton anti-falsification de requête : il prouve que le formulaire envoyé vient bien de cette page.'),

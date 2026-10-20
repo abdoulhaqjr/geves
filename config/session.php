@@ -2,6 +2,14 @@
 
 use Illuminate\Support\Str;
 
+$httpsApp = str_starts_with(strtolower((string) env('APP_URL', 'http://localhost')), 'https://');
+$sessionCookie = (string) env('SESSION_COOKIE', Str::slug((string) env('APP_NAME', 'laravel')).'-session');
+
+// __Secure- conserve la portée SESSION_DOMAIN ; __Host- interdirait cet attribut.
+if ($httpsApp && ! str_starts_with($sessionCookie, '__Secure-')) {
+    $sessionCookie = '__Secure-'.$sessionCookie;
+}
+
 return [
 
     /*
@@ -127,10 +135,7 @@ return [
     |
     */
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
-    ),
+    'cookie' => $sessionCookie,
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +174,9 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => $httpsApp || str_starts_with($sessionCookie, '__Secure-')
+        ? true
+        : env('SESSION_SECURE_COOKIE'),
 
     /*
     |--------------------------------------------------------------------------

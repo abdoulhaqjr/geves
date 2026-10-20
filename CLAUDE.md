@@ -666,6 +666,10 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
 Les en-têtes HTTP de production sont répartis entre `public/.htaccess`
 (protections communes) et `App\Http\Middleware\ContentSecurityPolicy` (HSTS de
 30 jours pour GEVES si l'origine est en HTTPS, CSP HTML minimale + Report-Only).
+Si `APP_URL` est en HTTPS, `config/session.php` préfixe les cookies de session
+avec `__Secure-` et impose l'attribut `Secure`. Le middleware CSRF émet
+`__Secure-XSRF-TOKEN` ; `StartSessionWithLegacyCookie` reprend les anciennes
+sessions à leur première requête. Le cookie du bandeau suit le même préfixe.
 Le bilan `POST /csp-report` est borné et dédupliqué. Voir « En-têtes de sécurité
 HTTP » dans `DEPLOIEMENT.md` avant d'augmenter HSTS ou d'activer une CSP complète ;
 la visio, Turnstile et le paiement dépendent de permissions/sources externes.

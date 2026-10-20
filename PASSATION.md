@@ -119,6 +119,13 @@ sans URL de page. La suite dépend des violations observées (Turnstile, visio,
 FedaPay, scripts et styles intégrés) ; voir `DEPLOIEMENT.md` avant de durcir
 HSTS ou d'activer la politique complète.
 
+Le contrôle suivant affichait A+ et HSTS à 30 jours, mais signalait les deux
+`Set-Cookie` sans préfixe. Sur une installation dont `APP_URL` est en HTTPS,
+la session et le jeton CSRF portent maintenant `__Secure-` et l'attribut
+`Secure`. `StartSessionWithLegacyCookie` accepte encore le nom de session
+historique pendant le premier passage ; le cookie du bandeau et l'inventaire
+`/cookies` utilisent également le nouveau nom.
+
 ### L'aperçu montre le vrai e-mail, et le bouton tient en mode sombre (2026-10-19)
 
 **L'aperçu n'était pas un aperçu.** `admin/emails` affichait l'objet et le corps

@@ -526,6 +526,23 @@ Après la mise en production de cette durée, vérifier que la réponse HTTPS se
 Ne passer à `31536000` secondes (un an) qu'après avoir confirmé la stabilité de
 HTTPS sur la production. Garder cette règle limitée à `geves.univkara.tg`.
 
+Security Headers affiche désormais A+ avec HSTS à 30 jours. Son information
+« There is no Cookie Prefix » concerne `XSRF-TOKEN` et `geves-session`. Sur une
+installation dont `APP_URL` commence par `https://`, la session devient
+`__Secure-geves-session` (ou `__Secure-` suivi du nom de session configuré) et
+le jeton CSRF devient `__Secure-XSRF-TOKEN` ; l'attribut `Secure` est imposé.
+`SESSION_DOMAIN=.univkara.tg` reste compatible avec ce préfixe. Le middleware
+de session lit encore l'ancien nom au premier passage pour garder les comptes
+connectés. Le cookie d'accusé de lecture du bandeau change aussi de nom ; le
+bandeau peut donc se réafficher une fois après cette mise à jour.
+
+Avant le déploiement, confirmer que `APP_URL` commence par `https://`, puis
+reconstruire le cache de configuration comme dans la procédure ci-dessus.
+Après le déploiement, vérifier les deux lignes `Set-Cookie` dans la réponse de
+l'accueil, une connexion existante, un formulaire protégé par CSRF et le bandeau.
+Relancer ensuite Security Headers : les noms émis doivent commencer par
+`__Secure-`, et chaque cookie doit porter `Secure`.
+
 ---
 
 # Ce qui ne fonctionnera pas sur un mutualisé
