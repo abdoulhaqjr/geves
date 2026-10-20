@@ -615,6 +615,77 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="layers" :size="20" /> Rédaction à plusieurs (temps réel)</span></h2>
+                    <p class="desc">
+                        Permet à plusieurs personnes d’écrire <strong>en même temps</strong> dans le document d’une tâche du module
+                        Projet, chacune voyant la frappe des autres. Il faut pour cela un serveur <strong>WebSocket</strong> joignable
+                        depuis le navigateur : un service hébergé parlant le protocole Pusher (PieSocket, Pusher…).
+                        Renseignez l’<strong>hôte</strong> du service ; laissé vide, ce sont les serveurs de Pusher qui sont visés.
+                    </p>
+                    <p class="desc">
+                        ⚠️ <strong>Sans ces identifiants, rien ne casse</strong> : les documents s’ouvrent, s’écrivent, s’enregistrent et
+                        gardent leur historique. Seule la simultanéité disparaît - deux personnes qui écrivent au même moment sont
+                        alors prévenues au lieu de s’écraser.
+                    </p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                                <input type="checkbox" name="realtime_enabled" value="1" style="width:auto;" @checked($v('realtime_enabled'))>
+                                Activer la rédaction simultanée
+                            </label>
+                            <span class="hint">Décoché, les documents restent accessibles, un rédacteur à la fois.</span>
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_app_id">App ID</label>
+                            <input type="text" id="realtime_app_id" name="realtime_app_id" value="{{ $v('realtime_app_id') }}" autocomplete="off">
+                            @error('realtime_app_id') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_key">Clé publique</label>
+                            <input type="text" id="realtime_key" name="realtime_key" value="{{ $v('realtime_key') }}" autocomplete="off">
+                            <span class="hint">Celle-ci est affichée dans le navigateur : c’est son rôle.</span>
+                            @error('realtime_key') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_secret">Clé secrète</label>
+                            <input type="password" id="realtime_secret" name="realtime_secret" value="" autocomplete="new-password" placeholder="{{ filled(config('broadcasting.connections.pusher.secret')) ? 'Clé enregistrée - laisser vide pour conserver' : 'Clé secrète du service' }}">
+                            <span class="hint">Enregistrée chiffrée, jamais réaffichée et jamais envoyée au navigateur.</span>
+                            @error('realtime_secret') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_cluster">Cluster</label>
+                            <input type="text" id="realtime_cluster" name="realtime_cluster" value="{{ $v('realtime_cluster') }}" autocomplete="off" placeholder="eu, mt1…">
+                            @error('realtime_cluster') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_host">Hôte du service</label>
+                            <input type="text" id="realtime_host" name="realtime_host" value="{{ $v('realtime_host') }}" autocomplete="off" placeholder="exemple.piesocket.com">
+                            <span class="hint">Un nom de domaine SEUL, sans « https:// » ni chemin.</span>
+                            @error('realtime_host') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_port">Port</label>
+                            <input type="number" id="realtime_port" name="realtime_port" value="{{ $v('realtime_port') }}" min="1" max="65535">
+                            @error('realtime_port') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="realtime_scheme">Schéma</label>
+                            <select id="realtime_scheme" name="realtime_scheme">
+                                <option value="https" @selected($v('realtime_scheme') !== 'http')>https (wss)</option>
+                                <option value="http" @selected($v('realtime_scheme') === 'http')>http (ws)</option>
+                            </select>
+                            <span class="hint">Le chiffrement du WebSocket suit ce choix.</span>
+                        </div>
+                        <div class="ukc-field full">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                                <input type="checkbox" name="realtime_secret_remove" value="1" style="width:auto;">
+                                Supprimer la clé secrète enregistrée
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- ⚠️ Masqué sur l'onglet des agents : ce bouton enregistre les RÉGLAGES,

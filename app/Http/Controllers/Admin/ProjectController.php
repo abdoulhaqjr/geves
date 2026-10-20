@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskComment;
+use App\Models\ProjectTaskDocument;
 use App\Models\User;
 use App\Support\Notifier;
 use App\Support\XlsxWriter;
@@ -26,6 +27,18 @@ use Symfony\Component\HttpFoundation\Response;
 class ProjectController extends Controller
 {
     use Concerns\ScopesEditionAccess;
+
+    /**
+     * Relations qu'une carte de tâche a besoin de lire.
+     *
+     * ⚠️ Une seule liste : la carte est construite depuis TROIS endroits
+     * (création, modification, chargement initial) et un chargement oublié ne se
+     * voit pas - il fait seulement N requêtes de plus, ou rend une liste de
+     * collaborateurs vide.
+     *
+     * @var list<string>
+     */
+    private const RELATIONS_CARTE = ['assignee', 'collaborators', 'documents'];
 
     /** Liens contextuels tâche → feature (libellé). L'URL est bâtie par linkUrl(). */
     public const LINK_TARGETS = [
@@ -81,11 +94,16 @@ class ProjectController extends Controller
             $data['completed_at'] = now();
         }
 
+        $collaborateurs = $data['collaborator_ids'];
+        unset($data['collaborator_ids']);
+
         $task = ProjectTask::create($data);
+        $task->collaborators()->sync($collaborateurs);
         $this->notifyAssignment($task, null, $request);
+        $this->notifyCollaborators($task, [], $collaborateurs, $request);
 
         if ($request->expectsJson()) {
-            return response()->json(['task' => $this->taskCard($task->load('assignee'), $event)]);
+            return response()->json(['task' => $this->taskCard($task->load(self::RELATIONS_CARTE), $event)]);
         }
 
         return back()->with('ukc_status', 'Tâche ajoutée.');
@@ -98,11 +116,17 @@ class ProjectController extends Controller
         $data['completed_at'] = $data['status'] === 'done' ? ($task->completed_at ?? now()) : null;
 
         $previousAssignee = $task->assignee_id;
+        $avant = $task->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $collaborateurs = $data['collaborator_ids'];
+        unset($data['collaborator_ids']);
+
         $task->update($data);
+        $task->collaborators()->sync($collaborateurs);
         $this->notifyAssignment($task, $previousAssignee, $request);
+        $this->notifyCollaborators($task, $avant, $collaborateurs, $request);
 
         if ($request->expectsJson() && $event) {
-            return response()->json(['task' => $this->taskCard($task->fresh()->load('assignee'), $event)]);
+            return response()->json(['task' => $this->taskCard($task->fresh()->load(self::RELATIONS_CARTE), $event)]);
         }
 
         return back()->with('ukc_status', 'Tâche mise à jour.');
@@ -305,7 +329,7 @@ class ProjectController extends Controller
             return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
-        $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
+        $tasks = ProjectTask::where('event_id', $event->id)->with(self::RELATIONS_CARTE)
             ->orderBy('phase')->orderBy('status')->orderBy('position')->get();
 
         $taskRows = $tasks->map(fn (ProjectTask $t) => [
@@ -452,16 +476,32 @@ class ProjectController extends Controller
             'phase' => ['nullable', 'string', 'max:60'],
             'link_key' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::LINK_TARGETS))],
             'assignee_id' => ['nullable', 'integer'],
+            'collaborator_ids' => ['nullable', 'array', 'max:30'],
+            'collaborator_ids.*' => ['integer'],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date'],
             'checklist_json' => ['nullable', 'string'],
         ]);
 
         // Le responsable doit appartenir à l'équipe de l'événement (sinon on ignore).
-        if (! empty($validated['assignee_id']) && $event
-            && ! $this->assigneePool($event)->contains('id', (int) $validated['assignee_id'])) {
+        $vivier = $event ? $this->assigneePool($event) : null;
+
+        if (! empty($validated['assignee_id']) && $vivier
+            && ! $vivier->contains('id', (int) $validated['assignee_id'])) {
             $validated['assignee_id'] = null;
         }
+
+        // ⚠️ **Les collaborateurs se bornent au MÊME vivier que le responsable.**
+        // Ils ouvrent le document de travail de la tâche : y laisser entrer un
+        // identifiant quelconque donnerait accès au plan de travail d'un
+        // événement à quelqu'un qui n'y est pas affecté. Un identifiant posté
+        // n'est pas une autorisation.
+        $validated['collaborator_ids'] = collect($validated['collaborator_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $vivier !== null && $vivier->contains('id', $id))
+            ->unique()
+            ->values()
+            ->all();
 
         // Checklist : JSON envoyé par le panneau, assaini en [{text, done}].
         $validated['checklist'] = $this->parseChecklist($validated['checklist_json'] ?? null);
@@ -555,6 +595,21 @@ class ProjectController extends Controller
             'start_date' => $task->start_date?->toDateString(),
             'assignee_id' => $task->assignee_id,
             'assignee' => optional($task->assignee)->name,
+            'collaborator_ids' => $task->collaborators->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            'collaborators' => $task->collaborators->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->salutationName() ?: $u->name,
+            ])->values()->all(),
+            // Documents de travail rédigés à plusieurs sur cette tâche.
+            'documents' => $task->documents
+                ->sortBy('id')
+                ->map(fn (ProjectTaskDocument $d) => [
+                    'id' => $d->id,
+                    'title' => $d->title,
+                    'url' => route('admin.project.documents.edit', [$task, $d]),
+                    'savedLabel' => $d->saved_at?->format('d/m/Y H:i'),
+                ])->values()->all(),
+            'documentsUrl' => route('admin.project.documents.store', $task),
             'due_date' => $task->due_date?->toDateString(),
             'dueLabel' => $task->due_date?->format('d/m/Y'),
             'overdue' => $task->isOverdue(),
@@ -632,6 +687,39 @@ class ProjectController extends Controller
             url: $event ? route('admin.project.index', ['event_id' => $event->id]) : null,
             icon: 'layers',
         );
+    }
+
+    /**
+     * Prévient les personnes qu'on vient d'ASSOCIER à une tâche.
+     *
+     * ⚠️ Seulement les NOUVELLES, et jamais soi-même : réenregistrer une tâche
+     * pour en corriger le titre renverrait sinon une notification à toute
+     * l'équipe, à chaque fois - et des notifications qu'on apprend à ignorer ne
+     * préviennent plus de rien.
+     *
+     * @param  list<int>  $avant
+     * @param  list<int>  $apres
+     */
+    private function notifyCollaborators(ProjectTask $task, array $avant, array $apres, Request $request): void
+    {
+        $nouveaux = array_diff($apres, $avant, [(int) $request->user()?->id]);
+        if ($nouveaux === []) {
+            return;
+        }
+
+        $event = $task->event;
+
+        foreach (User::whereIn('id', $nouveaux)->get() as $membre) {
+            Notifier::user(
+                $membre,
+                kind: 'task_assigned',
+                title: 'Vous êtes associé à une tâche',
+                body: '« '.$task->title.' » - '.($event?->title ?: 'colloque')
+                    .($task->due_date ? ' - échéance '.$task->due_date->format('d/m/Y') : ''),
+                url: $event ? route('admin.project.index', ['event_id' => $event->id]) : null,
+                icon: 'layers',
+            );
+        }
     }
 
     /**

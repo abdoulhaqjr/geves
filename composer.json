@@ -16,6 +16,7 @@
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "phpoffice/phpword": "1.4",
+        "pusher/pusher-php-server": "^7.2",
         "setasign/fpdf": ">=1.9 <2.0",
         "setasign/fpdi": ">=2.6.9 <3.0",
         "simplesoftwareio/simple-qrcode": "^4.2",

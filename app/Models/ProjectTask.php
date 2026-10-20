@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -114,5 +115,52 @@ class ProjectTask extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(ProjectTaskComment::class, 'task_id');
+    }
+
+    /**
+     * Les personnes ASSOCIÉES à la tâche, en plus de son responsable.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function collaborators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_task_collaborators', 'task_id', 'user_id')
+            ->withTimestamps()
+            ->orderBy('users.name');
+    }
+
+    /** @return HasMany<ProjectTaskDocument, $this> */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ProjectTaskDocument::class, 'task_id');
+    }
+
+    /**
+     * Identifiants de tous ceux que la tâche désigne : son responsable ET ses
+     * collaborateurs.
+     *
+     * ⚠️ **Source unique de « qui travaille sur cette tâche ».** Trois écrans
+     * posent la question - le document, les notifications, le filtre du tableau -
+     * et trois réponses finiraient par diverger ; c'est déjà arrivé au filtre
+     * « Responsable », qui ignorait les collaborateurs.
+     *
+     * @return list<int>
+     */
+    public function associateIds(): array
+    {
+        $ids = $this->relationLoaded('collaborators')
+            ? $this->collaborators->pluck('id')->all()
+            : $this->collaborators()->pluck('users.id')->all();
+
+        if ($this->assignee_id) {
+            $ids[] = (int) $this->assignee_id;
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    public function isAssociate(?User $user): bool
+    {
+        return $user !== null && in_array((int) $user->id, $this->associateIds(), true);
     }
 }

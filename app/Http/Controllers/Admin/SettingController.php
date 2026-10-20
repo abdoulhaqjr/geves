@@ -103,6 +103,14 @@ class SettingController extends Controller
         'orcid_environment' => 'orcid.environment',
         'orcid_client_id' => 'orcid.client_id',
         'orcid_client_secret' => 'orcid.client_secret',
+        // Temps réel : protocole Pusher, serveur hébergé. ⚠️ Le SECRET n'est pas
+        // ici - il est chiffré à part, comme celui de Turnstile.
+        'realtime_app_id' => 'realtime.app_id',
+        'realtime_key' => 'realtime.key',
+        'realtime_host' => 'realtime.host',
+        'realtime_port' => 'realtime.port',
+        'realtime_scheme' => 'realtime.scheme',
+        'realtime_cluster' => 'realtime.cluster',
     ];
 
     public function edit(): View
@@ -166,6 +174,13 @@ class SettingController extends Controller
             'orcid_environment' => $g('orcid.environment', 'sandbox'),
             'orcid_client_id' => $g('orcid.client_id'),
             'orcid_client_secret' => $g('orcid.client_secret'),
+            'realtime_enabled' => (bool) Settings::get('realtime.enabled', config('broadcasting.default') === 'pusher'),
+            'realtime_app_id' => $g('realtime.app_id', (string) config('broadcasting.connections.pusher.app_id')),
+            'realtime_key' => $g('realtime.key', (string) config('broadcasting.connections.pusher.key')),
+            'realtime_host' => $g('realtime.host', (string) config('broadcasting.connections.pusher.options.host')),
+            'realtime_port' => $g('realtime.port', (string) config('broadcasting.connections.pusher.options.port', '443')),
+            'realtime_scheme' => $g('realtime.scheme', (string) config('broadcasting.connections.pusher.options.scheme', 'https')),
+            'realtime_cluster' => $g('realtime.cluster', (string) config('broadcasting.connections.pusher.options.cluster')),
         ];
 
         // Les agents IA sont un onglet de cette page : leur éditeur a besoin
@@ -195,6 +210,17 @@ class SettingController extends Controller
             'orcid_environment' => ['nullable', 'in:sandbox,production'],
             'turnstile_site_key' => ['nullable', 'string', 'max:255'],
             'turnstile_secret_key' => ['nullable', 'string', 'max:255'],
+            'realtime_app_id' => ['nullable', 'string', 'max:120'],
+            'realtime_key' => ['nullable', 'string', 'max:255'],
+            'realtime_secret' => ['nullable', 'string', 'max:255'],
+            // ⚠️ L'HÔTE est un nom de domaine, pas une URL : le client Pusher
+            // compose lui-même le schéma et le port. Collé en « https://… », il
+            // produirait « wss://https://… » et la connexion échouerait sans
+            // que rien ne le dise.
+            'realtime_host' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9.\-]+$/'],
+            'realtime_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'realtime_scheme' => ['nullable', 'in:http,https'],
+            'realtime_cluster' => ['nullable', 'string', 'max:60'],
             // Deux formes (large, compacte), chacune avec sa version pour fonds
             // sombres - facultative : à défaut, le logo clair est blanchi en CSS.
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
@@ -215,7 +241,7 @@ class SettingController extends Controller
         if ($validator->fails()) {
             $tab = $this->tabForField((string) array_key_first($validator->errors()->toArray()));
 
-            return back()->withInput($request->except('turnstile_secret_key'))
+            return back()->withInput($request->except(['turnstile_secret_key', 'realtime_secret']))
                 ->withErrors($validator)->with('settings_tab', $tab);
         }
 
@@ -226,6 +252,7 @@ class SettingController extends Controller
         $payload['hal.enabled'] = $request->boolean('hal_enabled');
         $payload['cookies.notice_enabled'] = $request->boolean('cookies_notice_enabled');
         $payload['fedapay.card'] = $request->boolean('fedapay_card');
+        $payload['realtime.enabled'] = $request->boolean('realtime_enabled');
 
         // Tolère le collage d'une ligne d'.env entière (« LIVEKIT_API_KEY=xxx »)
         // dans un champ d'identifiant : on ne conserve que la valeur.
@@ -240,6 +267,11 @@ class SettingController extends Controller
             Settings::set('turnstile.secret_key', '');
         } elseif ($request->filled('turnstile_secret_key')) {
             Settings::set('turnstile.secret_key', Crypt::encryptString(trim((string) $request->input('turnstile_secret_key'))));
+        }
+        if ($request->boolean('realtime_secret_remove')) {
+            Settings::set('realtime.secret', '');
+        } elseif ($request->filled('realtime_secret')) {
+            Settings::set('realtime.secret', Crypt::encryptString(trim((string) $request->input('realtime_secret'))));
         }
         $this->saveLogos($request);
         $toucheBanniere = $this->saveBanners($request);
@@ -381,7 +413,7 @@ class SettingController extends Controller
             str_starts_with($field, 'turnstile_'), $field === 'cookies_notice_enabled' => 'security',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
-            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_') => 'integrations',
+            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_'), str_starts_with($field, 'realtime_') => 'integrations',
             default => 'general',
         };
     }

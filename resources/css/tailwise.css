@@ -641,6 +641,48 @@
 .ukc-checklist__add { display: flex; gap: 6px; margin-top: 4px; }
 .ukc-checklist__add input { flex: 1 1 auto; }
 
+/* Personnes associées à une tâche de projet : pastilles à bascule.
+   ⚠️ Pas de liste déroulante multiple : le vivier est court (l'équipe de
+   l'événement), et un `<select multiple>` oblige à maintenir Ctrl enfoncé pour
+   en choisir plusieurs - geste que presque personne ne connaît, et qui efface
+   toute la sélection quand on le rate. */
+.ukc-people-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.ukc-people-pick .pick {
+    border: 1px solid var(--ukc-border, #e4e8f0);
+    background: #fff;
+    color: var(--ukc-text, #1a2235);
+    border-radius: 999px;
+    padding: 4px 11px;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+.ukc-people-pick .pick:hover { border-color: var(--ukc-blue, #223ea4); }
+/* ⚠️ La bordure est posée sur les DEUX états : réservée à l'état allumé, elle
+   décalerait toute la rangée au moment du clic. */
+.ukc-people-pick .pick.on {
+    background: var(--ukc-blue, #223ea4);
+    border-color: var(--ukc-blue, #223ea4);
+    color: #fff;
+}
+
+/* Documents de travail listés dans le panneau d'une tâche. */
+.ukc-doc-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ukc-doc-list a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--ukc-border, #e4e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+}
+.ukc-doc-list a:hover { border-color: var(--ukc-blue, #223ea4); }
+.ukc-doc-list a strong { flex: 1 1 auto; min-width: 0; }
+.ukc-doc-list a span { font-size: 11.5px; color: var(--ukc-muted, #6b7488); }
+.ukc-doc-new { display: flex; gap: 6px; }
+.ukc-doc-new input { flex: 1 1 auto; min-width: 0; }
+
 .ukc-comment-add { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .ukc-comment-add .ukc-btn { align-self: flex-end; }
 .ukc-comments { display: flex; flex-direction: column; gap: 8px; }

@@ -307,6 +307,25 @@
                             @foreach ($team as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
                         </select>
                     </div>
+                    {{-- ⚠️ Le responsable RÉPOND de la tâche ; les personnes associées y
+                         travaillent avec lui. Les deux coexistent : fondre l'un dans
+                         l'autre ferait disparaître la redevabilité, qui est ce qu'un
+                         tableau de projet sert à tenir. Ce sont ces personnes-là qui
+                         pourront écrire dans les documents de la tâche. --}}
+                    <div class="ukc-form-row">
+                        <label>Personnes associées
+                            <span style="color:var(--ukc-muted);font-weight:500;" x-show="(task.collaborator_ids || []).length"
+                                  x-text="'- ' + task.collaborator_ids.length"></span>
+                        </label>
+                        <div class="ukc-people-pick">
+                            @foreach ($team as $u)
+                                <button type="button" class="pick" :class="{ on: estCollaborateur({{ $u->id }}) }"
+                                        @click="basculeCollaborateur({{ $u->id }})"
+                                        :aria-pressed="estCollaborateur({{ $u->id }}) ? 'true' : 'false'">{{ $u->name }}</button>
+                            @endforeach
+                        </div>
+                        <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Elles sont prévenues, et peuvent rédiger les documents de la tâche.</span>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                         <div class="ukc-form-row"><label>Début</label><input type="date" x-model="task.start_date"></div>
                         <div class="ukc-form-row"><label>Échéance</label><input type="date" x-model="task.due_date"></div>
@@ -342,6 +361,32 @@
                         </div>
                     </div>
                 </form>
+
+                {{-- Documents de travail (tâche existante).
+                     ⚠️ HORS du formulaire de la tâche : la création d'un document est
+                     son propre envoi, et deux formulaires ne s'imbriquent pas. --}}
+                <div class="ukc-form-row" x-show="task.id" style="margin-top:4px;">
+                    <label>Documents de travail</label>
+                    <ul class="ukc-doc-list">
+                        <template x-for="d in task.documents" :key="d.id">
+                            <li>
+                                <a :href="d.url">
+                                    <x-ukc.icon name="file" :size="15" />
+                                    <strong x-text="d.title"></strong>
+                                    <span x-text="d.savedLabel ? 'modifié le ' + d.savedLabel : 'vide'"></span>
+                                </a>
+                            </li>
+                        </template>
+                    </ul>
+                    <p x-show="(task.documents || []).length === 0" style="color:var(--ukc-muted);font-size:12.5px;margin:0 0 8px;">
+                        Aucun document. Créez-en un pour le rédiger à plusieurs, en direct.
+                    </p>
+                    <form method="POST" :action="task.documentsUrl" class="ukc-doc-new">
+                        @csrf
+                        <input type="text" name="title" maxlength="200" required placeholder="Intitulé du document…">
+                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Créer</button>
+                    </form>
+                </div>
 
                 {{-- Commentaires (tâche existante) --}}
                 <div class="ukc-form-row" x-show="task.id" style="margin-top:4px;">

@@ -1038,7 +1038,7 @@ document.addEventListener('alpine:init', () => {
 
         // ---- Panneau tâche ----
         blankTask(status = 'todo') {
-            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', start_date: '', due_date: '', checklist: [], comments: [] };
+            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', collaborator_ids: [], documents: [], documentsUrl: '', start_date: '', due_date: '', checklist: [], comments: [] };
         },
         openNewTask(status = 'todo') {
             this.task = this.blankTask(status);
@@ -1050,6 +1050,12 @@ document.addEventListener('alpine:init', () => {
                 id: t.id, title: t.title || '', description: t.description || '',
                 status: t.status || 'todo', priority: t.priority || 'normal',
                 phase: t.phase || '', link_key: t.link_key || '', assignee_id: t.assignee_id || '',
+                // ⚠️ Copie, pas référence : modifier la liste du panneau
+                // retoucherait sinon la carte du tableau derrière, y compris
+                // quand on referme sans enregistrer.
+                collaborator_ids: Array.isArray(t.collaborator_ids) ? t.collaborator_ids.slice() : [],
+                documents: Array.isArray(t.documents) ? t.documents.slice() : [],
+                documentsUrl: t.documentsUrl || '',
                 start_date: t.start_date || '', due_date: t.due_date || '',
                 checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
                 comments: [],
@@ -1069,6 +1075,21 @@ document.addEventListener('alpine:init', () => {
             this.newCheck = '';
         },
         removeCheck(i) { this.task.checklist.splice(i, 1); },
+
+        // ---- Personnes associées ----
+        // ⚠️ Elles ne remplacent PAS le responsable : une tâche garde quelqu'un
+        // qui en répond, et réunit autour de lui ceux qui y travaillent. Ce sont
+        // eux qui pourront écrire dans son document.
+        basculeCollaborateur(id) {
+            const n = Number(id);
+            const liste = (this.task.collaborator_ids = this.task.collaborator_ids || []);
+            const i = liste.indexOf(n);
+            if (i >= 0) liste.splice(i, 1);
+            else liste.push(n);
+        },
+        estCollaborateur(id) {
+            return (this.task.collaborator_ids || []).includes(Number(id));
+        },
         saveTask() {
             if (this.saving || !(this.task.title || '').trim()) return;
             this.saving = true;
@@ -1082,6 +1103,7 @@ document.addEventListener('alpine:init', () => {
                     status: this.task.status, priority: this.task.priority,
                     phase: this.task.phase, link_key: this.task.link_key,
                     assignee_id: this.task.assignee_id || null,
+                    collaborator_ids: this.task.collaborator_ids || [],
                     start_date: this.task.start_date || null, due_date: this.task.due_date || null,
                     checklist_json: JSON.stringify(this.task.checklist || []),
                 }),

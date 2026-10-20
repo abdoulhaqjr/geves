@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\SettingAgentController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SpaceController;
 use App\Http\Controllers\Admin\SubmissionFormController;
+use App\Http\Controllers\Admin\TaskDocumentController;
 use App\Http\Controllers\Admin\TemplateDesignerController;
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Admin\UserController;
@@ -512,6 +513,29 @@ Route::prefix('admin')->group(function () {
             Route::post('/projet/jalons/{milestone}/basculer', [ProjectController::class, 'toggleMilestone'])->name('admin.project.milestones.toggle');
             Route::post('/projet/jalons/{milestone}/echeance', [ProjectController::class, 'rescheduleMilestone'])->name('admin.project.milestones.reschedule');
             Route::delete('/projet/jalons/{milestone}', [ProjectController::class, 'destroyMilestone'])->name('admin.project.milestones.destroy');
+
+            // Documents de travail d'une tâche, rédigés à plusieurs.
+            //
+            // ⚠️⚠️ **LE DOCUMENT EST IMBRIQUÉ SOUS SA TÂCHE, ET CE N'EST PAS
+            // COSMÉTIQUE.** `edition.cap:project` rattache la requête à son
+            // événement en lisant `event_id` sur le premier modèle lié de la
+            // route ; un document n'en porte pas, donc une route
+            // `/projet/documents/{document}` tomberait en 403 pour tout le monde
+            // sauf le super-administrateur.
+            //
+            // ⚠️ `scopeBindings()` exige en plus que le document appartienne à
+            // CETTE tâche : sans lui, une tâche accessible plus l'identifiant
+            // d'un document d'un AUTRE événement ouvriraient le second.
+            Route::prefix('/projet/taches/{task}')->scopeBindings()->group(function () {
+                Route::post('/documents', [TaskDocumentController::class, 'store'])->name('admin.project.documents.store');
+                Route::get('/documents/{document}', [TaskDocumentController::class, 'edit'])->name('admin.project.documents.edit');
+                Route::get('/documents/{document}/etat', [TaskDocumentController::class, 'state'])->name('admin.project.documents.state');
+                Route::post('/documents/{document}', [TaskDocumentController::class, 'save'])->name('admin.project.documents.save');
+                Route::put('/documents/{document}', [TaskDocumentController::class, 'rename'])->name('admin.project.documents.rename');
+                Route::delete('/documents/{document}', [TaskDocumentController::class, 'destroy'])->name('admin.project.documents.destroy');
+                Route::post('/documents/{document}/versions', [TaskDocumentController::class, 'storeVersion'])->name('admin.project.documents.versions.store');
+                Route::get('/documents/{document}/versions/{version}', [TaskDocumentController::class, 'version'])->name('admin.project.documents.versions.show');
+            });
         });
 
         // Programme / créneaux (structure de l'événement).

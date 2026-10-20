@@ -4939,6 +4939,162 @@ déjà son adresse, et la rendre aussi à l'entrée ferait deux URL pour le mêm
   (prompt/modèle joint), conservée pour les documents non standard. Presets
   `SecretariatController::PRESETS`.
 
+### Documents de tâche : rédaction À PLUSIEURS, en direct
+
+Une tâche du module Projet porte désormais **un responsable ET des personnes
+associées** (`project_task_collaborators`), et ces personnes rédigent ensemble
+des **documents de travail** (`project_task_documents`), chacun dans une page à
+lui (`admin.project.documents.edit`).
+
+- ⚠️⚠️ **LE RESPONSABLE N'EST PAS REMPLACÉ.** `project_tasks.assignee_id` reste :
+  une tâche garde **quelqu'un qui en répond**, et réunit autour de lui ceux qui y
+  travaillent. Fondre les deux ferait disparaître la redevabilité, qui est
+  précisément ce qu'un tableau de projet sert à tenir. Source unique de « qui
+  travaille là-dessus » : **`ProjectTask::associateIds()`**.
+- ⚠️ **Les collaborateurs se bornent au MÊME vivier que le responsable**
+  (`ProjectController::assigneePool()`). Ils ouvrent le plan de travail de
+  l'événement : un identifiant posté n'est pas une autorisation.
+- **Lecture et écriture ne se confondent pas** : lire = qui ouvre le module
+  Projet de l'événement (`ProjectTaskDocument::isVisibleTo()`), écrire = les
+  personnes associées, le créateur du document, l'**administrateur**
+  (`isEditableBy()`). ⚠️ L'administrateur, pas le seul super administrateur :
+  le modèle lui donne accès à tout, et `isColloqueSuperAdmin()` dans une garde
+  refermerait ce qu'on vient de lui ouvrir (cf. `DroitsDeLAdministrateurTest`,
+  qui interdit cet appel hors de `User`). Sans cette distinction, « associer quelqu'un » ne voudrait
+  rien dire, puisque tout le monde écrirait déjà. ⚠️ `isEditableBy()` vérifie
+  l'accès au module **en premier** : quelqu'un retiré de l'équipe ne doit plus
+  écrire, même si son nom est resté dans une vieille tâche.
+
+#### Ce qui circule, et par où
+
+- ⚠️⚠️ **CE N'EST PAS DU TEXTE QUI CIRCULE, CE SONT DES OPÉRATIONS.** Deux
+  personnes qui tapent au même endroit ne peuvent pas se réconcilier en
+  s'envoyant leur texte - le dernier arrivé écraserait l'autre. **Yjs** (CRDT)
+  échange des modifications qui **fusionnent dans n'importe quel ordre** et
+  donnent le même résultat partout. Éditeur : **Tiptap** (`@tiptap/*`,
+  `y-prosemirror`). ⚠️ **Pas CKEditor**, pourtant déjà dans le projet : sa
+  collaboration temps réel est derrière une offre payante hébergée.
+- ⚠️⚠️ **LES FRAPPES NE PASSENT PAS PAR PHP.** Elles voyagent en **événements
+  client** (`whisper`) d'un navigateur à l'autre à travers le service WebSocket.
+  Le serveur n'intervient qu'à deux moments : **autoriser** l'entrée dans le
+  canal (`routes/channels.php`) et **conserver** l'état par instantanés espacés.
+- ⚠️⚠️ **UN NAVIGATEUR NE PARLE PAS À REDIS.** Redis est un backplane entre
+  processus serveur ; il ne donne aucun point d'entrée WebSocket à une page. Il
+  faudrait un démon Node (Soketi, laravel-echo-server) devant lui - ce que
+  l'hébergement mutualisé ne fait pas tourner. D'où un **service hébergé** qui
+  parle le protocole Pusher (PieSocket, comme sur la référence interne), désigné
+  par son hôte. Redis reste utile pour la file et le cache.
+- Réglages dans **Réglages › Intégrations** (`realtime.*`), surchargés au runtime
+  par `applySettingsToConfig()`. ⚠️ **L'interrupteur ne passe pas par `filled()`**
+  (même piège que `cookies.notice_enabled` et `fedapay.card`) : décoché il vaut
+  `false`, et « couper le temps réel » ne serait jamais appliqué.
+- ⚠️ **Le SECRET ne descend jamais dans la page** : `Realtime::clientConfig()` ne
+  rend que la clé publique et l'adresse ; le secret signe `/broadcasting/auth` et
+  rien d'autre. Un cas de garde l'éprouve sur le HTML rendu.
+- ⚠️ **Les trois identifiants sont exigés ENSEMBLE** (`app_id`, `key`, `secret`) :
+  avec la clé publique seule, la page ouvrirait une connexion que le serveur ne
+  saurait pas autoriser, et l'éditeur attendrait des pairs qui n'arrivent jamais.
+- ⚠️ **L'hôte est un nom de domaine, pas une URL** : le client compose lui-même
+  le schéma et le port. Collé en « https://… », il produirait « wss://https://… »
+  et la connexion échouerait sans que rien ne le dise.
+
+#### Ce qui tient debout sans le temps réel
+
+⚠️⚠️ **TOUT, SAUF LA SIMULTANÉITÉ.** Sans clés, le document s'ouvre, s'écrit,
+s'enregistre et garde son historique. Mieux : comme la fusion se fait **aussi au
+moment du refus de concurrence**, deux personnes qui écrivent en même temps sans
+temps réel **ne se perdent pas non plus** - elles ne se voient simplement pas
+taper. La page le **dit** au lieu de laisser croire le contraire.
+
+#### Conservation
+
+- `revision` est un **contrôle de concurrence** : un enregistrement parti d'une
+  révision dépassée reçoit **409 avec l'état du serveur**. ⚠️ **Un refus n'est pas
+  une perte** : le poste repoussé **fusionne** cet état au sien - propriété du
+  CRDT - puis réessaie. Sans la fusion, réessayer écraserait l'autre ; sans borne
+  (`peutReessayer`, 3), une frappe continue d'en face ferait boucler le
+  navigateur jusqu'à le bloquer.
+- ⚠️ **Un seul pair écrit en base** (`estLeScribe`, plus petit identifiant) :
+  sans élection, cinq rédacteurs enverraient cinq instantanés du même document
+  toutes les deux secondes. La règle ne dépend ni d'une horloge ni de l'ordre
+  d'arrivée, donc tous les postes désignent le même sans se concerter ; elle
+  écarte qui ne peut pas écrire, sinon un lecteur élu scribe n'enregistrerait
+  jamais rien.
+- ⚠️ **Une version ne se verse pas à chaque enregistrement**
+  (`VERSION_EVERY_MINUTES`, 10) : l'enregistrement est automatique et fréquent,
+  et l'historique deviendrait illisible - des centaines d'entrées pour une
+  après-midi, plus aucun point de repère où revenir.
+- ⚠️⚠️ **LE RETOUR EN ARRIÈRE SE FAIT DANS L'ÉDITEUR, PAS EN BASE.** Réécrire la
+  colonne `state` avec un état ancien ne reviendrait en arrière **chez personne** :
+  les postes connectés tiennent le document en mémoire, et deux états Yjs
+  **fusionnent** au lieu de se remplacer - le texte « retiré » reparaîtrait au
+  premier enregistrement suivant. Restaurer est donc une **modification
+  ordinaire** (`setContent`), qui se propage et s'annule comme les autres ; le
+  serveur ne fait que rendre le contenu d'alors.
+- ⚠️ `state` est conservé en **base64** : une colonne texte passe de SQLite à
+  MySQL sans manipulation d'octets. `html` est le rendu **assaini**, pour tout ce
+  qui lit le document sans ouvrir l'éditeur - le déduire côté serveur
+  demanderait d'exécuter Yjs en PHP.
+
+#### Pièges déjà payés
+
+- ⚠️⚠️ **LE DOCUMENT EST IMBRIQUÉ SOUS SA TÂCHE**
+  (`/projet/taches/{task}/documents/{document}`), et ce n'est pas cosmétique :
+  `edition.cap:project` rattache la requête à son événement en lisant `event_id`
+  sur le **premier modèle lié** de la route. Un document n'en porte pas - une
+  route `/projet/documents/{document}` tomberait en **403 pour tout le monde**
+  sauf le super-administrateur. `scopeBindings()` exige en plus que le document
+  appartienne à **cette** tâche : sans lui, une tâche accessible plus
+  l'identifiant d'un document d'un autre événement ouvriraient le second.
+- ⚠️ **`App\Support\Html` ne convient pas** : sa liste blanche sert les
+  **résumés** (gras, italique, listes, aucun attribut), déposés par des milliers
+  de personnes du dehors - l'élargir élargirait leur surface. D'où
+  **`App\Support\TaskDocumentHtml`**, qui **marche dans l'arbre DOM** : dès qu'un
+  attribut est autorisé (`href`), un filtre par expression régulière devient une
+  liste noire, donc fausse par construction. Schémas d'URL en liste blanche -
+  `javascript:` n'y est pas, sans quoi « cliquer sur le lien » exécuterait le
+  code d'un rédacteur chez tous les autres, dans le back-office. Une balise
+  refusée est **dépliée**, pas supprimée : son texte est le travail de quelqu'un.
+  ⚠️ « Attribut conservé » et « attribut qui porte une URL » sont **deux listes** :
+  les confondre ferait sauter le contrôle de schéma le jour où une seconde
+  balise garde un attribut quelconque.
+- ⚠️ **Un message du canal est plafonné à 10 Ko**, base64 compris, et un message
+  au-dessus **est refusé, pas tronqué** : la frappe disparaîtrait sans un mot.
+  `tropGrosPourLeCanal` (6 000 octets d'utile) fait basculer sur le serveur -
+  enregistrer, puis demander aux pairs de relire l'état.
+- ⚠️ **C'est l'ARRIVANT qui demande à se synchroniser**, et il n'envoie qu'un
+  **vecteur d'état** (quelques octets) : le pair répond par la seule différence
+  qui manque. Envoyer l'état complet dépasserait le plafond sur un document d'une
+  page. ⚠️ **Un seul pair répond** (même élection), le demandeur étant écarté du
+  calcul - sinon, quand c'est lui le scribe, personne ne répondrait.
+- ⚠️ **L'annulation native de l'éditeur est coupée** (`undoRedo: false`) : à
+  plusieurs, elle défait la frappe de n'importe qui. Celle de `Collaboration` ne
+  défait que les siennes.
+- ⚠️ **Le curseur d'un voisin est en `position: relative`** : posé dans le flux,
+  il décalerait le texte à chaque frappe d'en face - le paragraphe tremblerait
+  sous les doigts de qui écrit.
+- ⚠️ **`min-width: 0` sur les pistes de `.ukc-doc-layout`** : sans lui, un bloc
+  de code collé impose sa largeur intrinsèque et toute la page défile
+  latéralement. Même ligne que `.layout-plan > *`.
+- ⚠️ **Le reset de Tailwind enlève les puces** : les listes de l'éditeur
+  rétablissent `list-style` explicitement, comme les trois surfaces de chat.
+- ⚠️ **Entrée Vite SÉPARÉE** (`resources/js/task-document.js`) : l'éditeur et le
+  CRDT pèsent ~610 Ko, que tout le back-office et tout l'espace participant
+  téléchargeraient depuis `app.js` pour une page qu'ils n'ouvrent pas.
+- ⚠️ **`sendBeacon` au départ de la page** porte le jeton dans le CORPS : il ne
+  peut pas poser d'en-tête, et Laravel lit `_token` là aussi.
+- ⚠️ **Le choix des personnes associées est une rangée de pastilles**, pas un
+  `<select multiple>` : ce dernier oblige à maintenir Ctrl enfoncé, geste que
+  presque personne ne connaît et qui efface toute la sélection quand on le rate.
+
+Tests : `tests/Feature/DocumentDeTacheTest.php` (17 cas, **7 sabotages
+vérifiés**) et `resources/js/task-document-pure.test.js` (18 cas, **4 sabotages
+vérifiés**). ⚠️ Les règles qui décident - qui enregistre, ce qui tient dans un
+message, quand renoncer - vivent dans **`task-document-pure.js`**, hors de
+l'éditeur : enfermées dans une fermeture qui réclame un navigateur, un WebSocket
+et deux pairs connectés, elles seraient intestables. Même grammaire que
+`meeting-pure.js` et `program-pure.js`.
+
 ### Architecture & sécurité
 
 - **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`

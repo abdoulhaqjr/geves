@@ -1,0 +1,253 @@
+/* Rédaction à plusieurs d'un document de tâche (module Projet).
+   Feuille chargée UNIQUEMENT par cette page : l'éditeur et ses curseurs
+   n'existent nulle part ailleurs, et ses styles n'ont rien à faire dans le
+   paquet commun du back-office. */
+
+.ukc-doc-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.ukc-doc-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: var(--ukc-card, #fff);
+    border: 1px solid var(--ukc-border, #e4e8f0);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.ukc-doc-tools button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ukc-text, #1a2235);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ukc-doc-tools button:hover {
+    background: color-mix(in srgb, var(--ukc-blue, #223ea4) 10%, transparent);
+    color: var(--ukc-blue, #223ea4);
+}
+
+.ukc-doc-bar__right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12.5px;
+}
+
+.ukc-doc-presence {
+    color: var(--ukc-muted, #6b7488);
+}
+
+/* ⚠️ L'état de conservation est la seule chose qui dise si l'on peut fermer
+   l'onglet : il porte donc une couleur par état, pas un gris uniforme. */
+.ukc-doc-etat {
+    font-weight: 600;
+    color: var(--ukc-muted, #6b7488);
+}
+
+.ukc-doc-etat[data-etat='enregistre'] {
+    color: var(--ukc-green, #009933);
+}
+
+.ukc-doc-etat[data-etat='modifie'],
+.ukc-doc-etat[data-etat='cours'] {
+    color: #a66300;
+}
+
+.ukc-doc-etat[data-etat='erreur'] {
+    color: var(--ukc-red, #c62828);
+}
+
+.ukc-doc-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    font-size: 13px;
+}
+
+.ukc-doc-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+    align-items: start;
+}
+
+/* ⚠️ `min-width: 0` sur la piste de l'éditeur : sans lui, un bloc de code ou un
+   tableau collé y impose sa largeur intrinsèque, la piste `1fr` s'étire pour
+   l'absorber et TOUTE la page défile latéralement. Même ligne que
+   `.layout-plan > *`. */
+.ukc-doc-layout > * {
+    min-width: 0;
+}
+
+@media (max-width: 1040px) {
+    .ukc-doc-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.ukc-doc-page {
+    padding: 28px 32px;
+}
+
+@media (max-width: 560px) {
+    .ukc-doc-page {
+        padding: 18px 16px;
+    }
+}
+
+.ukc-doc-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ukc-doc-who {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 13.5px;
+}
+
+.ukc-doc-who .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    /* Teinte seule : la saturation et la clarté restent fixées ici, pour que la
+       pastille garde son contraste quelle que soit la couleur tirée du nom. */
+    background: hsl(var(--h) 70% 45%);
+}
+
+.ukc-doc-versions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.ukc-doc-version {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ukc-doc-version:hover {
+    border-color: var(--ukc-border, #e4e8f0);
+    background: var(--ukc-bg, #f6f8fc);
+}
+
+.ukc-doc-version strong {
+    font-size: 13px;
+}
+
+.ukc-doc-version span {
+    font-size: 11.5px;
+    color: var(--ukc-muted, #6b7488);
+}
+
+/* --- Zone de frappe ------------------------------------------------------ */
+
+.ukc-doc-editeur .tiptap {
+    min-height: 60vh;
+    outline: none;
+    font-size: 15px;
+    line-height: 1.65;
+    /* ⚠️ La PROSE garde sa mesure : au-delà de ~75 caractères par ligne, l'œil
+       perd le retour à la ligne. La carte, elle, prend la largeur disponible. */
+    max-width: 78ch;
+}
+
+.ukc-doc-editeur .tiptap > * + * {
+    margin-top: 0.75em;
+}
+
+.ukc-doc-editeur .tiptap h1 { font-size: 1.7em; font-weight: 700; }
+.ukc-doc-editeur .tiptap h2 { font-size: 1.4em; font-weight: 700; }
+.ukc-doc-editeur .tiptap h3 { font-size: 1.18em; font-weight: 600; }
+
+.ukc-doc-editeur .tiptap ul,
+.ukc-doc-editeur .tiptap ol {
+    padding-left: 1.4em;
+}
+
+/* ⚠️ Le reset de Tailwind met `list-style: none` sur TOUTES les listes : sans
+   ces deux règles, une liste rédigée ici ne garde ni puce ni numéro - il ne
+   reste qu'un texte indenté. Même piège que les listes du chat. */
+.ukc-doc-editeur .tiptap ul { list-style: disc outside; }
+.ukc-doc-editeur .tiptap ol { list-style: decimal outside; }
+
+.ukc-doc-editeur .tiptap blockquote {
+    border-left: 3px solid var(--ukc-border, #e4e8f0);
+    padding-left: 12px;
+    color: var(--ukc-muted, #6b7488);
+}
+
+.ukc-doc-editeur .tiptap pre {
+    background: var(--ukc-bg, #f6f8fc);
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+}
+
+.ukc-doc-editeur .tiptap a {
+    color: var(--ukc-blue, #223ea4);
+    text-decoration: underline;
+}
+
+/* --- Curseurs des autres rédacteurs -------------------------------------- */
+
+/* ⚠️ Le trait est en `position: relative` + marges négatives : posé dans le
+   flux, il DÉCALERAIT le texte d'un pixel à chaque frappe d'un voisin - le
+   paragraphe tremblerait sous les doigts de qui écrit. */
+.collaboration-carets__caret {
+    position: relative;
+    margin-left: -1px;
+    margin-right: -1px;
+    border-left: 1px solid #0d0d0d;
+    border-right: 1px solid #0d0d0d;
+    word-break: normal;
+    pointer-events: none;
+}
+
+.collaboration-carets__label {
+    position: absolute;
+    top: -1.4em;
+    left: -1px;
+    border-radius: 4px 4px 4px 0;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    color: #fff;
+    user-select: none;
+}
