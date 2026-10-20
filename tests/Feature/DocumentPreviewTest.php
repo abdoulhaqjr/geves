@@ -39,7 +39,7 @@ it('affiche un aperçu de reçu avec des valeurs d’exemple', function () {
     $res->assertOk();
     expect($res->getContent())
         ->toContain('EXEMPLE-0001')            // reçu réel rendu avec des valeurs d'exemple
-        ->toContain('Awa Kodjo')
+        ->toContain('Awa KODJO')
         ->toContain('Aperçu du reçu - valeurs d\'exemple') // cadre d'aperçu verrouillé (comme attestation/badge)
         ->toContain('Fermer');                 // bouton de retour aux paiements
 });

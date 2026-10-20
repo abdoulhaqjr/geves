@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\AccountResetPassword;
 use App\Support\ListSort;
+use App\Support\StaffRolePermissions;
 use App\Support\StaffRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,17 @@ class UserController extends Controller
         $users = User::query()
             ->visiblesPar($moi)
             ->with('roles')
-            ->when($role !== '', fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $role)))
+            ->when($role !== '', function ($q) use ($role) {
+                if ($role === 'administrator') {
+                    $q->whereHas('roles', fn ($r) => $r->where('name', $role));
+                } elseif ($role === 'reviewer') {
+                    $q->whereIn('users.id', DB::table('participants')->where('role', 'reviewer')->select('user_id'));
+                } elseif (array_key_exists($role, StaffRoles::teamRoles())) {
+                    $q->whereIn('users.id', DB::table('event_user')->where('role', $role)->select('user_id'));
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+            })
             ->when($status !== '', fn ($q) => $q->where('is_active', $status === 'active'))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
@@ -59,6 +70,13 @@ class UserController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
+
+        $pageIds = $users->getCollection()->pluck('id')->all();
+        $eventRolesByUser = DB::table('event_user')->whereIn('user_id', $pageIds)
+            ->get(['user_id', 'role'])->groupBy('user_id')
+            ->map(fn ($assignments) => $assignments->pluck('role')->unique()->values()->all());
+        $reviewerIds = DB::table('participants')->whereIn('user_id', $pageIds)
+            ->where('role', 'reviewer')->distinct()->pluck('user_id')->all();
 
         // Comptes par rôle GLOBAL (pour les indicateurs + l'onglet Rôles).
         // whereHas plutôt que le scope role() de spatie : renvoie 0 sans lever
@@ -80,6 +98,14 @@ class UserController extends Controller
             ->get()
             ->keyBy('role');
 
+        $evaluationUsage = DB::table('participants')->where('role', 'reviewer')
+            ->whereIn('user_id', User::query()->visiblesPar($moi)->select('users.id'))
+            ->selectRaw('count(distinct user_id) as personnes, count(distinct event_id) as evenements')
+            ->first();
+        if ($evaluationUsage && $evaluationUsage->personnes > 0) {
+            $parEvenement->put('reviewer', $evaluationUsage);
+        }
+
         // Permissions RÉELLES par rôle (spatie) - source de la matrice d'accès éditable.
         $rolePermissions = Role::query()->where('guard_name', 'web')
             ->whereIn('name', array_keys(StaffRoles::ROLES))
@@ -91,14 +117,18 @@ class UserController extends Controller
         // « Support » entrait en collision avec les TROIS rôles système du modèle
         // (super-admin, admin, utilisateur), qui n'ont rien à voir avec ce
         // classement des fonctions d'équipe.
-        $support = collect(StaffRoles::ROLES)
+        $supportRoles = collect(StaffRoles::ROLES)
             ->filter(fn ($m) => $m['category'] === 'Appui')
-            ->keys()
-            ->sum(fn ($r) => $countsByRole[$r] ?? 0);
+            ->keys()->all();
+
+        $visibleIds = User::query()->visiblesPar($moi)->select('users.id');
+        $eventUsers = DB::table('event_user')->whereIn('user_id', $visibleIds);
 
         return view('admin.users.index', [
             'users' => $users,
             'role' => $role,
+            'eventRolesByUser' => $eventRolesByUser,
+            'reviewerIds' => $reviewerIds,
             'status' => $status,
             'search' => $search,
             'sort' => $sort['sort'],
@@ -111,10 +141,13 @@ class UserController extends Controller
             'rolePermissions' => $rolePermissions,
             'stats' => [
                 'total' => User::query()->visiblesPar($moi)->count(),
-                'admins' => $countsByRole['administrator'] ?? 0,
-                'reviewers' => $countsByRole['reviewer'] ?? 0,
-                'organizers' => $countsByRole['organizer'] ?? 0,
-                'support' => $support,
+                'admins' => User::query()->visiblesPar($moi)
+                    ->where(fn ($q) => $q->where('access_level', User::ACCESS_COLLOQUE_ADMIN)
+                        ->orWhereIn('users.id', User::query()->superAdministrateurs()->select('users.id')))
+                    ->count(),
+                'reviewers' => (int) ($evaluationUsage->personnes ?? 0),
+                'organizers' => (clone $eventUsers)->where('role', 'organizer')->distinct()->count('user_id'),
+                'support' => (clone $eventUsers)->whereIn('role', $supportRoles)->distinct()->count('user_id'),
             ],
         ]);
     }
@@ -180,6 +213,8 @@ class UserController extends Controller
      */
     public function updateAccess(Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->peutReglerLaMatrice(), 403);
+
         $validPerms = array_keys(StaffRoles::PERMISSIONS);
 
         foreach (StaffRoles::ROLES as $roleName => $meta) {
@@ -200,6 +235,7 @@ class UserController extends Controller
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(StaffRolePermissions::class)->forget();
 
         return redirect()->route('admin.users.index', ['tab' => 'access'])
             ->with('ukc_status', 'Matrice d’accès mise à jour.');
@@ -448,7 +484,10 @@ class UserController extends Controller
             return back()->with('ukc_error', 'Vous ne pouvez pas supprimer votre propre compte.');
         }
         // Ne pas retirer le dernier administrateur.
-        if ($user->hasRole('administrator') && User::role('administrator')->count() <= 1) {
+        if (($user->access_level === User::ACCESS_SUPER_ADMIN
+                && User::where('access_level', User::ACCESS_SUPER_ADMIN)->count() <= 1)
+            || (User::query()->superAdministrateurs()->whereKey($user->id)->exists()
+                && User::query()->superAdministrateurs()->count() <= 1)) {
             return back()->with('ukc_error', 'Impossible de supprimer le dernier administrateur.');
         }
 

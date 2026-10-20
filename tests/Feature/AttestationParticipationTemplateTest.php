@@ -57,7 +57,7 @@ it('rend la vraie civilité et une date en toutes lettres', function () {
 
     expect($html)
         ->toContain('ATTESTATION DE PARTICIPATION')
-        ->toContain('Mme Awa Kodjo')
+        ->toContain('Mme Awa KODJO')
         ->not->toContain('Mme/M.');
 
     // Date du « Fait à … » en toutes lettres, jamais 12/10/2026.

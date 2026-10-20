@@ -137,7 +137,7 @@ it('affiche « Sa page » d’un participant en lecture seule', function () {
         ->get(route('admin.participants.preview', $p))
         ->assertOk()
         ->assertSee('lecture seule')
-        ->assertSee('Awa Kodjo')
+        ->assertSee('Awa KODJO')
         ->assertSee('AA-001')
         ->assertSee('Ma communication')
         ->assertSee('15 000');

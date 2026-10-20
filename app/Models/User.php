@@ -212,16 +212,25 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             return $query;
         }
 
-        return $query->where(fn ($q) => $q
-            ->where('access_level', '!=', self::ACCESS_SUPER_ADMIN)
-            ->orWhereNull('access_level'));
+        return $query->whereNotIn('users.id', self::query()->superAdministrateurs()->select('users.id'));
     }
 
     /** Ce compte a-t-il le droit de voir `$cible` ? {@see scopeVisiblesPar()}. */
     public static function voitLeCompte(?self $viewer, self $cible): bool
     {
         return (bool) $viewer?->isColloqueSuperAdmin()
-            || $cible->access_level !== self::ACCESS_SUPER_ADMIN;
+            || ! $cible->isColloqueSuperAdmin();
+    }
+
+    /** Même définition SQL que isColloqueSuperAdmin(), pour les listes et compteurs. */
+    public function scopeSuperAdministrateurs(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->where('access_level', self::ACCESS_SUPER_ADMIN)
+            ->orWhereHas('roles', fn (Builder $r) => $r
+                ->where('name', 'administrator')
+                ->orWhereHas('permissions', fn (Builder $p) => $p->where('name', 'manage_colloques')))
+            ->orWhereHas('permissions', fn (Builder $p) => $p->where('name', 'manage_colloques')));
     }
 
     /**
@@ -261,6 +270,21 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      * besoin d'être affecté à un événement pour l'ouvrir : il crée les
      * événements et y attache SON gestionnaire, il ne devient pas l'équipe.
      */
+    /**
+     * Peut modifier la MATRICE DES PERMISSIONS.
+     *
+     * ⚠️ C'est l'une des rares choses qui restent au super administrateur : la
+     * matrice décide de ce que chaque fonction peut faire, donc l'ouvrir à
+     * l'administrateur lui permettrait de s'accorder lui-même le cran qui lui
+     * manque. La question se pose ICI, en termes de métier - un appel direct à
+     * `isColloqueSuperAdmin()` depuis un contrôleur est le réflexe qui a
+     * refermé, au cas par cas, ce que le modèle venait d'ouvrir.
+     */
+    public function peutReglerLaMatrice(): bool
+    {
+        return $this->isColloqueSuperAdmin();
+    }
+
     public function isColloqueAdmin(): bool
     {
         return $this->isColloqueSuperAdmin() || $this->access_level === self::ACCESS_COLLOQUE_ADMIN;

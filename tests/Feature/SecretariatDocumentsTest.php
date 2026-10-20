@@ -77,7 +77,7 @@ it('imprime la liste de présence avec les participants', function () {
 
     $this->actingAs($staff, 'web')
         ->get(route('admin.secretariat.documents.print', ['event' => $event, 'type' => 'presence']))
-        ->assertOk()->assertSee('Liste de présence')->assertSee('Kodjo Awa');
+        ->assertOk()->assertSee('Liste de présence')->assertSee('Awa KODJO');
 });
 
 it('imprime la feuille d’émargement avec des lignes vierges', function () {
@@ -111,7 +111,7 @@ it('imprime une liste de présence vierge (sans les participants)', function () 
         ->assertOk()
         ->assertSee('Liste de présence')
         ->assertSee('Émargement')
-        ->assertDontSee('Kodjo Awa');
+        ->assertDontSee('Awa KODJO');
 });
 
 it('enregistre l’en-tête des documents et le reporte sur l’impression', function () {

@@ -29,6 +29,12 @@ Larastan **niveau 5**.
 ### Terminologie de l'évaluation
 
 - Dans les textes affichés, employer **évaluateur** et **évaluation**. Les identifiants techniques historiques (`reviewer`, `review`, chemins et clés de routes contenant `relecteur` ou `relecture`) restent stables pour préserver les liens et données existants.
+
+### Comptes et droits (2026-10-20)
+
+- Un compte désactivé ne peut plus se connecter ; `active.user` coupe aussi sa session à la requête suivante, dans les espaces participant, admin et les routes partagées. Le challenge 2FA vérifie à nouveau le statut.
+- Seul un super administrateur peut attribuer `access_level=super_admin` ou modifier la matrice des permissions. La visibilité des super administrateurs couvre aussi les anciens rôles `administrator` et la permission `manage_colloques`, y compris avant une usurpation de compte.
+- Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
 ### Cookies : un bandeau qui INFORME, parce qu'il n'y a rien à refuser
@@ -6014,6 +6020,9 @@ champs prénom/nom distincts. Les listes, le programme, les badges, le livre des
 résumés, les reçus et les nouveaux courriels/attestations utilisent cette règle.
 Les anciens auteurs ne possédant qu'un champ `name` conservent leur texte saisi.
 Les attestations déjà émises gardent leur `recipient_name` signé.
+Dans les tests, le nom de famille affiché est en majuscules (`Awa KODJO`).
+Pour vérifier les badges prêts, cibler la ligne du destinataire : l'aperçu du
+modèle peut afficher le même nom d'exemple même si aucun badge n'est prêt.
 
 ## Pages d'erreur HTTP
 

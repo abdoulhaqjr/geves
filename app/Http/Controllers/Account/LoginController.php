@@ -63,7 +63,7 @@ class LoginController extends Controller
 
         $account = User::where('email', $request->input('email'))->first();
 
-        if (! $account || ! Hash::check((string) $request->input('password'), $account->password)) {
+        if (! $account || ! $account->is_active || ! Hash::check((string) $request->input('password'), $account->password)) {
             RateLimiter::hit($this->throttleKey($request));
 
             throw ValidationException::withMessages([
@@ -117,7 +117,7 @@ class LoginController extends Controller
         $id = session(self::SESSION_LOGIN_ID);
         $account = $id ? User::find($id) : null;
 
-        if (! $account) {
+        if (! $account || ! $account->is_active) {
             $this->resetChallenge();
 
             throw ValidationException::withMessages([
@@ -156,7 +156,7 @@ class LoginController extends Controller
         $id = session(self::SESSION_LOGIN_ID);
         $account = $id ? User::find($id) : null;
 
-        if ($account && $account->hasSmsEnabled()) {
+        if ($account && $account->is_active && $account->hasSmsEnabled()) {
             $this->sendOtp($account, $sms);
             session()->flash('ukc_status', 'Un nouveau code a été envoyé.');
         }

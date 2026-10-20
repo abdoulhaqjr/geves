@@ -496,16 +496,16 @@ it('filtre les participants par paiement et par invitation', function () {
     $url = fn (array $q) => route('admin.participants.index', $q + ['event_id' => $event->id]);
 
     $this->actingAs($admin, 'web')->get($url(['paid' => '1']))
-        ->assertOk()->assertSee('Paul Payeur')->assertDontSee('Sara Stagiaire');
+        ->assertOk()->assertSee('Paul PAYEUR')->assertDontSee('Sara STAGIAIRE');
 
     $this->actingAs($admin, 'web')->get($url(['paid' => '0']))
-        ->assertOk()->assertSee('Sara Stagiaire')->assertDontSee('Paul Payeur');
+        ->assertOk()->assertSee('Sara STAGIAIRE')->assertDontSee('Paul PAYEUR');
 
     $this->actingAs($admin, 'web')->get($url(['invited' => '1']))
-        ->assertOk()->assertSee('Ines Invitee')->assertDontSee('Paul Payeur');
+        ->assertOk()->assertSee('Ines INVITEE')->assertDontSee('Paul PAYEUR');
 
     $this->actingAs($admin, 'web')->get($url(['invited' => '0']))
-        ->assertOk()->assertSee('Paul Payeur')->assertDontSee('Ines Invitee');
+        ->assertOk()->assertSee('Paul PAYEUR')->assertDontSee('Ines INVITEE');
 });
 
 it('n’expose plus « En tant que » dans la liste des participants', function () {

@@ -52,7 +52,7 @@ it('rend la vraie civilité et une date en toutes lettres', function () {
 
     expect($html)
         ->toContain('ATTESTATION DE MODÉRATION')
-        ->toContain('Mme Awa Kodjo')
+        ->toContain('Mme Awa KODJO')
         ->not->toContain('Mme/M.');
 
     $longDate = $attestation->issued_at->locale('fr')->translatedFormat('j F Y');

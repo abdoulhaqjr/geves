@@ -72,7 +72,7 @@ it('rend le format, la communication et la vraie civilité sur l’attestation',
     expect($html)
         ->toContain('Orale')
         ->toContain('Pile microbienne à plante de citronnelle')
-        ->toContain('Mme Awa Kodjo')
+        ->toContain('Mme Awa KODJO')
         ->not->toContain('Mme/M.');
 
     // Date du « Fait à … » en toutes lettres (« 12 octobre 2026 »), jamais 12/10/2026.

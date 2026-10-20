@@ -19,7 +19,7 @@ it('affiche l’aperçu d’attribution avec les relecteurs de l’événement',
     $this->actingAs($staff, 'web')
         ->get(route('admin.submissions.auto-assign', ['event_id' => $event->id, 'target' => 1]))
         ->assertOk()
-        ->assertSee('Kofi Mensah')
+        ->assertSee('Kofi MENSAH')
         ->assertSee('Expertise sur l’axe');
 });
 
@@ -111,7 +111,7 @@ it('règle l’expertise depuis son onglet, plus depuis la fiche d’événement
         ->get(route('admin.submissions.reviewers', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Évaluateurs &amp; expertise', false)
-        ->assertSee('Ama Sow')
+        ->assertSee('Ama SOW')
         ->assertSee('Enregistrer les expertises');
 
     // La fiche d'événement n'a plus d'onglet Évaluation ni de matrice.

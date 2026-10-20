@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ContentSecurityPolicy;
+use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureEditionAccess;
 use App\Http\Middleware\PrefixedCsrfCookie;
 use App\Http\Middleware\SetLocale;
@@ -18,6 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Autorisation des canaux temps réel (rédaction à plusieurs des documents
+    // de tâche). ⚠️ Le point d'entrée `/broadcasting/auth` passe par la session
+    // du back-office : il porte la pile `web`, pas `api` - sans elle, aucun
+    // compte n'est reconnu et toute demande de canal est refusée.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['middleware' => ['web']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         // Page de connexion unique (participants + staff) : tous les invités y sont menés.
         $middleware->redirectGuestsTo(fn () => route('account.login'));
@@ -32,10 +41,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Langue de la requête (i18n) : compte → session → navigateur → défaut.
         $middleware->web(append: SetLocale::class);
+        // Coupe aussi les sessions désactivées sur les pages publiques et les routes partagées.
+        $middleware->web(append: EnsureActiveUser::class);
         $middleware->web(append: ContentSecurityPolicy::class);
 
         // Étanchéité d'accès par événement (staff affecté à un colloque).
-        $middleware->alias(['edition.cap' => EnsureEditionAccess::class]);
+        $middleware->alias([
+            'edition.cap' => EnsureEditionAccess::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Rendu JSON des exceptions pour les appels d'API et tout appel qui

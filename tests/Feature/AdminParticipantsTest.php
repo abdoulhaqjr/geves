@@ -14,7 +14,7 @@ it('liste les participants d’un événement avec rôle et paiement', function 
     $this->actingAs($staff, 'web')
         ->get(route('admin.participants.index', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
+        ->assertSee('Awa KODJO')
         ->assertSee('Communicant')
         ->assertSee('Réglé');
 });

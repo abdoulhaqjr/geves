@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\StaffRolePermissions;
 use App\Support\StaffRoles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -33,12 +34,16 @@ class RolesAndAdminSeeder extends Seeder
         // Rôles UKC + affectation des permissions granulaires (matrice d'accès).
         foreach (StaffRoles::ROLES as $name => $meta) {
             $role = Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
-            $role->syncPermissions($meta['permissions']);
+            // Une relance du seeder (notamment lors d'un déploiement) ne doit pas
+            // effacer la matrice ajustée dans le back-office.
+            if ($role->wasRecentlyCreated) {
+                $role->syncPermissions($meta['permissions']);
+            }
 
             // Seul l'administrateur porte la super-capacité `manage_colloques`
             // (bypass Gate::before). Les autres rôles sont gouvernés par la matrice.
             if ($name === 'administrator') {
-                $role->givePermissionTo($manage);
+                $role->syncPermissions([...array_keys(StaffRoles::PERMISSIONS), $manage->name]);
             }
         }
 
@@ -95,5 +100,7 @@ class RolesAndAdminSeeder extends Seeder
         if ($user->access_level !== User::ACCESS_SUPER_ADMIN) {
             $user->forceFill(['access_level' => User::ACCESS_SUPER_ADMIN])->save();
         }
+
+        app(StaffRolePermissions::class)->forget();
     }
 }

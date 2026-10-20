@@ -10,16 +10,18 @@
         <div class="ukc-nav-docs">
             <button type="button" @click="tab='list'" :class="{ active: tab==='list' }">Liste des utilisateurs</button>
             <button type="button" @click="tab='roles'" :class="{ active: tab==='roles' }">Rôles</button>
-            <button type="button" @click="tab='access'" :class="{ active: tab==='access' }">Accès &amp; permissions</button>
+            @if (auth('web')->user()?->isColloqueSuperAdmin())
+                <button type="button" @click="tab='access'" :class="{ active: tab==='access' }">Accès &amp; permissions</button>
+            @endif
         </div>
 
         {{-- ===== LISTE ===== --}}
         <div x-show="tab==='list'">
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Utilisateurs</div><div class="val blue">{{ $stats['total'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="shield" :size="20" /></div><div class="lbl">Admins</div><div class="val">{{ $stats['admins'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val">{{ $stats['reviewers'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Organisateurs</div><div class="val">{{ $stats['organizers'] }}</div></div>
+                <div class="ukc-stat-card tw-stat" title="Comptes visibles ayant un niveau administrateur ou les droits effectifs de super administrateur"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="shield" :size="20" /></div><div class="lbl">Admins</div><div class="val">{{ $stats['admins'] }}</div></div>
+                <div class="ukc-stat-card tw-stat" title="Personnes distinctes ayant une fiche évaluateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val">{{ $stats['reviewers'] }}</div></div>
+                <div class="ukc-stat-card tw-stat" title="Personnes distinctes affectées comme organisateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Organisateurs</div><div class="val">{{ $stats['organizers'] }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="bell" :size="20" /></div><div class="lbl">Support</div><div class="val">{{ $stats['support'] }}</div></div>
             </div>
 
@@ -28,7 +30,7 @@
                  régions qui en dépendent portent `data-filter-part`. --}}
             <form method="GET" class="filter-bar" data-filter="users">
                 <select name="role">
-                    <option value="">Tous les rôles</option>
+                    <option value="">Toutes les fonctions</option>
                     @foreach ($roleOptions as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
                 </select>
                 <select name="status">
@@ -53,7 +55,7 @@
                         <thead>
                             <tr>
                                 <x-ukc.th sort="name" :current="$sort" :dir="$dir">Utilisateur</x-ukc.th>
-                                <th>Rôle(s) UKC</th>
+                                <th>Fonction(s) et anciens rôles</th>
                                 <x-ukc.th sort="email" :current="$sort" :dir="$dir">E-mail</x-ukc.th>
                                 <x-ukc.th sort="last_login_at" :current="$sort" :dir="$dir">Dernière connexion</x-ukc.th>
                                 <th>IP</th>
@@ -77,11 +79,18 @@
                                     </td>
                                     <td>
                                         <div class="role-pills">
-                                            @forelse ($u->roles as $r)
+                                            @foreach ($eventRolesByUser[$u->id] ?? [] as $eventRole)
+                                                <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($eventRole) }}">{{ \App\Support\StaffRoles::label($eventRole) }}</span>
+                                            @endforeach
+                                            @if (in_array($u->id, $reviewerIds, true))
+                                                <span class="ukc-pill ukc-pill--info">Évaluateur</span>
+                                            @endif
+                                            @foreach ($u->roles as $r)
                                                 <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r->name) }}">{{ \App\Support\StaffRoles::label($r->name) }}</span>
-                                            @empty
+                                            @endforeach
+                                            @if (($eventRolesByUser[$u->id] ?? []) === [] && ! in_array($u->id, $reviewerIds, true) && $u->roles->isEmpty())
                                                 <span class="ukc-pill ukc-pill--muted">-</span>
-                                            @endforelse
+                                            @endif
                                         </div>
                                     </td>
                                     <td>
@@ -181,12 +190,13 @@
 
         {{-- ===== ACCES ===== --}}
         <div x-show="tab==='access'" x-cloak>
+            @if (auth('web')->user()?->isColloqueSuperAdmin())
             <form method="POST" action="{{ route('admin.users.access') }}">
                 @csrf
                 @method('PUT')
                 <div class="ukc-card">
                     <h2>Matrice d’accès</h2>
-                    <div class="desc">Cochez pour accorder une permission à un rôle. Enregistrez pour appliquer (spatie, guard « web »). L’administrateur conserve toujours toutes les permissions.</div>
+                    <div class="desc">Cochez pour accorder une permission à une fonction sur ses événements. Les changements s’appliquent aux affectations existantes. Le super administrateur conserve toujours toutes les permissions.</div>
                     <div style="overflow-x:auto;">
                         <div class="perm-grid" style="grid-template-columns: minmax(160px, 1.6fr) repeat({{ count($roles) }}, minmax(58px, 1fr)); min-width: {{ 160 + count($roles) * 64 }}px;">
                             <div class="cell head label">Permission</div>
@@ -215,6 +225,7 @@
                     </div>
                 </div>
             </form>
+            @endif
         </div>
     </div>
 </x-layouts.admin>

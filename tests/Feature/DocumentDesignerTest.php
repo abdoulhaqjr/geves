@@ -143,7 +143,7 @@ it('rend l’attestation via le modèle de l’événement si présent', functio
 
     $this->get(route('attestation.document', $att->uuid))
         ->assertOk()
-        ->assertSee('CERTIF Awa Kodjo')
+        ->assertSee('CERTIF Awa KODJO')
         ->assertSee('<svg', false);
 });
 

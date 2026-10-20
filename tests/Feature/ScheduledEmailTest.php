@@ -71,7 +71,7 @@ it('met une campagne immédiate en file et l’envoie tout de suite', function (
     expect($email->status)->toBe('sent');
     expect($email->recipient)->toBe('paid@example.tg');
     expect($email->subject)->toBe('Bonjour Awa');            // {prenom} personnalisé
-    expect($email->body)->toContain('Awa Payé');             // {nom_complet}
+    expect($email->body)->toContain('Awa PAYÉ');             // {nom_complet}
     expect($email->sent_at)->not->toBeNull();
 });
 

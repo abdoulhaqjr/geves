@@ -122,8 +122,8 @@ it('ne liste que les auteurs des communications de la séance', function () {
     $this->actingAs($mod, 'account')
         ->get(route('account.attendance.edit', $session))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
-        ->assertSee('Kofi Mensah')
+        ->assertSee('Awa KODJO')
+        ->assertSee('Kofi MENSAH')
         ->assertSee('Les universités africaines face au climat')
         ->assertSee('Auteur correspondant')
         ->assertDontSee('Sans Rapport');
@@ -298,7 +298,7 @@ it('le dit quand la séance n’a aucune communication programmée', function ()
         ->get(route('account.attendance.edit', $session))
         ->assertOk()
         ->assertSee('Aucune communication programmée')
-        ->assertDontSee('Awa Kodjo');
+        ->assertDontSee('Awa KODJO');
 });
 
 it('n’ouvre pas le pointage avant le début de la séance', function () {
@@ -479,7 +479,7 @@ it('sert la liste de présence à la salle de visio', function () {
         ->assertJsonPath('counts.expected', 2);
 
     $noms = collect($reponse->json('rows'))->pluck('name')->all();
-    expect($noms)->toContain('Awa Kodjo')->toContain('Kofi Mensah');
+    expect($noms)->toContain('Awa KODJO')->toContain('Kofi MENSAH');
     expect($kofi->exists)->toBeTrue();
     expect($awa->exists)->toBeTrue();
 });

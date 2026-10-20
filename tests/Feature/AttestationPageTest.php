@@ -26,7 +26,7 @@ it('présente l’attestation, son émetteur et ce qu’elle certifie', function
 
     $this->get(route('attestation.document', $att->uuid))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
+        ->assertSee('Awa KODJO')
         ->assertSee($event->series->name)
         ->assertSee('Rendez-vous annuel des universités partenaires.')
         ->assertSee('Innover pour un avenir durable')
@@ -52,7 +52,7 @@ it('vérifie l’attestation sur place, sans quitter la page', function () {
         ->assertOk()
         ->assertJsonPath('found', true)
         ->assertJsonPath('status', 'ok')
-        ->assertJsonPath('facts.Bénéficiaire', 'Awa Kodjo');
+        ->assertJsonPath('facts.Bénéficiaire', 'Awa KODJO');
 
     $att->update(['revoked' => true]);
     $this->getJson(route('attestation.verify.json', $att->uuid))

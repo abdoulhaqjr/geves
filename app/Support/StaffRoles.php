@@ -192,6 +192,6 @@ class StaffRoles
      */
     public static function permissionsFor(string $role): array
     {
-        return self::ROLES[$role]['permissions'] ?? [];
+        return app(StaffRolePermissions::class)->forRole($role);
     }
 }

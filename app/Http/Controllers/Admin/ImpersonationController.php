@@ -28,6 +28,9 @@ class ImpersonationController extends Controller
             abort(403);
         }
 
+        abort_unless(User::voitLeCompte($staff, $user), 404);
+        abort_unless($user->is_active, 403);
+
         // ⚠️ S'impersonifier soi-même n'emprunte rien : cela déconnecte le staff
         // du back-office pour le reconnecter dans son propre espace participant,
         // et il faut « quitter » pour revenir. Sa ligne est juste là dans la

@@ -63,7 +63,7 @@ it('émet une attestation vérifiable et reste idempotente', function () {
 
     $a1 = (new IssueAttestation)->handle($p, 'participation');
     expect($a1->uuid)->not->toBeEmpty();
-    expect($a1->recipient_name)->toBe('Awa Kodjo');
+    expect($a1->recipient_name)->toBe('Awa KODJO');
 
     $a2 = (new IssueAttestation)->handle($p, 'participation');
     expect($a2->id)->toBe($a1->id); // pas de doublon
@@ -135,7 +135,7 @@ it('vérifie publiquement une attestation valide, révoquée ou inconnue', funct
 
     // La vérification se lit sur la page de l'attestation : il n'y a plus
     // d'adresse séparée qui dirait la même chose de son côté.
-    $this->get(route('attestation.document', $att->uuid))->assertOk()->assertSee('authentique')->assertSee('Awa Kodjo');
+    $this->get(route('attestation.document', $att->uuid))->assertOk()->assertSee('authentique')->assertSee('Awa KODJO');
 
     $att->update(['revoked' => true]);
     $this->get(route('attestation.document', $att->uuid))->assertOk()->assertSee('révoquée');
@@ -151,7 +151,7 @@ it('génère le document d’attestation avec un QR', function () {
 
     $this->get(route('attestation.document', $att->uuid))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
+        ->assertSee('Awa KODJO')
         ->assertSee('<svg', false); // QR SVG inline
 });
 
@@ -484,7 +484,7 @@ it('n’imprime que les destinataires cochés', function () {
 
     // La référence du badge est la clé de sélection : elle vient de la liste réelle.
     $refAwa = BadgeCatalog::recipients($event, 'default')
-        ->firstWhere('name', 'Awa Kodjo')['ref'];
+        ->firstWhere('name', 'Awa KODJO')['ref'];
 
     $res = $this->actingAs($staff, 'web')
         ->post(route('admin.documents.badges.selection', ['event' => $event->id]), [
@@ -999,7 +999,8 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
 
     // Prêts : seules les inscriptions réglées, et celle-ci ne l'est pas encore.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
-        ->assertOk()->assertSee('Badges prêts')->assertDontSee('Awa Kodjo');
+        ->assertOk()->assertSee('Badges prêts')
+        ->assertDontSee('aria-label="Imprimer le badge de Awa KODJO"', false);
 
     // ⚠️ **Il n'y a plus de « tous les participants »** : la liste a été alignée sur
     // les participants réglés, comme la planche. Une fois les frais réglés, la
@@ -1010,7 +1011,7 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
     ]);
 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
-        ->assertOk()->assertSee('Awa Kodjo');
+        ->assertOk()->assertSee('aria-label="Imprimer le badge de Awa KODJO"', false);
 });
 
 it('sert chaque onglet principal de Documents par son URL (?tab=)', function () {

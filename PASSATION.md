@@ -13,6 +13,30 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Comptes, permissions et compteurs (2026-10-20)
+
+Les accès `super_admin` ne se distribuent que par un super administrateur. La
+liste, la fiche, l'annuaire et l'usurpation de compte appliquent la même notion
+de super administrateur effectif : niveau `super_admin`, ancien rôle global
+`administrator` ou permission `manage_colloques`. Un compte désactivé échoue à la
+connexion, y compris pendant le challenge 2FA ; `active.user` ferme les sessions
+déjà ouvertes à leur requête suivante (admin, participant et routes partagées).
+
+La matrice Spatie est désormais effective pour les fonctions de `event_user` :
+`StaffRoles::permissionsFor()` lit les permissions enregistrées via
+`StaffRolePermissions`, chargé une fois par requête. Seul le super administrateur
+peut modifier la matrice. `RolesAndAdminSeeder` initialise les nouveaux rôles
+sans effacer une matrice déjà personnalisée lors d'une relance.
+
+Les indicateurs de la page Utilisateurs comptent les **personnes distinctes** :
+Admins = niveaux administrateur ou pouvoir super administrateur effectif,
+Évaluateurs = fiches `participants.role=reviewer` liées à un compte,
+Organisateurs = affectations `event_user.role=organizer`. L'indicateur Appui
+compte également les affectations par événement. Les filtres et les pastilles
+de la liste affichent ces fonctions contextuelles, en gardant les anciens rôles
+globaux visibles comme héritage. `UserRoleCorrectionsTest` couvre les gardes,
+les sessions, la matrice et ces compteurs.
+
 ### La fiche d'un compte n'invente plus de rôles globaux (2026-10-19)
 
 **Le système n'a que trois rôles globaux : super-administrateur, administrateur
@@ -33,10 +57,11 @@ qui paramètrent l'événement, forment l'équipe et montent le programme.
   fiche et la règle de validation `roles` a disparu - un champ qu'on valide est
   un champ qu'on promet d'accepter. Un cas vérifie qu'un rôle **posté quand même**
   est ignoré.
-- ⚠️ Les rôles **déjà en base** sont laissés en place : ils alimentent encore les
-  pastilles et le filtre de la liste, et une correction d'adresse e-mail ne doit
-  pas les effacer au passage. **À trancher** : les purger, et retirer avec eux le
-  filtre de la liste, l'onglet Rôles et la matrice d'accès.
+- ⚠️ Les rôles **déjà en base** sont laissés en place : ils restent visibles dans
+  les pastilles, et une correction d'adresse e-mail ne doit pas les effacer. La
+  matrice gouverne désormais les fonctions événementielles ; son édition ne peut
+  donc pas être retirée sans autre source de permissions. Une migration des
+  anciens rôles globaux reste à planifier séparément.
 - ⚠️⚠️ **Deux colonnes.** Vérification d'adresse, mot de passe et suppression
   vivaient **sous le bouton « Enregistrer »** : après la fin apparente de la
   page, donc lues comme une suite du formulaire. Elles ne peuvent pas y entrer -

@@ -140,6 +140,6 @@ it('garde une pagination correcte quand on trie par auteur (jointure)', function
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.submissions.index', ['event_id' => $event->id, 'sort' => 'author', 'dir' => 'asc']))
         ->assertOk()
-        ->assertSee('Nom01')
-        ->assertDontSee('Nom20'); // 20 lignes, 15 par page
+        ->assertSee('NOM01')
+        ->assertDontSee('NOM20'); // 20 lignes, 15 par page
 });

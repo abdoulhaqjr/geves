@@ -140,7 +140,7 @@ it('affiche le statut de rattachement des auteurs côté back-office', function 
         ->get(route('admin.submissions.show', $sub))
         ->assertOk()
         ->assertSee('Compte rattaché')
-        ->assertSee('Yao Doe');
+        ->assertSee('Yao DOE');
 });
 
 it('permet au staff de rattacher manuellement un auteur à un compte', function () {

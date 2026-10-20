@@ -33,7 +33,7 @@ it('gèle l’identité des participants à l’archivage de l’événement', f
     $event->update(['status' => 'archived']);
 
     $snap = (array) ($participant->fresh()->meta['identity'] ?? []);
-    expect($snap['name'] ?? null)->toBe('Awa Kodjo')
+    expect($snap['name'] ?? null)->toBe('Awa KODJO')
         ->and($snap['institution'] ?? null)->toBe('Université de Kara')
         ->and($snap['frozen_at'] ?? null)->not->toBeNull();
 });
@@ -47,7 +47,7 @@ it('fige le badge : une modification de profil APRÈS archivage ne le change plu
     $account->update(['first_name' => 'Awa', 'last_name' => 'MODIFIÉ', 'affiliation' => 'Autre université']);
 
     $recipient = BadgeCatalog::recipients($event->fresh(), 'default')->first();
-    expect($recipient['name'])->toBe('Awa Kodjo')
+    expect($recipient['name'])->toBe('Awa KODJO')
         ->and($recipient['institution'])->toBe('Université de Kara');
 });
 
@@ -57,7 +57,7 @@ it('avant archivage, le badge suit l’identité EN DIRECT du compte', function 
     $account->update(['last_name' => 'Nouveau']);
 
     $recipient = BadgeCatalog::recipients($event->fresh(), 'default')->first();
-    expect($recipient['name'])->toBe('Awa Nouveau');
+    expect($recipient['name'])->toBe('Awa NOUVEAU');
 });
 
 it('recopie la photo dans un emplacement figé propre à l’événement', function () {

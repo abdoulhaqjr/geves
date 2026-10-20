@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Event;
 use App\Models\User;
 use App\Support\Settings;
+use App\Support\StaffRolePermissions;
 use App\Support\WindowsSafeFilesystem;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -27,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->scoped(StaffRolePermissions::class);
+
         if (PHP_OS_FAMILY === 'Windows') {
             $this->app->extend('files', fn () => new WindowsSafeFilesystem);
         }
@@ -280,6 +283,49 @@ class AppServiceProvider extends ServiceProvider
         // bandeau » ne serait jamais appliqué (même piège que `fedapay.card`).
         if (array_key_exists('cookies.notice_enabled', $s)) {
             Config::set('cookies.notice_enabled', (bool) $set('cookies.notice_enabled'));
+        }
+
+        // Temps réel (rédaction à plusieurs des documents de tâche) : protocole
+        // Pusher, serveur HÉBERGÉ désigné par son hôte - on ne fait pas tourner
+        // de démon WebSocket sur un hébergement mutualisé.
+        //
+        // ⚠️ Même piège que la case des cookies : un interrupteur ne passe PAS
+        // par `filled()`, sinon « couper le temps réel » ne serait jamais
+        // appliqué. On regarde si la clé EXISTE.
+        if (array_key_exists('realtime.enabled', $s)) {
+            Config::set('broadcasting.default', $set('realtime.enabled') ? 'pusher' : 'null');
+        }
+        foreach (['app_id', 'key'] as $k) {
+            if (filled($set("realtime.$k"))) {
+                Config::set("broadcasting.connections.pusher.$k", self::stripEnvPrefix((string) $set("realtime.$k")));
+            }
+        }
+        foreach (['host', 'scheme', 'cluster'] as $k) {
+            if (filled($set("realtime.$k"))) {
+                Config::set("broadcasting.connections.pusher.options.$k", self::stripEnvPrefix((string) $set("realtime.$k")));
+            }
+        }
+        if (filled($set('realtime.port'))) {
+            Config::set('broadcasting.connections.pusher.options.port', (int) $set('realtime.port'));
+        }
+        // ⚠️ Le chiffrement du transport SUIT le schéma : laissé figé, un hôte
+        // en http verrait le client tenter du wss et attendre une connexion qui
+        // n'arrive jamais - sans message d'erreur lisible.
+        Config::set(
+            'broadcasting.connections.pusher.options.useTLS',
+            Config::get('broadcasting.connections.pusher.options.scheme') === 'https',
+        );
+
+        // ⚠️ Le secret est chiffré en base et ne redescend JAMAIS au formulaire
+        // ni dans la page : il ne sert qu'à signer l'autorisation de canal.
+        if (array_key_exists('realtime.secret', $s)) {
+            try {
+                Config::set('broadcasting.connections.pusher.secret', filled($set('realtime.secret'))
+                    ? Crypt::decryptString((string) $set('realtime.secret'))
+                    : null);
+            } catch (DecryptException) {
+                Config::set('broadcasting.connections.pusher.secret', null);
+            }
         }
 
         // Fournisseurs d'IA : clé + modèle par défaut

@@ -196,7 +196,7 @@ it('la page Participants ne marque pas « payé » sur un simple paiement de for
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.participants.index', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('Awa Kodjo')
+        ->assertSee('Awa KODJO')
         // Colonne Paiement : « Non » et non « Réglé ».
         ->assertDontSee('ukc-pill--ok">Réglé', false);
 });
