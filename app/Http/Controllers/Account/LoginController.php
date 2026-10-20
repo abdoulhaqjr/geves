@@ -210,7 +210,7 @@ class LoginController extends Controller
      */
     private function hasBackOfficeAccess(User $user): bool
     {
-        return $user->isColloqueSuperAdmin() || $user->canAnyEdition();
+        return $user->isColloqueAdmin() || $user->canAnyEdition();
     }
 
     /** Connexion du personnel de gestion : guard « web » + orientation back-office. */

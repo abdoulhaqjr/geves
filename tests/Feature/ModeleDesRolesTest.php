@@ -91,22 +91,49 @@ it('ouvre au super-admin système les pages gardées par le Gate', function () {
 });
 
 /**
- * Le pendant : le niveau « administrateur de colloque » n'ouvre PAS ces pages.
- * Il crée des événements et y nomme son équipe ; la gestion des comptes et les
- * réglages de la plateforme restent au super-admin (ou se délèguent en cochant
- * la permission dans la matrice d'accès).
+ * ⚠️⚠️ **DÉCISION RENVERSÉE LE 2026-10-20** : ce cas affirmait l'inverse - le
+ * niveau « administrateur » n'ouvrait NI les comptes NI les réglages, et les
+ * deux niveaux ne se distinguaient en pratique que par ces trois écrans.
+ * L'administrateur a désormais **accès à tout** ; la seule chose qui lui reste
+ * refusée est de **nommer un super administrateur**, et de voir ces comptes.
+ *
+ * Le détail et les contre-épreuves vivent dans `DroitsDeLAdministrateurTest` ;
+ * ici on fige le modèle : trois niveaux, et ce que chacun ouvre.
  */
-it('n’ouvre pas les réglages de la plateforme à un administrateur de colloque', function () {
+it('ouvre tout à l’administrateur, sauf nommer un super administrateur', function () {
     $u = User::create([
-        'first_name' => 'Admin', 'last_name' => 'Colloque',
+        'first_name' => 'Admin', 'last_name' => 'Plateforme',
         'email' => 'admin.colloque.roles@example.tg', 'password' => 'pass12345',
         'access_level' => User::ACCESS_COLLOQUE_ADMIN,
     ]);
 
     expect($u->canCreateColloque())->toBeTrue();
 
-    expect($u->can('users_roles'))->toBeFalse();
-    expect($u->can('settings'))->toBeFalse();
+    // Les trois groupes gardés par `can:` : comptes, réglages, témoignages.
+    expect($u->can('users_roles'))->toBeTrue();
+    expect($u->can('settings'))->toBeTrue();
+    expect($u->can('testimonials'))->toBeTrue();
+
+    // La réserve, et elle tient en deux gestes.
+    expect(array_keys(User::niveauxAttribuablesPar($u)))
+        ->toBe([User::ACCESS_COLLOQUE_ADMIN, User::ACCESS_USER]);
+
+    $super = User::create([
+        'first_name' => 'Sylvie', 'last_name' => 'Super',
+        'email' => 'super.roles@example.tg', 'password' => 'pass12345',
+        'access_level' => User::ACCESS_SUPER_ADMIN,
+    ]);
+    expect(User::voitLeCompte($u, $super))->toBeFalse();
+
+    // Et un utilisateur ordinaire, lui, n'ouvre toujours rien.
+    $simple = User::create([
+        'first_name' => 'Komi', 'last_name' => 'Ordinaire',
+        'email' => 'simple.roles@example.tg', 'password' => 'pass12345',
+        'access_level' => User::ACCESS_USER,
+    ]);
+    expect($simple->can('users_roles'))->toBeFalse();
+    expect($simple->can('settings'))->toBeFalse();
+    expect($simple->canCreateColloque())->toBeFalse();
 });
 
 /**

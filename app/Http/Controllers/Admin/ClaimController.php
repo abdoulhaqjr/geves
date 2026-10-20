@@ -31,7 +31,7 @@ class ClaimController extends Controller
 
         $query = Claim::query()
             ->with(['event', 'user', 'assignee'])
-            ->when(! $user->isColloqueSuperAdmin(), fn ($q) => $q->where(function ($w) use ($user) {
+            ->when(! $user->isColloqueAdmin(), fn ($q) => $q->where(function ($w) use ($user) {
                 $w->whereNull('event_id')->orWhereIn('event_id', $user->accessibleEditionIds('claims'));
             }))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
@@ -125,14 +125,21 @@ class ClaimController extends Controller
     }
 
     /**
-     * Vivier d'affectation : super-admins + membres du staff affectés à l'événement
-     * de la réclamation avec la capacité `claims`.
+     * Vivier d'affectation : administrateurs + membres du staff affectés à
+     * l'événement de la réclamation avec la capacité `claims`.
+     *
+     * ⚠️ Les DEUX niveaux d'administration, pas le seul super admin : depuis que
+     * l'administrateur a accès à tout, une réclamation qu'on ne pouvait lui
+     * confier restait sur le bureau de quelqu'un qui n'ouvre plus la plateforme
+     * au quotidien.
      *
      * @return Collection<int, User>
      */
     private function assigneePool(Claim $claim): Collection
     {
-        $ids = User::query()->where('access_level', User::ACCESS_SUPER_ADMIN)->pluck('id');
+        $ids = User::query()
+            ->whereIn('access_level', [User::ACCESS_SUPER_ADMIN, User::ACCESS_COLLOQUE_ADMIN])
+            ->pluck('id');
 
         if ($claim->event_id !== null) {
             $rolesWithClaims = collect(StaffRoles::ROLES)
@@ -151,7 +158,7 @@ class ClaimController extends Controller
     private function authorizeClaim(Request $request, Claim $claim): void
     {
         $user = $request->user();
-        $ok = $user->isColloqueSuperAdmin()
+        $ok = $user->isColloqueAdmin()
             || $claim->event_id === null && $user->canAnyEdition('claims')
             || ($claim->event_id !== null && $user->canOnEdition('claims', $claim->event_id));
 

@@ -105,8 +105,8 @@ class AskAdmin
         if ($staff === null) {
             return ['fonction' => 'Membre du staff', 'perimetre' => 'périmètre limité'];
         }
-        if ($staff->isColloqueSuperAdmin()) {
-            return ['fonction' => 'Administrateur du colloque (accès complet)', 'perimetre' => 'toutes les fonctions'];
+        if ($staff->isColloqueAdmin()) {
+            return ['fonction' => 'Administrateur de la plateforme (accès complet)', 'perimetre' => 'toutes les fonctions'];
         }
 
         $roles = $event ? $staff->rolesOnEdition($event) : [];

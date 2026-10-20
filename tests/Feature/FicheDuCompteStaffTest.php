@@ -68,11 +68,9 @@ function adminNonSuper(): User
 {
     (new RolesAndAdminSeeder)->run();
 
-    // Il voit la page (c'est la permission qui la garde), sans être super-admin.
-    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
-    $admin->givePermissionTo('users_roles');
-
-    return $admin->fresh();
+    // ⚠️ Aucune permission cochée : depuis le 2026-10-20, c'est son NIVEAU qui
+    // lui ouvre la page. La cocher ici masquerait une régression du `Gate::before`.
+    return User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN])->fresh();
 }
 
 it('cache le super administrateur à l’administrateur, liste et compteurs compris', function () {
@@ -138,9 +136,10 @@ it('laisse un super administrateur voir ses pairs', function () {
 });
 
 it('nomme l’administrateur « Administrateur », sans le borner aux événements', function () {
-    // ⚠️ Il ne « crée pas ses propres événements » : il a la main sur toute la
-    // plateforme - comptes, rôles et réglages - sauf ce qui est strictement
-    // réservé au super administrateur.
+    // ⚠️ Il ne « crée pas ses propres événements » : il a la main sur TOUTE la
+    // plateforme - événements, comptes, rôles et réglages. La seule chose qui
+    // lui reste refusée est de nommer un super administrateur, et l'indice de
+    // l'écran doit le dire (cf. `DroitsDeLAdministrateurTest`).
     $admin = ficheAdmin();
 
     $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))
@@ -148,7 +147,8 @@ it('nomme l’administrateur « Administrateur », sans le borner aux événemen
         ->assertSee('Administrateur')
         ->assertDontSee('Administrateur d’événements')
         ->assertDontSee('ses propres événements')
-        ->assertSee('sauf les actions réservées au super administrateur');
+        ->assertSee('Ouvre TOUTE la plateforme')
+        ->assertSee('Ne peut pas nommer de super administrateur');
 });
 
 it('ne parle plus seulement de colloques', function () {

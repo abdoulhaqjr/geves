@@ -35,7 +35,10 @@ it('installe le gestionnaire et le co-gestionnaire sur ce colloque', function ()
         expect($membre->canAccessEdition($this->colloque))->toBeTrue();
         expect($membre->canOnEdition('final_decision', $this->colloque))->toBeTrue();
         expect($membre->hasRole($fonction))->toBeTrue();
-        expect($membre->access_level)->toBe(User::ACCESS_COLLOQUE_ADMIN);
+        // ⚠️ Niveau ORDINAIRE : la fonction vient de `event_user`, pas du
+        // compte. Nommé « administrateur », ce compte ouvrirait toute la
+        // plateforme - cf. `DroitsDeLAdministrateurTest`.
+        expect($membre->access_level)->toBe(User::ACCESS_USER);
     }
 });
 

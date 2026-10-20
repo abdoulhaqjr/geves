@@ -40,8 +40,7 @@ class UserController extends Controller
         // liste ET compteurs ({@see User::scopeVisiblesPar()}). Un compte qu'on
         // laisse apparaître dans un total est un compte dont on apprend
         // l'existence.
-        $moi = Auth::user();
-        $moi = $moi instanceof User ? $moi : null;
+        $moi = $this->moi();
 
         $users = User::query()
             ->visiblesPar($moi)
@@ -233,6 +232,10 @@ class UserController extends Controller
     {
         return [
             'user' => $user,
+            // ⚠️ Pas `accessLevels()` : « Super administrateur » ne se propose
+            // qu'à un super administrateur ({@see User::niveauxAttribuablesPar()}).
+            // La vue ne dresse donc plus la liste elle-même.
+            'accessLevels' => User::niveauxAttribuablesPar($this->moi()),
             'accessHints' => User::accessLevelHints(),
             'affectations' => $this->affectationsDe($user),
         ];
@@ -307,8 +310,15 @@ class UserController extends Controller
      */
     private function garde(User $user): void
     {
+        abort_unless(User::voitLeCompte($this->moi(), $user), 404);
+    }
+
+    /** Le membre du staff connecté, ou null - jamais un autre type d'authentifiable. */
+    private function moi(): ?User
+    {
         $moi = Auth::user();
-        abort_unless(User::voitLeCompte($moi instanceof User ? $moi : null, $user), 404);
+
+        return $moi instanceof User ? $moi : null;
     }
 
     public function edit(User $user): View
@@ -466,7 +476,13 @@ class UserController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
             // ⚠️ Plus de règle `roles` : la fiche n'en poste plus, et un champ
             // qu'on valide est un champ qu'on promet d'accepter.
-            'access_level' => ['required', Rule::in(array_keys(User::accessLevels()))],
+            //
+            // ⚠️⚠️ **ET LE NIVEAU SE VALIDE SUR CE QUE L'AUTEUR PEUT ATTRIBUER**,
+            // pas sur la liste entière : seul un super administrateur en nomme
+            // un autre. La fiche ne propose déjà plus le choix à qui n'y a pas
+            // droit - mais retirer une case ne ferme aucune porte, et c'est ici
+            // qu'un `access_level=super_admin` posté à la main s'arrête.
+            'access_level' => ['required', Rule::in(array_keys(User::niveauxAttribuablesPar($this->moi())))],
         ]);
     }
 }

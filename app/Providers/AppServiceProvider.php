@@ -58,14 +58,20 @@ class AppServiceProvider extends ServiceProvider
         //
         // ⚠️ **Le niveau d'accès SYSTÈME passe par ici aussi.** Sans lui, un
         // compte `access_level = super_admin` ouvrait les 16 groupes de routes
-        // gardés par `edition.cap:` (qui s'appuient sur `canOnEdition()`, donc sur
-        // `isColloqueSuperAdmin()`) mais tombait en 403 sur les 3 gardés par
-        // `can:` - Réglages, Utilisateurs & rôles, Témoignages. Le modèle disait
-        // « super-administrateur », le portail disait non. `isColloqueSuperAdmin()`
-        // est la SEULE source : elle couvre le niveau d'accès, le rôle spatie
-        // `administrator` et la permission `manage_colloques`.
+        // gardés par `edition.cap:` (qui s'appuient sur `canOnEdition()`) mais
+        // tombait en 403 sur les 3 gardés par `can:` - Réglages, Utilisateurs &
+        // rôles, Témoignages. Le modèle disait « super-administrateur », le
+        // portail disait non.
+        //
+        // ⚠️⚠️ **ET C'EST `isColloqueAdmin()` QU'ON INTERROGE, PAS LE SUPER
+        // ADMIN.** L'administrateur a accès à TOUT : les mêmes trois groupes
+        // s'ouvrent donc à lui - c'est lui qui distribue les rôles et qui règle
+        // la plateforme. Écrit avec `isColloqueSuperAdmin()`, ce court-circuit
+        // laissait les deux niveaux se distinguer par ces trois écrans, alors
+        // que la seule réserve du super administrateur est de nommer son
+        // semblable ({@see User::niveauxAttribuablesPar()}).
         Gate::before(function ($user, string $ability) {
-            if ($user instanceof User && $user->isColloqueSuperAdmin()) {
+            if ($user instanceof User && $user->isColloqueAdmin()) {
                 return true;
             }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Concerns;
 
 use App\Http\Middleware\EnsureEditionAccess;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -11,13 +12,13 @@ use Illuminate\Support\Collection;
  * Étanchéité par événement côté contrôleur (complément du middleware
  * {@see EnsureEditionAccess}). Restreint les listes et les
  * sélecteurs d'événement aux événements accessibles au membre du staff - sauf
- * super-administrateur, qui voit tout.
+ * administrateur ({@see User::isColloqueAdmin()}), qui voit tout.
  */
 trait ScopesEditionAccess
 {
     /**
      * Identifiants d'événements à imposer dans les requêtes de liste, ou null quand
-     * l'utilisateur est super-admin (aucune restriction).
+     * l'utilisateur est administrateur (aucune restriction).
      *
      * @return list<int>|null
      */
@@ -25,7 +26,7 @@ trait ScopesEditionAccess
     {
         $user = $request->user();
 
-        if ($user === null || $user->isColloqueSuperAdmin()) {
+        if ($user === null || $user->isColloqueAdmin()) {
             return null;
         }
 
@@ -33,7 +34,7 @@ trait ScopesEditionAccess
     }
 
     /**
-     * Événements à proposer dans un sélecteur (toutes pour un super-admin, sinon les
+     * Événements à proposer dans un sélecteur (tous pour un administrateur, sinon les
      * événements accessibles pour la capacité donnée).
      *
      * @return Collection<int, Event>
@@ -46,7 +47,7 @@ trait ScopesEditionAccess
             return collect();
         }
 
-        return $user->isColloqueSuperAdmin()
+        return $user->isColloqueAdmin()
             ? Event::latest('id')->get()
             : $user->accessibleEditions($capability);
     }

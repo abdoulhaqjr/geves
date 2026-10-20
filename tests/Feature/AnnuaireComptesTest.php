@@ -139,27 +139,55 @@ it('ne donne rien à un membre du staff qui n’a pas accès à la page', functi
 });
 
 /**
- * ⚠️ **La décision, écrite noir sur blanc.** « Administrateur de colloque » est
- * un NIVEAU D'ACCÈS, pas la permission qui garde la page : un gérant est en 403
- * sur `admin/utilisateurs`. Il ne doit donc rien obtenir par l'assistant, sans
- * quoi Marc deviendrait la porte la plus large de la plateforme.
+ * ⚠️⚠️ **DÉCISION RENVERSÉE LE 2026-10-20, et la condition n'a pas bougé d'une
+ * ligne.** Ce cas affirmait qu'un administrateur n'obtient RIEN de l'annuaire
+ * sans qu'on lui coche « Utilisateurs & rôles » - il était alors en 403 sur la
+ * page elle-même. L'administrateur a désormais accès à tout : `Gate::before`
+ * lui accorde `users_roles`, donc la page ET l'annuaire s'ouvrent du même
+ * mouvement.
  *
- * Pour lui ouvrir l'annuaire, on coche « Utilisateurs & rôles » dans la matrice
- * d'accès - et il voit alors la page ET l'annuaire, du même mouvement.
+ * ⚠️ **C'est tout l'intérêt d'avoir gardé `can('users_roles')` comme unique
+ * condition** : on n'a touché ni à {@see UserDirectory::autorise()} ni au
+ * middleware. Une garde écrite ici sur le niveau d'accès aurait dû être
+ * retrouvée et corrigée - et c'est celle qu'on aurait oubliée.
  */
-it('ne donne rien à un administrateur de colloque sans la permission', function () {
-    $gerant = User::create([
+it('ouvre l’annuaire à un administrateur, par son seul niveau', function () {
+    $admin = User::create([
         'first_name' => 'Seyf',
-        'last_name' => 'Gerant',
-        'email' => 'gerant.annuaire@example.tg',
+        'last_name' => 'Admin',
+        'email' => 'admin.annuaire@example.tg',
         'password' => 'pass12345',
         'access_level' => User::ACCESS_COLLOQUE_ADMIN,
     ]);
 
-    // Il EST bien administrateur de colloque au sens du modèle...
-    expect($gerant->isColloqueAdmin())->toBeTrue();
+    // ⚠️ La permission EXISTE, et il ne la PORTE pas : ce qui lui ouvre la
+    // porte est donc bien son niveau, pas une case cochée dans la matrice.
+    Permission::firstOrCreate(['name' => 'users_roles', 'guard_name' => 'web']);
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    expect($admin->getAllPermissions()->contains('name', 'users_roles'))->toBeFalse();
 
-    // ... et pourtant il n'a pas accès à la page, donc pas à l'annuaire.
+    expect($admin->can('users_roles'))->toBeTrue();
+    expect(UserDirectory::autorise($admin))->toBeTrue();
+    expect(UserDirectory::digest($admin))->toContain('RÉPARTITION DES COMPTES');
+});
+
+/**
+ * ⚠️ Et la contre-épreuve, qui est le vrai sujet du fichier : ouvrir l'annuaire
+ * à l'administrateur ne l'ouvre pas au staff d'un événement. Un gestionnaire
+ * est toujours en 403 sur `admin/utilisateurs`, donc toujours sans annuaire.
+ */
+it('ne donne rien à un gestionnaire d’événement', function () {
+    $event = openEdition();
+    $gerant = User::create([
+        'first_name' => 'Yao',
+        'last_name' => 'Gerant',
+        'email' => 'gerant.annuaire@example.tg',
+        'password' => 'pass12345',
+    ]);
+    $gerant->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+    $gerant = $gerant->fresh();
+
+    expect($gerant->isColloqueAdmin())->toBeFalse();
     expect($gerant->can('users_roles'))->toBeFalse();
     expect(UserDirectory::autorise($gerant))->toBeFalse();
     expect(UserDirectory::digest($gerant))->toBe('');

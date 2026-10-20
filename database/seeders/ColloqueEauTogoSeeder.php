@@ -27386,9 +27386,18 @@ ARCHIVE;
                     'password' => Str::password(48),
                     'must_reset_password' => true,
                     'is_active' => true,
-                    // « Administrateur de colloque » : crée et gère des
-                    // colloques, sans voir ceux où il n'est pas affecté.
-                    'access_level' => User::ACCESS_COLLOQUE_ADMIN,
+                    // ⚠️⚠️ **NIVEAU ORDINAIRE, et c'est tout le modèle du
+                    // projet** : « gérer un événement n'élève personne au rang
+                    // d'administrateur de la plateforme ». Ces comptes tiennent
+                    // leur pouvoir de `event_user`, pas de leur niveau.
+                    //
+                    // Ils portaient `colloque_admin`, sur la foi d'un commentaire
+                    // qui promettait « sans voir les colloques où il n'est pas
+                    // affecté ». C'était vrai tant que ce niveau n'ouvrait rien ;
+                    // depuis que l'administrateur a accès à TOUTE la plateforme
+                    // (2026-10-20), c'était donner les comptes, les rôles et les
+                    // réglages à deux personnes nommées pour UN colloque.
+                    'access_level' => User::ACCESS_USER,
                     'meta' => ['import_source' => self::SOURCE, 'team_role' => $membre['role']],
                 ])->save();
             }

@@ -20,7 +20,8 @@ use App\Models\User;
  * évaluateur, secrétariat, comptabilité. Laisser la garde au point d'appel serait
  * l'oublier un jour. {@see digest()} rend une chaîne vide à qui n'a pas
  * `users_roles`, la permission qui garde déjà la page Utilisateurs & rôles :
- * l'assistant n'ouvre ainsi aucune porte que l'interface tient fermée.
+ * l'assistant n'ouvre ainsi aucune porte que l'interface tient fermée. Un
+ * administrateur la franchit (il a accès à tout) ; un évaluateur, non.
  *
  * ⚠️ Borné (le prompt est reconstruit à CHAQUE message) : au-delà des plafonds,
  * on renvoie vers les filtres de la page plutôt que de gonfler le contexte. Les
@@ -60,10 +61,16 @@ class UserDirectory
     }
 
     /**
-     * ⚠️ La porte est celle de la PAGE, pas un niveau d'accès : `users_roles` est
-     * ce que le middleware `can:users_roles` exige d'`admin/utilisateurs`. Un
-     * administrateur de colloque qui n'a pas cette permission est en 403 sur la
-     * page ; il ne doit pas l'obtenir en passant par l'assistant.
+     * ⚠️ **La porte est celle de la PAGE** : `users_roles`, exactement ce que le
+     * middleware `can:users_roles` exige d'`admin/utilisateurs`. L'assistant
+     * n'ouvre ainsi rien que l'interface tienne fermé, et rien ne se décide
+     * deux fois.
+     *
+     * ⚠️ Depuis que `Gate::before` ouvre tout à l'administrateur, c'est par là
+     * qu'il obtient l'annuaire - la page ET l'assistant, du même mouvement. Le
+     * staff ordinaire, lui, l'obtient en cochant la permission dans la matrice
+     * d'accès : la condition n'a pas bougé, c'est ce qu'elle laisse passer qui
+     * s'est élargi.
      */
     public static function autorise(?User $staff): bool
     {

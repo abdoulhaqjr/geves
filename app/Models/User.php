@@ -150,10 +150,40 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public static function accessLevelHints(): array
     {
         return [
-            self::ACCESS_SUPER_ADMIN => 'Le niveau le plus élevé : tout ce qu’ouvre un administrateur, plus ce qui lui est strictement réservé. À réserver.',
-            self::ACCESS_COLLOQUE_ADMIN => 'Crée les événements et y attache leur gestionnaire. Accès à tout - événements, comptes, rôles et réglages - sauf les actions réservées au super administrateur.',
+            self::ACCESS_SUPER_ADMIN => 'Tout ce qu’ouvre un administrateur, plus la seule chose qui lui est refusée : nommer un super administrateur, et voir ces comptes. À réserver.',
+            self::ACCESS_COLLOQUE_ADMIN => 'Crée les événements et y attache leur gestionnaire. Ouvre TOUTE la plateforme : tous les événements, les comptes, les rôles et les réglages. Ne peut pas nommer de super administrateur.',
             self::ACCESS_USER => 'Aucun accès global : n’ouvre que les événements où le compte est affecté, et seulement ce que sa fonction y permet. C’est le niveau de l’immense majorité.',
         ];
+    }
+
+    /**
+     * ⚠️⚠️ **LA SEULE CHOSE QU'UN ADMINISTRATEUR NE PEUT PAS FAIRE.** Il a la
+     * main sur tout le reste - les événements, les comptes, les rôles, les
+     * réglages - mais il ne **nomme pas** de super administrateur : sans cette
+     * réserve, il se promeut lui-même en deux clics et le niveau au-dessus du
+     * sien ne veut plus rien dire. C'est, avec {@see voitLeCompte()}, tout ce
+     * qui distingue encore les deux niveaux.
+     *
+     * ⚠️ **Et ce n'est pas qu'une liste d'affichage** : la fiche d'un compte
+     * valide sur elle (`UserController::validateUser()`), parce que retirer un
+     * choix du formulaire ne ferme aucune porte - un `access_level` posté à la
+     * main en ouvrirait une grande.
+     *
+     * ⚠️ Révoquer un super administrateur est déjà hors de portée par un autre
+     * chemin : l'administrateur ne **voit** pas ces comptes, donc les cinq
+     * actions qui prennent un `{user}` lui répondent 404.
+     *
+     * @return array<string, string> niveau => libellé
+     */
+    public static function niveauxAttribuablesPar(?self $viewer): array
+    {
+        $niveaux = self::accessLevels();
+
+        if (! $viewer?->isColloqueSuperAdmin()) {
+            unset($niveaux[self::ACCESS_SUPER_ADMIN]);
+        }
+
+        return $niveaux;
     }
 
     /**
@@ -195,9 +225,26 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /**
-     * Super-administrateur back-office (toute la plateforme). Basé sur le niveau
-     * d'accès ; on garde le repli spatie (`administrator` / `manage_colloques`)
-     * le temps de la bascule complète.
+     * ⚠️⚠️ **LA RÉSERVE DU SUPER ADMINISTRATEUR - et elle ne sert plus qu'à ça.**
+     *
+     * Ce prédicat a longtemps voulu dire « ouvre toute la plateforme » : c'est
+     * {@see isColloqueAdmin()} qui le dit désormais, et l'administrateur a
+     * **accès à tout** - tous les événements, les comptes, les rôles et les
+     * réglages. Il ne reste au super administrateur que **deux** choses, et
+     * elles tiennent ensemble : **nommer ou révoquer un super administrateur**
+     * ({@see niveauxAttribuablesPar()}) et **voir ces comptes**
+     * ({@see scopeVisiblesPar()}, {@see voitLeCompte()}). Sans cette réserve,
+     * un administrateur se promeut lui-même et le niveau au-dessus du sien
+     * devient décoratif.
+     *
+     * ⚠️ **Écrire `isColloqueSuperAdmin()` dans une garde d'accès est donc
+     * presque toujours une erreur** : c'était le réflexe de tout le code, et il
+     * referme à l'administrateur ce qu'on vient de lui ouvrir. Un cas de
+     * `DroitsDeLAdministrateurTest` balaie `app/` et énumère les appels
+     * légitimes - tous dans la réserve ci-dessus.
+     *
+     * On garde le repli spatie (`administrator` / `manage_colloques`) : ce rôle
+     * hérité vaut toujours super administrateur.
      */
     public function isColloqueSuperAdmin(): bool
     {
@@ -206,13 +253,20 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             || $this->getAllPermissions()->contains('name', 'manage_colloques');
     }
 
-    /** Administrateur de colloque (crée + gère/co-gère des colloques) - ou super-admin. */
+    /**
+     * ⚠️⚠️ **CE QUI OUVRE TOUTE LA PLATEFORME.** Administrateur **ou** super
+     * administrateur : les deux passent partout, et c'est ce prédicat que
+     * doivent interroger le `Gate::before`, `EnsureEditionAccess` et les cinq
+     * portes d'accès aux événements ci-dessous. L'administrateur n'a donc plus
+     * besoin d'être affecté à un événement pour l'ouvrir : il crée les
+     * événements et y attache SON gestionnaire, il ne devient pas l'équipe.
+     */
     public function isColloqueAdmin(): bool
     {
         return $this->isColloqueSuperAdmin() || $this->access_level === self::ACCESS_COLLOQUE_ADMIN;
     }
 
-    /** Peut créer un nouveau colloque / une nouvelle événement (super-admin ou admin de colloque). */
+    /** Peut créer un nouvel événement (administrateur ou super administrateur). */
     public function canCreateColloque(): bool
     {
         return $this->isColloqueAdmin();
@@ -234,18 +288,18 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     /** L'utilisateur peut-il accéder à cet événement (admin global, ou affecté) ? */
     public function canAccessEdition(Event|int $event): bool
     {
-        return $this->isColloqueSuperAdmin() || $this->rolesOnEdition($event) !== [];
+        return $this->isColloqueAdmin() || $this->rolesOnEdition($event) !== [];
     }
 
     /**
      * Capacités effectives de l'utilisateur SUR un événement (union des matrices
-     * de ses fonctions ; toutes les capacités pour un super-admin).
+     * de ses fonctions ; toutes les capacités pour un administrateur).
      *
      * @return list<string>
      */
     public function capabilitiesOnEdition(Event|int $event): array
     {
-        if ($this->isColloqueSuperAdmin()) {
+        if ($this->isColloqueAdmin()) {
             return array_keys(StaffRoles::PERMISSIONS);
         }
 
@@ -260,20 +314,20 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     /** L'utilisateur a-t-il la capacité `$capability` sur cet événement ? */
     public function canOnEdition(string $capability, Event|int $event): bool
     {
-        return $this->isColloqueSuperAdmin()
+        return $this->isColloqueAdmin()
             || in_array($capability, $this->capabilitiesOnEdition($event), true);
     }
 
     /**
-     * Identifiants des événements accessibles à l'utilisateur (toutes s'il est
-     * super-admin ; sinon celles où il est affecté - filtrées par capacité si
+     * Identifiants des événements accessibles à l'utilisateur (tous s'il est
+     * administrateur ; sinon ceux où il est affecté - filtrés par capacité si
      * fournie).
      *
      * @return list<int>
      */
     public function accessibleEditionIds(?string $capability = null): array
     {
-        if ($this->isColloqueSuperAdmin()) {
+        if ($this->isColloqueAdmin()) {
             return Event::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 
@@ -304,7 +358,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      */
     public function canAnyEdition(?string $capability = null): bool
     {
-        return $this->isColloqueSuperAdmin() || $this->accessibleEditionIds($capability) !== [];
+        return $this->isColloqueAdmin() || $this->accessibleEditionIds($capability) !== [];
     }
 
     // --- Fonctions événementielles (côté participant, par e-mail / inscription) ---

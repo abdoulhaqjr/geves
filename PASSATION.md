@@ -90,19 +90,72 @@ règle** : masquer dans la page sans fermer l'assistant, c'est ne rien masquer.
 la ligne et redirige. La personne n'apprend sa nomination que si on la prévient à
 la main, alors que c'est elle qui doit prendre l'événement en charge. **À faire.**
 
-⚠️ **À TRANCHER** : aujourd'hui `colloque_admin` **ne passe pas** les trois gardes
-`can:` (Réglages, Utilisateurs & rôles, Témoignages) - seule la permission les
-ouvre, et une décision écrite dans `AnnuaireComptesTest` dit qu'un administrateur
-sans elle est en 403. Pour qu'il « ait accès à tout sauf les actions du super
-admin », il faut **nommer ces actions** : sans liste, lui ouvrir les trois
-groupes rendrait les deux niveaux identiques.
-
 Gardes : `FicheDuCompteStaffTest` (17 cas, 6 sabotages vérifiés), dont un qui
 nomme les tournures interdites (« Accès aux colloques », « aucun colloque »…) sans
 balayer le mot - le TITRE d'un événement peut légitimement le contenir - et trois
 qui tiennent la visibilité du super administrateur (liste, fiche, copilote).
 ⚠️ `AnnuaireComptesTest` lit désormais le **code commentaires retirés** : un
 `{@see UserDirectory}` dans un docbloc faisait tomber sa garde sur une phrase.
+
+### L'administrateur a accès à TOUT, sauf nommer son semblable (2026-10-20)
+
+La question laissée ouverte la veille - « qu'est-ce qui reste au super admin
+seul ? » - est tranchée, et la réponse tient en une ligne : **rien, sauf faire et
+défaire un super administrateur**. Les réglages de la plateforme, les clés
+comprises, vont à l'administrateur comme le reste.
+
+Jusqu'ici les deux niveaux se distinguaient surtout par accident :
+`colloque_admin` tombait en **403 sur les trois groupes gardés par `can:`**
+(Réglages, Utilisateurs & rôles, Témoignages) et ne voyait **que les événements où
+il était affecté** - alors que le modèle du projet annonce depuis toujours « il
+crée les événements et y attache son gestionnaire ».
+
+⚠️⚠️ **DEUX PRÉDICATS QUI SE RESSEMBLENT, ET QUI NE DISENT PLUS LA MÊME CHOSE.**
+C'est le piège de ce lot, et il ne se voit pas : une page répond 403 à un seul
+niveau d'accès, sur un seul écran.
+
+- **`isColloqueAdmin()` = LA PORTÉE** (administrateur **ou** super admin) :
+  `Gate::before`, `EnsureEditionAccess`, `ScopesEditionAccess`, les cinq portes
+  d'accès aux événements du modèle, plus `ClaimController`, `GescoController`,
+  `LoginController`, `AskAdmin` et `EventFormController`.
+- **`isColloqueSuperAdmin()` = LA RÉSERVE** : `niveauxAttribuablesPar()` (nommer
+  un super admin) et `scopeVisiblesPar()` / `voitLeCompte()` (le voir). **Hors de
+  `User`, l'écrire est presque toujours une erreur** - une garde de source le
+  vérifie en balayant `app/`, commentaires retirés.
+
+⚠️ **Retirer le choix du formulaire ne ferme aucune porte** : la fiche ne propose
+plus « Super administrateur » à qui n'en est pas un, **et** `validateUser()`
+valide sur `niveauxAttribuablesPar()`. Sans la seconde moitié, un `access_level`
+posté à la main promouvait son auteur en une requête.
+
+⚠️ **L'annuaire du copilote n'a pas bougé d'une ligne**, et c'est la preuve que la
+condition était au bon endroit : `UserDirectory::autorise()` demande toujours
+`can('users_roles')`. L'administrateur la franchit par son niveau, le staff d'un
+événement non. Une garde écrite là-bas sur le niveau d'accès aurait dû être
+retrouvée et corrigée - c'est celle qu'on aurait oubliée.
+
+⚠️ **Créer un événement n'inscrit plus l'administrateur dans son équipe** : il les
+ouvre tous, et il crée l'événement pour y attacher SON gestionnaire. Le geste
+reste pour les autres - un gestionnaire qui crée un événement en devient le
+gestionnaire, sinon il perdrait ce qu'il vient d'ouvrir.
+
+⚠️⚠️ **À FAIRE AVANT LA PROCHAINE MISE EN LIGNE - deux comptes réels.**
+`ColloqueEauTogoSeeder` posait `colloque_admin` sur les **deux gestionnaires du
+colloque de l'eau**, sur la foi d'un commentaire qui promettait « sans voir les
+colloques où il n'est pas affecté ». C'était vrai tant que ce niveau n'ouvrait
+rien ; aujourd'hui, c'était leur donner les comptes, les rôles et les réglages de
+toute la plateforme. Le seeder pose désormais `ACCESS_USER` - leur pouvoir vient
+de `event_user`, conformément à la règle « gérer un événement n'élève personne ».
+**Mais le seeder est idempotent et ne retouche jamais un compte existant** : les
+deux comptes déjà importés, en dev comme en production, portent encore
+`colloque_admin`. À corriger à la main ou par une migration.
+
+Gardes : `DroitsDeLAdministrateurTest` (11 cas, **5 sabotages vérifiés** : le
+`Gate::before` redescendu sur le super admin, l'accès aux événements, la
+validation du niveau, la liste des niveaux reconstruite dans la vue, et un
+prédicat réservé ressorti du modèle). Cinq cas existants portaient la décision
+inverse et ont été repris : `ModeleDesRolesTest`, `AnnuaireComptesTest`,
+`AccessLevelTest`, `EauTogoEquipeTest` et `FicheDuCompteStaffTest`.
 
 ### En-têtes de sécurité HTTP (2026-10-19)
 
@@ -1979,9 +2032,15 @@ partie.
   rôle `gerant` posé seul ne donnerait accès à rien. Le rôle global est posé en
   plus, pour la page Utilisateurs et la matrice.
 - ⚠️ **Et c'est aussi ce qui LIMITE l'accès.** Vérifié par un cas dédié : ni
-  l'un ni l'autre n'atteint le VIIIe Colloque. `access_level` vaut
-  `colloque_admin` (« crée et gère des colloques »), ce qui n'ouvre aucun
-  colloque où la personne n'est pas affectée.
+  l'un ni l'autre n'atteint le VIIIe Colloque. ⚠️⚠️ **Depuis le 2026-10-20 c'est
+  leur `access_level = user` qui le garantit** : ces deux comptes portaient
+  `colloque_admin`, sur la foi d'un commentaire qui promettait « sans voir les
+  colloques où il n'est pas affecté ». C'était vrai tant que ce niveau n'ouvrait
+  rien ; l'administrateur ayant désormais accès à TOUTE la plateforme, c'était
+  leur donner les comptes, les rôles et les réglages. Leur pouvoir vient de
+  `event_user`, comme le veut la règle « gérer un événement n'élève personne ».
+  **Les comptes déjà importés gardent l'ancien niveau** (le seeder ne retouche
+  pas un compte existant) : à corriger à la main.
 - ⚠️ **Aucun mot de passe dans le dépôt** : les deux comptes naissent avec
   `must_reset_password`, comme les 44 comptes auteurs de cet import. Ils
   s'ouvrent par réinitialisation.
@@ -2505,7 +2564,8 @@ CLAUDE.md et tenue par `ModeleDesRolesTest`.
 **Le modèle.** Un compte porte des rôles de deux natures. (1) **Trois niveaux
 système** et pas un de plus, sur `users.access_level` : `super_admin`,
 `colloque_admin` (il crée les événements et y nomme gestionnaire /
-co-gestionnaire) et `user`. (2) **Tout le reste est relatif à un événement** :
+co-gestionnaire ; depuis le 2026-10-20 il ouvre **toute la plateforme**, cf. plus
+haut) et `user`. (2) **Tout le reste est relatif à un événement** :
 l'équipe (`event_user.role` + `StaffRoles`), le programme (modérateur,
 rapporteur) et l'évaluation (relecteur). ⚠️ Ces trois derniers **ne sont pas
 stockés comme rôles** : ils se déduisent du travail confié.

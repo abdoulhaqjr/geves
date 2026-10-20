@@ -5,9 +5,8 @@ use App\Models\User;
 use App\Support\StaffRoles;
 
 /**
- * Phase 3 - niveaux d'accès globaux : super admin - admin de colloque - utilisateur.
- * L'admin de colloque peut créer un colloque (et en devient gérant) ; l'utilisateur
- * simple non.
+ * Phase 3 - niveaux d'accès globaux : super administrateur - administrateur -
+ * utilisateur. L'administrateur crée les événements ; l'utilisateur simple non.
  */
 it('résout les trois niveaux d’accès', function () {
     $super = User::factory()->create(['access_level' => User::ACCESS_SUPER_ADMIN]);
@@ -24,7 +23,17 @@ it('résout les trois niveaux d’accès', function () {
     expect($user->canCreateColloque())->toBeFalse();
 });
 
-it('un administrateur de colloque crée un colloque et en devient gérant', function () {
+/**
+ * ⚠️⚠️ **IL CRÉE L'ÉVÉNEMENT, IL N'EN DEVIENT PAS L'ÉQUIPE.** Ce cas exigeait
+ * l'inverse : l'administrateur était attaché en `gerant` à chaque événement
+ * qu'il ouvrait, faute de quoi il n'y aurait plus eu accès. Depuis qu'il a
+ * accès à TOUS les événements (2026-10-20), cette affectation ne lui apporte
+ * plus rien et salit la liste de l'équipe - il crée l'événement pour y attacher
+ * SON gestionnaire. Le geste reste pour les autres : un gestionnaire qui crée
+ * un événement en devient bien le gestionnaire, sinon il perdrait ce qu'il
+ * vient d'ouvrir.
+ */
+it('un administrateur crée un événement sans s’inscrire dans son équipe', function () {
     $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
 
     $this->actingAs($admin, 'web')->get(route('admin.evenements.create'))->assertOk();
@@ -42,8 +51,28 @@ it('un administrateur de colloque crée un colloque et en devient gérant', func
 
     $event = Event::firstWhere('title', 'Événement 2026');
     expect($event)->not->toBeNull();
-    expect($admin->rolesOnEdition($event))->toContain('gerant');
+    expect($admin->rolesOnEdition($event))->toBe([]);
     expect($admin->fresh()->canOnEdition('editions_write', $event))->toBeTrue();
+});
+
+/** Le pendant : qui n'a pas le niveau garde la main sur ce qu'il vient de créer. */
+it('un gestionnaire qui crée un événement en devient le gestionnaire', function () {
+    $deja = openEdition();
+    $gerant = User::factory()->create(['access_level' => User::ACCESS_USER]);
+    $gerant->assignedEditions()->attach($deja->id, ['role' => 'gerant']);
+
+    $this->actingAs($gerant->fresh(), 'web')->post(route('admin.evenements.store'), [
+        'new_colloque' => 'Série du gestionnaire',
+        'title' => 'Journées 2026',
+        'status' => 'open',
+        'submission_open' => '1',
+        'max_communications' => 3,
+        'tracks' => "Axe A\nAxe B",
+        'fees' => [['label' => 'Doctorant', 'amount' => '15000']],
+    ])->assertSessionHasNoErrors();
+
+    $event = Event::firstWhere('title', 'Journées 2026');
+    expect($gerant->fresh()->rolesOnEdition($event))->toContain('gerant');
 });
 
 it('un utilisateur simple ne peut pas créer de colloque', function () {

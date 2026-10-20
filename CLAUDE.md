@@ -867,8 +867,8 @@ plus (`User::accessLevels()`), sur la plateforme entière :
 
 | Niveau | Ce qu'il fait |
 | --- | --- |
-| `super_admin` | Tout. Seul à ouvrir Réglages, Utilisateurs & rôles, Témoignages. |
-| `colloque_admin` | **Crée les événements** et y nomme gestionnaire / co-gestionnaire. Rien sur les réglages de la plateforme ni sur les comptes. |
+| `super_admin` | Tout ce qu'ouvre un administrateur, **plus** la seule chose qui lui est refusée : nommer un super administrateur, et voir ces comptes. |
+| `colloque_admin` | **Accès à TOUT** - tous les événements (sans affectation), les comptes, les rôles, les réglages. **Crée les événements** et y nomme gestionnaire / co-gestionnaire. **Ne peut pas** nommer de super administrateur. |
 | `user` | Aucun accès global. **C'est le défaut**, et c'est le niveau de l'immense majorité. |
 
 **2. Tous les autres rôles sont RELATIFS À UN ÉVÉNEMENT**, en trois familles :
@@ -900,9 +900,9 @@ les protège. Même règle que pour le site public, et pour la même raison.
 
 ⚠️ **« Administrateur » tout court, et surtout PAS « Administrateur d'événements »** :
 ce niveau n'est pas borné aux événements. Il **crée les événements et y attache leur
-gestionnaire**, et il a **accès à tout** - événements, comptes, rôles, réglages - sauf
-les actions réservées au super administrateur. Le seul niveau au-dessus de lui est le
-super administrateur.
+gestionnaire**, et il a **accès à tout** - événements, comptes, rôles, réglages. Le seul
+niveau au-dessus de lui est le super administrateur, et **la seule chose qui les sépare**
+est de pouvoir en nommer un (voir plus bas).
 
 ⚠️ Le rôle spatie `administrator` s'appelle donc **« Administrateur (rôle hérité) »** :
 il porte `manage_colloques`, donc `isColloqueSuperAdmin()` - il ouvre **TOUT**, au même
@@ -929,16 +929,53 @@ sur le seul niveau placé au-dessus du sien. Source unique : le scope
 - ⚠️ `!=` **écarte les NULL en SQL**, et `access_level` est nullable : sans
   `orWhereNull`, tout compte au niveau non renseigné disparaissait de la liste.
 
+⚠️⚠️ **DEUX PRÉDICATS QUI SE RESSEMBLENT, ET QUI NE DISENT PLUS LA MÊME CHOSE**
+(2026-10-20). C'est la confusion la plus facile du module, et elle ne se voit pas :
+une page répond 403 à un seul niveau d'accès, sur un seul écran.
+
+- **`User::isColloqueAdmin()` = LA PORTÉE.** Administrateur **ou** super administrateur :
+  les deux passent partout. C'est lui qu'interrogent `Gate::before`, `EnsureEditionAccess`,
+  `ScopesEditionAccess` et les **cinq** portes d'accès aux événements du modèle
+  (`canAccessEdition`, `capabilitiesOnEdition`, `canOnEdition`, `accessibleEditionIds`,
+  `canAnyEdition`).
+- **`User::isColloqueSuperAdmin()` = LA RÉSERVE**, et plus rien d'autre : nommer ou
+  révoquer un super administrateur (`niveauxAttribuablesPar()`) et voir ces comptes
+  (`scopeVisiblesPar()`, `voitLeCompte()`). **Hors de `User`, l'écrire est presque
+  toujours une erreur** - un cas de `DroitsDeLAdministrateurTest` balaie `app/`,
+  commentaires retirés, et échoue si le nom ressort du modèle.
+
 ⚠️ **Deux gardes de routes, une seule source de vérité.** `edition.cap:<capacité>` (16
 groupes) passe par `canOnEdition()` ; `can:<capacité>` (3 groupes : Réglages,
 Utilisateurs & rôles, Témoignages) passe par le Gate spatie. **Les deux doivent
-s'accorder sur le super-admin** : `Gate::before` interroge donc
-`isColloqueSuperAdmin()`, qui couvre à la fois le niveau d'accès, le rôle spatie
-`administrator` et la permission `manage_colloques`. Avant ce branchement, un compte
-`access_level = super_admin` sans rôle spatie ouvrait 16 groupes sur 19 et tombait en
-**403 sur les 3 autres** - le modèle disait « super-administrateur », le portail disait
-non. Le défaut ne se voyait pas, le seul super-admin de la base portant aussi le rôle
-spatie.
+s'accorder** : `Gate::before` interroge donc `isColloqueAdmin()`, qui couvre le niveau
+d'accès, le rôle spatie `administrator` et la permission `manage_colloques`. Avant ce
+branchement, un compte `access_level = super_admin` sans rôle spatie ouvrait 16 groupes
+sur 19 et tombait en **403 sur les 3 autres** - le modèle disait « super-administrateur »,
+le portail disait non. Le défaut ne se voyait pas, le seul super-admin de la base portant
+aussi le rôle spatie. **Et le même défaut valait pour l'administrateur**, jusqu'à ce que
+ces trois groupes lui soient ouverts.
+
+⚠️ **L'ANNUAIRE DU COPILOTE N'A PAS BOUGÉ D'UNE LIGNE, et c'est la preuve que la
+condition était à la bonne place** : `UserDirectory::autorise()` demande toujours
+`can('users_roles')`, exactement ce qu'exige la page. L'administrateur la franchit
+maintenant par son niveau ; le staff d'un événement, non. Une garde écrite là-bas sur
+le niveau d'accès aurait dû être retrouvée et corrigée - et c'est celle qu'on aurait
+oubliée.
+
+⚠️ **Créer un événement n'inscrit plus l'administrateur dans son équipe**
+(`EventFormController::store`) : il les ouvre tous, et il crée l'événement pour y
+attacher SON gestionnaire. Le geste reste pour les autres - un gestionnaire qui crée un
+événement en devient le gestionnaire, sinon il perdrait ce qu'il vient d'ouvrir.
+
+⚠️⚠️ **CONSÉQUENCE SUR LES DONNÉES, à vérifier en production.** `ColloqueEauTogoSeeder`
+posait `colloque_admin` sur les **deux gestionnaires réels** du colloque de l'eau, sur la
+foi d'un commentaire qui promettait « sans voir les colloques où il n'est pas affecté ».
+C'était vrai tant que ce niveau n'ouvrait rien ; aujourd'hui, c'était leur donner les
+comptes, les rôles et les réglages. Le seeder pose désormais `ACCESS_USER` - leur pouvoir
+vient de `event_user`, conformément à la règle « gérer un événement n'élève personne ».
+⚠️ **Mais le seeder est idempotent et ne retouche pas un compte existant** : les deux
+comptes DÉJÀ importés (dev comme production) portent encore `colloque_admin`. **À
+corriger à la main**, ou par une migration, avant la prochaine mise en ligne.
 
 ⚠️ Le défaut `'user'` d'`access_level` vit **en base**, pas dans le modèle : une
 instance tout juste créée porte `null` jusqu'au rechargement. Inoffensif (les
@@ -1025,13 +1062,17 @@ une étiquette : les capacités d'une fonction ne sont lues que par `edition.cap
 attache la ligne et redirige) : la personne n'apprend sa nomination que si on la prévient
 à la main. **À faire.**
 
-Gardes : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
-l'équipe attachée à UN événement, les rôles déduits et non stockés, et l'accord des deux
-portails. **`OngletRolesTest`** pour la liste : compteurs, familles, couleur par famille,
-absence du rôle `editor`. Et **`FicheDuCompteStaffTest`** pour la fiche (11 cas, 3
-sabotages vérifiés) : aucun rôle global proposé **ni accepté**, les actions du compte hors
-du formulaire, et la règle qui tient tout - `routes/web.php` ne garde que `settings`,
-`testimonials` et `users_roles` par `can:`, et **aucune fonction d'équipe** ne les porte.
+Gardes : **`DroitsDeLAdministrateurTest`** (11 cas, **5 sabotages vérifiés**) pour la
+ligne entre les deux niveaux - les trois groupes `can:` qui s'ouvrent, l'événement ouvert
+sans affectation, la contre-épreuve du gestionnaire qui ne voit pas l'événement d'à côté,
+le niveau super admin ni proposé ni **accepté**, et la garde de source sur
+`isColloqueSuperAdmin()`. **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée
+un événement, l'équipe attachée à UN événement, les rôles déduits et non stockés, et
+l'accord des deux portails. **`OngletRolesTest`** pour la liste : compteurs, familles,
+couleur par famille, absence du rôle `editor`. Et **`FicheDuCompteStaffTest`** pour la
+fiche (17 cas, 6 sabotages vérifiés) : aucun rôle global proposé **ni accepté**, les
+actions du compte hors du formulaire, et `routes/web.php` qui ne garde que `settings`,
+`testimonials` et `users_roles` par `can:`, **aucune fonction d'équipe** ne les portant.
 
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 

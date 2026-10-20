@@ -60,11 +60,16 @@ class EventFormController extends Controller
     {
         $event = $action->handle($request, null);
 
-        // L'administrateur de colloque qui crée l'événement en devient gestionnaire
-        // (fonction pleine sur cet événement) afin de pouvoir la gérer. Le
-        // super-admin voit déjà tout : pas besoin de l'affecter.
+        // Le membre du staff qui crée l'événement en devient gestionnaire
+        // (fonction pleine sur cet événement) afin de pouvoir le gérer.
+        //
+        // ⚠️ **Sauf l'administrateur : il voit déjà tout, et il crée les
+        // événements pour y attacher SON gestionnaire, pas pour le devenir.**
+        // Garder `isColloqueSuperAdmin()` ici l'inscrivait dans l'équipe de
+        // chaque événement qu'il ouvre - une affectation qui ne lui apporte
+        // aucun droit de plus et qui salit la liste de l'équipe.
         $creator = $request->user();
-        if ($creator instanceof User && ! $creator->isColloqueSuperAdmin()) {
+        if ($creator instanceof User && ! $creator->isColloqueAdmin()) {
             $already = DB::table('event_user')
                 ->where('event_id', $event->id)->where('user_id', $creator->id)->exists();
             if (! $already) {

@@ -102,7 +102,10 @@
                 <div class="ukc-card">
                     <h2>Niveau d’accès</h2>
                     <div class="uf-levels">
-                        @foreach (\App\Models\User::accessLevels() as $key => $label)
+                        {{-- ⚠️ `$accessLevels` vient du contrôleur : « Super
+                             administrateur » ne figure dans cette liste que pour
+                             un super administrateur (User::niveauxAttribuablesPar). --}}
+                        @foreach ($accessLevels as $key => $label)
                             <label class="uf-choice">
                                 <input type="radio" name="access_level" value="{{ $key }}" @checked($lvl === $key) required>
                                 <span class="uf-choice__body">

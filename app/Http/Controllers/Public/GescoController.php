@@ -67,7 +67,7 @@ class GescoController extends Controller
         // (capacité editions_write) ne sont PAS limités.
         $requester = Auth::guard('account')->user() ?? Auth::guard('web')->user();
         $unlimited = $requester instanceof User
-            && ($requester->isColloqueSuperAdmin() || $requester->canAnyEdition('editions_write'));
+            && ($requester->isColloqueAdmin() || $requester->canAnyEdition('editions_write'));
 
         if (! $unlimited) {
             $scope = $requester ? 'u'.$requester->id : 'ip'.$request->ip();

@@ -12,7 +12,11 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Étanchéité d'accès par événement (modèle « pur ») : un membre du staff n'agit
  * sur un événement que s'il y est affecté avec une fonction couvrant la capacité
- * demandée. L'administrateur (super-capacité `manage_colloques`) passe partout.
+ * demandée.
+ *
+ * ⚠️ **L'administrateur, lui, passe partout sans affectation** ({@see User::isColloqueAdmin()}) :
+ * il a accès à tous les événements, et il n'a pas à se nommer dans l'équipe de
+ * chacun pour l'ouvrir. Ne pas redescendre cette garde sur le super admin.
  *
  * Résolution de l'événement en contexte : paramètre de route {event}, sinon
  * modèle enfant lié (via event_id / relation edition), sinon `event_id` de
@@ -32,7 +36,7 @@ class EnsureEditionAccess
             abort(403);
         }
 
-        if ($user->isColloqueSuperAdmin()) {
+        if ($user->isColloqueAdmin()) {
             return $next($request);
         }
 
