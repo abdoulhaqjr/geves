@@ -1645,7 +1645,13 @@ body.ukc-overlay-open { overflow: hidden; }
   padding-right: calc(var(--ukc-cb-fab) + 28px);
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
 }
-.ukc-cookie__text { margin: 0; flex: 1; min-width: 240px; font-size: 13.5px; line-height: 1.55; }
+/* ⚠️ MESURÉ sur la vraie fonte (FontLib, Jost 400 à 13,5 px) : le texte dispose
+   de 853,6 px au plafond de 1200 - largeur de la barre moins ses rembourrages,
+   la goutttière et les 202,4 px des deux actions. L'ancienne phrase en réclamait
+   981,8 et passait donc sur DEUX lignes ; la phrase actuelle en demande 692, soit
+   161 px de marge, et tient sur une ligne jusqu'à ~1040 px de fenêtre. Rallonger
+   la phrase, c'est reprendre cette mesure - pas la juger à l'œil. */
+.ukc-cookie__text { margin: 0; flex: 1; min-width: 240px; font-size: 13.5px; line-height: 1.55; text-wrap: pretty; }
 .ukc-cookie__acts { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 /* ⚠️ « En savoir plus » est nommé explicitement : `.ukc-scope a:not(.ukc-btn)`
    fait HÉRITER la couleur, et un lien bleu de charte sur ce fond sombre
@@ -1662,8 +1668,92 @@ body.ukc-overlay-open { overflow: hidden; }
   .ukc-cookie__acts { width: 100%; justify-content: space-between; }
 }
 
-/* Page /cookies : la prose se lit, le tableau s'étend. */
-.ukc-cookie-page { max-width: 960px; }
+/* ---------------------------------------------------------------------------
+   Page /cookies
+   ---------------------------------------------------------------------------
+   ⚠️ LA PAGE OCCUPE SA LARGEUR. Sa première version bornait tout à 960 px et
+   la prose à 62ch : dans une carte de 1135 px, cinq cents pixels restaient vides
+   à droite - exactement le travers déjà payé sur l'aperçu du programme. Les
+   chiffres et le tableau s'étendent donc ; seule la PROSE garde sa mesure, parce
+   qu'au-delà de ~75 caractères par ligne l'œil perd le retour à la ligne.
+   --------------------------------------------------------------------------- */
+.ukc-cookie-page { max-width: 1120px; }
+
+/* Les trois promesses, dans le bandeau : c'est ce qu'on vient vérifier. */
+.ukc-cookie-claims { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.ukc-cookie-claims span {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 600; color: #fff;
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22);
+  padding: 7px 13px; border-radius: 50px;
+}
+.ukc-cookie-claims svg { color: var(--ukc-gold); flex-shrink: 0; }
+
+/* Les chiffres. ⚠️ `auto-fit` troue la dernière rangée dès que le nombre de
+   cartes change (leçon du barème et des ateliers) : flux souple, pas de grille. */
+.ukc-cookie-facts { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+.ukc-cookie-facts .fact {
+  flex: 1 1 240px; min-width: 0;
+  background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius);
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 2px;
+}
+.ukc-cookie-facts .val {
+  font-size: 2.2rem; font-weight: 900; line-height: 1.05; color: var(--ukc-blue);
+  font-variant-numeric: tabular-nums;
+}
+.ukc-cookie-facts .lbl { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ukc-text); }
+.ukc-cookie-facts .hint { font-size: 13px; color: var(--ukc-muted); margin-top: 4px; }
+
 .ukc-cookie-page .ukc-card { margin-bottom: 18px; }
-.ukc-cookie-page__lede { max-width: 62ch; line-height: 1.7; color: var(--ukc-muted); margin: 0 0 12px; }
-.ukc-cookie-page code { font-size: 12.5px; background: #eef1f6; border-radius: 5px; padding: 2px 6px; }
+.ukc-cookie-intro p { max-width: 75ch; line-height: 1.7; color: var(--ukc-muted); margin: 0; }
+
+/* Inventaire. Un TABLEAU : quatre colonnes comparables, que des cartes
+   désaligneraient. Seule sa présentation est reprise. */
+.ukc-cookie-table {
+  background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius);
+  overflow: hidden; margin-bottom: 18px;
+}
+.ukc-cookie-table table { width: 100%; border-collapse: collapse; }
+.ukc-cookie-table thead th {
+  text-align: left; font-size: 11.5px; font-weight: 800; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--ukc-muted);
+  padding: 14px 20px; background: #f6f8fc; border-bottom: 1px solid var(--ukc-border);
+}
+.ukc-cookie-table tbody td { padding: 18px 20px; border-bottom: 1px solid var(--ukc-border); vertical-align: top; font-size: 14px; }
+.ukc-cookie-table tbody tr:last-child td { border-bottom: none; }
+.ukc-cookie-table code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px; background: #eef1f6; border-radius: 6px; padding: 4px 8px;
+  color: var(--ukc-blue-dark); white-space: nowrap;
+}
+.ukc-cookie-table .org {
+  display: inline-block; font-size: 12px; font-weight: 700; white-space: nowrap;
+  background: #e8f5ec; color: #0a7a2f; border-radius: 50px; padding: 4px 11px;
+}
+/* ⚠️ Un tiers se distingue à l'ŒIL, pas seulement au mot : c'est la seule ligne
+   du tableau qui engage quelqu'un d'autre que nous. */
+.ukc-cookie-table .org--tiers { background: #fff4e0; color: #8a5200; }
+.ukc-cookie-table .why { color: var(--ukc-muted); line-height: 1.6; max-width: 54ch; }
+.ukc-cookie-table .dur { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.ukc-cookie-duo { display: flex; flex-wrap: wrap; gap: 18px; align-items: stretch; }
+.ukc-cookie-duo .ukc-card { flex: 1 1 400px; min-width: 0; margin-bottom: 0; display: flex; flex-direction: column; }
+.ukc-cookie-duo p { line-height: 1.7; color: var(--ukc-muted); margin: 0 0 14px; }
+.ukc-cookie-duo .ukc-btn { align-self: flex-start; margin-top: auto; }
+
+/* ⚠️ Sous 720 px le tableau S'EMPILE au lieu de défiler : quatre colonnes dont
+   une de prose ne se lisent pas à 375 px, et une barre de défilement horizontale
+   cache la moitié de l'information. Chaque cellule reprend alors son intitulé de
+   colonne (`data-th`), sans quoi on lit des valeurs sans savoir ce qu'elles sont. */
+@media (max-width: 720px) {
+  .ukc-cookie-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .ukc-cookie-table tbody tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--ukc-border); }
+  .ukc-cookie-table tbody tr:last-child { border-bottom: none; }
+  .ukc-cookie-table tbody td { display: flex; gap: 12px; border: none; padding: 7px 18px; }
+  .ukc-cookie-table tbody td::before {
+    content: attr(data-th); flex: 0 0 34%;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--ukc-muted); padding-top: 3px;
+  }
+  .ukc-cookie-table .why { max-width: none; }
+}

@@ -16,7 +16,7 @@
          role="region" aria-label="{{ __('Information sur les cookies') }}">
         <div class="ukc-cookie__inner">
             <p class="ukc-cookie__text">
-                {{ __('Ce site dépose uniquement les cookies nécessaires à son fonctionnement : votre session et la sécurité des formulaires. Aucune mesure d’audience, aucun suivi publicitaire.') }}
+                {{ __('Ce site ne dépose que les cookies nécessaires à son fonctionnement : session et sécurité des formulaires. Aucun traceur.') }}
             </p>
             <div class="ukc-cookie__acts">
                 <a href="{{ route('public.cookies') }}" class="ukc-cookie__link">{{ __('En savoir plus') }}</a>

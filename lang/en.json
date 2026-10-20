@@ -1166,5 +1166,17 @@
     ":n minute(s) d’inactivité": ":n minute(s) of inactivity",
     "Les refuser quand même": "Declining them anyway",
     "Votre navigateur peut bloquer ou effacer ces cookies à tout moment, depuis ses propres réglages. Sachez seulement ce que cela coûte ici : sans cookie de session, la connexion à votre espace devient impossible et l’envoi des formulaires échoue. Rien d’autre ne sera perdu.": "Your browser can block or erase these cookies at any time, from its own settings. Just know what that costs here: without the session cookie you cannot sign in to your space, and form submissions fail. Nothing else is lost.",
-    "Pour une question sur vos données, écrivez à :mail.": "For any question about your data, write to :mail."
+    "Pour une question sur vos données, écrivez à :mail.": "For any question about your data, write to :mail.",
+    "Ce site ne dépose que les cookies nécessaires à son fonctionnement : session et sécurité des formulaires. Aucun traceur.": "This site only sets the cookies it needs to run: session and form security. No trackers.",
+    "Aucune mesure d’audience": "No analytics",
+    "Aucun suivi publicitaire": "No ad tracking",
+    "Aucun partage à des tiers": "No sharing with third parties",
+    "cookie(s) au total": "cookie(s) in total",
+    "Tous nécessaires au fonctionnement.": "All needed for the site to work.",
+    "traceur": "tracker",
+    "Ni audience, ni publicité, ni réseau social.": "No analytics, no advertising, no social network.",
+    "jours au plus": "days at most",
+    "Durée du plus long d’entre eux.": "Lifetime of the longest-lived one.",
+    "Les seuls cookies posés servent à vous garder connecté et à protéger les formulaires. C’est pourquoi aucune bannière ne vous demande d’accepter ou de refuser : il n’y a rien de facultatif à refuser. Les voici, un par un.": "The only cookies stored keep you signed in and protect the forms. That is why no banner asks you to accept or decline: there is nothing optional to decline. Here they are, one by one.",
+    "Pour toute question sur vos données, écrivez à la Direction de la Recherche et de l’Innovation.": "For any question about your data, write to the Research and Innovation Directorate."
 }

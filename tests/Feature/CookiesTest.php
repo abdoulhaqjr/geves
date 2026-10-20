@@ -3,6 +3,7 @@
 use App\Providers\AppServiceProvider;
 use App\Support\CookieConsent;
 use App\Support\Settings;
+use FontLib\Font;
 use Illuminate\Support\Facades\Config;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
@@ -126,4 +127,110 @@ it('expose le réglage dans l’onglet Sécurité', function () {
         ->get(route('admin.settings', ['tab' => 'security']))
         ->assertOk()
         ->assertSee('cookies_notice_enabled', false);
+});
+
+it('⚠️ la phrase du bandeau tient sur UNE ligne', function () {
+    // ⚠⚠ MESURÉE SUR LA VRAIE FONTE, pas jugée à l'œil : on somme les chasses
+    // de Jost 400 à 13,5 px (FontLib, déjà présent pour dompdf). L'ancienne phrase
+    // en réclamait 981,8 px et passait sur deux lignes.
+    //
+    // Budget = plafond de la barre (1200) - rembourrage gauche (16) - rembourrage
+    // droit, qui réserve la bulle de l'assistante (--ukc-cb-fab 84 + 28 = 112) -
+    // goutttière (16) - les deux actions mesurées (202,4) = 853,6 px.
+    $budget = 853.6;
+
+    $vue = file_get_contents(base_path('resources/views/components/ukc/cookie-notice.blade.php'));
+    $debut = strpos($vue, 'ukc-cookie__text">');
+    $fin = strpos($vue, '</p>', (int) $debut);
+
+    expect($debut)->not->toBeFalse()->and($fin)->not->toBeFalse();
+
+    // On ne garde que le TEXTE, débarrassé de l'enveloppe Blade : c'est lui que
+    // le navigateur devra poser sur une ligne.
+    $phrase = trim(strtr(
+        substr($vue, (int) $debut + 18, (int) $fin - (int) $debut - 18),
+        ['{{ __(' => '', ') }}' => '', "'" => '']
+    ));
+
+    expect($phrase)->not->toBe('')
+        ->and(largeurJost($phrase, 13.5))->toBeLessThan($budget);
+});
+
+it('les chiffres de la page se DÉDUISENT de l’inventaire', function () {
+    // ⚠️ Écrits en dur, ils mentiraient dès qu'un cookie s'ajoute - et c'est
+    // précisément la page où l'on vient vérifier un compte.
+    Config::set('services.turnstile.site_key', 'site');
+    Config::set('services.turnstile.secret_key', 'secret');
+
+    $attendu = count(CookieConsent::inventory());
+
+    $this->get(route('public.cookies'))->assertOk()
+        ->assertSee('<span class="val">'.$attendu.'</span>', false)
+        ->assertSee('<span class="val">'.CookieConsent::lifetimeDays().'</span>', false);
+
+    // Turnstile configuré : le compte doit avoir bougé d'autant.
+    expect($attendu)->toBeGreaterThan(3);
+});
+
+it('le tableau s’empile sous 720 px sans perdre ses intitulés', function () {
+    // ⚠️ Quatre colonnes dont une de prose ne se lisent pas à 375 px, et une
+    // barre de défilement horizontale cache la moitié du tableau. Il s'empile
+    // donc - mais chaque cellule doit alors reprendre son intitulé, sinon on lit
+    // des valeurs sans savoir ce qu'elles sont.
+    $html = $this->get(route('public.cookies'))->assertOk()->getContent();
+
+    foreach ([__('Cookie'), __('Origine'), __('Durée')] as $colonne) {
+        expect($html)->toContain('data-th="'.$colonne.'"');
+    }
+
+    $css = file_get_contents(base_path('resources/css/public.css'));
+
+    expect($css)->toContain('content: attr(data-th)');
+});
+
+/**
+ * Largeur d'une chaîne en pixels, sur la vraie fonte du site.
+ *
+ * ⚠️ On lit les chasses du fichier TTF (FontLib) plutôt que d'estimer à tant de
+ * pixels par caractère : une estimation se trompe de dizaines de pixels sur une
+ * phrase, et c'est exactement là que se joue le passage à la seconde ligne.
+ */
+function largeurJost(string $texte, float $px): float
+{
+    static $police = null;
+
+    if ($police === null) {
+        $f = Font::load(public_path('fonts/jost-400.ttf'));
+        $f->parse();
+        $f->getTableObject('hmtx')->parse();
+        $police = [$f->getUnicodeCharMap(), $f->getData('hmtx'), $f->getData('head', 'unitsPerEm') ?: 1000];
+    }
+
+    [$carte, $hmtx, $upem] = $police;
+    $total = 0;
+
+    foreach (preg_split('//u', $texte, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $c) {
+        $gid = $carte[mb_ord($c, 'UTF-8')] ?? null;
+        $total += $gid === null ? 0 : ($hmtx[$gid][0] ?? 0);
+    }
+
+    return $total / $upem * $px;
+}
+
+it('⚠️ le tiers se repère sur la DONNÉE, pas sur un libellé traduit', function () {
+    // La vue comparait `party` à __('Première') : sous session anglaise la
+    // comparaison échouait, et Cloudflare perdait sa distinction visuelle - la
+    // seule ligne du tableau qui engage quelqu'un d'autre que nous.
+    Config::set('services.turnstile.site_key', 'site');
+    Config::set('services.turnstile.secret_key', 'secret');
+
+    $lignes = collect(CookieConsent::inventory());
+
+    expect($lignes->where('third', true)->pluck('name')->all())->toBe(['Cloudflare Turnstile'])
+        ->and($lignes->where('third', false))->toHaveCount(3);
+
+    $vue = file_get_contents(base_path('resources/views/public/cookies.blade.php'));
+
+    expect($vue)->toContain("'org--tiers' => \$c['third']")
+        ->and($vue)->not->toContain('str_starts_with');
 });

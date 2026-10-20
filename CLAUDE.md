@@ -72,7 +72,40 @@ consentement qui ne gouvernerait rien.
   runtime par `applySettingsToConfig()` - l'équivalent du `ConfigTrait` de la
   référence. ⚠️ **Une case à cocher ne passe pas par `filled()`** (cf.
   `fedapay.card`), sinon « ne pas afficher » ne serait jamais appliqué.
-- Tests : `tests/Feature/CookiesTest.php` (10 cas, **5 sabotages vérifiés**).
+- ⚠⚠ **LA PHRASE DU BANDEAU TIENT SUR UNE LIGNE, ET C'EST MESURÉ.** Elle en
+  occupait deux. Budget du texte = plafond de la barre (1200) - rembourrage gauche
+  (16) - rembourrage droit, qui **réserve la bulle de l'assistante**
+  (`--ukc-cb-fab` 84 + 28 = 112) - goutttière (16) - les deux actions (202,4) =
+  **853,6 px**. L'ancienne phrase en réclamait **981,8**, l'actuelle **692** - une
+  ligne jusqu'à ~1040 px de fenêtre. ⚠️ **Mesuré sur la VRAIE FONTE** (FontLib,
+  déjà là pour dompdf : on somme les chasses de `jost-400.ttf`), pas à tant de
+  pixels par caractère - une estimation se trompe de dizaines de pixels sur une
+  phrase, exactement là où se joue le passage à la seconde ligne. Un cas Pest
+  **relit la phrase dans la vue** et la remesure : la rallonger le fait tomber.
+  ⚠️ Contrepartie assumée : « aucune mesure d'audience, aucun suivi publicitaire »
+  ne tenait pas dans ce budget - le bandeau dit « Aucun traceur » (le terme de la
+  CNIL, qui couvre les deux) et la page `/cookies` garde la précision entière.
+- ⚠⚠ **LA PAGE `/cookies` OCCUPE SA LARGEUR.** Sa première version bornait tout
+  à 960 px et la prose à 62ch : dans une carte de 1135 px, **cinq cents pixels
+  restaient vides à droite** - le travers déjà payé sur l'aperçu du programme.
+  Les **chiffres** (`.ukc-cookie-facts`) et le **tableau** s'étendent ; seule la
+  PROSE garde sa mesure, parce qu'au-delà de ~75 caractères par ligne l'œil perd
+  le retour à la ligne.
+  - ⚠️ **Les trois chiffres se DÉDUISENT de l'inventaire** (nombre de cookies,
+    0 traceur, durée la plus longue) : écrits en dur ils mentiraient dès qu'un
+    cookie s'ajoute - et c'est précisément la page où l'on vient vérifier un compte.
+  - ⚠️ **L'inventaire reste un `<table>`** : quatre colonnes comparables, que des
+    cartes désaligneraient (leçon du barème). Seule sa présentation change.
+    **Sous 720 px il S'EMPILE** au lieu de défiler - une barre horizontale cache
+    la moitié du tableau - et chaque cellule reprend alors son intitulé via
+    `data-th` + `content: attr(data-th)`, sans quoi on lit des valeurs sans savoir
+    ce qu'elles sont.
+  - ⚠⚠ **« TIERCE PARTIE » EST UNE DONNÉE (`third`), PAS UNE DÉDUCTION DEPUIS LE
+    LIBELLÉ.** La vue comparait `party` à `__('Première')` : sous session anglaise
+    la comparaison échouait et Cloudflare perdait sa distinction visuelle - la
+    seule ligne qui engage quelqu'un d'autre que nous. C'est `VocabulairePublicTest`
+    qui l'a trouvé, en refusant cette clé d'un seul mot.
+- Tests : `tests/Feature/CookiesTest.php` (14 cas, **9 sabotages vérifiés**).
   ⚠️ **DEUX cas ne mordaient pas**, et seul le sabotage l'a montré : celui du lien
   du pied cherchait l'adresse dans la **page entière**, où le bandeau porte la
   même (« En savoir plus ») - puis, une fois borné à partir de `<footer`, il

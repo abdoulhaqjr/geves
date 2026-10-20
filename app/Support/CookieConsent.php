@@ -52,12 +52,17 @@ final class CookieConsent
     }
 
     /**
+     * ⚠️ `third` est une DONNÉE, pas une déduction depuis le libellé : la vue
+     * distinguait le tiers en comparant `party` à une chaîne traduite, donc la
+     * distinction tombait dès qu'on lisait la page en anglais - et c'est la seule
+     * ligne du tableau qui engage quelqu'un d'autre que nous.
+     *
      * Inventaire affiché sur `/cookies`, construit depuis la CONFIGURATION
      * RÉELLE et non recopié à la main : le nom du cookie de session et sa durée
      * changent avec `config/session.php`, et une page qui l'ignorerait
      * annoncerait autre chose que ce que le navigateur reçoit.
      *
-     * @return list<array{name: string, party: string, purpose: string, duration: string}>
+     * @return list<array{name: string, party: string, third: bool, purpose: string, duration: string}>
      */
     public static function inventory(): array
     {
@@ -70,18 +75,21 @@ final class CookieConsent
             [
                 'name' => (string) config('session.cookie', 'geves_session'),
                 'party' => __('Première partie'),
+                'third' => false,
                 'purpose' => __('Tient votre session : connexion à votre espace, étapes d’un formulaire en cours. Sans lui, impossible de rester connecté.'),
                 'duration' => $sessionDuree,
             ],
             [
                 'name' => 'XSRF-TOKEN',
                 'party' => __('Première partie'),
+                'third' => false,
                 'purpose' => __('Jeton anti-falsification de requête : il prouve que le formulaire envoyé vient bien de cette page.'),
                 'duration' => $sessionDuree,
             ],
             [
                 'name' => self::cookieName(),
                 'party' => __('Première partie'),
+                'third' => false,
                 'purpose' => __('Retient que vous avez lu cette information, pour ne plus afficher le bandeau.'),
                 'duration' => __(':n jour(s)', ['n' => self::lifetimeDays()]),
             ],
@@ -94,6 +102,7 @@ final class CookieConsent
             $lignes[] = [
                 'name' => 'Cloudflare Turnstile',
                 'party' => __('Tierce partie - Cloudflare'),
+                'third' => true,
                 'purpose' => __('Vérifie que le formulaire d’inscription ou de contact n’est pas envoyé par un automate. Ce contrôle ne sert pas à vous suivre d’un site à l’autre.'),
                 'duration' => __('Le temps du contrôle'),
             ];
