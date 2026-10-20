@@ -38,6 +38,7 @@
                      page, elle devient introuvable à qui n'a pas le lien. Gardée par
                      PageAccueilTest. --}}
                 <a href="{{ route('attestation.verify.landing') }}">{{ __('Vérifier une attestation') }}</a>
+                <a href="{{ route('public.cookies') }}">{{ __('Cookies') }}</a>
             </div>
             <div>
                 <h4>{{ __('Contact DRI') }}</h4>

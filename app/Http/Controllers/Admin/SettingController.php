@@ -151,6 +151,7 @@ class SettingController extends Controller
             'livekit_egress_s3_access_key' => $g('livekit_egress.s3_access_key', (string) config('meetings.livekit.egress.s3_access_key')),
             'livekit_egress_s3_secret' => $g('livekit_egress.s3_secret', (string) config('meetings.livekit.egress.s3_secret')),
             'livekit_egress_s3_endpoint' => $g('livekit_egress.s3_endpoint', (string) config('meetings.livekit.egress.s3_endpoint')),
+            'cookies_notice_enabled' => (bool) Settings::get('cookies.notice_enabled', (bool) config('cookies.notice_enabled', true)),
             'hal_enabled' => (bool) Settings::get('hal.enabled', (bool) config('services.hal.enabled', false)),
             'sms_default' => $g('sms.default', (string) config('sms.default', 'log')),
             'sms_http_url' => $g('sms.http_url', (string) config('sms.http.url')),
@@ -223,6 +224,7 @@ class SettingController extends Controller
             $payload[$key] = (string) $request->input($field, '');
         }
         $payload['hal.enabled'] = $request->boolean('hal_enabled');
+        $payload['cookies.notice_enabled'] = $request->boolean('cookies_notice_enabled');
         $payload['fedapay.card'] = $request->boolean('fedapay_card');
 
         // Tolère le collage d'une ligne d'.env entière (« LIVEKIT_API_KEY=xxx »)
@@ -376,7 +378,7 @@ class SettingController extends Controller
             str_starts_with($field, 'hero_') => 'banners',
             str_starts_with($field, 'payments_'), str_starts_with($field, 'fedapay_') => 'payments',
             str_starts_with($field, 'mail_'), $field === 'test_email' => 'email',
-            str_starts_with($field, 'turnstile_') => 'security',
+            str_starts_with($field, 'turnstile_'), $field === 'cookies_notice_enabled' => 'security',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
             $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_') => 'integrations',

@@ -268,6 +268,14 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // Bandeau d'information sur les cookies : c'est le réglage en base qui
+        // décide, pas le `.env`. ⚠️ Une case à cocher ne passe PAS par `filled()` -
+        // décochée elle vaut `false`, que `filled()` rejette, et « ne pas afficher le
+        // bandeau » ne serait jamais appliqué (même piège que `fedapay.card`).
+        if (array_key_exists('cookies.notice_enabled', $s)) {
+            Config::set('cookies.notice_enabled', (bool) $set('cookies.notice_enabled'));
+        }
+
         // Fournisseurs d'IA : clé + modèle par défaut
         foreach (['openai', 'anthropic', 'gemini', 'grok'] as $svc) {
             if (filled($set("ai.{$svc}_key"))) {

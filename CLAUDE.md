@@ -31,6 +31,54 @@ Larastan **niveau 5**.
 - Dans les textes affichés, employer **évaluateur** et **évaluation**. Les identifiants techniques historiques (`reviewer`, `review`, chemins et clés de routes contenant `relecteur` ou `relecture`) restent stables pour préserver les liens et données existants.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
+### Cookies : un bandeau qui INFORME, parce qu'il n'y a rien à refuser
+
+⚠⚠ **GEVES NE POSE QUE DES COOKIES STRICTEMENT NÉCESSAIRES** : la session
+Laravel, le jeton CSRF, et l'accusé de lecture du bandeau lui-même. Ni mesure
+d'audience, ni régie, ni contenu tiers embarqué sur le site public (les YouTube
+du pied de page sont des **icônes de lien**, pas des lecteurs). Le bandeau
+**informe** donc, avec un seul bouton « J'ai compris » - il ne demande pas un
+consentement qui ne gouvernerait rien.
+
+- ⚠⚠ **ON N'A PAS REPRIS LE « REFUSER » DU BANDEAU DE RÉFÉRENCE** (Bizzcart, via
+  `spatie/laravel-cookie-consent`) : son `consentWithoutCookies()` **efface tous
+  les cookies du domaine** puis invite à recharger la page. Transposé ici, il
+  déconnecterait le participant et ferait échouer sa requête suivante sur le jeton
+  CSRF - pour refuser des cookies qui n'existent pas. Le jour où un outil de
+  mesure arrive, le choix s'ajoute dans **`App\Support\CookieConsent`** et nulle
+  part ailleurs ; un cas de garde (« n'annonce AUCUN cookie de mesure ») tombe
+  alors et oblige à revoir le texte du bandeau, qui promet aujourd'hui l'inverse.
+- ⚠⚠ **LE BALISAGE NE VARIE PAS D'UN VISITEUR À L'AUTRE.** Les pages publiques
+  sont faites pour être **cacheables en HTTP** : rendre le bandeau « seulement si
+  le cookie manque » ferait entrer l'état d'UN visiteur dans le cache de TOUS. Le
+  serveur rend toujours le même HTML, le bandeau part **`hidden`**, et un script
+  le révèle si le cookie manque. ⚠️ Dans l'autre sens - visible puis masqué - il
+  clignoterait à chaque page pour qui l'a déjà lu.
+- ⚠️ **La place de la bulle de l'assistante est RÉSERVÉE, pas devinée** : les deux
+  sont fixés en bas et se recouvrent par construction. Le dégagement reprend le
+  jeton **`--ukc-cb-fab`** (même leçon que le panneau du chatbot) ;
+  `initChatbotPoliteness()` ne reste qu'un filet - **au doigt il n'y a pas de
+  pointeur** pour déclencher la politesse.
+- **La page `/cookies` (`public.cookies`) est la SUBSTANCE du bandeau** : son
+  inventaire est construit depuis la **configuration réelle**
+  (`CookieConsent::inventory()` lit `session.cookie`, `session.lifetime`,
+  `cookies.lifetime_days`), jamais recopié à la main - une liste écrite en dur
+  annoncerait autre chose que ce que le navigateur reçoit. **Turnstile n'y figure
+  que s'il est configuré** : sans ses deux clés, le widget ne se charge nulle part.
+- ⚠️ **Elle est liée depuis le PIED DE PAGE**, pas seulement depuis le bandeau :
+  sinon elle n'existerait que pour qui a cliqué une fois, et plus jamais après.
+  Le bandeau ne s'affiche pas sur cette page - il masquerait son propre inventaire.
+- Activable dans **Réglages › Sécurité** (`cookies.notice_enabled`), surchargé au
+  runtime par `applySettingsToConfig()` - l'équivalent du `ConfigTrait` de la
+  référence. ⚠️ **Une case à cocher ne passe pas par `filled()`** (cf.
+  `fedapay.card`), sinon « ne pas afficher » ne serait jamais appliqué.
+- Tests : `tests/Feature/CookiesTest.php` (10 cas, **5 sabotages vérifiés**).
+  ⚠️ **DEUX cas ne mordaient pas**, et seul le sabotage l'a montré : celui du lien
+  du pied cherchait l'adresse dans la **page entière**, où le bandeau porte la
+  même (« En savoir plus ») - puis, une fois borné à partir de `<footer`, il
+  l'embarquait encore, le bandeau étant rendu **après** `</footer>`. On borne des
+  DEUX côtés.
+
 ### Protection des formulaires publics
 
 - L'inscription participant (`/inscription`) et le formulaire de contact de l'accueil utilisent Cloudflare Turnstile. Renseigner les deux clés dans **Réglages → Sécurité** (secret chiffré en base) ou dans `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, avec les domaines autorisés dans Cloudflare. Sans les deux clés, les boutons d'envoi restent désactivés ; le serveur refuse aussi les requêtes directes.

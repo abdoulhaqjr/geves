@@ -375,6 +375,25 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="settings" :size="20" /> Cookies</span></h2>
+                    <p class="desc">
+                        La plateforme ne dépose que les cookies nécessaires à son fonctionnement : la session et la
+                        sécurité des formulaires. Le bandeau l’annonce au visiteur et renvoie vers
+                        <a href="{{ route('public.cookies') }}" target="_blank" rel="noopener">la page qui les liste</a>,
+                        laquelle reste atteignable depuis le pied de page même bandeau masqué.
+                    </p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                                <input type="checkbox" name="cookies_notice_enabled" value="1" style="width:auto;" @checked($v('cookies_notice_enabled'))>
+                                Afficher le bandeau d’information sur les pages publiques
+                            </label>
+                            <span class="hint">Le visiteur l’écarte d’un clic, pour {{ \App\Support\CookieConsent::lifetimeDays() }} jours.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Intelligence artificielle --}}

@@ -69,6 +69,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ArchiveController;
 use App\Http\Controllers\Public\CoauthorController;
 use App\Http\Controllers\Public\ContactController;
+use App\Http\Controllers\Public\CookieController;
 use App\Http\Controllers\Public\DeroulementController;
 use App\Http\Controllers\Public\EventSeriesController;
 use App\Http\Controllers\Public\GescoController;
@@ -84,6 +85,11 @@ Route::post('/csp-report', CspReportController::class)->middleware('throttle:20,
 // Page publique d'un événement de colloque.
 Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
 Route::get('/assistante', [GescoController::class, 'page'])->name('public.gesco');
+
+// Inventaire des cookies déposés. C'est la page que vise le bandeau d'information,
+// et elle est atteignable depuis le pied de page - sans quoi elle n'existerait que
+// pour qui a cliqué sur le bandeau, donc une fois.
+Route::get('/cookies', CookieController::class)->name('public.cookies');
 Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask');
 
 // Pont interne signé : uniquement le navigateur isolé de production des tutoriels

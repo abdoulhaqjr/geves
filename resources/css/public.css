@@ -1619,3 +1619,51 @@ body.ukc-overlay-open { overflow: hidden; }
   .ukc-cred-stage { padding: 0; }
   .ukc-cred-doc { box-shadow: none; border-radius: 0; }
 }
+
+/* ===========================================================================
+   Bandeau d'information sur les cookies (pages publiques)
+   ---------------------------------------------------------------------------
+   ⚠️ LA PLACE DE LA BULLE DE L'ASSISTANTE EST RÉSERVÉE, ELLE N'EST PAS DEVINÉE :
+   la bulle est fixée en bas à droite et le bandeau est une barre basse pleine
+   largeur - ils se recouvrent par construction. Le dégagement reprend le JETON
+   `--ukc-cb-fab`, donc il suit le diamètre si on y touche (même leçon que le
+   panneau du chatbot, qu'un `bottom` écrit en dur avait fini par recouvrir).
+   `initChatbotPoliteness()` reste le filet : il efface la bulle quand elle
+   couvre une action - mais au doigt il n'y a pas de pointeur, donc la place
+   réservée est le vrai remède.
+   =========================================================================== */
+.ukc-cookie {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 54;
+  background: var(--ukc-hero-navy, #14205a); color: #fff;
+  border-top: 3px solid var(--ukc-gold, #ffd700);
+  box-shadow: 0 -8px 28px rgba(10, 20, 50, .3);
+}
+.ukc-cookie[hidden] { display: none; }
+.ukc-cookie__inner {
+  max-width: 1200px; margin: 0 auto;
+  padding: 14px 16px 14px;
+  padding-right: calc(var(--ukc-cb-fab) + 28px);
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.ukc-cookie__text { margin: 0; flex: 1; min-width: 240px; font-size: 13.5px; line-height: 1.55; }
+.ukc-cookie__acts { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+/* ⚠️ « En savoir plus » est nommé explicitement : `.ukc-scope a:not(.ukc-btn)`
+   fait HÉRITER la couleur, et un lien bleu de charte sur ce fond sombre
+   deviendrait illisible. Deux classes ne suffiraient pas à la battre. */
+.site-header ~ * .ukc-cookie .ukc-cookie__link,
+.ukc-cookie a.ukc-cookie__link {
+  color: #fff; text-decoration: underline; text-underline-offset: 3px;
+  font-size: 13.5px; font-weight: 600; white-space: nowrap;
+}
+.ukc-cookie a.ukc-cookie__link:hover { color: var(--ukc-gold, #ffd700); }
+
+@media (max-width: 640px) {
+  .ukc-cookie__inner { padding-right: 16px; padding-bottom: calc(var(--ukc-cb-fab) + 16px); }
+  .ukc-cookie__acts { width: 100%; justify-content: space-between; }
+}
+
+/* Page /cookies : la prose se lit, le tableau s'étend. */
+.ukc-cookie-page { max-width: 960px; }
+.ukc-cookie-page .ukc-card { margin-bottom: 18px; }
+.ukc-cookie-page__lede { max-width: 62ch; line-height: 1.7; color: var(--ukc-muted); margin: 0 0 12px; }
+.ukc-cookie-page code { font-size: 12.5px; background: #eef1f6; border-radius: 5px; padding: 2px 6px; }

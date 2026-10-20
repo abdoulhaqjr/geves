@@ -31,6 +31,13 @@
         <x-ukc.gesco-widget />
     @endunless
 
+    {{-- Information sur les cookies : pages PUBLIQUES seulement. Le back-office,
+         l'espace participant et la salle de visio sont des espaces de travail
+         ouverts avec un compte - on n'y pose pas un bandeau d'accueil. --}}
+    @unless (request()->routeIs('admin.*') || request()->routeIs('account.*') || request()->routeIs('session.meeting') || request()->routeIs('public.cookies'))
+        <x-ukc.cookie-notice />
+    @endunless
+
     @stack('scripts')
 </body>
 </html>
