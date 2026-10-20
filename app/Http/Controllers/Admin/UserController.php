@@ -36,7 +36,15 @@ class UserController extends Controller
         $search = trim((string) $request->query('search', ''));
         $sort = ListSort::resolve($request, ['name', 'email', 'last_login_at', 'is_active'], 'name', 'asc');
 
+        // ⚠️⚠️ Un SUPER ADMINISTRATEUR ne se montre qu'à un super administrateur,
+        // liste ET compteurs ({@see User::scopeVisiblesPar()}). Un compte qu'on
+        // laisse apparaître dans un total est un compte dont on apprend
+        // l'existence.
+        $moi = Auth::user();
+        $moi = $moi instanceof User ? $moi : null;
+
         $users = User::query()
+            ->visiblesPar($moi)
             ->with('roles')
             ->when($role !== '', fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $role)))
             ->when($status !== '', fn ($q) => $q->where('is_active', $status === 'active'))
@@ -57,7 +65,8 @@ class UserController extends Controller
         // whereHas plutôt que le scope role() de spatie : renvoie 0 sans lever
         // RoleDoesNotExist si le rôle n'a pas encore été créé (install fraîche).
         $countsByRole = collect(array_keys(StaffRoles::ROLES))
-            ->mapWithKeys(fn ($r) => [$r => User::whereHas('roles', fn ($q) => $q->where('name', $r))->count()]);
+            ->mapWithKeys(fn ($r) => [$r => User::query()->visiblesPar($moi)
+                ->whereHas('roles', fn ($q) => $q->where('name', $r))->count()]);
 
         // ⚠️ Et les affectations PAR ÉVÉNEMENT, qui sont la vraie vie des
         // fonctions d'équipe : `$countsByRole` ne voit que les rôles globaux, si
@@ -66,6 +75,7 @@ class UserController extends Controller
         // On compte les PERSONNES (user_id distincts), pas les lignes : tenir la
         // même fonction sur deux événements ne fait pas deux personnes.
         $parEvenement = DB::table('event_user')
+            ->whereIn('user_id', User::query()->visiblesPar($moi)->select('id'))
             ->selectRaw('role, count(distinct user_id) as personnes, count(distinct event_id) as evenements')
             ->groupBy('role')
             ->get()
@@ -101,7 +111,7 @@ class UserController extends Controller
             'roleUsage' => $this->roleUsageLines($parEvenement->all(), $countsByRole->all(), $rolePermissions->all()),
             'rolePermissions' => $rolePermissions,
             'stats' => [
-                'total' => User::count(),
+                'total' => User::query()->visiblesPar($moi)->count(),
                 'admins' => $countsByRole['administrator'] ?? 0,
                 'reviewers' => $countsByRole['reviewer'] ?? 0,
                 'organizers' => $countsByRole['organizer'] ?? 0,
@@ -120,7 +130,7 @@ class UserController extends Controller
      * répondait à une question que personne ne pose devant cet écran.
      *
      * ⚠️ **Le rôle global n'est mentionné QUE s'il y en a** : c'est ce qui rend
-     * visible, d'un coup d'œil, qu'« Administrateur de la plateforme » est un rôle de
+     * visible, d'un coup d'œil, qu'« Administrateur (rôle hérité) » est un rôle de
      * plateforme et non une fonction d'événement.
      *
      * Assemblé ici et non dans le gabarit : un bloc `@php … @endphp` y casserait
@@ -285,13 +295,32 @@ class UserController extends Controller
             ->with('ukc_status', 'Utilisateur créé.'.($request->boolean('send_verification') ? ' E-mail de vérification envoyé.' : ''));
     }
 
+    /**
+     * ⚠️⚠️ **MASQUER UNE LIGNE NE FERME PAS UNE PORTE.** Le compte d'un super
+     * administrateur disparaît de la liste pour qui n'en est pas un ; sans cette
+     * garde, son identifiant suffisait encore à ouvrir sa fiche, à lui envoyer
+     * une réinitialisation de mot de passe, à le désactiver ou à le supprimer.
+     * Elle est posée sur les CINQ actions qui prennent un `{user}`.
+     *
+     * ⚠️ **404, pas 403** : un 403 confirmerait que le compte existe, ce que
+     * cette garde sert précisément à taire.
+     */
+    private function garde(User $user): void
+    {
+        $moi = Auth::user();
+        abort_unless(User::voitLeCompte($moi instanceof User ? $moi : null, $user), 404);
+    }
+
     public function edit(User $user): View
     {
+        $this->garde($user);
+
         return view('admin.users.form', $this->formData($user));
     }
 
     public function update(User $user, Request $request): RedirectResponse
     {
+        $this->garde($user);
         $data = $this->validateUser($request, $user);
 
         if ($refus = $this->refusDeFermeture($user, $request, $data)) {
@@ -365,6 +394,7 @@ class UserController extends Controller
 
     public function resendVerification(User $user): RedirectResponse
     {
+        $this->garde($user);
         if ($user->hasVerifiedEmail()) {
             return back()->with('ukc_error', 'Cet utilisateur a déjà vérifié son adresse.');
         }
@@ -381,6 +411,7 @@ class UserController extends Controller
      */
     public function sendPasswordReset(User $user): RedirectResponse
     {
+        $this->garde($user);
         $status = Password::broker('users')->sendResetLink(['email' => $user->email]);
 
         if ($status === Password::RESET_LINK_SENT) {
@@ -402,6 +433,7 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): RedirectResponse
     {
+        $this->garde($user);
         if ($user->id === Auth::id()) {
             return back()->with('ukc_error', 'Vous ne pouvez pas supprimer votre propre compte.');
         }

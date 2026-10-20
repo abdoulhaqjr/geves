@@ -45,10 +45,10 @@ class UserDirectory
         }
 
         $blocs = array_filter([
-            self::personnel($maxPersonnel),
-            self::chiffres(),
-            self::recents($maxListe),
-            self::aRelancer($maxListe),
+            self::personnel($staff, $maxPersonnel),
+            self::chiffres($staff),
+            self::recents($staff, $maxListe),
+            self::aRelancer($staff, $maxListe),
         ]);
 
         if ($blocs === []) {
@@ -71,9 +71,10 @@ class UserDirectory
     }
 
     /** Les comptes qui portent un rôle UKC ou un niveau d'accès élevé. */
-    private static function personnel(int $max): string
+    private static function personnel(?User $staff, int $max): string
     {
         $query = User::query()
+            ->visiblesPar($staff)
             ->with('roles')
             ->where(fn ($q) => $q->whereHas('roles')->orWhere('access_level', '!=', User::ACCESS_USER))
             ->orderBy('name');
@@ -97,23 +98,23 @@ class UserDirectory
     }
 
     /** Les compteurs, qui répondent aux questions de volume sans lister personne. */
-    private static function chiffres(): string
+    private static function chiffres(?User $staff): string
     {
-        $total = User::count();
+        $total = User::query()->visiblesPar($staff)->count();
         if ($total === 0) {
             return '';
         }
 
         $parRole = collect(array_keys(StaffRoles::ROLES))
-            ->mapWithKeys(fn (string $r) => [$r => User::whereHas('roles', fn ($q) => $q->where('name', $r))->count()])
+            ->mapWithKeys(fn (string $r) => [$r => User::query()->visiblesPar($staff)->whereHas('roles', fn ($q) => $q->where('name', $r))->count()])
             ->filter();
 
         $lignes = [
             'RÉPARTITION DES COMPTES : '.$total.' au total'
-                .' - '.User::where('is_active', true)->count().' actif(s)'
-                .' - '.User::where('is_active', false)->count().' désactivé(s)'
-                .' - '.User::whereNull('email_verified_at')->count().' non vérifié(s)'
-                .' - '.User::whereNull('last_login_at')->count().' jamais connecté(s)',
+                .' - '.User::query()->visiblesPar($staff)->where('is_active', true)->count().' actif(s)'
+                .' - '.User::query()->visiblesPar($staff)->where('is_active', false)->count().' désactivé(s)'
+                .' - '.User::query()->visiblesPar($staff)->whereNull('email_verified_at')->count().' non vérifié(s)'
+                .' - '.User::query()->visiblesPar($staff)->whereNull('last_login_at')->count().' jamais connecté(s)',
         ];
 
         if ($parRole->isNotEmpty()) {
@@ -123,7 +124,7 @@ class UserDirectory
         }
 
         $niveaux = collect(User::accessLevels())
-            ->mapWithKeys(fn (string $libelle, string $niveau) => [$libelle => User::where('access_level', $niveau)->count()])
+            ->mapWithKeys(fn (string $libelle, string $niveau) => [$libelle => User::query()->visiblesPar($staff)->where('access_level', $niveau)->count()])
             ->filter();
 
         $lignes[] = 'PAR NIVEAU D’ACCÈS : '.$niveaux->map(fn (int $n, string $l) => $l.' : '.$n)->implode(', ');
@@ -132,9 +133,9 @@ class UserDirectory
     }
 
     /** Les derniers comptes créés : « qui s'est inscrit cette semaine ? ». */
-    private static function recents(int $max): string
+    private static function recents(?User $staff, int $max): string
     {
-        $recents = User::query()->latest('created_at')->limit($max)->get();
+        $recents = User::query()->visiblesPar($staff)->latest('created_at')->limit($max)->get();
         if ($recents->isEmpty()) {
             return '';
         }
@@ -150,9 +151,10 @@ class UserDirectory
     }
 
     /** Les comptes sur lesquels il y a quelque chose à faire. */
-    private static function aRelancer(int $max): string
+    private static function aRelancer(?User $staff, int $max): string
     {
         $query = User::query()
+            ->visiblesPar($staff)
             ->where(fn ($q) => $q->whereNull('email_verified_at')->orWhere('is_active', false))
             ->orderBy('name');
 

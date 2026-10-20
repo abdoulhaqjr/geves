@@ -807,13 +807,42 @@ personne au rang d'administrateur de la plateforme.
 ⚠️⚠️ **LES LIBELLÉS DISENT « ÉVÉNEMENT », PAS « COLLOQUE »** (2026-10-19). GEVES gère
 aussi des **séminaires** et des **journées scientifiques** (`EventType`) : les rôles
 étaient pourtant nommés comme si le colloque était le seul objet du système.
-`colloque_admin` → **« Administrateur d'événements »**, `gerant` → **« Gestionnaire de
-l'événement »**, `co_gerant` → **« Co-gestionnaire de l'événement »**, `administrator` →
-**« Administrateur de la plateforme »** (il n'administre pas un colloque, il porte
-`manage_colloques`), et les descriptions de `StaffRoles` suivent. ⚠️ **Seuls les
-LIBELLÉS changent** : les clés (`colloque_admin`, `manage_colloques`) sont des
-identifiants enregistrés en base, et la convention ci-dessus les protège. Même règle que
-pour le site public, et pour la même raison.
+`colloque_admin` → **« Administrateur »**, `gerant` → **« Gestionnaire de l'événement »**,
+`co_gerant` → **« Co-gestionnaire de l'événement »**, et les descriptions de `StaffRoles`
+suivent. ⚠️ **Seuls les LIBELLÉS changent** : les clés (`colloque_admin`,
+`manage_colloques`) sont des identifiants enregistrés en base, et la convention ci-dessus
+les protège. Même règle que pour le site public, et pour la même raison.
+
+⚠️ **« Administrateur » tout court, et surtout PAS « Administrateur d'événements »** :
+ce niveau n'est pas borné aux événements. Il **crée les événements et y attache leur
+gestionnaire**, et il a **accès à tout** - événements, comptes, rôles, réglages - sauf
+les actions réservées au super administrateur. Le seul niveau au-dessus de lui est le
+super administrateur.
+
+⚠️ Le rôle spatie `administrator` s'appelle donc **« Administrateur (rôle hérité) »** :
+il porte `manage_colloques`, donc `isColloqueSuperAdmin()` - il ouvre **TOUT**, au même
+titre que le niveau super administrateur. Le confondre avec le niveau « Administrateur »,
+qui est le cran en dessous, reviendrait à donner la plateforme entière en croyant nommer
+un administrateur ordinaire. Plus rien ne l'attribue.
+
+⚠️⚠️ **UN SUPER ADMINISTRATEUR N'EST VISIBLE QUE D'UN SUPER ADMINISTRATEUR.**
+L'administrateur a la main sur les comptes - c'est lui qui distribue les rôles - mais pas
+sur le seul niveau placé au-dessus du sien. Source unique : le scope
+**`User::scopeVisiblesPar($viewer)`** et son pendant **`User::voitLeCompte()`**.
+
+- Appliqué à la **liste** d'`admin/utilisateurs`, à ses **compteurs** et aux compteurs de
+  l'onglet Rôles : un compte qu'on laisse apparaître dans un total est un compte dont on
+  apprend l'existence.
+- ⚠️ **Masquer une ligne ne ferme pas une porte** : `UserController::garde()` est posée
+  sur les **cinq** actions qui prennent un `{user}` (fiche, enregistrement, renvoi de
+  vérification, réinitialisation de mot de passe, suppression). Sans elle, l'identifiant
+  suffisait encore à tout faire. **404, pas 403** : un 403 confirmerait que le compte
+  existe.
+- ⚠️ **Et l'annuaire du copilote suit la même règle** (`UserDirectory`, qui reçoit
+  désormais le demandeur) : masquer dans la page sans fermer l'assistant, c'est ne rien
+  masquer. Les quatre blocs et tous leurs compteurs sont filtrés.
+- ⚠️ `!=` **écarte les NULL en SQL**, et `access_level` est nullable : sans
+  `orWhereNull`, tout compte au niveau non renseigné disparaissait de la liste.
 
 ⚠️ **Deux gardes de routes, une seule source de vérité.** `edition.cap:<capacité>` (16
 groupes) passe par `canOnEdition()` ; `can:<capacité>` (3 groupes : Réglages,

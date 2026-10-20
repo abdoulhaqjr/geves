@@ -116,7 +116,9 @@ it('sert l’annuaire des comptes à qui peut ouvrir la page Utilisateurs & rôl
     expect($annuaire)
         ->toContain('Nadia Gestionnaire')
         ->toContain($cible->email)
-        ->toContain('Administrateur d’événements')
+        // ⚠️ Le niveau est posé entre tirets : « Administrateur » tout court est
+        // aussi le début d'« Administrateur (rôle hérité) », le rôle spatie.
+        ->toContain('> - Administrateur - ')
         ->toContain('RÉPARTITION DES COMPTES');
 });
 
@@ -266,12 +268,25 @@ it('réserve l’annuaire au copilote admin, jamais à l’assistante publique',
     $appelants = [];
 
     foreach ((array) glob(app_path('**/*.php')) + (array) glob(app_path('*/*/*.php')) as $f) {
-        $src = (string) file_get_contents((string) $f);
+        // ⚠️ On lit le CODE, commentaires retirés : la garde vise qui APPELLE
+        // l'annuaire, pas qui le cite. Un `{@see UserDirectory}` dans un
+        // docbloc - celui de `User::scopeVisiblesPar()`, qui explique que les
+        // deux surfaces partagent la même règle de visibilité - la faisait
+        // tomber sur une phrase. Même esprit que `DegradeHerosTest`, qui lit
+        // les feuilles de style commentaires retirés.
+        $code = '';
+        foreach (token_get_all((string) file_get_contents((string) $f)) as $t) {
+            if (is_array($t) && in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+            $code .= is_array($t) ? $t[1] : $t;
+        }
+
         // ⚠️ Le symbole ENTIER, pas le préfixe : `UserDirectorySearch` est le
         // sélecteur de comptes du back-office, qui ne lit pas l'annuaire de
         // l'assistant. Cherché en sous-chaîne, son nom faisait tomber la garde
         // sur une homonymie - une alerte fausse qu'on finit par ignorer.
-        if (preg_match('/\bUserDirectory\b/', $src) === 1) {
+        if (preg_match('/\bUserDirectory\b/', $code) === 1) {
             $appelants[] = basename((string) $f);
         }
     }

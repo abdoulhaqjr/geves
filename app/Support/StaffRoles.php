@@ -41,9 +41,15 @@ class StaffRoles
      */
     public const ROLES = [
         'administrator' => [
-            'label' => 'Administrateur de la plateforme',
+            // ⚠️ « (rôle hérité) » n'est pas décoratif : ce rôle spatie porte
+            // `manage_colloques`, donc `isColloqueSuperAdmin()` - il ouvre TOUT,
+            // au même titre que le niveau super administrateur. Le confondre
+            // avec le niveau « Administrateur », qui est le cran en dessous,
+            // reviendrait à donner la plateforme entière en croyant nommer un
+            // administrateur ordinaire. Plus rien ne l'attribue.
+            'label' => 'Administrateur (rôle hérité)',
             'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Admin',
-            'description' => 'Accès complet : événements, soumissions, décisions, documents, paiements, e-mails, réglages.',
+            'description' => 'Ancien rôle global, équivalent au niveau super administrateur : il ouvre toute la plateforme. Conservé pour les comptes qui le portent déjà ; les niveaux d’accès l’ont remplacé.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project',

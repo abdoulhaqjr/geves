@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Support\StaffRoles;
+use App\Support\UserDirectory;
 use Database\Seeders\RolesAndAdminSeeder;
 
 // adminStaff() / openEdition() -> Pest.php
@@ -58,6 +59,98 @@ it('annonce la plateforme entière pour un super administrateur', function () {
         ->assertSee('Tous les événements.');
 });
 
+/**
+ * ⚠️⚠️ **UN SUPER ADMINISTRATEUR N'EST VISIBLE QUE D'UN SUPER ADMINISTRATEUR.**
+ * L'administrateur a la main sur les comptes - c'est lui qui distribue les rôles -
+ * mais pas sur le seul niveau placé au-dessus du sien.
+ */
+function adminNonSuper(): User
+{
+    (new RolesAndAdminSeeder)->run();
+
+    // Il voit la page (c'est la permission qui la garde), sans être super-admin.
+    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
+    $admin->givePermissionTo('users_roles');
+
+    return $admin->fresh();
+}
+
+it('cache le super administrateur à l’administrateur, liste et compteurs compris', function () {
+    $admin = adminNonSuper();
+    $super = User::factory()->create([
+        'first_name' => 'Sylvie', 'last_name' => 'Super', 'access_level' => User::ACCESS_SUPER_ADMIN,
+    ]);
+    $ordinaire = User::factory()->create(['first_name' => 'Komi', 'last_name' => 'Ordinaire']);
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.index'))
+        ->assertOk()
+        ->assertSee('Komi Ordinaire')
+        ->assertDontSee('Sylvie Super')
+        ->assertDontSee($super->email);
+
+    // ⚠️ Un compte qu'on laisse apparaître dans un TOTAL est un compte dont on
+    // apprend l'existence : les compteurs suivent la même règle que la liste.
+    expect(User::query()->visiblesPar($admin)->pluck('id')->all())
+        ->not->toContain($super->id)
+        ->toContain($ordinaire->id);
+});
+
+it('ferme la fiche du super administrateur, pas seulement sa ligne', function () {
+    // ⚠️ Masquer une ligne ne ferme pas une porte : l'identifiant suffisait à
+    // ouvrir la fiche, à envoyer une réinitialisation, à désactiver, à supprimer.
+    $admin = adminNonSuper();
+    $super = User::factory()->create(['access_level' => User::ACCESS_SUPER_ADMIN]);
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.edit', $super))->assertNotFound();
+    $this->actingAs($admin, 'web')->put(route('admin.users.update', $super), [
+        'name' => 'Pirate', 'email' => $super->email, 'access_level' => User::ACCESS_USER, 'is_active' => '1',
+    ])->assertNotFound();
+    $this->actingAs($admin, 'web')->post(route('admin.users.password-reset', $super))->assertNotFound();
+    $this->actingAs($admin, 'web')->post(route('admin.users.resend', $super))->assertNotFound();
+    $this->actingAs($admin, 'web')->delete(route('admin.users.destroy', $super))->assertNotFound();
+
+    expect($super->fresh()->name)->not->toBe('Pirate');
+    expect($super->fresh()->access_level)->toBe(User::ACCESS_SUPER_ADMIN);
+});
+
+it('n’en souffle pas un mot au copilote non plus', function () {
+    // ⚠️ Même porte, autre couloir : l'annuaire de Marc est calqué sur la page.
+    $admin = adminNonSuper();
+    $super = User::factory()->create([
+        'first_name' => 'Sylvie', 'last_name' => 'Super', 'access_level' => User::ACCESS_SUPER_ADMIN,
+    ]);
+
+    $annuaire = UserDirectory::digest($admin);
+
+    expect($annuaire)->not->toContain('Sylvie Super');
+    expect($annuaire)->not->toContain($super->email);
+});
+
+it('laisse un super administrateur voir ses pairs', function () {
+    $super = ficheAdmin();
+    $autre = User::factory()->create([
+        'first_name' => 'Sylvie', 'last_name' => 'Super', 'access_level' => User::ACCESS_SUPER_ADMIN,
+    ]);
+
+    $this->actingAs($super, 'web')->get(route('admin.users.index'))
+        ->assertOk()->assertSee('Sylvie Super');
+    $this->actingAs($super, 'web')->get(route('admin.users.edit', $autre))->assertOk();
+});
+
+it('nomme l’administrateur « Administrateur », sans le borner aux événements', function () {
+    // ⚠️ Il ne « crée pas ses propres événements » : il a la main sur toute la
+    // plateforme - comptes, rôles et réglages - sauf ce qui est strictement
+    // réservé au super administrateur.
+    $admin = ficheAdmin();
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.edit', $admin))
+        ->assertOk()
+        ->assertSee('Administrateur')
+        ->assertDontSee('Administrateur d’événements')
+        ->assertDontSee('ses propres événements')
+        ->assertSee('sauf les actions réservées au super administrateur');
+});
+
 it('ne parle plus seulement de colloques', function () {
     // ⚠️ GEVES gère aussi des SÉMINAIRES et des JOURNÉES SCIENTIFIQUES
     // (`EventType`) : la fiche était rédigée comme si le colloque était le seul
@@ -84,7 +177,6 @@ it('ne parle plus seulement de colloques', function () {
     }
 
     $reponse->assertSee('Accès aux événements')
-        ->assertSee('Administrateur d’événements')
         ->assertSee('Gestionnaire de l’événement');
 });
 

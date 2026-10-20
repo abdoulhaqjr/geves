@@ -61,22 +61,48 @@ qui paramètrent l'événement, forment l'équipe et montent le programme.
 
 ⚠️⚠️ **Et les libellés disaient « colloque ».** GEVES gère aussi des séminaires et
 des journées scientifiques : « Administrateur de colloque », « Gestionnaire du
-colloque », « Co-gestionnaire du colloque », « Administrateur colloque » et les
-descriptions de `StaffRoles` nommaient un seul des trois types. Ils disent
-désormais **événement** (et « Administrateur de la plateforme » pour le rôle
-global, qui n'administre pas un colloque). ⚠️ **Seuls les libellés changent** :
-`colloque_admin` et `manage_colloques` sont des identifiants en base. La fiche
-prend aussi **toute la largeur** de son conteneur - bridée, elle laissait un
-tiers de l'écran vide à droite - et le chapeau du bloc « Niveau d'accès » a été
-retiré : trois indices sous trois choix se passent d'un quatrième paragraphe.
+colloque », « Co-gestionnaire du colloque » et les descriptions de `StaffRoles`
+nommaient un seul des trois types. Ils disent désormais **événement**. ⚠️ **Seuls
+les libellés changent** : `colloque_admin` et `manage_colloques` sont des
+identifiants en base. La fiche prend aussi **toute la largeur** de son conteneur
+- bridée, elle laissait un tiers de l'écran vide à droite - et le chapeau du bloc
+« Niveau d'accès » a été retiré : trois indices sous trois choix se passent d'un
+quatrième paragraphe.
+
+⚠️ **Le niveau s'appelle « Administrateur », pas « Administrateur d'événements » :
+il n'est pas borné aux événements.** Il les crée et y attache leur gestionnaire,
+et il a accès à tout - comptes, rôles et réglages compris - sauf les actions
+réservées au super administrateur. Le rôle spatie `administrator`, lui, devient
+« Administrateur (rôle hérité) » : il porte `manage_colloques`, donc il ouvre
+TOUT, et le confondre avec le niveau reviendrait à donner la plateforme entière
+en croyant nommer un administrateur ordinaire.
+
+⚠️⚠️ **UN SUPER ADMINISTRATEUR N'EST VISIBLE QUE D'UN SUPER ADMINISTRATEUR.**
+L'administrateur distribue les rôles, mais pas sur le seul niveau au-dessus du
+sien. `User::scopeVisiblesPar()` filtre la liste, ses compteurs et ceux de
+l'onglet Rôles ; `UserController::garde()` ferme les **cinq** actions qui
+prennent un `{user}` - masquer une ligne ne ferme pas une porte, l'identifiant
+suffisait à ouvrir la fiche, à désactiver, à supprimer. **404, pas 403** : un 403
+confirmerait l'existence du compte. ⚠️ Et **l'annuaire du copilote suit la même
+règle** : masquer dans la page sans fermer l'assistant, c'est ne rien masquer.
 
 ⚠️ **Nommer un gestionnaire n'envoie aucun e-mail** : `attachTeamMember()` attache
 la ligne et redirige. La personne n'apprend sa nomination que si on la prévient à
 la main, alors que c'est elle qui doit prendre l'événement en charge. **À faire.**
 
-Gardes : `FicheDuCompteStaffTest` (12 cas, 4 sabotages vérifiés), dont un qui
+⚠️ **À TRANCHER** : aujourd'hui `colloque_admin` **ne passe pas** les trois gardes
+`can:` (Réglages, Utilisateurs & rôles, Témoignages) - seule la permission les
+ouvre, et une décision écrite dans `AnnuaireComptesTest` dit qu'un administrateur
+sans elle est en 403. Pour qu'il « ait accès à tout sauf les actions du super
+admin », il faut **nommer ces actions** : sans liste, lui ouvrir les trois
+groupes rendrait les deux niveaux identiques.
+
+Gardes : `FicheDuCompteStaffTest` (17 cas, 6 sabotages vérifiés), dont un qui
 nomme les tournures interdites (« Accès aux colloques », « aucun colloque »…) sans
-balayer le mot : le TITRE d'un événement peut légitimement le contenir.
+balayer le mot - le TITRE d'un événement peut légitimement le contenir - et trois
+qui tiennent la visibilité du super administrateur (liste, fiche, copilote).
+⚠️ `AnnuaireComptesTest` lit désormais le **code commentaires retirés** : un
+`{@see UserDirectory}` dans un docbloc faisait tomber sa garde sur une phrase.
 
 ### En-têtes de sécurité HTTP (2026-10-19)
 

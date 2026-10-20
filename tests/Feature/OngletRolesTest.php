@@ -81,7 +81,7 @@ it('compte les personnes affectées sur des événements, pas les rôles globaux
 
 /**
  * ⚠️ Le rôle global n'est mentionné QUE s'il existe : c'est ce qui rend visible
- * qu'« Administrateur de la plateforme » est un rôle global, pas une fonction
+ * qu'« Administrateur (rôle hérité) » est un rôle global, pas une fonction
  * d'événement.
  */
 it('ne mentionne le rôle global que lorsqu’il y en a un', function () {

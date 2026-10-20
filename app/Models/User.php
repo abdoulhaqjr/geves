@@ -128,10 +128,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return [
             self::ACCESS_SUPER_ADMIN => 'Super administrateur',
             // ⚠️ La CLÉ reste `colloque_admin` (identifiant, enregistré tel quel
-            // en base) ; seul le LIBELLÉ suit le vocabulaire du projet. GEVES ne
-            // gère plus que des colloques : séminaires et journées scientifiques
-            // relèvent du même niveau d'accès.
-            self::ACCESS_COLLOQUE_ADMIN => 'Administrateur d’événements',
+            // en base) ; seul le LIBELLÉ suit le vocabulaire du projet. Et il ne
+            // le restreint PAS aux événements : cet administrateur a la main sur
+            // toute la plateforme - comptes, rôles et réglages compris - sauf ce
+            // qui est strictement réservé au super administrateur.
+            self::ACCESS_COLLOQUE_ADMIN => 'Administrateur',
             self::ACCESS_USER => 'Utilisateur',
         ];
     }
@@ -149,10 +150,48 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     public static function accessLevelHints(): array
     {
         return [
-            self::ACCESS_SUPER_ADMIN => 'Toute la plateforme : tous les événements, les comptes et les réglages. À réserver.',
-            self::ACCESS_COLLOQUE_ADMIN => 'Crée ses propres événements et y nomme le gestionnaire. N’atteint ni les comptes ni les réglages de la plateforme.',
+            self::ACCESS_SUPER_ADMIN => 'Le niveau le plus élevé : tout ce qu’ouvre un administrateur, plus ce qui lui est strictement réservé. À réserver.',
+            self::ACCESS_COLLOQUE_ADMIN => 'Crée les événements et y attache leur gestionnaire. Accès à tout - événements, comptes, rôles et réglages - sauf les actions réservées au super administrateur.',
             self::ACCESS_USER => 'Aucun accès global : n’ouvre que les événements où le compte est affecté, et seulement ce que sa fonction y permet. C’est le niveau de l’immense majorité.',
         ];
+    }
+
+    /**
+     * ⚠️⚠️ **UN SUPER ADMINISTRATEUR N'EST VISIBLE QUE D'UN SUPER ADMINISTRATEUR.**
+     * L'administrateur a la main sur les comptes - c'est lui qui distribue les
+     * rôles - mais pas sur le seul niveau placé au-dessus du sien : le voir dans
+     * la liste, c'est pouvoir ouvrir sa fiche, lui envoyer une réinitialisation
+     * de mot de passe, le désactiver ou le supprimer.
+     *
+     * ⚠️ **Une seule définition**, consommée par la page Utilisateurs ET par
+     * l'annuaire du copilote (`App\Support\UserDirectory`) : masquer dans la
+     * liste sans fermer la fiche ni l'assistant ne masquerait rien du tout.
+     * ⚠️ Nommé en toute lettre, SANS `{@see}` : Pint en ferait un `use`, et un
+     * import se lit comme une dépendance - c'est ce que garde `AnnuaireComptesTest`.
+     *
+     * ⚠️ `!=` ÉCARTE LES NULL en SQL, et `access_level` est nullable (son défaut
+     * vit en base) : sans `orWhereNull`, tout compte au niveau non renseigné
+     * disparaîtrait de la liste.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeVisiblesPar(Builder $query, ?self $viewer): Builder
+    {
+        if ($viewer?->isColloqueSuperAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn ($q) => $q
+            ->where('access_level', '!=', self::ACCESS_SUPER_ADMIN)
+            ->orWhereNull('access_level'));
+    }
+
+    /** Ce compte a-t-il le droit de voir `$cible` ? {@see scopeVisiblesPar()}. */
+    public static function voitLeCompte(?self $viewer, self $cible): bool
+    {
+        return (bool) $viewer?->isColloqueSuperAdmin()
+            || $cible->access_level !== self::ACCESS_SUPER_ADMIN;
     }
 
     /**
