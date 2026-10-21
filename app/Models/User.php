@@ -222,15 +222,48 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             || ! $cible->isColloqueSuperAdmin();
     }
 
-    /** Même définition SQL que isColloqueSuperAdmin(), pour les listes et compteurs. */
-    public function scopeSuperAdministrateurs(Builder $query): Builder
+    /**
+     * Les deux chemins HÉRITÉS qui valent super administrateur : le rôle spatie
+     * `administrator` et la permission `manage_colloques`. Posés en `orWhere…`
+     * sur la requête reçue - c'est la moitié commune de
+     * {@see scopeSuperAdministrateurs()} et de {@see scopeAdministrateurs()},
+     * et la recopier ferait diverger les deux le jour où l'un des chemins
+     * change.
+     */
+    private static function ouAdministrateurHerite(Builder $q): Builder
     {
-        return $query->where(fn (Builder $q) => $q
-            ->where('access_level', self::ACCESS_SUPER_ADMIN)
+        return $q
             ->orWhereHas('roles', fn (Builder $r) => $r
                 ->where('name', 'administrator')
                 ->orWhereHas('permissions', fn (Builder $p) => $p->where('name', 'manage_colloques')))
-            ->orWhereHas('permissions', fn (Builder $p) => $p->where('name', 'manage_colloques')));
+            ->orWhereHas('permissions', fn (Builder $p) => $p->where('name', 'manage_colloques'));
+    }
+
+    /** Même définition SQL que isColloqueSuperAdmin(), pour les listes et compteurs. */
+    public function scopeSuperAdministrateurs(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => self::ouAdministrateurHerite(
+            $q->where('access_level', self::ACCESS_SUPER_ADMIN)
+        ));
+    }
+
+    /**
+     * ⚠️⚠️ **LA FORME SQL DE {@see isColloqueAdmin()}** - « ouvre toute la
+     * plateforme », donc le niveau administrateur **et** tout ce que couvre
+     * {@see scopeSuperAdministrateurs()} : le niveau super administrateur, le
+     * rôle hérité `administrator` et la permission `manage_colloques`.
+     *
+     * ⚠️ **Un vivier dressé sur la seule colonne `access_level` ÉCARTE un compte
+     * qui tient ses droits de la permission** : le modèle le dit
+     * administrateur, la requête l'ignore, et il disparaît d'une liste
+     * d'affectation sans que rien ne le signale. C'est la confusion des deux
+     * prédicats, en version requête - d'où cette source unique.
+     */
+    public function scopeAdministrateurs(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => self::ouAdministrateurHerite(
+            $q->whereIn('access_level', [self::ACCESS_SUPER_ADMIN, self::ACCESS_COLLOQUE_ADMIN])
+        ));
     }
 
     /**

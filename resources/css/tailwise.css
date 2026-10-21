@@ -333,6 +333,49 @@
 .ukc-shell .ukc-btn--ghost { background: #fff; color: var(--tw-ink); border: 1px solid var(--tw-line); }
 .ukc-shell .ukc-btn--icon { border-radius: 0.5rem; }
 
+/* Confirmation commune : son DOM vit dans le shell pour reprendre Public Sans
+   et les boutons du back-office, même lorsqu'elle est créée par JavaScript. */
+.ukc-shell .ukc-confirm-overlay { background: rgba(15, 23, 42, .48); backdrop-filter: blur(2px); }
+.ukc-shell .ukc-confirm-box {
+    max-width: 480px; border: 1px solid var(--tw-line); border-radius: .8rem;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .24);
+}
+.ukc-shell .ukc-confirm-box--wide {
+    width: max-content;
+    max-width: min(720px, calc(100vw - 40px));
+}
+.ukc-shell .ukc-confirm-box__head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 22px; border-bottom: 1px solid var(--tw-line-soft);
+    color: var(--tw-ink-strong); font-size: 16px; font-weight: 700; line-height: 1.35;
+}
+.ukc-shell .ukc-confirm-box__head::before {
+    content: '?'; display: grid; place-items: center; flex: 0 0 36px;
+    width: 36px; height: 36px; border-radius: .6rem;
+    background: #eef2ff; color: var(--ukc-blue); font-size: 20px; font-weight: 700;
+}
+.ukc-shell .ukc-confirm-box--danger .ukc-confirm-box__head::before {
+    content: '!'; background: #fef2f2; color: #dc2626;
+}
+.ukc-shell .ukc-confirm-box__body {
+    padding: 18px 22px 22px; color: var(--tw-ink); font-size: 14px; line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.ukc-shell .ukc-confirm-box__foot {
+    gap: 10px; padding: 14px 22px; border-top: 1px solid var(--tw-line);
+    background: #f8fafc;
+}
+.ukc-shell .ukc-confirm-box__foot .ukc-btn {
+    min-width: 96px; padding: 9px 15px; border-radius: .5rem; font-size: 13px;
+}
+.ukc-shell .ukc-confirm-box--danger .ukc-btn--danger { background: #dc2626; color: #fff; }
+.ukc-shell .ukc-confirm-box--danger .ukc-btn--danger:hover { background: #b91c1c; }
+@media (max-width: 520px) {
+    .ukc-shell .ukc-confirm-box__head,
+    .ukc-shell .ukc-confirm-box__body,
+    .ukc-shell .ukc-confirm-box__foot { padding-left: 16px; padding-right: 16px; }
+}
+
 /* ===================== Champs de formulaire ===================== */
 .ukc-shell .ukc-field input,
 .ukc-shell .ukc-field select,
@@ -641,12 +684,9 @@
 .ukc-checklist__add { display: flex; gap: 6px; margin-top: 4px; }
 .ukc-checklist__add input { flex: 1 1 auto; }
 
-/* Personnes associées à une tâche de projet : pastilles à bascule.
-   ⚠️ Pas de liste déroulante multiple : le vivier est court (l'équipe de
-   l'événement), et un `<select multiple>` oblige à maintenir Ctrl enfoncé pour
-   en choisir plusieurs - geste que presque personne ne connaît, et qui efface
-   toute la sélection quand on le rate. */
-.ukc-people-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Sélection séquentielle : le menu ajoute une personne, les pastilles retirent
+   celles déjà choisies sans imposer la touche Ctrl d'un <select multiple>. */
+.ukc-people-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .ukc-people-pick .pick {
     border: 1px solid var(--ukc-border, #e4e8f0);
     background: #fff;
@@ -658,8 +698,6 @@
     cursor: pointer;
 }
 .ukc-people-pick .pick:hover { border-color: var(--ukc-blue, #223ea4); }
-/* ⚠️ La bordure est posée sur les DEUX états : réservée à l'état allumé, elle
-   décalerait toute la rangée au moment du clic. */
 .ukc-people-pick .pick.on {
     background: var(--ukc-blue, #223ea4);
     border-color: var(--ukc-blue, #223ea4);
@@ -680,8 +718,21 @@
 .ukc-doc-list a:hover { border-color: var(--ukc-blue, #223ea4); }
 .ukc-doc-list a strong { flex: 1 1 auto; min-width: 0; }
 .ukc-doc-list a span { font-size: 11.5px; color: var(--ukc-muted, #6b7488); }
-.ukc-doc-new { display: flex; gap: 6px; }
-.ukc-doc-new input { flex: 1 1 auto; min-width: 0; }
+.ukc-doc-list__delete { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; width: 32px; height: 32px; margin-left: auto; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #a12a2a; cursor: pointer; }
+.ukc-doc-list__delete:hover, .ukc-doc-list__delete:focus-visible { border-color: #fecaca; background: #fef2f2; }
+.ukc-doc-list__delete:disabled { opacity: .5; cursor: wait; }
+.ukc-doc-format { flex: 0 0 auto; font-size: 10px !important; font-weight: 700; color: var(--ukc-blue, #223ea4) !important; }
+.ukc-doc-choice { border: 1px solid var(--ukc-border, #e4e8f0); border-radius: 10px; padding: 10px; background: #fff; }
+.ukc-doc-choice__tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.ukc-doc-choice__tabs button { flex: 1; border: 1px solid var(--ukc-border, #e4e8f0); border-radius: 8px; padding: 7px 8px; background: #fff; color: var(--ukc-muted, #6b7488); font-size: 12px; font-weight: 700; cursor: pointer; }
+.ukc-doc-choice__tabs button.active { color: var(--ukc-blue, #223ea4); border-color: var(--ukc-blue, #223ea4); background: color-mix(in srgb, var(--ukc-blue, #223ea4) 7%, white); }
+.ukc-doc-new { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.ukc-doc-new input, .ukc-doc-new select { min-width: 0; width: 100%; }
+.ukc-doc-new--import input { grid-column: 1 / -1; }
+.ukc-doc-new input[type=file] { border: 1px dashed var(--ukc-border, #e4e8f0); padding: 8px; border-radius: 8px; font-size: 12px; }
+.ukc-doc-new button { grid-column: 2; }
+.ukc-doc-choice__hint { color: var(--ukc-muted, #6b7488); font-size: 11.5px; line-height: 1.5; margin: 8px 0 0; }
+.ukc-doc-choice__error { color: var(--ukc-red, #c62828); font-size: 12px; margin: 8px 0 0; }
 
 .ukc-comment-add { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .ukc-comment-add .ukc-btn { align-self: flex-end; }

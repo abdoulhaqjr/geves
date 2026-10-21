@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -95,7 +96,9 @@ class ClaimController extends Controller
     {
         $this->authorizeClaim($request, $claim);
 
-        $data = $request->validate(['assigned_to' => ['nullable', 'exists:users,id']]);
+        $data = $request->validate([
+            'assigned_to' => ['nullable', 'integer', Rule::in($this->assigneePool($claim)->pluck('id')->all())],
+        ]);
         $claim->update(['assigned_to' => $data['assigned_to'] ?: null]);
 
         return back()->with('ukc_status', 'Affectation mise à jour.');
@@ -125,33 +128,33 @@ class ClaimController extends Controller
     }
 
     /**
-     * Vivier d'affectation : administrateurs + membres du staff affectés à
-     * l'événement de la réclamation avec la capacité `claims`.
-     *
-     * ⚠️ Les DEUX niveaux d'administration, pas le seul super admin : depuis que
-     * l'administrateur a accès à tout, une réclamation qu'on ne pouvait lui
-     * confier restait sur le bureau de quelqu'un qui n'ouvre plus la plateforme
-     * au quotidien.
+     * Une réclamation générale peut être confiée aux administrateurs globaux.
+     * Pour un événement, seuls les membres explicitement affectés à son équipe
+     * sont proposés ; les administrateurs affectés y restent éligibles.
      *
      * @return Collection<int, User>
      */
     private function assigneePool(Claim $claim): Collection
     {
-        $ids = User::query()
-            ->whereIn('access_level', [User::ACCESS_SUPER_ADMIN, User::ACCESS_COLLOQUE_ADMIN])
-            ->pluck('id');
+        // ⚠️ `administrateurs()` et non la seule colonne `access_level` : un
+        // compte qui tient ses droits du rôle hérité ou de la permission
+        // `manage_colloques` est administrateur pour le modèle, et serait
+        // pourtant absent de ce vivier.
+        $adminIds = User::query()->administrateurs()->pluck('id');
 
-        if ($claim->event_id !== null) {
-            $rolesWithClaims = collect(StaffRoles::ROLES)
-                ->filter(fn ($r) => in_array('claims', $r['permissions'], true))->keys();
-            $assigned = DB::table('event_user')
-                ->where('event_id', $claim->event_id)
-                ->whereIn('role', $rolesWithClaims)
-                ->pluck('user_id');
-            $ids = $ids->merge($assigned);
+        if ($claim->event_id === null) {
+            return User::whereIn('id', $adminIds)->orderBy('name')->get(['id', 'name', 'email']);
         }
 
-        return User::whereIn('id', $ids->unique())->orderBy('name')->get(['id', 'name', 'email']);
+        $rolesWithClaims = collect(StaffRoles::ROLES)
+            ->filter(fn ($r) => in_array('claims', $r['permissions'], true))->keys();
+        $assigned = DB::table('event_user')
+            ->where('event_id', $claim->event_id)
+            ->where(fn ($q) => $q->whereIn('role', $rolesWithClaims)
+                ->orWhereIn('user_id', $adminIds))
+            ->pluck('user_id');
+
+        return User::whereIn('id', $assigned->unique())->orderBy('name')->get(['id', 'name', 'email']);
     }
 
     /** L'utilisateur peut-il traiter cette réclamation ? */

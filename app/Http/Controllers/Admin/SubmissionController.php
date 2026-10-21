@@ -739,7 +739,7 @@ class SubmissionController extends Controller
     public function reviewerPeople(Request $request, Event $event): JsonResponse
     {
         $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
-        $users = UserDirectorySearch::find($data['q'] ?? '');
+        $users = UserDirectorySearch::find($data['q'] ?? '', $event);
 
         $existingEmails = Participant::where('event_id', $event->id)
             ->where('role', 'reviewer')

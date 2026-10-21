@@ -1,0 +1,51 @@
+.ukc-office { display: grid; gap: 16px; }
+.ukc-office__heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.ukc-office__heading > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ukc-office__heading-actions { display: flex; align-items: center; gap: 12px; }
+.ukc-office__heading strong { color: var(--ukc-blue, #223ea4); font-size: 17px; }
+.ukc-office__heading p { width: 100%; margin: 0; color: var(--ukc-muted, #6b7488); font-size: 13px; }
+.ukc-office__type { padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ukc-blue, #223ea4) 9%, white); color: var(--ukc-blue, #223ea4); font-size: 11px; font-weight: 800; }
+.ukc-office__status { color: var(--ukc-green, #009933); font-size: 12px; font-weight: 700; }
+.ukc-office__status--error { color: var(--ukc-red, #c62828); }
+.ukc-office__editor { width: 100%; height: max(720px, calc(100dvh - 220px)); overflow: hidden; background: #fff; border: 1px solid var(--ukc-border, #e4e8f0); border-radius: 12px; box-shadow: 0 4px 16px rgba(20,40,80,.06); }
+.ukc-office__editor-frame, .ukc-office__editor iframe { display: block; width: 100%; height: 100%; }
+.ukc-office__editor:fullscreen { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+.ukc-office__unavailable { padding: 28px; }
+.ukc-office__unavailable h2 { margin: 0 0 8px; color: var(--ukc-blue, #223ea4); font-size: 19px; }
+.ukc-office__unavailable p { max-width: 70ch; color: var(--ukc-muted, #6b7488); line-height: 1.6; }
+.ukc-office__transfer { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.ukc-office__transfer span { color: var(--ukc-muted, #6b7488); font-size: 12px; }
+.ukc-office__details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ukc-office__details .ukc-card { padding: 18px 20px; min-width: 0; }
+.ukc-office__details h2 { display: flex; align-items: center; gap: 7px; margin: 0 0 12px; color: var(--ukc-blue, #223ea4); font-size: 15px; }
+.ukc-office__details p { color: var(--ukc-muted, #6b7488); font-size: 13px; line-height: 1.6; }
+.ukc-office__person { display: inline-block; margin: 0 6px 6px 0; padding: 5px 9px; border: 1px solid var(--ukc-border, #e4e8f0); border-radius: 30px; font-size: 12px; }
+.ukc-office__versions { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; }
+.ukc-office__versions li + li { border-top: 1px solid var(--ukc-border, #e4e8f0); }
+.ukc-office__versions a { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; color: var(--ukc-blue, #223ea4); font-size: 12px; }
+.ukc-office__versions a strong { flex: 1 1 auto; }
+.ukc-office__versions a span { color: var(--ukc-muted, #6b7488); }
+.ukc-office__delete { justify-self: start; }
+@media (max-width: 800px) { .ukc-office__details { grid-template-columns: 1fr; } .ukc-office__editor { height: max(600px, calc(100dvh - 170px)); } }
+
+/* Ancien document texte, en lecture seule : l'éditeur Tiptap/Yjs a été retiré
+   le 21/10/2026, mais son contenu doit rester relisible. */
+.ukc-office__texte h2 { display: flex; align-items: center; gap: 7px; margin: 0 0 12px; color: var(--ukc-blue, #223ea4); font-size: 15px; }
+.ukc-office__lecture { max-width: 78ch; color: var(--ukc-ink, #1f2637); font-size: 14.5px; line-height: 1.7; overflow-wrap: anywhere; }
+.ukc-office__lecture h2, .ukc-office__lecture h3 { color: var(--ukc-blue, #223ea4); margin: 18px 0 6px; }
+/* ⚠️ Le reset de Tailwind retire les puces : l'ancien éditeur en produisait. */
+.ukc-office__lecture ul { list-style: disc outside; padding-left: 22px; margin: 8px 0; }
+.ukc-office__lecture ol { list-style: decimal outside; padding-left: 22px; margin: 8px 0; }
+.ukc-office__lecture blockquote { margin: 10px 0; padding-left: 12px; border-left: 3px solid var(--ukc-border, #e4e8f0); color: var(--ukc-muted, #6b7488); }
+/* ⚠⚠ **UN LIEN QUI N'EST PAS `.ukc-btn` HÉRITE SA COULEUR.**
+   `.ukc-scope a:not(.ukc-btn) { color: inherit }` pèse (0,2,1) - `:not()` compte
+   son argument - et bat un sélecteur à une seule classe. Mesuré ici : le lien
+   d'un ancien document sortait EXACTEMENT de la couleur du texte, sans
+   soulignement, donc introuvable sur la seule page qui existe pour relire ce
+   qui a été écrit. On nomme donc le bloc ET l'élément, soit (0,3,1). */
+.ukc-shell .ukc-office__lecture a:not(.ukc-btn) { color: var(--ukc-blue, #223ea4); text-decoration: underline; }
+.ukc-office__ancienne { border-top: 1px solid var(--ukc-border, #e4e8f0); padding: 8px 0; }
+.ukc-office__ancienne summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
+.ukc-office__ancienne summary strong { flex: 1 1 auto; color: var(--ukc-blue, #223ea4); }
+.ukc-office__ancienne summary span { color: var(--ukc-muted, #6b7488); }
+.ukc-office__ancienne .ukc-office__lecture { margin: 10px 0 4px; font-size: 13.5px; }

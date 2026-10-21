@@ -529,12 +529,10 @@ Route::prefix('admin')->group(function () {
             Route::prefix('/projet/taches/{task}')->scopeBindings()->group(function () {
                 Route::post('/documents', [TaskDocumentController::class, 'store'])->name('admin.project.documents.store');
                 Route::get('/documents/{document}', [TaskDocumentController::class, 'edit'])->name('admin.project.documents.edit');
-                Route::get('/documents/{document}/etat', [TaskDocumentController::class, 'state'])->name('admin.project.documents.state');
-                Route::post('/documents/{document}', [TaskDocumentController::class, 'save'])->name('admin.project.documents.save');
+                Route::post('/documents/{document}/renouveler-lien-docspace', [TaskDocumentController::class, 'rotateLink'])->name('admin.project.documents.rotate-link');
+                Route::get('/documents/{document}/telecharger', [TaskDocumentController::class, 'download'])->name('admin.project.documents.download');
                 Route::put('/documents/{document}', [TaskDocumentController::class, 'rename'])->name('admin.project.documents.rename');
                 Route::delete('/documents/{document}', [TaskDocumentController::class, 'destroy'])->name('admin.project.documents.destroy');
-                Route::post('/documents/{document}/versions', [TaskDocumentController::class, 'storeVersion'])->name('admin.project.documents.versions.store');
-                Route::get('/documents/{document}/versions/{version}', [TaskDocumentController::class, 'version'])->name('admin.project.documents.versions.show');
             });
         });
 

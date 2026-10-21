@@ -40,6 +40,13 @@ return [
         'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY'),
     ],
 
+    'docspace' => [
+        'url' => env('DOCSPACE_URL'),
+        'api_key' => env('DOCSPACE_API_KEY'),
+        'room_id' => env('DOCSPACE_ROOM_ID'),
+        'file_links_enabled' => env('DOCSPACE_FILE_LINKS_ENABLED', false),
+    ],
+
     // Passerelles de paiement (identifiants marchands ; vides = passerelle inactive).
 
     'fedapay' => [

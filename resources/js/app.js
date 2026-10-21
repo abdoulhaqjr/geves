@@ -364,18 +364,26 @@ document.addEventListener('change', async (event) => {
 // Popup de confirmation (style Tailwise) - remplace window.confirm(). Renvoie une
 // Promise<boolean>. Fermeture au clic sur le fond, Échap (annule) ou Entrée (confirme).
 window.ukcConfirm = function (message, opts = {}) {
-    const { title = 'Confirmer', confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false } = opts;
+    const { title = 'Confirmer', confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false, wide = false } = opts;
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'ukc-confirm-overlay';
         const box = document.createElement('div');
         box.className = 'ukc-confirm-box';
+        if (danger) box.classList.add('ukc-confirm-box--danger');
+        if (wide) box.classList.add('ukc-confirm-box--wide');
         const h = document.createElement('div'); h.className = 'ukc-confirm-box__head'; h.textContent = title;
         const body = document.createElement('div'); body.className = 'ukc-confirm-box__body'; body.textContent = message;
         const foot = document.createElement('div'); foot.className = 'ukc-confirm-box__foot';
         const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'ukc-btn ukc-btn--ghost'; cancel.textContent = cancelLabel;
         const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'ukc-btn ' + (danger ? 'ukc-btn--danger' : 'ukc-btn--blue'); ok.textContent = confirmLabel;
-        foot.append(cancel, ok); box.append(h, body, foot); overlay.append(box); document.body.append(overlay);
+        foot.append(cancel, ok); box.append(h, body, foot); overlay.append(box);
+        const shell = document.querySelector('.ukc-shell');
+        (shell || document.body).append(overlay);
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        h.id = 'ukc-confirm-title';
+        box.setAttribute('aria-labelledby', h.id);
 
         const close = (val) => { overlay.remove(); document.removeEventListener('keydown', onKey); resolve(val); };
         const onKey = (e) => { if (e.key === 'Escape') close(false); else if (e.key === 'Enter') close(true); };
@@ -925,6 +933,7 @@ document.addEventListener('alpine:init', () => {
         taskOpen: false,
         task: {},
         saving: false,
+        deletingDocumentId: null,
         msOpen: false,
         ms: {},
         msSaving: false,
@@ -1080,6 +1089,11 @@ document.addEventListener('alpine:init', () => {
         // ⚠️ Elles ne remplacent PAS le responsable : une tâche garde quelqu'un
         // qui en répond, et réunit autour de lui ceux qui y travaillent. Ce sont
         // eux qui pourront écrire dans son document.
+        ajouterCollaborateur(select) {
+            const id = Number(select.value);
+            if (id && !this.estCollaborateur(id)) this.basculeCollaborateur(id);
+            select.value = '';
+        },
         basculeCollaborateur(id) {
             const n = Number(id);
             const liste = (this.task.collaborator_ids = this.task.collaborator_ids || []);
@@ -1118,6 +1132,32 @@ document.addEventListener('alpine:init', () => {
             fetch((this.routes.taskDelete || '').replace(':id', String(t.id)), { method: 'DELETE', headers: this._headers() })
                 .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.refreshCal(); this.refreshCharts(); this.notify('Tâche supprimée.'); } })
                 .catch(() => this.notify('Suppression impossible.', 'err'));
+        },
+
+        async deleteDocument(d) {
+            if (this.deletingDocumentId !== null) return;
+            const confirmed = await window.ukcConfirm(
+                `Supprimer « ${d.title} » et toutes ses versions ? Cette action est définitive.`,
+                { title: 'Supprimer le document', confirmLabel: 'Supprimer', danger: true, wide: true },
+            );
+            if (!confirmed) return;
+
+            this.deletingDocumentId = d.id;
+            try {
+                const response = await fetch(d.deleteUrl, { method: 'DELETE', headers: this._headers() });
+                if (!response.ok) {
+                    this.notify('Suppression impossible. Réessayez ou contactez l’administrateur.', 'err');
+                    return;
+                }
+                this.task.documents = (this.task.documents || []).filter((item) => item.id !== d.id);
+                const task = this.tasks.find((item) => item.id === this.task.id);
+                if (task) task.documents = (task.documents || []).filter((item) => item.id !== d.id);
+                this.notify('Document supprimé.');
+            } catch (error) {
+                this.notify('Connexion interrompue. Réessayez.', 'err');
+            } finally {
+                this.deletingDocumentId = null;
+            }
         },
 
         // ---- Commentaires ----

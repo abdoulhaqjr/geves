@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $document_id
  * @property int $revision
  * @property string|null $label
+ * @property string|null $file_path
  * @property string|null $html
  * @property string|null $state
  * @property int|null $user_id

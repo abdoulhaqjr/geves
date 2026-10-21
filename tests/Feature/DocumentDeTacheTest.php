@@ -1,11 +1,11 @@
 <?php
 
 use App\Models\ProjectTask;
-use App\Models\ProjectTaskDocument;
 use App\Models\User;
 use App\Support\Realtime;
 use App\Support\TaskDocumentHtml;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route;
 
 // adminStaff() / openEdition() -> tests/Pest.php
 
@@ -18,7 +18,14 @@ function staffProjet($event): User
     return $u;
 }
 
-function tacheAvecDocument($event, ?User $createur = null): array
+/**
+ * Tâche portant un ANCIEN document texte.
+ *
+ * ⚠️ L'éditeur Tiptap/Yjs a été retiré le 21/10/2026 : plus rien ne crée ce
+ * genre de document, mais les installations qui en portent doivent pouvoir le
+ * relire. C'est exactement ce que ces cas éprouvent.
+ */
+function tacheAvecDocument($event, ?User $createur = null, ?string $html = null): array
 {
     $task = ProjectTask::create([
         'event_id' => $event->id,
@@ -30,13 +37,14 @@ function tacheAvecDocument($event, ?User $createur = null): array
 
     $doc = $task->documents()->create([
         'title' => 'Appel à communications',
+        'html' => $html,
         'created_by' => $createur?->id,
     ]);
 
     return [$task, $doc];
 }
 
-it('ouvre le document à qui accède au projet, et ne laisse écrire que les personnes associées', function () {
+it('ouvre le document à qui accède au projet, et ne reconnaît le droit d’écrire qu’aux personnes associées', function () {
     $event = openEdition();
     $lecteur = staffProjet($event);
     $redacteur = staffProjet($event);
@@ -49,16 +57,10 @@ it('ouvre le document à qui accède au projet, et ne laisse écrire que les per
         ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk();
 
     // ⚠️ Mais écrire suppose d'être associé à la tâche, sinon « associer
-    // quelqu'un » ne voudrait rien dire - tout le monde écrirait déjà.
-    $this->actingAs($lecteur, 'web')
-        ->postJson(route('admin.project.documents.save', [$task, $doc]), [
-            'state' => base64_encode('x'), 'html' => '<p>a</p>', 'revision' => 0,
-        ])->assertForbidden();
-
-    $this->actingAs($redacteur, 'web')
-        ->postJson(route('admin.project.documents.save', [$task, $doc]), [
-            'state' => base64_encode('x'), 'html' => '<p>a</p>', 'revision' => 0,
-        ])->assertOk();
+    // quelqu'un » ne voudrait rien dire - tout le monde écrirait déjà. C'est ce
+    // prédicat qui décide de remettre, ou non, le jeton d'édition DocSpace.
+    expect($doc->isEditableBy($lecteur))->toBeFalse()
+        ->and($doc->isEditableBy($redacteur))->toBeTrue();
 });
 
 it('ferme le document à qui n’a pas la capacité « project » sur l’événement', function () {
@@ -73,112 +75,24 @@ it('ferme le document à qui n’a pas la capacité « project » sur l’évén
     // dont on a été retiré : l'accès au module passe en premier.
     $this->actingAs($dehors, 'web')
         ->get(route('admin.project.documents.edit', [$task, $doc]))->assertForbidden();
+
+    expect($doc->isEditableBy($dehors))->toBeFalse();
 });
 
 it('⚠️ n’ouvre pas le document d’un AUTRE événement par une tâche accessible', function () {
     $staff = adminStaff();
     $evenementA = openEdition();
-    $evenementB = openEdition(['title' => 'Autre événement', 'slug' => 'autre-evenement']);
+    $evenementB = openEdition();
+    $evenementB->update(['slug' => 'uk-2027', 'year' => 2027]);
 
     [$tacheA] = tacheAvecDocument($evenementA);
     [, $docB] = tacheAvecDocument($evenementB);
 
-    // Sans l'imbrication contrôlée (`scopeBindings`), une tâche qu'on a le droit
-    // d'ouvrir plus l'identifiant d'un document d'ailleurs suffiraient à lire le
-    // second.
+    // ⚠️ `scopeBindings()` exige que le document appartienne à CETTE tâche :
+    // sans lui, une tâche accessible plus l'identifiant d'un document d'ailleurs
+    // ouvriraient le second.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.project.documents.edit', [$tacheA, $docB]))
-        ->assertNotFound();
-});
-
-it('enregistre, incrémente la révision et assainit le HTML', function () {
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
-
-    $this->actingAs($staff, 'web')
-        ->postJson(route('admin.project.documents.save', [$task, $doc]), [
-            'state' => base64_encode('etat'),
-            'html' => '<p onclick="voler()">Ordre du jour</p><script>alert(1)</script>',
-            'revision' => 0,
-        ])
-        ->assertOk()
-        ->assertJsonPath('revision', 1);
-
-    $doc->refresh();
-
-    expect($doc->html)->toContain('Ordre du jour')
-        ->and($doc->html)->not->toContain('onclick')
-        ->and($doc->html)->not->toContain('alert(1)')
-        ->and($doc->revision)->toBe(1);
-});
-
-it('⚠️ refuse un enregistrement parti d’une révision dépassée, et rend l’état courant', function () {
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
-
-    $this->actingAs($staff, 'web')->postJson(route('admin.project.documents.save', [$task, $doc]), [
-        'state' => base64_encode('premier'), 'html' => '<p>1</p>', 'revision' => 0,
-    ])->assertOk();
-
-    // ⚠️ Le refus n'est pas une perte : la réponse porte l'état du serveur, que
-    // le poste repoussé FUSIONNE au sien avant de réessayer. Sans cet état, il
-    // n'aurait d'autre issue que de recharger - en perdant sa frappe.
-    $this->actingAs($staff, 'web')->postJson(route('admin.project.documents.save', [$task, $doc]), [
-        'state' => base64_encode('second'), 'html' => '<p>2</p>', 'revision' => 0,
-    ])
-        ->assertStatus(409)
-        ->assertJsonPath('revision', 1)
-        ->assertJsonPath('state', base64_encode('premier'));
-
-    expect($doc->fresh()->html)->toContain('1');
-});
-
-it('verse une version au premier enregistrement, puis espace les suivantes', function () {
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
-
-    $enregistre = fn (int $revision) => $this->actingAs($staff, 'web')
-        ->postJson(route('admin.project.documents.save', [$task, $doc]), [
-            'state' => base64_encode('e'.$revision), 'html' => '<p>'.$revision.'</p>', 'revision' => $revision,
-        ])->assertOk();
-
-    $enregistre(0);
-    $enregistre(1);
-    $enregistre(2);
-
-    // ⚠️ L'enregistrement est automatique et fréquent : verser une version à
-    // chaque fois rendrait l'historique illisible - des centaines d'entrées
-    // pour une après-midi, et plus aucun point de repère où revenir.
-    expect($doc->versions()->count())->toBe(1);
-
-    // Le délai écoulé, la version suivante s'ouvre.
-    $doc->versions()->first()->forceFill([
-        'created_at' => now()->subMinutes(ProjectTaskDocument::VERSION_EVERY_MINUTES + 1),
-    ])->save();
-
-    $enregistre(3);
-
-    expect($doc->versions()->count())->toBe(2);
-});
-
-it('rend le contenu d’une version pour revenir en arrière', function () {
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
-
-    $this->actingAs($staff, 'web')->postJson(route('admin.project.documents.save', [$task, $doc]), [
-        'state' => base64_encode('e'), 'html' => '<p>Première rédaction</p>', 'revision' => 0,
-    ])->assertOk();
-
-    $version = $doc->versions()->firstOrFail();
-
-    $this->actingAs($staff, 'web')
-        ->getJson(route('admin.project.documents.versions.show', [$task, $doc, $version]))
-        ->assertOk()
-        ->assertJsonPath('html', '<p>Première rédaction</p>');
+        ->get(route('admin.project.documents.edit', [$tacheA, $docB]))->assertNotFound();
 });
 
 it('⚠️ borne les personnes associées au vivier de l’événement', function () {
@@ -201,75 +115,83 @@ it('⚠️ borne les personnes associées au vivier de l’événement', functio
     expect($task->collaborators()->pluck('users.id')->all())->toBe([$membre->id]);
 });
 
-it('⚠️ ne laisse JAMAIS le secret du service temps réel descendre dans la page', function () {
-    Config::set('broadcasting.default', 'pusher');
-    Config::set('broadcasting.connections.pusher.app_id', '424242');
-    Config::set('broadcasting.connections.pusher.key', 'cle-publique');
-    Config::set('broadcasting.connections.pusher.secret', 'SECRET-A-NE-PAS-SORTIR');
-    Config::set('broadcasting.connections.pusher.options.host', 'exemple.piesocket.com');
-
+it('⚠️ reconnaît l’ADMINISTRATEUR comme rédacteur, pas seulement le super administrateur', function () {
+    // ⚠️ Le modèle donne à l'administrateur l'accès à TOUT. Garder ici un
+    // `isColloqueSuperAdmin()` refermerait, sur ce seul écran, la porte que le
+    // projet venait de lui ouvrir - et c'est le réflexe que
+    // `DroitsDeLAdministrateurTest` traque dans tout `app/`.
     $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
+    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
+    [$task, $doc] = tacheAvecDocument($event);
 
-    $html = $this->actingAs($staff, 'web')
-        ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()->getContent();
-
-    // La clé publique part dans la page - c'est son rôle. Le secret signe
-    // l'autorisation de canal côté serveur, et NULLE PART ailleurs.
-    expect($html)->toContain('cle-publique')
-        ->and($html)->not->toContain('SECRET-A-NE-PAS-SORTIR');
-
-    expect(Realtime::clientConfig())->not->toHaveKey('secret');
+    expect($task->isAssociate($admin))->toBeFalse()
+        ->and($doc->isEditableBy($admin))->toBeTrue();
 });
 
-it('fonctionne sans service temps réel, et le DIT', function () {
-    Config::set('broadcasting.default', 'null');
+describe('ancien document texte', function () {
+    it('⚠️ se relit entièrement, éditeur retiré', function () {
+        // ⚠️⚠️ **UN TEXTE QU'ON CESSE D'AFFICHER EST UN TEXTE PERDU**, et c'est
+        // en production qu'on s'en apercevrait. L'éditeur Tiptap/Yjs est parti ;
+        // la page doit rendre ce qui a été rédigé avant.
+        $event = openEdition();
+        $staff = adminStaff();
+        [$task, $doc] = tacheAvecDocument($event, $staff, '<h2>Ordre du jour</h2><p>Relire les résumés déposés.</p>');
 
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()
+            ->assertSee('Relire les résumés déposés.', false)
+            ->assertSee('Lecture seule');
+    });
 
-    expect(Realtime::configured())->toBeFalse()
-        ->and(Realtime::clientConfig())->toBeNull();
+    it('⚠️ rend aussi ses versions conservées', function () {
+        $event = openEdition();
+        $staff = adminStaff();
+        [$task, $doc] = tacheAvecDocument($event, $staff, '<p>dernier état</p>');
+        $doc->versions()->create([
+            'revision' => 1,
+            'label' => 'Avant relecture',
+            'html' => '<p>une phrase que personne ne doit perdre</p>',
+            'user_id' => $staff->id,
+        ]);
 
-    // ⚠️ On le dit au lieu de laisser croire que la simultanéité est branchée :
-    // deux personnes ne perdent rien (les états fusionnent à l'enregistrement),
-    // mais elles doivent savoir qu'elles ne se verront pas taper.
-    $this->actingAs($staff, 'web')
-        ->get(route('admin.project.documents.edit', [$task, $doc]))
-        ->assertOk()
-        ->assertSee('Rédaction simultanée non activée');
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()
+            ->assertSee('Avant relecture')
+            ->assertSee('une phrase que personne ne doit perdre', false);
+    });
 
-    // Et l'enregistrement, lui, marche exactement pareil.
-    $this->actingAs($staff, 'web')->postJson(route('admin.project.documents.save', [$task, $doc]), [
-        'state' => base64_encode('e'), 'html' => '<p>ok</p>', 'revision' => 0,
-    ])->assertOk();
-});
+    it('⚠️ ne porte plus AUCUN point d’accroche de l’éditeur', function () {
+        $event = openEdition();
+        $staff = adminStaff();
+        [$task, $doc] = tacheAvecDocument($event, $staff, '<p>texte</p>');
 
-it('⚠️ exige les TROIS identifiants avant d’annoncer le temps réel', function () {
-    Config::set('broadcasting.default', 'pusher');
-    Config::set('broadcasting.connections.pusher.app_id', '1');
-    Config::set('broadcasting.connections.pusher.key', 'cle');
-    Config::set('broadcasting.connections.pusher.secret', null);
+        $html = $this->actingAs($staff, 'web')
+            ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()->getContent();
 
-    // Avec la clé publique seule, la page ouvrirait une connexion que le serveur
-    // ne saurait pas autoriser : l'éditeur attendrait des pairs qui n'arrivent
-    // jamais, sans rien dire.
-    expect(Realtime::configured())->toBeFalse();
+        // ⚠️ Laisser un crochet, une barre d'outils ou l'entrée Vite sans le
+        // script qui va avec donnerait une page qui a l'air modifiable et qui
+        // n'enregistre rien.
+        foreach (['ukcDocEditeur', 'window.UKC_DOC', 'data-doc-cmd', 'task-document'] as $trace) {
+            expect($html)->not->toContain($trace);
+        }
+    });
 
-    Config::set('broadcasting.connections.pusher.secret', 'secret');
-    expect(Realtime::configured())->toBeTrue();
-});
-
-it('le canal porte UNE seule définition de nom', function () {
-    // Trois endroits écrivent ce nom - la page, l'autorisation de canal et les
-    // tests. Trois chaînes bâties séparément se décaleraient un jour, et chaque
-    // rédacteur se retrouverait seul dans un canal à lui, sans erreur visible.
-    expect(Realtime::documentChannel(12))->toBe('ukc.doc.12');
-
-    $channels = file_get_contents(base_path('routes/channels.php'));
-    expect($channels)->toContain('ukc.doc.{document}');
+    it('⚠️ les points d’entrée de l’ancien éditeur n’existent plus', function () {
+        // ⚠️ Une route laissée en place sans écran est une seconde porte que
+        // personne ne surveille (même leçon que `admin.participants.impersonate`).
+        foreach ([
+            'admin.project.documents.save',
+            'admin.project.documents.state',
+            'admin.project.documents.versions.store',
+            'admin.project.documents.versions.show',
+            'admin.project.documents.versions.download',
+            'admin.project.documents.transfer',
+            'office.documents.file',
+            'office.documents.callback',
+        ] as $nom) {
+            expect(Route::has($nom))->toBeFalse($nom.' devrait avoir disparu');
+        }
+    });
 });
 
 describe('assainissement du HTML', function () {
@@ -286,9 +208,10 @@ describe('assainissement du HTML', function () {
     });
 
     it('⚠️ refuse un lien « javascript: » mais garde les liens légitimes', function () {
-        // Le lien est le seul endroit où le rédacteur fournit une adresse : sans
-        // ce contrôle, « cliquer sur le lien » exécuterait son code chez tous les
-        // autres rédacteurs, dans le back-office.
+        // ⚠️ Ce HTML a été écrit par des rédacteurs et il est relu dans le
+        // back-office : le retrait de l'éditeur n'enlève rien au besoin de
+        // l'assainir à l'AFFICHAGE. Sans ce contrôle, « cliquer sur le lien »
+        // exécuterait le code d'un ancien rédacteur chez qui relit la page.
         $propre = TaskDocumentHtml::clean(
             '<p><a href="javascript:vol()">piège</a> <a href="https://univkara.tg">UK</a></p>'
         );
@@ -312,10 +235,59 @@ describe('assainissement du HTML', function () {
             ->toContain('Évaluation des résumés déposés');
     });
 
-    it('conserve titres et listes, que l’éditeur produit', function () {
+    it('conserve titres et listes, que l’ancien éditeur produisait', function () {
         $propre = TaskDocumentHtml::clean('<h2>Ordre du jour</h2><ul><li>Point un</li></ul>');
 
         expect($propre)->toContain('<h2>')->and($propre)->toContain('<li>');
+    });
+});
+
+/**
+ * ⚠️⚠️ **LA COUCHE TEMPS RÉEL EST UNE RÉSERVE ASSUMÉE, PAS UN OUBLI**
+ * (21/10/2026). Le retrait de l'éditeur Yjs l'a privée de son seul
+ * consommateur ; elle est conservée sur décision explicite, pour un prochain
+ * usage (présence, notifications en direct), avec les identifiants PieSocket
+ * déjà réglés. Ces cas la gardent CORRECTE en attendant : un socle qu'on garde
+ * sans l'éprouver se périme, et on le découvrirait le jour où on s'en sert.
+ */
+describe('couche temps reel en reserve', function () {
+    it('⚠️ ne laisse JAMAIS le secret sortir du serveur', function () {
+        Config::set('broadcasting.default', 'pusher');
+        Config::set('broadcasting.connections.pusher.app_id', '424242');
+        Config::set('broadcasting.connections.pusher.key', 'cle-publique');
+        Config::set('broadcasting.connections.pusher.secret', 'SECRET-A-NE-PAS-SORTIR');
+        Config::set('broadcasting.connections.pusher.options.host', 'exemple.piesocket.com');
+
+        // La clé publique est faite pour descendre dans une page ; le secret
+        // signe l'autorisation de canal côté serveur, et NULLE PART ailleurs.
+        $config = Realtime::clientConfig();
+        expect($config)->not->toBeNull()
+            ->and($config)->not->toHaveKey('secret')
+            ->and(json_encode($config))->not->toContain('SECRET-A-NE-PAS-SORTIR')
+            ->and($config['key'] ?? null)->toBe('cle-publique');
+    });
+
+    it('⚠️ exige les TROIS identifiants avant de s’annoncer', function () {
+        Config::set('broadcasting.default', 'pusher');
+        Config::set('broadcasting.connections.pusher.app_id', '1');
+        Config::set('broadcasting.connections.pusher.key', 'cle');
+        Config::set('broadcasting.connections.pusher.secret', null);
+
+        // Avec la clé publique seule, une page ouvrirait une connexion que le
+        // serveur ne saurait pas autoriser : l'attente, sans un mot d'erreur.
+        expect(Realtime::configured())->toBeFalse();
+
+        Config::set('broadcasting.connections.pusher.secret', 'secret');
+        expect(Realtime::configured())->toBeTrue();
+    });
+
+    it('le canal porte UNE seule définition de nom', function () {
+        // Deux chaînes bâties séparément se décaleraient un jour, et chaque
+        // abonné se retrouverait seul dans un canal à lui, sans erreur visible.
+        expect(Realtime::documentChannel(12))->toBe('ukc.doc.12');
+
+        $channels = file_get_contents(base_path('routes/channels.php'));
+        expect($channels)->toContain('ukc.doc.{document}');
     });
 });
 
@@ -380,8 +352,7 @@ describe('autorisation du canal temps reel', function () {
         // ⚠️ **La forme de la signature est ce que le service VÉRIFIE.** Elle
         // doit valoir « cle:HMAC-SHA256(socket_id:canal:donnees) », et le canal
         // de présence doit porter ses `channel_data` - sans eux, le service
-        // refuse l'abonnement et l'éditeur reste seul, sans message d'erreur
-        // lisible. Éprouvé contre le vrai service : cette forme est acceptée.
+        // refuse l'abonnement. Éprouvé contre le vrai service.
         $charge = $reponse->json();
 
         expect($charge)->toHaveKeys(['auth', 'channel_data'])
@@ -402,64 +373,4 @@ describe('autorisation du canal temps reel', function () {
         // Le lecteur entre dans le canal, mais son entree dit qu il ne redige pas.
         expect($vu)->toContain('false');
     });
-});
-
-it('rend les points d accroche dont le script a besoin', function () {
-    // ⚠️ Faute de pouvoir regarder la page (le navigateur integre refuse
-    // l hote de developpement), c est ce cas qui tient le contrat entre la vue
-    // et le script : sans l un de ces crochets, l editeur ne se monte pas, la
-    // barre ne commande rien, et l etat de l enregistrement n est jamais
-    // affiche - sans aucune erreur visible.
-    $event = openEdition();
-    $staff = adminStaff();
-    [$task, $doc] = tacheAvecDocument($event, $staff);
-
-    $html = $this->actingAs($staff, 'web')
-        ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()->getContent();
-
-    foreach (['ukcDocEditeur', 'ukcDocEtat', 'ukcDocPresence', 'ukcDocVersions', 'ukcDocVersion', 'window.UKC_DOC'] as $crochet) {
-        expect($html)->toContain($crochet);
-    }
-
-    // La barre de mise en forme commande l editeur par un attribut, pas par un
-    // gestionnaire ecrit dans la vue.
-    expect($html)->toContain('data-doc-cmd="toggleBold"')
-        ->and($html)->toContain('data-doc-cmd="toggleBulletList"');
-
-    // ⚠️ L entree Vite est SEPAREE : si elle n est pas appelee par cette page,
-    // l editeur n existe nulle part - et personne ne s en apercevrait avant
-    // d ouvrir un document.
-    expect($html)->toContain('task-document');
-});
-
-it('n offre les gestes d ecriture qu a qui peut ecrire', function () {
-    $event = openEdition();
-    $lecteur = staffProjet($event);
-    [$task, $doc] = tacheAvecDocument($event);
-
-    $html = $this->actingAs($lecteur, 'web')
-        ->get(route('admin.project.documents.edit', [$task, $doc]))->assertOk()->getContent();
-
-    // Masquer un bouton n a jamais protege personne - le serveur refuse de toute
-    // facon - mais proposer « Enregistrer une version » a qui sera refuse est un
-    // piege.
-    expect($html)->not->toContain('ukcDocVersion"')
-        ->and($html)->not->toContain('data-doc-cmd');
-});
-
-it('⚠️ laisse écrire l ADMINISTRATEUR, pas seulement le super administrateur', function () {
-    // ⚠️ Le modèle donne à l administrateur l accès à TOUT. Garder ici un
-    // `isColloqueSuperAdmin()` refermait, sur ce seul écran, la porte que le
-    // projet venait de lui ouvrir - et c est le réflexe que
-    // `DroitsDeLAdministrateurTest` traque dans tout `app/`.
-    $event = openEdition();
-    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
-    [$task, $doc] = tacheAvecDocument($event);
-
-    expect($task->isAssociate($admin))->toBeFalse();
-
-    $this->actingAs($admin, 'web')
-        ->postJson(route('admin.project.documents.save', [$task, $doc]), [
-            'state' => base64_encode('x'), 'html' => '<p>a</p>', 'revision' => 0,
-        ])->assertOk();
 });

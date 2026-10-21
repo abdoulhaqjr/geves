@@ -950,6 +950,25 @@ une page répond 403 à un seul niveau d'accès, sur un seul écran.
   toujours une erreur** - un cas de `DroitsDeLAdministrateurTest` balaie `app/`,
   commentaires retirés, et échoue si le nom ressort du modèle.
 
+⚠️⚠️ **ET LA MÊME CONFUSION EXISTE EN SQL** (21/10/2026). Un vivier d'affectation
+dressé sur la seule colonne **`access_level`** écarte un compte qui tient ses droits
+du **rôle hérité `administrator`** ou de la permission **`manage_colloques`** : le
+modèle le dit administrateur, la requête l'ignore, et il disparaît d'une liste sans
+que rien ne le signale. C'est exactement ce qui est arrivé au vivier des réclamations
+- le compte de `adminStaff()` (permission, `access_level` non renseigné) n'y entrait
+plus, et `ClaimsTest` tombait sur « null is identical to 1 ». **Deux scopes, et une
+seule moitié commune** (`User::ouAdministrateurHerite()`) : **`administrateurs()`** =
+la forme SQL d'`isColloqueAdmin()`, **`superAdministrateurs()`** = celle
+d'`isColloqueSuperAdmin()`. Ne jamais recopier `whereIn('access_level', …)` pour
+désigner « les administrateurs ».
+
+- ⚠️ **Il reste UNE négation écrite à la main** : `UserDirectorySearch::find()`
+  écarte les administrateurs globaux de la liste des personnes d'un événement, et
+  réénumère pour cela les trois chemins. À ramener sur
+  `whereNot(fn ($q) => $q->administrateurs())` le jour où l'on y retouche - **sans
+  oublier qu'`access_level` est nullable** : une négation sans `orWhereNull` écarte
+  aussi les comptes au niveau non renseigné (c'est le piège du `!=` ci-dessus).
+
 ⚠️ **Deux gardes de routes, une seule source de vérité.** `edition.cap:<capacité>` (16
 groupes) passe par `canOnEdition()` ; `can:<capacité>` (3 groupes : Réglages,
 Utilisateurs & rôles, Témoignages) passe par le Gate spatie. **Les deux doivent
@@ -4939,12 +4958,24 @@ déjà son adresse, et la rendre aussi à l'entrée ferait deux URL pour le mêm
   (prompt/modèle joint), conservée pour les documents non standard. Presets
   `SecretariatController::PRESETS`.
 
-### Documents de tâche : rédaction À PLUSIEURS, en direct
+### Documents de tâche : un DOCX ou un XLSX, rédigé à plusieurs
 
-Une tâche du module Projet porte désormais **un responsable ET des personnes
-associées** (`project_task_collaborators`), et ces personnes rédigent ensemble
-des **documents de travail** (`project_task_documents`), chacun dans une page à
-lui (`admin.project.documents.edit`).
+Une tâche du module Projet porte **un responsable ET des personnes associées**
+(`project_task_collaborators`), et ces personnes travaillent ensemble sur des
+**documents bureautiques** (`project_task_documents`), chacun dans une page à lui
+(`admin.project.documents.edit`).
+
+⚠️⚠️ **UN DOCUMENT DE TÂCHE EST UN FICHIER DOCX OU XLSX, ET RIEN D'AUTRE**
+(21/10/2026). Il vit chez **ONLYOFFICE DocSpace**, où se tiennent aussi la
+coédition et l'historique des versions ; GEVES ne conserve que son identifiant,
+son titre, son format et le jeton de son lien d'édition. Le panneau d'une tâche
+le crée vierge ou l'importe (20 Mo) ; **`App\Support\TaskDocSpace`** crée au
+besoin un dossier par tâche dans la salle configurée, puis le fichier, puis un
+**lien d'édition propre à CE fichier**, et le SDK Embed l'ouvre dans la page.
+Réglages : `DOCSPACE_URL`, `DOCSPACE_API_KEY`, `DOCSPACE_ROOM_ID` et
+`DOCSPACE_FILE_LINKS_ENABLED` (**faux par défaut** : aucun lien n'est créé tant
+qu'un administrateur ne l'a pas autorisé). Mise en service, salle et limites :
+**`docs/docspace-documents-taches.md`**.
 
 - ⚠️⚠️ **LE RESPONSABLE N'EST PAS REMPLACÉ.** `project_tasks.assignee_id` reste :
   une tâche garde **quelqu'un qui en répond**, et réunit autour de lui ceux qui y
@@ -4954,87 +4985,179 @@ lui (`admin.project.documents.edit`).
 - ⚠️ **Les collaborateurs se bornent au MÊME vivier que le responsable**
   (`ProjectController::assigneePool()`). Ils ouvrent le plan de travail de
   l'événement : un identifiant posté n'est pas une autorisation.
+  ⚠️ **Ce vivier est l'ÉQUIPE de l'événement, plus l'administrateur connecté
+  LUI-MÊME** (21/10/2026). Un accès global ne vaut pas affectation au projet -
+  dérouler tous les administrateurs de la plateforme désignerait des gens qui
+  n'y travaillent pas - mais c'est l'administrateur qui **monte** l'événement,
+  et sans lui la liste s'ouvre **vide** avant qu'aucune équipe n'existe : il ne
+  pourrait pas même se confier la première tâche. Il n'y entre donc que lui,
+  jamais ses pairs. Les deux moitiés de la règle sont sabotées dans `ProjectTest`.
 - **Lecture et écriture ne se confondent pas** : lire = qui ouvre le module
   Projet de l'événement (`ProjectTaskDocument::isVisibleTo()`), écrire = les
   personnes associées, le créateur du document, l'**administrateur**
-  (`isEditableBy()`). ⚠️ L'administrateur, pas le seul super administrateur :
-  le modèle lui donne accès à tout, et `isColloqueSuperAdmin()` dans une garde
+  (`isEditableBy()`). ⚠️ L'administrateur, pas le seul super administrateur : le
+  modèle lui donne accès à tout, et `isColloqueSuperAdmin()` dans une garde
   refermerait ce qu'on vient de lui ouvrir (cf. `DroitsDeLAdministrateurTest`,
-  qui interdit cet appel hors de `User`). Sans cette distinction, « associer quelqu'un » ne voudrait
-  rien dire, puisque tout le monde écrirait déjà. ⚠️ `isEditableBy()` vérifie
-  l'accès au module **en premier** : quelqu'un retiré de l'équipe ne doit plus
-  écrire, même si son nom est resté dans une vieille tâche.
+  qui interdit cet appel hors de `User`). Sans cette distinction, « associer
+  quelqu'un » ne voudrait rien dire, puisque tout le monde écrirait déjà.
+  ⚠️ `isEditableBy()` vérifie l'accès au module **en premier** : quelqu'un retiré
+  de l'équipe ne doit plus écrire, même si son nom est resté dans une vieille tâche.
+- **Le gestionnaire retire un document qu'il n'a pas rédigé**
+  (`isDeletableBy()`) : il n'écrit pas dans la tâche s'il n'y est pas associé,
+  mais il répond du plan de travail.
 
 #### Ce qui circule, et par où
 
-- ⚠️⚠️ **CE N'EST PAS DU TEXTE QUI CIRCULE, CE SONT DES OPÉRATIONS.** Deux
-  personnes qui tapent au même endroit ne peuvent pas se réconcilier en
-  s'envoyant leur texte - le dernier arrivé écraserait l'autre. **Yjs** (CRDT)
-  échange des modifications qui **fusionnent dans n'importe quel ordre** et
-  donnent le même résultat partout. Éditeur : **Tiptap** (`@tiptap/*`,
-  `y-prosemirror`). ⚠️ **Pas CKEditor**, pourtant déjà dans le projet : sa
-  collaboration temps réel est derrière une offre payante hébergée.
-- ⚠️⚠️ **LES FRAPPES NE PASSENT PAS PAR PHP.** Elles voyagent en **événements
-  client** (`whisper`) d'un navigateur à l'autre à travers le service WebSocket.
-  Le serveur n'intervient qu'à deux moments : **autoriser** l'entrée dans le
-  canal (`routes/channels.php`) et **conserver** l'état par instantanés espacés.
-- ⚠️⚠️ **UN NAVIGATEUR NE PARLE PAS À REDIS.** Redis est un backplane entre
-  processus serveur ; il ne donne aucun point d'entrée WebSocket à une page. Il
-  faudrait un démon Node (Soketi, laravel-echo-server) devant lui - ce que
-  l'hébergement mutualisé ne fait pas tourner. D'où un **service hébergé** qui
-  parle le protocole Pusher (PieSocket, comme sur la référence interne), désigné
-  par son hôte. Redis reste utile pour la file et le cache.
-- Réglages dans **Réglages › Intégrations** (`realtime.*`), surchargés au runtime
-  par `applySettingsToConfig()`. ⚠️ **L'interrupteur ne passe pas par `filled()`**
-  (même piège que `cookies.notice_enabled` et `fedapay.card`) : décoché il vaut
-  `false`, et « couper le temps réel » ne serait jamais appliqué.
-- ⚠️ **Le SECRET ne descend jamais dans la page** : `Realtime::clientConfig()` ne
-  rend que la clé publique et l'adresse ; le secret signe `/broadcasting/auth` et
-  rien d'autre. Un cas de garde l'éprouve sur le HTML rendu.
-- ⚠️ **Les trois identifiants sont exigés ENSEMBLE** (`app_id`, `key`, `secret`) :
-  avec la clé publique seule, la page ouvrirait une connexion que le serveur ne
-  saurait pas autoriser, et l'éditeur attendrait des pairs qui n'arrivent jamais.
-- ⚠️ **L'hôte est un nom de domaine, pas une URL** : le client compose lui-même
-  le schéma et le port. Collé en « https://… », il produirait « wss://https://… »
-  et la connexion échouerait sans que rien ne le dise.
+- ⚠️ **La CLÉ de l'API ne descend JAMAIS dans la page** : seul le `requestToken`
+  du fichier part au SDK, et il est **chiffré en base** (cast `encrypted`). Deux
+  cas de garde l'éprouvent, l'un sur le HTML rendu, l'autre sur la colonne brute.
+- ⚠️⚠️ **CE JETON EST PARTAGÉ PAR LES RÉDACTEURS DE LA TÂCHE, ET IL VAUT UN DROIT
+  D'ÉCRITURE CHEZ LE PRESTATAIRE.** Il n'est pas remis aux lecteurs, mais qui l'a
+  reçu une fois peut s'en servir **hors de GEVES** jusqu'à ce qu'il soit
+  renouvelé. D'où **deux** parades, et il faut les deux :
+  - **le renouvellement d'office au retrait d'une personne associée**
+    (`ProjectController::renouvelerLesLiens()`, appelé par `updateTask`) - sans
+    lui, retirer quelqu'un d'une tâche ne lui retirait pas le fichier ;
+  - **le bouton « Renouveler le lien d'édition »** sur la page du document,
+    réservé à l'administrateur, pour ce qu'aucune règle ne couvre : un lien
+    recopié dans un courriel, un poste perdu.
+  ⚠️ Le renouvellement **vérifie le nouveau lien AVANT de couper l'ancien** :
+  l'ordre inverse laisserait toute l'équipe devant un document inaccessible.
+  ⚠️ Et il est fait **DANS la requête, pas en file** : un renouvellement confié à
+  une file qui ne tourne pas laisserait l'ancien jeton vivant sans que personne
+  ne le sache - exactement le défaut qu'on vient de fermer. Le prix est l'attente
+  au retrait d'un collaborateur, bornée par `MAX_PAR_TACHE`.
+- ⚠️⚠️ **SUPPRIMER UNE TÂCHE EMPORTE SES FICHIERS ET SON DOSSIER**
+  (`ProjectController::oublierLesFichiers()`). La clé étrangère est en **cascade** :
+  les lignes de documents partent au niveau de la base, sans passer par le
+  modèle. Sans ce passage, chaque DOCX, son dossier **et son lien d'édition**
+  restaient vivants chez le prestataire, sans plus rien dans GEVES pour les
+  retrouver - donc sans plus personne pour les révoquer.
+- ⚠️ **Le fichier distant part AVANT la ligne** à la suppression d'un document :
+  l'inverse laisserait un fichier que plus rien ne référence, lien d'édition
+  compris. Le prix est qu'on ne supprime pas pendant une panne de DocSpace, et
+  l'écran le **dit** au lieu de rendre une page d'erreur.
+- ⚠️ **L'adresse de téléchargement rendue par le prestataire est BORNÉE à son
+  hôte** (`TaskDocSpace::downloadUrl()`) : suivie sans contrôle, elle ferait de
+  GEVES un relais vers n'importe quel hôte, et son contenu ressortirait au
+  demandeur sous les traits d'un .docx. Cas de garde, sabotage vérifié.
+- ⚠️ **Un import est jugé sur son CONTENU** (`TaskDocSpace::validFile()`) :
+  l'extension et le type MIME viennent du navigateur. On ouvre l'archive, on y
+  cherche la pièce propre au format, et on borne le nombre d'entrées comme la
+  taille réclamée au dépliage - une archive minuscule qui se déplie en centaines
+  de mégaoctets remplirait le disque du prestataire.
+- ⚠️ **Renommer dans GEVES renomme chez le prestataire** (au mieux, journalisé
+  en cas de refus) : sans ce rappel, on chercherait « Note de cadrage » dans une
+  salle qui affiche encore l'ancien titre. Le titre de GEVES fait foi.
 
-#### Ce qui tient debout sans le temps réel
+#### Sans DocSpace, il n'y a pas de document de tâche
 
-⚠️⚠️ **TOUT, SAUF LA SIMULTANÉITÉ.** Sans clés, le document s'ouvre, s'écrit,
-s'enregistre et garde son historique. Mieux : comme la fusion se fait **aussi au
-moment du refus de concurrence**, deux personnes qui écrivent en même temps sans
-temps réel **ne se perdent pas non plus** - elles ne se voient simplement pas
-taper. La page le **dit** au lieu de laisser croire le contraire.
+⚠️⚠️ **C'EST UNE EXCEPTION ASSUMÉE À LA DÉGRADATION GRACIEUSE DU PROJET**
+(21/10/2026). Partout ailleurs - Turnstile, LiveKit, FedaPay - l'absence de clés
+laisse la fonctionnalité debout, amputée de ce que le service apportait. Ici il
+n'y a rien à laisser debout : le document **est** un fichier chez le prestataire.
+Les deux boutons du panneau sont donc **désactivés** tant que DocSpace n'est pas
+configuré, et le serveur refuse avec un message qui nomme ce qui manque. Ne pas
+« rétablir » un repli local : c'est précisément le chemin qui a été retiré.
 
-#### Conservation
+#### L'ancien éditeur texte (Tiptap + Yjs) a été RETIRÉ
 
-- `revision` est un **contrôle de concurrence** : un enregistrement parti d'une
-  révision dépassée reçoit **409 avec l'état du serveur**. ⚠️ **Un refus n'est pas
-  une perte** : le poste repoussé **fusionne** cet état au sien - propriété du
-  CRDT - puis réessaie. Sans la fusion, réessayer écraserait l'autre ; sans borne
-  (`peutReessayer`, 3), une frappe continue d'en face ferait boucler le
-  navigateur jusqu'à le bloquer.
-- ⚠️ **Un seul pair écrit en base** (`estLeScribe`, plus petit identifiant) :
-  sans élection, cinq rédacteurs enverraient cinq instantanés du même document
-  toutes les deux secondes. La règle ne dépend ni d'une horloge ni de l'ordre
-  d'arrivée, donc tous les postes désignent le même sans se concerter ; elle
-  écarte qui ne peut pas écrire, sinon un lecteur élu scribe n'enregistrerait
-  jamais rien.
-- ⚠️ **Une version ne se verse pas à chaque enregistrement**
-  (`VERSION_EVERY_MINUTES`, 10) : l'enregistrement est automatique et fréquent,
-  et l'historique deviendrait illisible - des centaines d'entrées pour une
-  après-midi, plus aucun point de repère où revenir.
-- ⚠️⚠️ **LE RETOUR EN ARRIÈRE SE FAIT DANS L'ÉDITEUR, PAS EN BASE.** Réécrire la
-  colonne `state` avec un état ancien ne reviendrait en arrière **chez personne** :
-  les postes connectés tiennent le document en mémoire, et deux états Yjs
-  **fusionnent** au lieu de se remplacer - le texte « retiré » reparaîtrait au
-  premier enregistrement suivant. Restaurer est donc une **modification
-  ordinaire** (`setContent`), qui se propage et s'annule comme les autres ; le
-  serveur ne fait que rendre le contenu d'alors.
-- ⚠️ `state` est conservé en **base64** : une colonne texte passe de SQLite à
-  MySQL sans manipulation d'octets. `html` est le rendu **assaini**, pour tout ce
-  qui lit le document sans ouvrir l'éditeur - le déduire côté serveur
-  demanderait d'exécuter Yjs en PHP.
+⚠️⚠️ **DÉCISION DU 21/10/2026.** Un document de tâche s'écrivait en HTML dans un
+éditeur maison, avec fusion CRDT (Yjs) et frappes portées d'un navigateur à
+l'autre par événements client. L'arrivée des vrais DOCX/XLSX en a fait un second
+éditeur pour le même objet ; c'est celui-là qui part.
+
+- **Ce qui a disparu** : `resources/js/task-document*.js`, son CSS, son entrée
+  Vite, les points d'entrée `state` / `save` / `versions.store` /
+  `versions.show`, et avec eux le refus de concurrence par `revision` et le
+  versement espacé des versions. Le build passe de 50 s à 5 s.
+- ⚠️⚠️ **MAIS LES PAQUETS NPM SONT TOUJOURS DÉCLARÉS** (`@tiptap/*`, `yjs`,
+  `y-prosemirror`, `y-protocols`), et il ne faut PAS les retirer à la main de
+  `package.json` : le déploiement passe par **`npm ci`**, qui **refuse** un
+  `package-lock.json` désaccordé du manifeste. Les retirer sans régénérer le
+  verrou casserait la mise en ligne. Un seul geste, quand le réseau le permet :
+  `npm uninstall @tiptap/core @tiptap/extension-collaboration @tiptap/extension-collaboration-caret @tiptap/pm @tiptap/starter-kit y-prosemirror y-protocols yjs`.
+  Plus rien ne les importe entre-temps, donc ils ne pèsent sur aucun paquet servi.
+- ⚠️⚠️ **CE QUI RESTE, ET POURQUOI : LES ANCIENS DOCUMENTS SE RELISENT.** Leur
+  page les rend **en lecture seule**, contenu courant **et versions** comprises -
+  un texte qu'on cesse d'afficher est un texte perdu, et c'est en production
+  qu'on s'en apercevrait (même leçon que les fichiers « camera-ready », dont la
+  migration continue de suivre les dépôts après le retrait du processus). Le HTML
+  est assaini à l'AFFICHAGE par **`App\Support\TaskDocumentHtml`**, qui reste
+  pour cette seule raison : il a été écrit par des rédacteurs et il est relu dans
+  le back-office.
+- ⚠️ **Les colonnes `html`, `state`, `revision` et `file_path` ne sont plus
+  ALIMENTÉES**, et la table des versions non plus. On ne les retire pas tant
+  qu'une installation peut en porter ; les migrations `2026_10_20_000300` à
+  `000500` sont désormais **rejouables** (gardes `Schema::hasColumn`).
+- ⚠️ **`ProjectTaskDocument::isOfficeFile()` est le SEUL prédicat** : il n'existe
+  plus de fichier local, donc « fichier Office » et « fichier chez DocSpace » ne
+  sont plus deux questions. Faux pour un ancien document texte.
+- ⚠️⚠️ **LA COUCHE TEMPS RÉEL EST CONSERVÉE EN RÉSERVE, ET C'EST UNE DÉCISION,
+  PAS UN OUBLI.** `App\Support\Realtime`, le canal `ukc.doc.{document}` de
+  `routes/channels.php`, `config/broadcasting.php`, l'écran **Réglages ›
+  Intégrations** et les paquets `laravel-echo` / `pusher-js` restent en place
+  avec les identifiants PieSocket déjà réglés, pour un prochain usage (présence,
+  notifications en direct). Elle n'a **aucun consommateur aujourd'hui** : un cas
+  de garde la maintient correcte en attendant (secret jamais sorti du serveur,
+  trois identifiants exigés, nom de canal à définition unique, autorisation du
+  canal), parce qu'un socle qu'on garde sans l'éprouver se périme, et qu'on le
+  découvrirait le jour où l'on s'en sert.
+- ⚠️ **Le pont « ONLYOFFICE Docs » auto-hébergé a été retiré au même moment** :
+  il n'avait plus aucun appelant. `App\Support\TaskOffice`,
+  `OfficeDocumentController` et ses **deux routes publiques**
+  (`/_office/documents/{document}/fichier`, `/webhooks/onlyoffice/{document}`)
+  ne valaient que pour un document à `file_path` local, qu'aucun chemin de
+  création ne posait plus. Seule sa validation OOXML a survécu, dans
+  `TaskDocSpace::validFile()`. Un cas de garde vérifie que ces routes **n'existent
+  plus** : une route laissée sans écran est une seconde porte que personne ne
+  surveille.
+
+#### Ce que l'écran a appris (21/10/2026)
+
+Les pages ont été ouvertes sur **gesco.test** (le navigateur intégré refusait
+`geves.test`), contre la **vraie salle DocSpace** et de vrais fichiers.
+
+- ⚠️⚠️ **LA CHAÎNE EST CONFIRMÉE DE BOUT EN BOUT, MAIS PAS ENTIÈREMENT.** Un DOCX
+  de la base s'ouvre pour de bon : le jeton enregistré est accepté, le SDK monte
+  son cadre dans la page et `onAppReady` passe l'état à « Éditeur prêt ». Restent
+  **non confirmées** la *création* d'un lien (les documents essayés en portaient
+  déjà un) et l'import par morceaux au-delà de 10 Mo.
+- ⚠️⚠️ **UN LIEN DE PARTAGE EST ANONYME : L'ÉDITEUR RÉCLAMAIT UN NOM À CHAQUE
+  OUVERTURE.** Une boîte « Entrez un nom à utiliser pour la collaboration »
+  barrait le document, alors que GEVES sait qui vient d'entrer. On la coupe et on
+  donne le nom nous-mêmes, par `editorCustomization.anonymous`
+  (`request: false`, `label` = le nom d'affichage du compte) dans
+  `docspaceConfig`. **Vérifié à l'écran** : la boîte ne revient plus et l'éditeur
+  s'ouvre directement en mode Édition.
+  ⚠️ **Ce nom est DÉCLARATIF, ce n'est pas une identification** : le prestataire
+  ne voit toujours qu'un porteur de jeton. C'est GEVES qui tient l'accès, et
+  c'est le renouvellement du lien qui le reprend.
+- ⚠️⚠️ **DEUX PIÈGES MAISON, PAYÉS UNE FOIS DE PLUS ICI**, tous deux invisibles à
+  la lecture du code et mesurés dans le navigateur :
+  - **Le titre d'une carte part à l'autre bout.** `.admin-page .ukc-card h2` est
+    en `space-between` **pour le back-office**, où une action vit à droite du
+    titre ; ces cartes n'en ont aucune, et l'icône restait seule à gauche pendant
+    que le mot filait à droite. Mesuré : « Contenu » commençait à **1077 px dans
+    une carte de 1152**. Le remède du projet n'est pas une guerre de spécificité
+    (`.admin-page .ukc-card h2` pèse (0,2,1) et gagne) mais le **`<span>`**
+    qu'attend `.admin-page .ukc-card h2 > span`. Les cinq titres sont repassés
+    à 19 px.
+  - **Le lien d'un ancien document n'était plus un lien.** `.ukc-scope
+    a:not(.ukc-btn) { color: inherit }` pèse (0,2,1) - `:not()` compte son
+    argument - et bat un sélecteur à une classe : mesuré, le lien sortait
+    **exactement de la couleur du texte, sans soulignement**, sur la seule page
+    qui existe pour relire ce qui a été écrit. On nomme le bloc ET l'élément,
+    soit (0,3,1). Contraste repassé à 9,16:1.
+- **Mesuré à 375 px**, sur les deux pages : aucun débordement horizontal
+  (`scrollWidth` = `clientWidth` = 375 ; ⚠️ `body` vaut 417, soit 375/0,9, à
+  cause de `html.ukc-dense`), et la grille des détails repasse bien sur une
+  colonne.
+- ⚠️ **Sur une fenêtre basse, le bandeau d'en-tête sort de l'écran** : le cadre
+  de l'éditeur a un plancher de 720 px, l'en-tête collant en prend 71, et le
+  cadre tire le défilement à lui en prenant le focus. Ce n'est pas un défaut -
+  un éditeur de document ne tient pas dans 400 px - mais l'état et le bouton
+  « Plein écran » demandent alors de remonter.
 
 #### Pièges déjà payés
 
@@ -5046,54 +5169,41 @@ taper. La page le **dit** au lieu de laisser croire le contraire.
   sauf le super-administrateur. `scopeBindings()` exige en plus que le document
   appartienne à **cette** tâche : sans lui, une tâche accessible plus
   l'identifiant d'un document d'un autre événement ouvriraient le second.
-- ⚠️ **`App\Support\Html` ne convient pas** : sa liste blanche sert les
-  **résumés** (gras, italique, listes, aucun attribut), déposés par des milliers
-  de personnes du dehors - l'élargir élargirait leur surface. D'où
-  **`App\Support\TaskDocumentHtml`**, qui **marche dans l'arbre DOM** : dès qu'un
-  attribut est autorisé (`href`), un filtre par expression régulière devient une
-  liste noire, donc fausse par construction. Schémas d'URL en liste blanche -
-  `javascript:` n'y est pas, sans quoi « cliquer sur le lien » exécuterait le
-  code d'un rédacteur chez tous les autres, dans le back-office. Une balise
+- ⚠️⚠️ **LA FORME DES RÉPONSES DE DOCSPACE RESTE EN PARTIE INCONFIRMÉE**
+  (l'ouverture d'un fichier, elle, est éprouvée - voir ci-dessus ; la
+  **création** d'un lien et l'import par morceaux ne le sont pas). Le jeton d'un
+  lien se lit donc sous quatre formes connues
+  (`TaskDocSpace::linkEntry()`) : sous `sharedLink`, sous `sharedTo`, à la
+  racine, ou à défaut dans le paramètre `share` de l'adresse de partage -
+  `sharedTo.shareLink` est tantôt un objet, tantôt la **chaîne** de l'URL, et
+  indexer une chaîne par un nom ne rend rien. Toute forme inconnue échoue
+  **FERMÉE** : on ne devine pas un jeton. Un jeu de données éprouve les cinq cas.
+- ⚠️ **`App\Support\Html` ne conviendrait pas** pour l'assainissement : sa liste
+  blanche sert les **résumés**, déposés par des milliers de personnes du dehors -
+  l'élargir élargirait leur surface. `TaskDocumentHtml` **marche dans l'arbre
+  DOM** : dès qu'un attribut est autorisé (`href`), un filtre par expression
+  régulière devient une liste noire, donc faux par construction. Schémas d'URL en
+  liste blanche - `javascript:` n'y est pas, sans quoi « cliquer sur le lien »
+  exécuterait le code d'un ancien rédacteur chez qui relit la page. Une balise
   refusée est **dépliée**, pas supprimée : son texte est le travail de quelqu'un.
-  ⚠️ « Attribut conservé » et « attribut qui porte une URL » sont **deux listes** :
-  les confondre ferait sauter le contrôle de schéma le jour où une seconde
-  balise garde un attribut quelconque.
-- ⚠️ **Un message du canal est plafonné à 10 Ko**, base64 compris, et un message
-  au-dessus **est refusé, pas tronqué** : la frappe disparaîtrait sans un mot.
-  `tropGrosPourLeCanal` (6 000 octets d'utile) fait basculer sur le serveur -
-  enregistrer, puis demander aux pairs de relire l'état.
-- ⚠️ **C'est l'ARRIVANT qui demande à se synchroniser**, et il n'envoie qu'un
-  **vecteur d'état** (quelques octets) : le pair répond par la seule différence
-  qui manque. Envoyer l'état complet dépasserait le plafond sur un document d'une
-  page. ⚠️ **Un seul pair répond** (même élection), le demandeur étant écarté du
-  calcul - sinon, quand c'est lui le scribe, personne ne répondrait.
-- ⚠️ **L'annulation native de l'éditeur est coupée** (`undoRedo: false`) : à
-  plusieurs, elle défait la frappe de n'importe qui. Celle de `Collaboration` ne
-  défait que les siennes.
-- ⚠️ **Le curseur d'un voisin est en `position: relative`** : posé dans le flux,
-  il décalerait le texte à chaque frappe d'en face - le paragraphe tremblerait
-  sous les doigts de qui écrit.
-- ⚠️ **`min-width: 0` sur les pistes de `.ukc-doc-layout`** : sans lui, un bloc
-  de code collé impose sa largeur intrinsèque et toute la page défile
-  latéralement. Même ligne que `.layout-plan > *`.
-- ⚠️ **Le reset de Tailwind enlève les puces** : les listes de l'éditeur
-  rétablissent `list-style` explicitement, comme les trois surfaces de chat.
-- ⚠️ **Entrée Vite SÉPARÉE** (`resources/js/task-document.js`) : l'éditeur et le
-  CRDT pèsent ~610 Ko, que tout le back-office et tout l'espace participant
-  téléchargeraient depuis `app.js` pour une page qu'ils n'ouvrent pas.
-- ⚠️ **`sendBeacon` au départ de la page** porte le jeton dans le CORPS : il ne
-  peut pas poser d'en-tête, et Laravel lit `_token` là aussi.
+- ⚠️ **Entrée Vite SÉPARÉE** (`resources/css/task-office.css`) : tout le
+  back-office et tout l'espace participant la téléchargeraient depuis `app.js`
+  pour une page qu'ils n'ouvrent pas.
 - ⚠️ **Le choix des personnes associées est une rangée de pastilles**, pas un
   `<select multiple>` : ce dernier oblige à maintenir Ctrl enfoncé, geste que
   presque personne ne connaît et qui efface toute la sélection quand on le rate.
+- ⚠️ **Piège Pest rencontré ici : `Http::fake()` AJOUTE ses motifs** au lieu de
+  les remplacer. Un appel sans argument pose un fourre-tout `*` qui **coiffe**
+  tout ce qu'on enregistre ensuite, et les appels suivants reçoivent une réponse
+  vide - donc « Réponse inattendue de DocSpace » pour un motif pourtant bien
+  écrit. Pour n'attendre aucun appel, c'est `Http::preventStrayRequests()`.
 
-Tests : `tests/Feature/DocumentDeTacheTest.php` (17 cas, **7 sabotages
-vérifiés**) et `resources/js/task-document-pure.test.js` (18 cas, **4 sabotages
-vérifiés**). ⚠️ Les règles qui décident - qui enregistre, ce qui tient dans un
-message, quand renoncer - vivent dans **`task-document-pure.js`**, hors de
-l'éditeur : enfermées dans une fermeture qui réclame un navigateur, un WebSocket
-et deux pairs connectés, elles seraient intestables. Même grammaire que
-`meeting-pure.js` et `program-pure.js`.
+Tests : `tests/Feature/DocumentDeTacheTest.php` (20 cas : droits, cloisonnement,
+anciens documents en lecture, couche temps réel en réserve, assainissement) et
+`tests/Feature/DocumentBureautiqueDeTacheTest.php` (26 cas, **6 sabotages
+vérifiés** : chiffrement du jeton, jeton refusé aux lecteurs, adresse de
+téléchargement bornée, aucun appel avant la garde des liens, et l'ordre
+vérification-puis-révocation, et le nom donné à l'éditeur).
 
 ### Architecture & sécurité
 
@@ -6140,7 +6250,7 @@ Les axes sont renvoyés en tableau, comme l'attend le panneau Alpine. L'administ
 choisit les propositions à appliquer ; celles qui correspondent à des champs déjà
 remplis sont décochées par défaut. « Appliquer » ne sauvegarde jamais l'événement.
 L'interface et le serveur acceptent six PDF/images au plus, 10 Mo par fichier et
-20 Mo au total. `public/.user.ini` porte les limites PHP-CGI de Herd à 10/24 Mo
+20 Mo au total. `public/.user.ini` porte les limites PHP-CGI de Herd à 20/24 Mo
 et la mémoire à 256 Mo pour l'encodage des documents.
 
 La route d'analyse porte sa seule limite PHP à 300 s : les fournisseurs HTTP

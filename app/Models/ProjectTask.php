@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $phase
  * @property Carbon|null $start_date
  * @property string|null $link_key
+ * @property string|null $docspace_folder_id
+ * @property string|null $docspace_request_token
  * @property int|null $assignee_id
  * @property int|null $created_by
  * @property Carbon|null $due_date
@@ -57,6 +59,7 @@ class ProjectTask extends Model
     protected function casts(): array
     {
         return [
+            'docspace_request_token' => 'encrypted',
             'due_date' => 'date',
             'start_date' => 'date',
             'completed_at' => 'datetime',

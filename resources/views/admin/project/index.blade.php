@@ -317,11 +317,18 @@
                             <span style="color:var(--ukc-muted);font-weight:500;" x-show="(task.collaborator_ids || []).length"
                                   x-text="'- ' + task.collaborator_ids.length"></span>
                         </label>
-                        <div class="ukc-people-pick">
+                        <select aria-label="Ajouter une personne associée" @change="ajouterCollaborateur($event.target)"
+                                :disabled="(task.collaborator_ids || []).length >= 30">
+                            <option value="">- Choisir une personne -</option>
                             @foreach ($team as $u)
-                                <button type="button" class="pick" :class="{ on: estCollaborateur({{ $u->id }}) }"
+                                <option value="{{ $u->id }}" :disabled="estCollaborateur({{ $u->id }})">{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="ukc-people-pick" aria-label="Personnes sélectionnées">
+                            @foreach ($team as $u)
+                                <button type="button" class="pick on" x-show="estCollaborateur({{ $u->id }})" x-cloak
                                         @click="basculeCollaborateur({{ $u->id }})"
-                                        :aria-pressed="estCollaborateur({{ $u->id }}) ? 'true' : 'false'">{{ $u->name }}</button>
+                                        aria-label="Retirer {{ $u->name }} des personnes associées">{{ $u->name }} &times;</button>
                             @endforeach
                         </div>
                         <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Elles sont prévenues, et peuvent rédiger les documents de la tâche.</span>
@@ -373,19 +380,69 @@
                                 <a :href="d.url">
                                     <x-ukc.icon name="file" :size="15" />
                                     <strong x-text="d.title"></strong>
-                                    <span x-text="d.savedLabel ? 'modifié le ' + d.savedLabel : 'vide'"></span>
+                                    <span class="ukc-doc-format" x-text="(d.format || 'texte').toUpperCase()"></span>
+                                    <span x-show="d.savedLabel" x-text="'modifié le ' + d.savedLabel"></span>
                                 </a>
+                                @if ($canDeleteDocuments)
+                                    <button type="button" class="ukc-doc-list__delete"
+                                            :aria-label="'Supprimer le document ' + d.title"
+                                            :title="'Supprimer ' + d.title"
+                                            :disabled="deletingDocumentId === d.id"
+                                            @click.stop="deleteDocument(d)">
+                                        <x-ukc.icon name="trash" :size="15" />
+                                    </button>
+                                @endif
                             </li>
                         </template>
                     </ul>
                     <p x-show="(task.documents || []).length === 0" style="color:var(--ukc-muted);font-size:12.5px;margin:0 0 8px;">
-                        Aucun document. Créez-en un pour le rédiger à plusieurs, en direct.
+                        Aucun document. Créez un DOCX ou XLSX, ou importez un fichier existant.
                     </p>
-                    <form method="POST" :action="task.documentsUrl" class="ukc-doc-new">
-                        @csrf
-                        <input type="text" name="title" maxlength="200" required placeholder="Intitulé du document…">
-                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Créer</button>
-                    </form>
+                    <div class="ukc-doc-choice" x-data="{
+                        mode: 'create', busy: false, error: '',
+                        async submit(event) {
+                            this.error = ''; this.busy = true;
+                            try {
+                                const response = await fetch(event.target.action, {
+                                    method: 'POST',
+                                    headers: { Accept: 'application/json' },
+                                    body: new FormData(event.target),
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                    this.error = Object.values(data.errors || {}).flat()[0] || data.message || 'Impossible d’ajouter ce document.';
+                                    return;
+                                }
+                                window.location.assign(data.url);
+                            } catch (error) {
+                                this.error = 'Connexion interrompue. Réessayez.';
+                            } finally {
+                                this.busy = false;
+                            }
+                        }
+                    }">
+                        <div class="ukc-doc-choice__tabs" role="tablist" aria-label="Ajouter un document de travail">
+                            <button type="button" role="tab" :aria-selected="mode === 'create'" :class="{ active: mode === 'create' }" @click="mode = 'create'">Créer un document</button>
+                            <button type="button" role="tab" :aria-selected="mode === 'import'" :class="{ active: mode === 'import' }" @click="mode = 'import'">Importer un fichier</button>
+                        </div>
+                        <form method="POST" :action="task.documentsUrl" class="ukc-doc-new" x-show="mode === 'create'" @submit.prevent="submit($event)">
+                            @csrf
+                            <input type="text" name="title" maxlength="200" required placeholder="Intitulé du document…" aria-label="Intitulé du nouveau document">
+                            <select name="format" aria-label="Format du nouveau document" required>
+                                <option value="docx">Word (.docx)</option>
+                                <option value="xlsx">Excel (.xlsx)</option>
+                            </select>
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="busy || {{ $officeAvailable ? 'false' : 'true' }}">Créer</button>
+                        </form>
+                        <form method="POST" :action="task.documentsUrl" enctype="multipart/form-data" class="ukc-doc-new ukc-doc-new--import" x-show="mode === 'import'" x-cloak @submit.prevent="submit($event)">
+                            @csrf
+                            <input type="file" name="file" accept=".docx,.xlsx" required aria-label="Fichier Word ou Excel à importer">
+                            <input type="text" name="title" maxlength="200" placeholder="Nom personnalisé (facultatif)" aria-label="Nom personnalisé du document">
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="busy || {{ $officeAvailable ? 'false' : 'true' }}">Importer</button>
+                        </form>
+                        <p class="ukc-doc-choice__error" role="alert" x-show="error" x-text="error" x-cloak></p>
+                        <p class="ukc-doc-choice__hint">DOCX ou XLSX, 20 Mo maximum. @if ($officeAvailable) Les collaborateurs de la tâche peuvent modifier le fichier ensemble dans DocSpace. @else Configurez DocSpace pour créer ou importer un document de travail. @endif</p>
+                    </div>
                 </div>
 
                 {{-- Commentaires (tâche existante) --}}

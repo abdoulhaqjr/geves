@@ -14,12 +14,9 @@ export default defineConfig({
                 'resources/css/template-designer.css',
                 'resources/js/template-designer.js',
                 'resources/css/designer-tailwise.css',
-                // Rédaction à plusieurs d'un document de tâche : entrée À PART.
-                // ⚠️ L'éditeur et le CRDT pèsent plusieurs centaines de kilo-octets ;
-                // dans `app.js`, tout le back-office et tout l'espace participant
-                // les téléchargeraient pour une page qu'ils n'ouvrent pas.
-                'resources/css/task-document.css',
-                'resources/js/task-document.js',
+                // Pages des documents de tâche : entrée À PART, pour ne pas peser
+                // sur tout le back-office et tout l'espace participant.
+                'resources/css/task-office.css',
             ],
             refresh: true,
             fonts: [

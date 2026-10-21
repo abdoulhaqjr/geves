@@ -10,12 +10,14 @@ use App\Models\ProjectTaskComment;
 use App\Models\ProjectTaskDocument;
 use App\Models\User;
 use App\Support\Notifier;
+use App\Support\TaskDocSpace;
 use App\Support\XlsxWriter;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -54,9 +56,10 @@ class ProjectController extends Controller
         'event' => 'Fiche de l’événement',
     ];
 
-    public function index(Request $request): View
+    public function index(Request $request, TaskDocSpace $docspace): View
     {
         $event = $this->currentEdition($request);
+        $user = $request->user();
 
         // État initial pour le client (Alpine) - tout le CRUD et le calendrier
         // sont ensuite pilotés en direct depuis cet état (AJAX, sans rechargement).
@@ -68,11 +71,15 @@ class ProjectController extends Controller
             'event_id' => $event ? (string) $event->id : '',
             'tasksPayload' => $payload['tasks'],
             'milestonesPayload' => $payload['milestones'],
-            'team' => $event ? $this->assigneePool($event) : collect(),
+            'team' => $event ? $this->assigneePool($event, $user) : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
             'currentUserId' => $request->user()?->id,
+            'canDeleteDocuments' => $event !== null && $user !== null
+                && ($user->isColloqueAdmin()
+                    || array_intersect(['gerant', 'co_gerant'], $user->rolesOnEdition($event)) !== []),
+            'officeAvailable' => $docspace->configured(),
         ]);
     }
 
@@ -109,7 +116,7 @@ class ProjectController extends Controller
         return back()->with('ukc_status', 'Tâche ajoutée.');
     }
 
-    public function updateTask(Request $request, ProjectTask $task): RedirectResponse|JsonResponse
+    public function updateTask(Request $request, ProjectTask $task, TaskDocSpace $docspace): RedirectResponse|JsonResponse
     {
         $event = $task->event;
         $data = $this->validateTask($request, $event);
@@ -117,6 +124,7 @@ class ProjectController extends Controller
 
         $previousAssignee = $task->assignee_id;
         $avant = $task->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $associesAvant = $task->associateIds();
         $collaborateurs = $data['collaborator_ids'];
         unset($data['collaborator_ids']);
 
@@ -124,6 +132,7 @@ class ProjectController extends Controller
         $task->collaborators()->sync($collaborateurs);
         $this->notifyAssignment($task, $previousAssignee, $request);
         $this->notifyCollaborators($task, $avant, $collaborateurs, $request);
+        $this->renouvelerLesLiens($task, $associesAvant, $docspace);
 
         if ($request->expectsJson() && $event) {
             return response()->json(['task' => $this->taskCard($task->fresh()->load(self::RELATIONS_CARTE), $event)]);
@@ -132,8 +141,9 @@ class ProjectController extends Controller
         return back()->with('ukc_status', 'Tâche mise à jour.');
     }
 
-    public function destroyTask(Request $request, ProjectTask $task): RedirectResponse|JsonResponse
+    public function destroyTask(Request $request, ProjectTask $task, TaskDocSpace $docspace): RedirectResponse|JsonResponse
     {
+        $this->oublierLesFichiers($task, $docspace);
         $task->delete();
 
         if ($request->expectsJson()) {
@@ -483,8 +493,8 @@ class ProjectController extends Controller
             'checklist_json' => ['nullable', 'string'],
         ]);
 
-        // Le responsable doit appartenir à l'équipe de l'événement (sinon on ignore).
-        $vivier = $event ? $this->assigneePool($event) : null;
+        // Le responsable doit appartenir au vivier de l'événement (sinon on ignore).
+        $vivier = $event ? $this->assigneePool($event, $request->user()) : null;
 
         if (! empty($validated['assignee_id']) && $vivier
             && ! $vivier->contains('id', (int) $validated['assignee_id'])) {
@@ -606,7 +616,9 @@ class ProjectController extends Controller
                 ->map(fn (ProjectTaskDocument $d) => [
                     'id' => $d->id,
                     'title' => $d->title,
+                    'format' => $d->format,
                     'url' => route('admin.project.documents.edit', [$task, $d]),
+                    'deleteUrl' => route('admin.project.documents.destroy', [$task, $d]),
                     'savedLabel' => $d->saved_at?->format('d/m/Y H:i'),
                 ])->values()->all(),
             'documentsUrl' => route('admin.project.documents.store', $task),
@@ -723,20 +735,120 @@ class ProjectController extends Controller
     }
 
     /**
-     * Vivier des responsables assignables : l'équipe de l'événement + les
-     * administrateurs (super / de colloque), qui peuvent tous accéder au projet.
+     * Renouveler le lien d'édition des documents de la tâche quand quelqu'un
+     * cesse d'y être associé.
+     *
+     * ⚠️⚠️ **RETIRER QUELQU'UN D'UNE TÂCHE NE LUI RETIRAIT PAS LE FICHIER.** Le
+     * jeton du lien DocSpace est partagé par les rédacteurs et vaut un droit
+     * d'écriture **hors de GEVES** : sans renouvellement, la personne écartée
+     * gardait le document ouvert, et la seule parade existait sur le papier.
+     *
+     * ⚠️ **C'est fait DANS la requête, pas en file.** Un renouvellement confié à
+     * une file qui ne tourne pas laisserait l'ancien jeton vivant sans que
+     * personne ne le sache - exactement le défaut qu'on vient de fermer. Le prix
+     * est l'attente au retrait d'un collaborateur, bornée par
+     * `TaskDocumentController::MAX_PAR_TACHE`.
+     *
+     * ⚠️ Au mieux : un échec est journalisé et n'arrête pas l'enregistrement de
+     * la tâche. La trace nomme le document, pour qu'on renouvelle à la main.
+     *
+     * @param  list<int>  $associesAvant
+     */
+    private function renouvelerLesLiens(ProjectTask $task, array $associesAvant, TaskDocSpace $docspace): void
+    {
+        $partis = array_diff($associesAvant, $task->fresh()?->associateIds() ?? []);
+        if ($partis === [] || ! $docspace->configured() || ! $docspace->fileLinksEnabled()) {
+            return;
+        }
+
+        foreach ($task->documents()->whereNotNull('docspace_file_id')->get() as $document) {
+            try {
+                $docspace->rotateFileLink($document);
+            } catch (\Throwable $error) {
+                Log::warning('Lien DocSpace NON renouvelé après le retrait d’un collaborateur.', [
+                    'task_id' => $task->id,
+                    'document_id' => $document->id,
+                    'reason' => $error->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Supprimer une tâche emporte ses fichiers chez le prestataire.
+     *
+     * ⚠️⚠️ **LA CLÉ ÉTRANGÈRE EST EN CASCADE** : les lignes de documents partent
+     * au niveau de la base, sans passer par le modèle. Sans ce passage, chaque
+     * DOCX, son dossier **et son lien d'édition** resteraient vivants dans
+     * DocSpace, sans plus rien dans GEVES pour les retrouver - donc sans plus
+     * personne pour les révoquer.
+     *
+     * ⚠️ Au mieux, et jamais bloquant : on ne retient pas une tâche parce qu'un
+     * service tiers répond mal. Mais l'incident est écrit, nommément, sinon un
+     * orphelin ne se retrouve plus.
+     */
+    private function oublierLesFichiers(ProjectTask $task, TaskDocSpace $docspace): void
+    {
+        $fichiers = $task->documents()->whereNotNull('docspace_file_id')->pluck('docspace_file_id')->all();
+        $dossier = (string) ($task->docspace_folder_id ?? '');
+
+        if ($fichiers === [] && $dossier === '') {
+            return;
+        }
+
+        if (! $docspace->configured()) {
+            Log::warning('Tâche supprimée sans retirer ses fichiers : DocSpace n’est pas configuré.', [
+                'task_id' => $task->id, 'files' => $fichiers, 'folder_id' => $dossier,
+            ]);
+
+            return;
+        }
+
+        foreach ($fichiers as $fileId) {
+            try {
+                $docspace->deleteFile((string) $fileId);
+            } catch (\Throwable $error) {
+                Log::warning('Fichier DocSpace orphelin après suppression de la tâche.', [
+                    'task_id' => $task->id, 'file_id' => $fileId, 'reason' => $error->getMessage(),
+                ]);
+            }
+        }
+
+        if ($dossier !== '') {
+            try {
+                $docspace->deleteFolder($dossier);
+            } catch (\Throwable $error) {
+                Log::warning('Dossier DocSpace orphelin après suppression de la tâche.', [
+                    'task_id' => $task->id, 'folder_id' => $dossier, 'reason' => $error->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Vivier des responsables et collaborateurs : les personnes explicitement
+     * affectées à l'équipe de cet événement, **plus l'administrateur connecté
+     * lui-même**.
+     *
+     * ⚠️⚠️ **Un accès global ne vaut pas affectation au projet** : dérouler
+     * tous les administrateurs de la plateforme désignerait des gens qui n'y
+     * travaillent pas. Mais c'est l'administrateur qui MONTE l'événement, et
+     * sans lui la liste s'ouvre **vide** tant qu'aucune équipe n'existe : il ne
+     * pourrait pas même se confier la première tâche. Il n'y entre donc que
+     * lui, jamais ses pairs. Les deux moitiés de la règle sont sabotées dans
+     * `ProjectTest`.
      *
      * @return EloquentCollection<int, User>
      */
-    private function assigneePool(Event $event): EloquentCollection
+    private function assigneePool(Event $event, ?User $viewer = null): EloquentCollection
     {
-        $teamIds = $event->team()->pluck('users.id')->all();
+        $ids = $event->team()->pluck('users.id');
 
-        return User::query()
-            ->where(fn ($q) => $q
-                ->whereIn('id', $teamIds)
-                ->orWhereIn('access_level', [User::ACCESS_SUPER_ADMIN, User::ACCESS_COLLOQUE_ADMIN]))
-            ->orderBy('name')->get();
+        if ($viewer && $viewer->isColloqueAdmin()) {
+            $ids = $ids->push($viewer->id)->unique();
+        }
+
+        return User::query()->whereIn('id', $ids)->orderBy('name')->get();
     }
 
     private function currentEdition(Request $request): ?Event

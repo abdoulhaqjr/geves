@@ -1622,8 +1622,8 @@ class ProgramController extends Controller
             return response()->json(['people' => []]);
         }
 
-        $users = UserDirectorySearch::find($q);
         $event = $this->currentEdition($request);
+        $users = UserDirectorySearch::find($q, $event);
 
         return response()->json([
             'people' => $users->map(fn (User $u) => [

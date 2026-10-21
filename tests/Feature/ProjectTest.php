@@ -177,11 +177,11 @@ it('crée une tâche et l’ajoute en bas de sa colonne', function () {
     expect($task->priority)->toBe('high');
 });
 
-it('assigne une tâche à un membre de l’équipe ou à un admin, sinon ignore', function () {
-    $staff = adminStaff();
+it('assigne une tâche à un membre de l’équipe ou à l’administrateur qui monte l’événement, sinon ignore', function () {
+    $staff = adminStaff();                                                           // l'administrateur connecté
     $event = openEdition();
     $member = User::factory()->create();                                             // équipe
-    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]); // admin hors équipe
+    $autreAdmin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]); // admin, hors équipe
     $outsider = User::factory()->create();                                           // simple utilisateur hors équipe
     $event->team()->attach($member->id, ['role' => 'secretariat']);
 
@@ -191,17 +191,27 @@ it('assigne une tâche à un membre de l’équipe ou à un admin, sinon ignore'
     ]);
     expect(ProjectTask::where('title', 'T1')->value('assignee_id'))->toBe($member->id);
 
-    // Administrateur de colloque (hors équipe mais accès au projet) → accepté.
+    // ⚠️ L'administrateur CONNECTÉ se confie la première tâche d'un événement qui
+    // n'a pas encore d'équipe : sans lui, la liste s'ouvrirait vide chez celui qui
+    // monte le projet.
     $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
-        'event_id' => $event->id, 'title' => 'T2', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $admin->id,
+        'event_id' => $event->id, 'title' => 'T2', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $staff->id,
     ]);
-    expect(ProjectTask::where('title', 'T2')->value('assignee_id'))->toBe($admin->id);
+    expect(ProjectTask::where('title', 'T2')->value('assignee_id'))->toBe($staff->id);
+
+    // ⚠️ Un AUTRE administrateur, non affecté → ignoré : un accès global à la
+    // plateforme ne vaut pas affectation à CE projet, et dérouler tous les
+    // administrateurs désignerait des gens qui n'y travaillent pas.
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
+        'event_id' => $event->id, 'title' => 'T3', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $autreAdmin->id,
+    ]);
+    expect(ProjectTask::where('title', 'T3')->value('assignee_id'))->toBeNull();
 
     // Simple utilisateur hors équipe → ignoré (null).
     $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
-        'event_id' => $event->id, 'title' => 'T3', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $outsider->id,
+        'event_id' => $event->id, 'title' => 'T4', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $outsider->id,
     ]);
-    expect(ProjectTask::where('title', 'T3')->value('assignee_id'))->toBeNull();
+    expect(ProjectTask::where('title', 'T4')->value('assignee_id'))->toBeNull();
 });
 
 it('enregistre et assainit la checklist d’une tâche', function () {

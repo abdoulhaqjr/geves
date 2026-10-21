@@ -2851,3 +2851,141 @@ Les références de badge sont maintenant des clés uniformes `BDG-XXXX-XXXX-XXX
 ### PDF complet des badges et pagination (19 octobre 2026)
 
 - Dans **Documents → Badges → Badges prêts**, le gestionnaire peut choisir 20, 48, 100 ou 200 lignes par page. Au-delà de 48 destinataires dans une catégorie, « Préparer le PDF complet » crée une demande `badge_exports`, lance le travailleur éphémère `badge_exports` puis suit son avancement. `GenerateBadgeExport` rend chaque tranche de 48 badges avec `BadgePdfRenderer` et assemble les PDF avec FPDI en un fichier privé téléchargeable uniquement par le demandeur. La limite de 48 reste celle de chaque rendu Dompdf, pas du PDF final. Appliquer la migration `2026_10_19_000500_create_badge_exports_table` ; la connexion de queue dédiée garde le job réservé pendant 3660 s. En cas d'échec, l'état et le message sont affichés sur la même page.
+
+### Documents de travail bureautiques (20-21 octobre 2026)
+
+Le formulaire d'une tâche du module Projet propose **Créer** (DOCX ou XLSX) et
+**Importer** (DOCX/XLSX, 20 Mo). Le fichier vit chez **ONLYOFFICE DocSpace** :
+`App\Support\TaskDocSpace` crée un dossier par tâche, le fichier, puis un lien
+d'édition propre à ce fichier, et le SDK Embed l'ouvre dans la page
+`admin.project.office-document`. Le jeton du lien est chiffré en base et n'est
+remis qu'aux rédacteurs de la tâche ; la clé API reste sur le serveur. Voir
+`docs/docspace-documents-taches.md` pour la configuration, les migrations et les
+limites du lien partagé.
+
+Configuration locale du 20 octobre : `DOCSPACE_URL` et `DOCSPACE_ROOM_ID=4706751`
+sont renseignés, la clé API temporaire est dans le `.env` ignoré, et les
+migrations `2026_10_20_000300` à `000500` sont appliquées localement. L'API
+confirme une salle personnalisée. Son ancien lien public donnait le droit
+d'édition sur toute la salle : après autorisation explicite, les origines
+`https://gesco.test` et `https://geves.univkara.tg` ont été ajoutées à la CSP
+DocSpace en conservant les trois domaines préexistants, puis ce lien global a été
+révoqué. Remplacer la clé avant de révoquer l'ancienne.
+
+⚠️ **L'ouverture d'un DOCX dans le SDK est CONFIRMÉE** (21/10/2026, sur
+gesco.test contre la vraie salle) : le jeton enregistré est accepté, le cadre se
+monte dans la page et l'état passe à « Éditeur prêt ». **Restent à confirmer** la
+*création* d'un lien - les fichiers essayés en portaient déjà un - et l'import par
+morceaux au-delà de 10 Mo. La forme des réponses de l'API n'est
+pas vérifiée : le code accepte quatre formes de jeton et échoue fermé sur une
+cinquième (`TaskDocSpace::linkEntry()`, cinq cas de test). Le chemin d'import par
+morceaux (10 à 20 Mo) est le moins éprouvé de tous.
+
+#### Revue et consolidation du 21 octobre
+
+La chaîne est couverte par `tests/Feature/DocumentBureautiqueDeTacheTest.php`
+(25 cas, 5 sabotages vérifiés) et `tests/Feature/DocumentDeTacheTest.php`
+(20 cas). Trois défauts relevés et corrigés : un **point médian** (caractère
+proscrit) dans la vue de l'éditeur, une variable de chemin local **morte** dans
+`TaskDocumentController::store()` (deux conditions toujours fausses, relevées par
+PHPStan) et un repli inutile dans l'ancien pont ONLYOFFICE. Le vivier des
+responsables de tâche redevient **l'équipe de l'événement plus l'administrateur
+connecté lui-même** - restreint à la seule équipe, il faisait tomber le cas de
+garde du modèle des rôles et laissait une liste vide sur un événement neuf.
+
+Quatre manques comblés, chacun avec son cas de garde :
+
+1. **Le lien d'édition se renouvelle d'office au retrait d'une personne
+   associée** (`ProjectController::renouvelerLesLiens()`). Le jeton est partagé
+   et vaut un droit d'écriture hors de GEVES : sans cela, retirer quelqu'un d'une
+   tâche ne lui retirait pas le fichier. Le bouton manuel existe aussi, sur la
+   page du document, réservé à l'administrateur.
+2. **Supprimer une tâche emporte ses fichiers et son dossier DocSpace**
+   (`oublierLesFichiers()`). La clé étrangère est en cascade : les lignes
+   partaient au niveau de la base, laissant les fichiers et leurs liens vivants
+   chez le prestataire sans plus rien pour les retrouver.
+3. **Le pont ONLYOFFICE Docs auto-hébergé est retiré** : plus aucun appelant
+   depuis le passage à DocSpace. `TaskOffice`, `OfficeDocumentController` et ses
+   deux routes publiques sont partis ; seule la validation OOXML a survécu, dans
+   `TaskDocSpace::validFile()`. Les variables `ONLYOFFICE_*` et le bloc
+   `services.onlyoffice` sont retirés de la configuration.
+4. **Renommer un document reprend le titre chez le prestataire**, et la
+   suppression d'un document que DocSpace refuse de retirer **conserve** le
+   document avec un message lisible au lieu d'une page d'erreur.
+
+#### Retrait de l'ancien éditeur texte (21 octobre)
+
+Décision de l'équipe : l'éditeur Tiptap/Yjs des documents de tâche est retiré.
+Partent le script, son CSS, son entrée Vite, et les points d'entrée `state` /
+`save` / `versions.store` / `versions.show`. Le build passe de 50 s à 5 s.
+
+⚠️ **Reste à faire, une commande** : les paquets `@tiptap/*`, `yjs`,
+`y-prosemirror` et `y-protocols` sont encore déclarés dans `package.json`. Ils ne
+sont plus importés par rien, mais les retirer à la main désaccorderait
+`package-lock.json`, et `npm ci` - celui du déploiement - **refuse** un verrou
+désaccordé. Le registre npm n'était pas joignable depuis cette session, donc le
+verrou n'a pas pu être régénéré. À lancer là où il l'est :
+`npm uninstall @tiptap/core @tiptap/extension-collaboration @tiptap/extension-collaboration-caret @tiptap/pm @tiptap/starter-kit y-prosemirror y-protocols yjs`,
+puis committer `package.json` et `package-lock.json` ensemble.
+
+⚠️ **Les documents texte déjà rédigés restent consultables** en lecture seule sur
+leur page, versions comprises, et `App\Support\TaskDocumentHtml` reste pour les
+assainir à l'affichage : un texte qu'on cesse d'afficher est un texte perdu. Les
+colonnes `html`, `state`, `revision` et `file_path` ne sont plus alimentées mais
+ne sont pas retirées de la base ; les trois migrations du 20 octobre sont
+désormais rejouables.
+
+⚠️ **La couche temps réel est conservée EN RÉSERVE, sur décision explicite** :
+`App\Support\Realtime`, le canal `ukc.doc.{document}`, `config/broadcasting.php`,
+l'écran Réglages › Intégrations et les paquets `laravel-echo` / `pusher-js`
+restent en place avec les identifiants PieSocket réglés, pour un prochain usage
+(présence, notifications en direct). Elle n'a aucun consommateur aujourd'hui ;
+quatre cas de garde la maintiennent correcte en attendant.
+
+⚠️ **Sans DocSpace configuré, aucun document de tâche ne peut être créé** : c'est
+une exception assumée à la dégradation gracieuse du projet, puisqu'il n'y a plus
+de repli local à laisser debout.
+
+#### Vérification à l'écran (21 octobre)
+
+Les deux pages ont été ouvertes et **mesurées** dans le navigateur, sur
+**gesco.test** (le navigateur intégré refusait `geves.test`). Trois défauts
+trouvés là et seulement là, invisibles à la lecture du code :
+
+1. **L'éditeur réclamait un nom à chaque ouverture** (« Entrez un nom à utiliser
+   pour la collaboration »), un lien de partage étant anonyme. GEVES lui donne
+   désormais le nom du compte et coupe la demande ; vérifié après rechargement.
+2. **Le titre des cartes partait à droite** (« Contenu » commençait à 1077 px
+   dans une carte de 1152) : `.admin-page .ukc-card h2` est en `space-between`.
+   Remis par le `<span>` qu'attend la feuille du back-office ; cinq titres
+   repassés à 19 px.
+3. **Le lien d'un ancien document n'était plus un lien** : même couleur que le
+   texte et sans soulignement, `.ukc-scope a:not(.ukc-btn)` l'emportant.
+   Contraste repassé à 9,16:1.
+
+Aucun débordement horizontal à 375 px sur les deux pages ; la grille des détails
+repasse sur une colonne. Le jeu d'essai créé pour la vérification (un compte et
+un ancien document texte) a été retiré de la base de développement.
+
+#### Les viviers d'affectation, repris d'un seul tenant (21 octobre)
+
+Deux travaux menés en parallèle ont touché les **viviers d'affectation** le même
+jour - celui des documents de tâche (ici) et celui des réclamations, des
+programmes et des soumissions. Résultat à la jonction : deux cas rouges, tous
+deux sur « null is identical to 1 », et aucun des deux côtés fautif séparément.
+
+- **Le vivier d'une tâche de projet** redevient **l'équipe de l'événement plus
+  l'administrateur connecté lui-même**, conformément à l'arbitrage rendu par
+  l'équipe : restreint à la seule équipe, il s'ouvrait **vide** sur un événement
+  neuf et l'administrateur ne pouvait pas même se confier la première tâche.
+  `assigneePool()` reçoit donc le demandeur, et n'ajoute que **lui**, jamais ses
+  pairs.
+- **Le vivier des réclamations** se dressait sur la seule colonne
+  `access_level` : il écartait un compte administrateur **par la permission**
+  `manage_colloques` - le cas de la fabrique `adminStaff()`. Deux scopes
+  partagent maintenant leur moitié commune dans `User`
+  (`ouAdministrateurHerite()`) : **`administrateurs()`** est la forme SQL
+  d'`isColloqueAdmin()`, **`superAdministrateurs()`** celle
+  d'`isColloqueSuperAdmin()`. ⚠️ Ne plus écrire `whereIn('access_level', …)`
+  pour désigner « les administrateurs » : c'est la confusion des deux prédicats,
+  en version requête.

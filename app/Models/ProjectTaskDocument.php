@@ -9,11 +9,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Document de travail d'une tâche de projet, rédigé à plusieurs en direct.
+ * Document de travail d'une tâche de projet, rédigé à plusieurs.
+ *
+ * ⚠️⚠️ **UN DOCUMENT EST UN FICHIER DOCX OU XLSX CHEZ DOCSPACE** (21/10/2026) :
+ * `format` + `docspace_file_id`, et le jeton de son lien d'édition, **chiffré**.
+ *
+ * ⚠️ `html`, `state`, `revision` et `file_path` ne sont plus ALIMENTÉS : ils
+ * conservent les documents texte rédigés avec l'ancien éditeur Tiptap/Yjs, que
+ * la page rend encore en lecture. On ne les retire pas de la base tant qu'une
+ * installation peut en porter - un texte qu'on cesse de suivre est un texte
+ * perdu, et c'est en production qu'on s'en apercevrait.
  *
  * @property int $id
  * @property int $task_id
  * @property string $title
+ * @property string|null $format
+ * @property string|null $docspace_file_id
+ * @property string|null $docspace_request_token
+ * @property string|null $file_path
  * @property string|null $html
  * @property string|null $state
  * @property int $revision
@@ -32,22 +45,27 @@ class ProjectTaskDocument extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * Délai au-delà duquel un enregistrement ouvre une nouvelle version.
-     *
-     * ⚠️ L'enregistrement est AUTOMATIQUE et fréquent (quelques secondes après
-     * la dernière frappe) : verser une version à chaque fois rendrait
-     * l'historique illisible - des centaines d'entrées pour une après-midi de
-     * rédaction, et plus aucun point de repère où revenir.
-     */
-    public const VERSION_EVERY_MINUTES = 10;
-
     protected function casts(): array
     {
         return [
+            'docspace_request_token' => 'encrypted',
             'revision' => 'integer',
             'saved_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Ce document est-il un fichier bureautique ?
+     *
+     * ⚠️ Un SEUL prédicat, et c'est `docspace_file_id` qui tranche : il n'existe
+     * plus de fichier local, donc « fichier Office » et « fichier chez DocSpace »
+     * ne sont plus deux questions. Faux pour un ancien document texte, qui n'a
+     * ni format ni fichier.
+     */
+    public function isOfficeFile(): bool
+    {
+        return in_array($this->format, ['docx', 'xlsx'], true)
+            && filled($this->docspace_file_id);
     }
 
     /** @return BelongsTo<ProjectTask, $this> */
@@ -106,6 +124,21 @@ class ProjectTaskDocument extends Model
             || ($this->task?->isAssociate($user) ?? false);
     }
 
+    /** Le gestionnaire de l'événement peut retirer un document sans être rédacteur de la tâche. */
+    public function isDeletableBy(?User $user): bool
+    {
+        if ($this->isEditableBy($user)) {
+            return true;
+        }
+
+        $eventId = $this->task?->event_id;
+
+        return $user !== null
+            && $eventId !== null
+            && $this->isVisibleTo($user)
+            && array_intersect(['gerant', 'co_gerant'], $user->rolesOnEdition((int) $eventId)) !== [];
+    }
+
     /**
      * Qui peut LIRE ce document : quiconque ouvre le module Projet de
      * l'événement. Un plan de travail partagé se lit par l'équipe ; seule la
@@ -122,20 +155,5 @@ class ProjectTaskDocument extends Model
         return $user !== null
             && $eventId !== null
             && $user->canOnEdition('project', (int) $eventId);
-    }
-
-    /**
-     * Une nouvelle version doit-elle être versée pour cet enregistrement ?
-     *
-     * Vrai au tout premier enregistrement, puis seulement quand la dernière
-     * version remonte à plus de {@see self::VERSION_EVERY_MINUTES}.
-     */
-    public function shouldOpenVersion(): bool
-    {
-        $derniere = $this->versions()->latest('id')->first();
-
-        return $derniere === null
-            || $derniere->created_at === null
-            || $derniere->created_at->diffInMinutes(now()) >= self::VERSION_EVERY_MINUTES;
     }
 }
