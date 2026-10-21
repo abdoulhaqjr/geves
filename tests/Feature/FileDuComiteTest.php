@@ -268,3 +268,160 @@ it('garde la règle d’avancement identique à celle de la colonne affichée', 
             ->toBe($toutesRendues, $ref.' : le filtre et la colonne divergent');
     }
 });
+
+/** La page rendue sous les filtres demandés. */
+function pageFiltree(User $staff, Event $event, array $params)
+{
+    return test()->actingAs($staff, 'web')
+        ->get(route('admin.submissions.index', ['event_id' => $event->id] + $params))->assertOk();
+}
+
+it('⚠️ le lien d’une carte EMPORTE les autres filtres', function () {
+    communication($this->event, 'J-SANTE', 'accepted', [['status' => 'completed']]);
+    Submission::where('ref_code', 'J-SANTE')->update(['track' => 'Santé', 'type' => 'poster']);
+
+    // On regarde l'axe « Santé » et on clique « Acceptées » : le lien ne portait
+    // que l'événement et son statut, donc l'axe disparaissait sans un mot - on
+    // se retrouvait devant TOUTES les acceptées, en croyant filtrer dans Santé.
+    $cartes = collect(pageFiltree($this->staff, $this->event, [
+        'track' => 'Santé', 'type' => 'poster', 'search' => 'SANTE',
+    ])->viewData('kpis'));
+
+    $url = $cartes->firstWhere('cle', 'accepted')['url'];
+
+    expect($url)->toContain('track=Sant')->toContain('type=poster')->toContain('search=SANTE');
+    expect(refsDeLAdresse($this->staff, $url))->toBe(['J-SANTE']);
+
+    // Et « Total » emporte le contexte lui aussi : il remet le statut à zéro,
+    // il ne défait pas le travail de qui l'a cliqué.
+    expect(refsDeLAdresse($this->staff, $cartes->firstWhere('cle', 'total')['url']))->toBe(['J-SANTE']);
+});
+
+it('⚠️ cliquer la carte ALLUMÉE en ressort, en gardant le contexte', function () {
+    $cartes = collect(pageFiltree($this->staff, $this->event, [
+        'status' => 'accepted', 'track' => 'Sciences',
+    ])->viewData('kpis'));
+
+    $carte = $cartes->firstWhere('cle', 'accepted');
+
+    // C'est la SORTIE du filtre : sans elle, on ne quitte « Acceptées » que par
+    // « Total », qui emporterait aussi l'axe qu'on regardait.
+    expect($carte['active'])->toBeTrue();
+    expect($carte['url'])->not->toContain('status=')->toContain('track=Sciences');
+    expect(refsDeLAdresse($this->staff, $carte['url']))->toHaveCount(6);
+});
+
+it('⚠️ « Déposées » et « En évaluation » restent atteignables sous « En revue »', function () {
+    // Prix du retrait de la liste déroulante : les deux statuts se fondent dans
+    // « En revue ». Les pastilles les rendent de nouveau joignables, et elles
+    // n'existent QUE là - une septième carte permanente ferait une rangée de
+    // plus pour un filtre qu'on ne regarde que depuis celle-là.
+    expect(pageFiltree($this->staff, $this->event, [])->viewData('sousStatuts'))->toBe([]);
+
+    $pastilles = collect(pageFiltree($this->staff, $this->event, [
+        'status' => Submission::STATUS_IN_REVIEW,
+    ])->viewData('sousStatuts'));
+
+    expect($pastilles->pluck('label')->all())->toBe(['Toutes', 'Déposées', 'En évaluation']);
+    expect($pastilles->firstWhere('valeur', 'submitted')['nombre'])->toBe(1);
+    expect($pastilles->firstWhere('valeur', 'under_review')['nombre'])->toBe(4);
+
+    foreach ($pastilles as $pastille) {
+        expect(refsDeLAdresse($this->staff, $pastille['url']))
+            ->toHaveCount($pastille['nombre'], $pastille['label'].' : le lien ne rend pas le chiffre annoncé');
+    }
+
+    // ⚠️ Raffiner « En revue » ne doit pas ÉTEINDRE la rangée : sans cela, on
+    // se retrouve dans un filtre que plus aucune carte n'annonce.
+    $reponse = pageFiltree($this->staff, $this->event, ['status' => 'submitted']);
+    expect(collect($reponse->viewData('kpis'))->where('active', true)->pluck('cle')->all())->toBe(['underReview']);
+    expect($reponse->viewData('sousStatuts'))->not->toBe([]);
+});
+
+it('⚠️ une pastille de subdivision OUVRE exactement ce qu’elle compte', function () {
+    // À l'inverse des cartes, elles se comptent SOUS les filtres courants :
+    // leurs liens emportent l'avancement des évaluations et le reste de la
+    // barre, donc comptées sur le périmètre entier elles annonceraient 5 là où
+    // elles en ouvrent 2 - le travers que la carte « En revue » a déjà payé.
+    foreach ([['reviews' => 'done'], ['reviews' => 'none'], ['track' => 'Sciences']] as $filtres) {
+        $pastilles = pageFiltree($this->staff, $this->event, [
+            'status' => Submission::STATUS_IN_REVIEW,
+        ] + $filtres)->viewData('sousStatuts');
+
+        foreach ($pastilles as $pastille) {
+            expect(refsDeLAdresse($this->staff, $pastille['url']))->toHaveCount(
+                $pastille['nombre'],
+                $pastille['label'].' sous '.json_encode($filtres).' : le lien ne rend pas le chiffre annoncé',
+            );
+        }
+    }
+
+    // Et le chiffre a bien BOUGÉ : sous « À décider », il ne reste que les deux
+    // communications dont tout est rendu.
+    $sous = collect(pageFiltree($this->staff, $this->event, [
+        'status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done',
+    ])->viewData('sousStatuts'));
+
+    expect($sous->firstWhere('valeur', Submission::STATUS_IN_REVIEW)['nombre'])->toBe(2);
+    expect($sous->firstWhere('valeur', 'submitted')['nombre'])->toBe(0);
+
+    // ⚠️ Le statut courant, lui, ne compte PAS : sinon « Déposées » tomberait à
+    // zéro dès qu'on regarde « En évaluation », et la pastille d'à côté
+    // deviendrait injoignable.
+    $sous = collect(pageFiltree($this->staff, $this->event, ['status' => 'under_review'])->viewData('sousStatuts'));
+    expect($sous->firstWhere('valeur', 'submitted')['nombre'])->toBe(1);
+});
+
+it('⚠️ « Réinitialiser » vit dans une RÉGION ÉCHANGÉE', function () {
+    // Il n'apparaît que selon les filtres, et il vivait hors de toute région :
+    // filtrer en AJAX ne le faisait donc PAS apparaître, et on ne pouvait plus
+    // sortir du filtre sans vider les champs un par un.
+    $html = pageFiltree($this->staff, $this->event, ['search' => 'RENDUE'])->getContent();
+
+    // ⚠️ On exige la RÉGION, pas seulement son contenu : `Str::after` rend la
+    // chaîne ENTIÈRE quand l'aiguille manque, donc un cas qui se contente
+    // d'extraire passerait au vert sur une région retirée.
+    expect($html)->toContain('data-filter-part="submissions-reset"');
+
+    $region = str($html)->after('data-filter-part="submissions-reset"')->before('</span>')->toString();
+
+    expect($region)->toContain('Réinitialiser');
+
+    // Et il disparaît quand il n'y a plus rien à réinitialiser.
+    expect(pageFiltree($this->staff, $this->event, [])->viewData('filtreActif'))->toBeFalse();
+});
+
+it('⚠️ les cartes vivent dans une RÉGION ÉCHANGÉE, parce que leurs liens suivent les filtres', function () {
+    // Les CHIFFRES ne dépendent pas des filtres, mais les LIENS si : hors
+    // région, les six cartes resteraient pointées sur l'axe précédent après un
+    // filtre en AJAX, et cliquer l'une d'elles y ramènerait.
+    $html = pageFiltree($this->staff, $this->event, ['track' => 'Sciences'])->getContent();
+
+    expect($html)->toContain('data-filter-part="submissions-kpis"');
+
+    $region = str($html)->after('data-filter-part="submissions-kpis"')->before('data-filter="submissions"')->toString();
+
+    expect($region)->toContain('ukc-stat-card')->toContain('track=Sciences');
+});
+
+it('⚠️ l’export CSV porte TOUS les filtres de l’écran, pas une liste recopiée', function () {
+    // Le lien était écrit à la main et il avait oublié « reviews » et
+    // « unlinked » : exporter depuis « Toutes rendues » sortait toute la
+    // sélection de statut, sans que rien ne le signale.
+    $url = pageFiltree($this->staff, $this->event, [
+        'status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done',
+        'track' => 'Sciences', 'unlinked' => 1,
+    ])->viewData('exportUrl');
+
+    expect($url)->toContain('reviews=done')->toContain('unlinked=1')
+        ->toContain('track=Sciences')->toContain('status='.Submission::STATUS_IN_REVIEW);
+
+    // Et le CSV qu'il rend est bien celui de l'écran.
+    $csv = $this->actingAs($this->staff, 'web')->get(
+        pageFiltree($this->staff, $this->event, [
+            'status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done',
+        ])->viewData('exportUrl')
+    )->assertOk()->streamedContent();
+
+    expect($csv)->toContain('A-RENDUE')->toContain('B-RENDUE')->not->toContain('C-PARTIELLE');
+});

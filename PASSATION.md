@@ -3034,4 +3034,48 @@ filtre suivant le reperdrait. Prix assumé et mesuré : « déposée » et « en
 l'eau) - il faudrait une septième carte pour les retrouver, pas le retour de la
 liste déroulante.
 
-Gardes : `tests/Feature/FileDuComiteTest.php` (14 cas, 5 sabotages vérifiés).
+**Puis l'équipe a demandé de reprendre la relation entre les cartes et les
+filtres** - « on garde toutes les cartes comme KPI comme avant, et on améliore
+les filtres ». Les cartes et leurs chiffres n'ont donc pas bougé d'une ligne ;
+tout le travail est allé dans les filtres, et il a mis au jour **quatre défauts,
+tous mesurés** :
+
+1. **Le lien d'une carte ne portait que l'événement et son statut.** On filtrait
+   l'axe « Dynamiques sociales », on cliquait « Acceptées », et l'axe
+   disparaissait sans un mot - chaque lien revenait à `?event_id=4&status=accepted`.
+   Les liens emportent maintenant tout le reste de la barre (`$contexte`), et la
+   rangée est devenue une **région échangée** : les chiffres ne suivent pas les
+   filtres, mais les liens si, donc hors région les six cartes restaient
+   pointées sur l'axe précédent après un filtre en AJAX.
+2. **On ne pouvait pas sortir d'un filtre de carte sans passer par « Total »**,
+   qui emportait aussi l'axe. Cliquer la carte allumée l'éteint désormais.
+3. **« Réinitialiser » ne s'affichait jamais en AJAX.** Il était le dernier
+   enfant du `<form>`, donc hors de toute région, alors que la règle du projet
+   exige depuis toujours qu'il ait la sienne. Mesuré : taper « eau » filtrait la
+   liste et l'URL, le lien restait absent. Il a sa région, **imbriquée** dans le
+   formulaire - sans danger, `app.js` ne remplaçant que le contenu d'une région.
+4. **Le lien d'export CSV avait oublié deux filtres** (`reviews`, `unlinked`) :
+   son `request()->only(...)` était écrit à la main pendant que `filtre()` les
+   lisait tous les deux. Exporter depuis « Toutes rendues » sortait toute la
+   sélection de statut. L'adresse vient maintenant du contrôleur, du même
+   `$contexte` que la liste.
+
+Et le prix du retrait de la liste déroulante a été **rendu** : *Déposées* et
+*En évaluation* reviennent en **trois pastilles contextuelles** sous la rangée
+(`.ukc-nav-docs` + `.nav-count`, grammaire déjà stylée), visibles uniquement
+dans la branche « En revue ».
+
+⚠️ **Défaut trouvé dans mon propre travail, avant de le livrer** : je les avais
+d'abord comptées sur le périmètre de l'événement, comme les cartes. Mais leurs
+liens emportent `reviews` et le reste de la barre : sous « À décider », « Toutes »
+aurait annoncé 5 en n'en ouvrant que 2 - exactement le travers que la carte
+« En revue » avait déjà payé. Une pastille **subdivise la sélection affichée** :
+elle se compte donc sous les filtres courants, statut courant exclu
+(`filtre(..., avecStatut: false)`), sinon « Déposées » tombe à zéro dès qu'on
+regarde « En évaluation ».
+
+Gardes : `tests/Feature/FileDuComiteTest.php` (21 cas, 12 sabotages vérifiés).
+⚠️ Deux des nouveaux cas **ne mordaient pas** avant d'être repris : ils
+extrayaient une région par `Str::after('data-filter-part=…')`, qui rend la
+**chaîne entière** quand l'aiguille manque - retirer la région laissait donc le
+cas au vert. On exige la présence de l'attribut avant d'en lire le contenu.

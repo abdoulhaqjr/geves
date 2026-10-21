@@ -1459,18 +1459,48 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   les filtres courants : ce sont des repères de navigation. S'ils suivaient le
   filtre, la carte qu'on vient de cliquer afficherait le total de sa propre
   sélection et les autres tomberaient à zéro.
+- ⚠️⚠️ **MAIS LE LIEN D'UNE CARTE EMPORTE LES AUTRES FILTRES** (`$contexte` :
+  axe, type, présentation, participation, recherche, non-rattachés). Il ne
+  portait que l'événement et son statut : on filtrait un axe, on cliquait une
+  carte, et **l'axe disparaissait sans un mot** - mesuré, chaque lien revenait
+  à `?event_id=4&status=accepted`. Une carte change le statut, elle ne défait
+  pas le travail de qui l'a cliquée.
+  ⚠️ **Et cliquer la carte ALLUMÉE l'éteint** (`$active ? [] : $filtre`) :
+  c'est la sortie du filtre sans passer par « Total », qui emporterait aussi
+  l'axe qu'on regardait.
+  ⚠️ **Conséquence : la rangée est une RÉGION ÉCHANGÉE**
+  (`data-filter-part="submissions-kpis"`). Les chiffres ne bougent pas, mais
+  les liens suivent les filtres : hors région, les six cartes resteraient
+  pointées sur l'axe précédent après un filtre en AJAX, et cliquer l'une
+  d'elles y ramènerait.
 - ⚠️⚠️ **LA LISTE DÉROULANTE DES STATUTS A ÉTÉ RETIRÉE** (les cartes la disent
   déjà, en annonçant leur nombre), **mais le statut reste un CHAMP CACHÉ du
   formulaire** - comme l'événement. La barre poste **tout** le formulaire : sans
   ce champ, taper une recherche ou changer d'axe reperdrait le statut posé par
   la carte, et la liste se réélargirait sous les doigts. Un cas de garde lit le
   formulaire rendu et exige le champ (sabotage vérifié).
-  ⚠️ **Prix assumé** : `submitted` et `under_review` ne se séparent plus à
-  l'écran (mesuré sur le colloque de l'eau : **19 déposées** contre **27 en
-  évaluation**, fondues dans « En revue » = 46). Les deux restent atteignables
-  par l'URL et par le tri de la colonne Statut ; pour les filtrer de nouveau, il
-  faut une septième carte - pas le retour de la liste déroulante, qui ferait
-  deux commandes pour un même filtre.
+  ⚠️ **Prix assumé, puis RENDU** : `submitted` et `under_review` ne se
+  séparaient plus à l'écran (mesuré sur le colloque de l'eau : **19 déposées**
+  contre **27 en évaluation**, fondues dans « En revue » = 46).
+- ⚠️⚠️ **« DÉPOSÉES » / « EN ÉVALUATION » REVIENNENT EN PASTILLES CONTEXTUELLES**
+  (`SubmissionController::sousStatuts()`, grammaire `.ukc-nav-docs` +
+  `.nav-count`, déjà stylée et pourvue d'un état actif). Trois pastilles -
+  *Toutes / Déposées / En évaluation* - **sous la rangée, et seulement quand on
+  est dans « En revue »** : une septième carte permanente ferait une rangée de
+  plus pour un filtre qu'on ne regarde que depuis celle-là, et une seconde
+  liste déroulante ferait deux commandes pour un même filtre.
+  ⚠️⚠️ **ELLES SE COMPTENT SOUS LES FILTRES COURANTS, À L'INVERSE DES CARTES.**
+  Une carte est un repère sur tout l'événement ; une pastille **subdivise la
+  sélection affichée**, et son lien emporte l'avancement des évaluations comme
+  le reste de la barre. Comptée sur le périmètre entier, « Toutes » annoncerait
+  46 là où son lien en ouvre 6 - exactement le travers que « En revue » a déjà
+  payé. D'où `filtre($request, $query, avecStatut: false)` : le statut courant
+  est écarté du comptage, sinon « Déposées » tomberait à zéro dès qu'on regarde
+  « En évaluation » et la pastille d'à côté deviendrait injoignable. La requête
+  n'a lieu **que si la rangée s'affiche**.
+  ⚠️ **Une carte reste allumée sur ses SUBDIVISIONS** (clé `allume`) : raffiner
+  « En revue » en « Déposées » ne doit pas éteindre la rangée, sinon on se
+  retrouve dans un filtre que plus aucune carte n'annonce.
 - ⚠️ La carte allumée nomme son sélecteur **avec son élément**
   (`.ukc-shell a.ukc-stat-card.is-on`, soit (0,2,1)) : `tailwise.css` peint la
   même carte à (0,2,0) **et** se charge après `admin.css` - à spécificité égale,
@@ -1479,6 +1509,25 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   (`SubmissionController::filtre()`) : écrits deux fois, ils ont déjà divergé
   ailleurs, et le CSV exportait autre chose que ce qu'on regardait. Un cas de
   garde sort le CSV sous filtre et vérifie qui s'y trouve.
+  ⚠️⚠️ **ET L'ADRESSE DU LIEN CSV AUSSI** (`$exportUrl`, bâti dans le
+  contrôleur depuis `$contexte` + statut + évaluations). La vue la composait à
+  la main par un `request()->only(...)` qui avait **oublié deux paramètres** -
+  `reviews` et `unlinked` : `filtre()` les lit tous les deux, seul le lien ne
+  les écrivait pas, donc exporter depuis « Toutes rendues » sortait **toute la
+  sélection de statut**, sans que rien ne le signale. Une seule source, elle ne
+  peut plus diverger.
+- ⚠️⚠️ **« RÉINITIALISER » A SA PROPRE RÉGION ÉCHANGÉE**
+  (`data-filter-part="submissions-reset"`), comme la règle du projet l'exige
+  depuis toujours - et il ne l'avait pas : dernier enfant du `<form>`, il était
+  **hors de toute région**, donc il ne se montrait qu'au prochain rechargement
+  complet. Mesuré : taper « eau » filtrait bien la liste et l'URL, et le lien
+  restait absent - on ne pouvait plus sortir du filtre sans vider les champs un
+  par un.
+  ⚠️ **Une région IMBRIQUÉE dans le formulaire est sans danger**, malgré la
+  règle « le formulaire reste hors des régions échangées » : `app.js` ne
+  remplace que le **contenu** de la région (`courante.innerHTML =
+  fraiche.innerHTML`), donc aucun champ n'est touché et le curseur de qui tape
+  reste en place - c'est la raison même de cette règle.
 - **Mesuré à l'écran** (1440 px, vrai colloque de 210 communications) : les six
   cartes tiennent sur **une rangée**, « À décider » annonce 6 et son lien rend
   **6 lignes**, le filtre s'applique **sans recharger la page** (`data-filter`)
@@ -1490,8 +1539,28 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   ⚠️ La **barre de filtres défile chez elle** (`overflow-x: auto`, le patron du
   projet) : mesurée à 1440 px, elle réclame **1463 px pour 1280** - donc moins
   qu'avant l'ajout du filtre, le retrait de la liste des statuts ayant rendu
-  269 px. Ne pas y ajouter un contrôle sans regarder ce chiffre.
-- Gardes : **`FileDuComiteTest`** (14 cas, **5 sabotages vérifiés**).
+  269 px. Ne pas y ajouter un contrôle sans regarder ce chiffre. ⚠️ C'est
+  **pourquoi les pastilles de sous-statut sont posées au-dessus**, avec les
+  cartes, et non dans la barre : elles y auraient repris les 269 px rendus.
+- **Mesuré de nouveau après la reprise des filtres** (colloque de l'eau, 210
+  communications) : « En revue » 46 = **19 déposées + 27 en évaluation**, et
+  chaque pastille ouvre exactement son chiffre (19, 27, 46 lignes). Sous
+  « À décider » elles **se recomptent** - 6 / 0 / 6 - au lieu d'annoncer 46
+  pour 6 lignes. Taper « eau » fait **apparaître « Réinitialiser » sans
+  rechargement**, le curseur reste dans le champ (position 3 sur 3 caractères)
+  et les six cartes reprennent `search=eau` ; la carte allumée, elle, retombe
+  sur `?event_id=4&search=eau`. Le lien CSV porte `reviews=done`. À 375 px,
+  aucun débordement (`scrollWidth` = `clientWidth` = 375 ; `body` 417 = 375/0,9
+  à cause de `html.ukc-dense`) et les trois pastilles s'enroulent sur deux
+  lignes. Contraste de la pastille allumée : 9,16:1 pour le libellé, **4,93:1
+  pour son compteur** une fois son alpha composé sur le bleu - ⚠️ mesuré sans
+  composer l'alpha, on lit « 1:1 » et on croit à un défaut.
+- Gardes : **`FileDuComiteTest`** (21 cas, **12 sabotages vérifiés**).
+  ⚠️ **Deux cas ne mordaient pas**, et c'est le sabotage qui l'a montré : ils
+  extrayaient une région par `Str::after('data-filter-part=…')`, qui rend la
+  **chaîne entière** quand l'aiguille manque - retirer la région laissait donc
+  le cas au vert. On exige la présence de l'attribut **avant** d'en lire le
+  contenu. Même famille de piège que les deux cas de `CookiesTest`.
 
 - **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions - Formulaire
   de soumission - Attribution auto - Relecteurs & expertise - Options*, définis

@@ -1,8 +1,10 @@
 <x-layouts.admin title="Soumissions" subtitle="Communications & résumés">
     <x-slot:actions>
+        {{-- ⚠️ L'adresse est construite par le CONTRÔLEUR, depuis les mêmes
+             filtres que la liste : écrite ici à la main, elle avait déjà oublié
+             deux paramètres (cf. SubmissionController::index). --}}
         <span data-filter-part="submissions-export">
-            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-               href="{{ route('admin.submissions.export', request()->only('event_id', 'status', 'type', 'presentation_mode', 'participation_mode', 'track', 'search')) }}">
+            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ $exportUrl }}">
                 <x-ukc.icon name="download" :size="14" /> CSV
             </a>
         </span>
@@ -34,16 +36,42 @@
 
         {{-- Indicateurs CLIQUABLES : chaque carte ouvre la liste filtrée sur ce
              qu'elle compte (cf. SubmissionController::indicateurs). La carte
-             allumée dit où l'on est ; « Total » ramène à la liste entière. --}}
-        <div class="ukc-stats">
-            @foreach ($kpis as $kpi)
-                <a href="{{ $kpi['url'] }}" class="ukc-stat-card tw-stat{{ $kpi['active'] ? ' is-on' : '' }}" @if ($kpi['active']) aria-current="true" @endif>
-                    <div class="tw-stat__icon tw-stat__icon--{{ $kpi['teinte'] }}"><x-ukc.icon :name="$kpi['icone']" :size="20" /></div>
-                    <div class="lbl">{{ $kpi['label'] }}</div>
-                    <div class="val {{ $kpi['val'] }}">{{ $kpi['valeur'] }}</div>
-                    @if ($kpi['cle'] === 'total')<x-ukc.trend :trend="$trendTotal" period="7 j" />@endif
-                </a>
-            @endforeach
+             allumée dit où l'on est ; cliquer dessus en ressort.
+             ⚠️⚠️ **LA RANGÉE EST UNE RÉGION ÉCHANGÉE**, parce que les liens des
+             cartes EMPORTENT les autres filtres : sans cela, filtrer un axe en
+             AJAX laisserait les six cartes pointer vers l'axe précédent, et
+             cliquer l'une d'elles ramènerait le filtre qu'on venait de quitter.
+             Les CHIFFRES, eux, ne bougent pas - ils sont comptés sur le
+             périmètre de l'événement, pas sur les filtres courants. --}}
+        <div data-filter-part="submissions-kpis">
+            <div class="ukc-stats">
+                @foreach ($kpis as $kpi)
+                    <a href="{{ $kpi['url'] }}" class="ukc-stat-card tw-stat{{ $kpi['active'] ? ' is-on' : '' }}" @if ($kpi['active']) aria-current="true" @endif>
+                        <div class="tw-stat__icon tw-stat__icon--{{ $kpi['teinte'] }}"><x-ukc.icon :name="$kpi['icone']" :size="20" /></div>
+                        <div class="lbl">{{ $kpi['label'] }}</div>
+                        <div class="val {{ $kpi['val'] }}">{{ $kpi['valeur'] }}</div>
+                        @if ($kpi['cle'] === 'total')<x-ukc.trend :trend="$trendTotal" period="7 j" />@endif
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- ⚠️ « Déposée » et « En évaluation » redeviennent ATTEIGNABLES.
+                 « En revue » additionne les deux (mesuré sur le colloque de
+                 l'eau : 19 contre 27) et le retrait de la liste déroulante les
+                 avait fondues. Elles reviennent ici **en contexte** : les trois
+                 pastilles n'existent que sous « En revue », là où la
+                 subdivision veut dire quelque chose - une septième carte
+                 permanente ferait une rangée de plus pour deux statuts qu'on ne
+                 regarde que depuis celle-là. --}}
+            @if ($sousStatuts !== [])
+                <div class="ukc-nav-docs" style="margin:-6px 0 18px;" aria-label="Préciser « En revue »">
+                    @foreach ($sousStatuts as $p)
+                        <a href="{{ $p['url'] }}" class="{{ $p['active'] ? 'active' : '' }}" @if ($p['active']) aria-current="true" @endif>
+                            {{ $p['label'] }}<span class="nav-count">{{ $p['nombre'] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
@@ -89,9 +117,22 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
             </label>
-            @if ($search !== '' || $status !== '' || $reviews !== '' || $type !== '' || $presentationMode !== '' || $participationMode !== '' || $track !== '' || $unlinked)
-                <a href="{{ route('admin.submissions.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-            @endif
+            {{-- ⚠️⚠️ **« RÉINITIALISER » A SA PROPRE RÉGION ÉCHANGÉE** : il
+                 n'apparaît que selon les filtres, et il vivait HORS de toute
+                 région - donc il ne se montrait qu'au prochain rechargement
+                 complet. Mesuré : taper « eau » filtrait bien la liste et
+                 l'URL, et le lien restait absent - on ne pouvait plus sortir du
+                 filtre sans vider les champs un par un.
+                 ⚠️ Une région IMBRIQUÉE dans le formulaire est sans danger :
+                 `app.js` ne remplace que le CONTENU de la région (innerHTML),
+                 donc aucun champ n'est touché et le curseur de qui tape reste
+                 en place - c'est la raison même de la règle « le formulaire
+                 reste hors des régions échangées ». --}}
+            <span data-filter-part="submissions-reset">
+                @if ($filtreActif)
+                    <a href="{{ $resetUrl }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                @endif
+            </span>
         </form>
 
         <div class="ukc-card" style="padding:0;" data-filter-part="submissions-table">

@@ -90,10 +90,14 @@ class SubmissionController extends Controller
      * @param  Builder<Submission>  $query
      * @return Builder<Submission>
      */
-    private function filtre(Request $request, Builder $query): Builder
+    private function filtre(Request $request, Builder $query, bool $avecStatut = true): Builder
     {
         $search = trim((string) $request->query('search', ''));
-        $status = (string) $request->query('status', '');
+        // ⚠️ `avecStatut: false` sert aux pastilles de subdivision : elles
+        // comptent ce que CHAQUE statut rendrait sous les autres filtres, donc
+        // le statut courant ne doit pas s'appliquer - sinon « Déposées »
+        // annoncerait zéro dès qu'on regarde « En évaluation ».
+        $status = $avecStatut ? (string) $request->query('status', '') : '';
         $type = (string) $request->query('type', '');
         $presentationMode = (string) $request->query('presentation_mode', '');
         $participationMode = (string) $request->query('participation_mode', '');
@@ -203,14 +207,52 @@ class SubmissionController extends Controller
             ->reviewsState('done')
             ->count();
 
-        // Tendance des dépôts : 7 derniers jours vs les 7 précédents (même périmètre).
-        $trendBase = fn () => Submission::query()->where('revision_of', 0)
+        // Le périmètre de l'événement, sans aucun filtre de la barre : les
+        // indicateurs, la tendance et les pastilles de subdivision en repartent.
+        $perimetre = fn () => Submission::query()->where('revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId));
         $trendTotal = Trend::of(
-            (int) $trendBase()->whereBetween('created_at', [now()->subDays(7), now()])->count(),
-            (int) $trendBase()->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
+            (int) $perimetre()->whereBetween('created_at', [now()->subDays(7), now()])->count(),
+            (int) $perimetre()->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
         );
+
+        // ⚠️⚠️ **CE QUE LES LIENS DES CARTES DOIVENT EMPORTER.** Tout ce que la
+        // barre porte SAUF les deux dimensions que les cartes gouvernent
+        // (statut et avancement des évaluations) : sans cela, cliquer une carte
+        // jetterait l'axe, le type ou la recherche en cours. Les valeurs vides
+        // sont retirées - une URL ne porte que des filtres qui filtrent.
+        $contexte = array_filter([
+            'search' => $search,
+            'type' => $type,
+            'presentation_mode' => $presentationMode,
+            'participation_mode' => $participationMode,
+            'track' => $track,
+            'unlinked' => $unlinked ? 1 : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        // ⚠️⚠️ **L'EXPORT PART DES MÊMES FILTRES, PAR LA MÊME CONSTRUCTION.** Le
+        // lien recopiait à la main la liste des paramètres à emporter, et il en
+        // avait oublié DEUX - l'avancement des évaluations et les co-auteurs non
+        // rattachés : on exportait depuis « Toutes rendues » et le CSV sortait
+        // toute la sélection de statut. `filtre()` les lit tous les deux ; seul
+        // le lien ne les écrivait pas. Une seule source, elle ne peut plus
+        // diverger. ⚠️ Un événement vide = « tous », et l'export l'entend ainsi
+        // (`event_id` absent) : le retirer ne change donc pas le périmètre.
+        $exportUrl = route('admin.submissions.export', array_filter([
+            'event_id' => $editionId,
+            'status' => $status,
+            'reviews' => $reviews,
+        ], fn ($v) => $v !== '') + $contexte);
+
+        $chiffres = [
+            'total' => (int) $counts->sum(),
+            'toDecide' => $toDecide,
+            'underReview' => $c('under_review') + $c('submitted'),
+            'accepted' => $c('accepted'),
+            'revision' => $c('revision'),
+            'rejected' => $c('rejected'),
+        ];
 
         return view('admin.submissions.index', [
             'trendTotal' => $trendTotal,
@@ -234,14 +276,11 @@ class SubmissionController extends Controller
                 ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
                 ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
                 ->whereNotNull('track')->where('track', '!=', '')->distinct()->orderBy('track')->pluck('track'),
-            'kpis' => $this->indicateurs($editionId, $status, $reviews, [
-                'total' => (int) $counts->sum(),
-                'toDecide' => $toDecide,
-                'underReview' => $c('under_review') + $c('submitted'),
-                'accepted' => $c('accepted'),
-                'revision' => $c('revision'),
-                'rejected' => $c('rejected'),
-            ]),
+            'kpis' => $this->indicateurs($editionId, $status, $reviews, $contexte, $chiffres),
+            'sousStatuts' => $this->sousStatuts($request, $perimetre(), $editionId, $status, $reviews, $contexte),
+            'exportUrl' => $exportUrl,
+            'resetUrl' => route('admin.submissions.index', ['event_id' => $editionId]),
+            'filtreActif' => $status !== '' || $reviews !== '' || $contexte !== [],
         ]);
     }
 
@@ -261,17 +300,23 @@ class SubmissionController extends Controller
      * suivaient le filtre, la carte sur laquelle on vient de cliquer afficherait
      * le total de sa propre sélection et les autres tomberaient à zéro.
      *
+     * @param  array<string, scalar>  $contexte  les autres filtres de la barre, que le lien EMPORTE
      * @param  array<string, int>  $n
      * @return list<array<string, mixed>>
      */
-    private function indicateurs(string $editionId, string $status, string $reviews, array $n): array
+    private function indicateurs(string $editionId, string $status, string $reviews, array $contexte, array $n): array
     {
         $cartes = [
             ['cle' => 'total', 'label' => 'Total', 'icone' => 'inbox', 'teinte' => 'blue', 'val' => 'blue', 'filtre' => []],
             ['cle' => 'toDecide', 'label' => 'À décider', 'icone' => 'flag', 'teinte' => 'amber', 'val' => 'warn',
                 'filtre' => ['status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done']],
             ['cle' => 'underReview', 'label' => 'En revue', 'icone' => 'clock', 'teinte' => 'slate', 'val' => '',
-                'filtre' => ['status' => Submission::STATUS_IN_REVIEW]],
+                'filtre' => ['status' => Submission::STATUS_IN_REVIEW],
+                // ⚠️ Une carte reste allumée sur ses SUBDIVISIONS : raffiner
+                // « En revue » en « Déposées » ne doit pas éteindre la rangée,
+                // sinon on se retrouve dans un filtre que plus aucune carte
+                // n'annonce - et sans repère pour en sortir.
+                'allume' => [Submission::STATUS_IN_REVIEW, ...Submission::IN_REVIEW_STATUSES]],
             ['cle' => 'accepted', 'label' => 'Acceptées', 'icone' => 'check-circle', 'teinte' => 'green', 'val' => 'green',
                 'filtre' => ['status' => 'accepted']],
             ['cle' => 'revision', 'label' => 'Corrections', 'icone' => 'pen', 'teinte' => 'violet', 'val' => 'warn',
@@ -280,18 +325,75 @@ class SubmissionController extends Controller
                 'filtre' => ['status' => 'rejected']],
         ];
 
-        return array_map(function (array $carte) use ($editionId, $status, $reviews, $n): array {
+        return array_map(function (array $carte) use ($editionId, $status, $reviews, $contexte, $n): array {
             $filtre = $carte['filtre'];
+            // Allumée seulement si les DEUX dimensions correspondent : sinon
+            // « En revue » resterait allumée sous « À décider », qui la restreint.
+            $active = in_array($status, (array) ($carte['allume'] ?? [$filtre['status'] ?? '']), true)
+                && ($filtre['reviews'] ?? '') === $reviews;
 
             return $carte + [
                 'valeur' => $n[$carte['cle']] ?? 0,
-                'url' => route('admin.submissions.index', ['event_id' => $editionId] + $filtre),
-                // Allumée seulement si les DEUX filtres correspondent : sinon
-                // « En revue » resterait allumée sous « À décider », qui la
-                // restreint.
-                'active' => ($filtre['status'] ?? '') === $status && ($filtre['reviews'] ?? '') === $reviews,
+                // ⚠️⚠️ **LE LIEN EMPORTE LES AUTRES FILTRES.** Il ne portait que
+                // l'événement et son statut : on filtrait un axe, on cliquait une
+                // carte, et l'axe disparaissait sans un mot. Une carte change le
+                // statut, elle ne défait pas le travail de qui l'a cliquée.
+                // ⚠️ Et la carte ALLUMÉE s'éteint : c'est la sortie du filtre
+                // sans passer par « Total », qui emporterait tout le reste.
+                'url' => route('admin.submissions.index', ['event_id' => $editionId] + ($active ? [] : $filtre) + $contexte),
+                'active' => $active,
             ];
         }, $cartes);
+    }
+
+    /**
+     * Les subdivisions de « En revue », affichées SEULEMENT quand on y est.
+     *
+     * ⚠️⚠️ **CE QUE LES CARTES NE SAVENT PAS DIRE.** « En revue » additionne
+     * deux statuts - **déposée** (personne ne l'a encore envoyée en évaluation)
+     * et **en évaluation** - et c'est précisément la distinction que le retrait
+     * de la liste déroulante avait coûtée (mesuré sur le colloque de l'eau :
+     * 19 contre 27). Elle revient ici, **en contexte** : trois pastilles sous la
+     * rangée, visibles uniquement dans cette branche. Une seconde liste
+     * déroulante permanente aurait fait deux commandes pour un même filtre.
+     *
+     * ⚠️⚠️ **MAIS ELLES SE COMPTENT SOUS LES FILTRES COURANTS, À L'INVERSE DES
+     * CARTES.** Une carte est un repère de navigation sur tout l'événement ; une
+     * pastille SUBDIVISE la sélection affichée, et son lien emporte
+     * l'avancement des évaluations comme le reste de la barre. Comptée sur le
+     * périmètre entier, « Toutes » annoncerait 46 là où son lien en ouvre 6 -
+     * exactement le travers que la carte « En revue » a déjà payé. Le statut
+     * courant, lui, est écarté du comptage (`avecStatut: false`) : sinon
+     * « Déposées » tomberait à zéro dès qu'on regarde « En évaluation ».
+     *
+     * ⚠️ La requête n'a lieu que si la rangée s'affiche : un comptage de plus à
+     * chaque chargement, pour trois pastilles qui n'existent que dans cette
+     * branche, serait du gaspillage pur.
+     *
+     * @param  array<string, scalar>  $contexte
+     * @return list<array<string, mixed>>
+     */
+    private function sousStatuts(Request $request, Builder $perimetre, string $editionId, string $status, string $reviews, array $contexte): array
+    {
+        if (! in_array($status, [Submission::STATUS_IN_REVIEW, ...Submission::IN_REVIEW_STATUSES], true)) {
+            return [];
+        }
+
+        $counts = $this->filtre($request, $perimetre, avecStatut: false)
+            ->selectRaw('submissions.status as status, count(*) as c')
+            ->groupBy('submissions.status')->pluck('c', 'status');
+        $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
+
+        $cadre = array_filter(['reviews' => $reviews]) + $contexte;
+
+        return array_map(fn (array $p): array => $p + [
+            'url' => route('admin.submissions.index', ['event_id' => $editionId, 'status' => $p['valeur']] + $cadre),
+            'active' => $status === $p['valeur'],
+        ], [
+            ['valeur' => Submission::STATUS_IN_REVIEW, 'label' => 'Toutes', 'nombre' => $c('submitted') + $c('under_review')],
+            ['valeur' => 'submitted', 'label' => 'Déposées', 'nombre' => $c('submitted')],
+            ['valeur' => 'under_review', 'label' => 'En évaluation', 'nombre' => $c('under_review')],
+        ]);
     }
 
     /** Export CSV des soumissions filtrées (mêmes filtres que la liste). */
