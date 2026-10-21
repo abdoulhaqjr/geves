@@ -2989,3 +2989,41 @@ deux sur « null is identical to 1 », et aucun des deux côtés fautif séparé
   d'`isColloqueSuperAdmin()`. ⚠️ Ne plus écrire `whereIn('access_level', …)`
   pour désigner « les administrateurs » : c'est la confusion des deux prédicats,
   en version requête.
+
+### La file de travail du comité scientifique (21 octobre)
+
+Demande de l'équipe : une fois les évaluations rendues, le comité doit pouvoir
+**retrouver** les communications à décider, sans parcourir des centaines de
+lignes. La colonne « Évaluations » existait, le filtre non.
+
+Ajouté à `/admin/soumissions` :
+
+1. **Filtre « Évaluations »** dans la barre : *Toutes rendues* (la file de
+   décision), *Partiellement rendues*, *Aucune rendue*, *En retard*. La règle
+   vit dans `Submission::scopeReviewsState()`, pas dans le contrôleur - la
+   colonne affichée et le filtre doivent désigner le même lot, et un cas de
+   garde les compare pour chaque communication du jeu d'essai.
+2. **Indicateurs cliquables** : chaque carte ouvre la liste filtrée sur ce
+   qu'elle compte, et une sixième apparaît - **« À décider »**, soit encore en
+   revue et toutes les évaluations rendues.
+3. **Une seule construction de filtres** pour la liste et ses exports
+   (`SubmissionController::filtre()`), le CSV ne pouvant plus diverger de
+   l'écran. Au passage, l'export porte désormais aussi « co-auteurs non
+   rattachés », qu'il ignorait.
+
+⚠️ Deux pièges payés ici. **« En revue » additionne deux statuts** : rendue
+cliquable vers le seul `under_review`, la carte aurait ouvert moins de lignes
+que son propre chiffre - d'où le filtre composite `in_review`, visible dans la
+liste déroulante des statuts. Et **le premier sabotage n'a pas mordu** : le cas
+reconstruisait les paramètres du lien au lieu de le suivre, donc il éprouvait le
+filtre pendant que le lien mentait. Les cas des indicateurs suivent maintenant
+`$carte['url']`.
+
+Vérifié à l'écran sur le colloque de l'eau (210 communications) : six cartes sur
+une rangée à 1440 px, « À décider » annonce 6 et en ouvre 6, le filtre s'applique
+sans rechargement et l'URL suit. ⚠️ Sous ~1200 px la grille partagée
+`.ukc-stats` passe à quatre colonnes et la sixième carte ouvre une rangée
+orpheline - travers d'`auto-fit` déjà documenté, déjà présent à cinq cartes ;
+la grille sert tout le back-office et n'a pas été retouchée pour cette page.
+
+Gardes : `tests/Feature/FileDuComiteTest.php` (13 cas, 4 sabotages vérifiés).

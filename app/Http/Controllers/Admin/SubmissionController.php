@@ -35,6 +35,7 @@ use App\Support\SubmissionFormConfig;
 use App\Support\Trend;
 use App\Support\UserDirectorySearch;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +59,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class SubmissionController extends Controller
 {
     use ScopesEditionAccess;
-    use ScopesEditionAccess;
 
     /** Statuts que l'on peut appliquer depuis la fiche (le dépôt initial exclu). */
     public const ACTIONS = [
@@ -67,6 +67,75 @@ class SubmissionController extends Controller
         'accepted' => ['Accepter', 'green'],
         'rejected' => ['Refuser', 'danger'],
     ];
+
+    /**
+     * Un co-auteur « non rattaché » = lien invited/unmatched/declined (hors
+     * déposant). Une seule définition : la liste la compte et le filtre la
+     * cherche, les deux doivent désigner les mêmes lignes.
+     */
+    private static function liensNonRattaches(): \Closure
+    {
+        return fn ($l) => $l->where('role', 'coauthor')->whereIn('status', ['invited', 'unmatched', 'declined']);
+    }
+
+    /**
+     * Filtres de la liste, appliqués à un constructeur de requête déjà cadré
+     * sur l'événement.
+     *
+     * ⚠️⚠️ **UNE SEULE CONSTRUCTION, POUR L'ÉCRAN ET POUR SES EXPORTS.** La
+     * liste et le CSV dressaient la même chaîne chacun de leur côté : ajouter
+     * un filtre d'un côté seulement faisait exporter autre chose que ce qu'on
+     * regarde, sans rien pour s'en apercevoir. Même leçon qu'`AttestationQuery`.
+     *
+     * @param  Builder<Submission>  $query
+     * @return Builder<Submission>
+     */
+    private function filtre(Request $request, Builder $query): Builder
+    {
+        $search = trim((string) $request->query('search', ''));
+        $status = (string) $request->query('status', '');
+        $type = (string) $request->query('type', '');
+        $presentationMode = (string) $request->query('presentation_mode', '');
+        $participationMode = (string) $request->query('participation_mode', '');
+        $track = (string) $request->query('track', '');
+        $reviews = $this->etatDesEvaluations($request);
+
+        return $query
+            // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`,
+            // qui porte aussi `event_id` - sans préfixe, la requête est ambiguë.
+            ->when($status !== '', fn ($q) => $status === Submission::STATUS_IN_REVIEW
+                ? $q->whereIn('submissions.status', Submission::IN_REVIEW_STATUSES)
+                : $q->where('submissions.status', $status))
+            ->when($reviews !== '', fn ($q) => $q->reviewsState($reviews))
+            ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
+            ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
+            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
+            ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
+            ->when($request->boolean('unlinked'), fn ($q) => $q->whereHas('authorLinks', self::liensNonRattaches()))
+            ->when($search !== '', function ($q) use ($search) {
+                $term = "%{$search}%";
+                $q->where(fn ($sub) => $sub
+                    ->where('submissions.title', 'like', $term)
+                    ->orWhere('submissions.ref_code', 'like', $term)
+                    ->orWhereHas('participant', fn ($p) => $p
+                        ->where('first_name', 'like', $term)
+                        ->orWhere('last_name', 'like', $term)
+                        ->orWhere('email', 'like', $term)));
+            });
+    }
+
+    /**
+     * État d'évaluation demandé, filtré sur les clés connues.
+     *
+     * ⚠️ Une valeur fantaisiste est IGNORÉE, pas appliquée : appliquée, elle
+     * rendrait une liste vide sans que la barre de filtres n'explique pourquoi.
+     */
+    private function etatDesEvaluations(Request $request): string
+    {
+        $state = (string) $request->query('reviews', '');
+
+        return array_key_exists($state, Submission::REVIEW_STATES) ? $state : '';
+    }
 
     public function index(Request $request): View
     {
@@ -77,9 +146,10 @@ class SubmissionController extends Controller
         $participationMode = (string) $request->query('participation_mode', '');
         $track = (string) $request->query('track', '');
         $unlinked = $request->boolean('unlinked');
+        $reviews = $this->etatDesEvaluations($request);
 
         // Un co-auteur « non rattaché » = lien invited/unmatched/declined (hors déposant).
-        $unlinkedScope = fn ($l) => $l->where('role', 'coauthor')->whereIn('status', ['invited', 'unmatched', 'declined']);
+        $unlinkedScope = self::liensNonRattaches();
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
         $accessible = $this->accessibleEditions($request, 'submissions_list');
 
@@ -95,7 +165,7 @@ class SubmissionController extends Controller
         $sort = ListSort::resolve($request, ['ref_code', 'title', 'author', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
         $sortByAuthor = $sort['sort'] === 'author';
 
-        $submissions = Submission::query()
+        $base = Submission::query()
             // `reviews` : colonne d'avancement de l’évaluation (Review::progressOf).
             ->with(['event', 'participant', 'reviews'])
             ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
@@ -103,23 +173,9 @@ class SubmissionController extends Controller
             // porte aussi `event_id` - sans préfixe, la requête est ambiguë.
             ->where('submissions.revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.event_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
-            ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
-            ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
-            ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
-            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
-            ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
-            ->when($unlinked, fn ($q) => $q->whereHas('authorLinks', $unlinkedScope))
-            ->when($search !== '', function ($q) use ($search) {
-                $term = "%{$search}%";
-                $q->where(fn ($sub) => $sub
-                    ->where('submissions.title', 'like', $term)
-                    ->orWhere('submissions.ref_code', 'like', $term)
-                    ->orWhereHas('participant', fn ($p) => $p
-                        ->where('first_name', 'like', $term)
-                        ->orWhere('last_name', 'like', $term)
-                        ->orWhere('email', 'like', $term)));
-            })
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId));
+
+        $submissions = $this->filtre($request, $base)
             ->when($sortByAuthor, fn ($q) => $q
                 ->leftJoin('participants', 'participants.id', '=', 'submissions.participant_id')
                 ->orderBy('participants.last_name', $sort['dir'])
@@ -137,6 +193,16 @@ class SubmissionController extends Controller
             ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
 
+        // ⚠️⚠️ **LA FILE DE TRAVAIL DU COMITÉ** : encore dans le circuit ET
+        // toutes les évaluations demandées rendues. C'est le seul indicateur
+        // qui appelle un geste - les quatre autres décrivent un état.
+        $toDecide = (int) Submission::query()->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
+            ->whereIn('status', Submission::IN_REVIEW_STATUSES)
+            ->reviewsState('done')
+            ->count();
+
         // Tendance des dépôts : 7 derniers jours vs les 7 précédents (même périmètre).
         $trendBase = fn () => Submission::query()->where('revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
@@ -153,6 +219,7 @@ class SubmissionController extends Controller
             'submissions' => $submissions,
             'search' => $search,
             'status' => $status,
+            'reviews' => $reviews,
             'event_id' => $editionId,
             'type' => $type,
             'presentationMode' => $presentationMode,
@@ -161,56 +228,87 @@ class SubmissionController extends Controller
             'unlinked' => $unlinked,
             'events' => $accessible,
             'statuses' => Submission::statuses(),
+            'reviewStates' => Submission::REVIEW_STATES,
             'statusPills' => Submission::statusPills(),
             'tracks' => Submission::query()->where('revision_of', 0)
                 ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
                 ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
                 ->whereNotNull('track')->where('track', '!=', '')->distinct()->orderBy('track')->pluck('track'),
-            'stats' => [
+            'kpis' => $this->indicateurs($editionId, $status, $reviews, [
                 'total' => (int) $counts->sum(),
+                'toDecide' => $toDecide,
                 'underReview' => $c('under_review') + $c('submitted'),
                 'accepted' => $c('accepted'),
                 'revision' => $c('revision'),
                 'rejected' => $c('rejected'),
-            ],
+            ]),
         ]);
+    }
+
+    /**
+     * Les indicateurs du haut, chacun porteur du filtre qu'il décrit.
+     *
+     * ⚠️⚠️ **UNE CARTE CLIQUABLE DOIT OUVRIR EXACTEMENT CE QU'ELLE COMPTE.**
+     * « En revue » additionne deux statuts (déposée + en évaluation) : visée
+     * par un `status=under_review`, elle aurait rendu moins de lignes que son
+     * propre chiffre, et un total qui baisse sans explication se lit comme une
+     * panne. D'où le filtre composite {@see Submission::STATUS_IN_REVIEW}, qui
+     * s'affiche aussi dans la barre de filtres - l'écran ne doit jamais filtrer
+     * en silence.
+     *
+     * ⚠️ Les chiffres restent calculés sur le **périmètre de l'événement**, pas
+     * sur les filtres courants : ce sont des repères de navigation ; s'ils
+     * suivaient le filtre, la carte sur laquelle on vient de cliquer afficherait
+     * le total de sa propre sélection et les autres tomberaient à zéro.
+     *
+     * @param  array<string, int>  $n
+     * @return list<array<string, mixed>>
+     */
+    private function indicateurs(string $editionId, string $status, string $reviews, array $n): array
+    {
+        $cartes = [
+            ['cle' => 'total', 'label' => 'Total', 'icone' => 'inbox', 'teinte' => 'blue', 'val' => 'blue', 'filtre' => []],
+            ['cle' => 'toDecide', 'label' => 'À décider', 'icone' => 'flag', 'teinte' => 'amber', 'val' => 'warn',
+                'filtre' => ['status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done']],
+            ['cle' => 'underReview', 'label' => 'En revue', 'icone' => 'clock', 'teinte' => 'slate', 'val' => '',
+                'filtre' => ['status' => Submission::STATUS_IN_REVIEW]],
+            ['cle' => 'accepted', 'label' => 'Acceptées', 'icone' => 'check-circle', 'teinte' => 'green', 'val' => 'green',
+                'filtre' => ['status' => 'accepted']],
+            ['cle' => 'revision', 'label' => 'Corrections', 'icone' => 'pen', 'teinte' => 'violet', 'val' => 'warn',
+                'filtre' => ['status' => 'revision']],
+            ['cle' => 'rejected', 'label' => 'Refusées', 'icone' => 'close', 'teinte' => 'red', 'val' => 'err',
+                'filtre' => ['status' => 'rejected']],
+        ];
+
+        return array_map(function (array $carte) use ($editionId, $status, $reviews, $n): array {
+            $filtre = $carte['filtre'];
+
+            return $carte + [
+                'valeur' => $n[$carte['cle']] ?? 0,
+                'url' => route('admin.submissions.index', ['event_id' => $editionId] + $filtre),
+                // Allumée seulement si les DEUX filtres correspondent : sinon
+                // « En revue » resterait allumée sous « À décider », qui la
+                // restreint.
+                'active' => ($filtre['status'] ?? '') === $status && ($filtre['reviews'] ?? '') === $reviews,
+            ];
+        }, $cartes);
     }
 
     /** Export CSV des soumissions filtrées (mêmes filtres que la liste). */
     public function export(Request $request): StreamedResponse
     {
-        $search = trim((string) $request->query('search', ''));
-        $status = (string) $request->query('status', '');
         $editionId = (string) $request->query('event_id', '');
-        $type = (string) $request->query('type', '');
-        $presentationMode = (string) $request->query('presentation_mode', '');
-        $participationMode = (string) $request->query('participation_mode', '');
-        $track = (string) $request->query('track', '');
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
 
-        $rows = Submission::query()
+        $base = Submission::query()
             ->with(['event', 'participant'])
             // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
             // porte aussi `event_id` - sans préfixe, la requête est ambiguë.
             ->where('submissions.revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.event_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
-            ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
-            ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
-            ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
-            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
-            ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
-            ->when($search !== '', function ($q) use ($search) {
-                $term = "%{$search}%";
-                $q->where(fn ($sub) => $sub
-                    ->where('submissions.title', 'like', $term)
-                    ->orWhere('submissions.ref_code', 'like', $term)
-                    ->orWhereHas('participant', fn ($p) => $p
-                        ->where('first_name', 'like', $term)
-                        ->orWhere('last_name', 'like', $term)
-                        ->orWhere('email', 'like', $term)));
-            })
-            ->latest('id')->get();
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId));
+
+        $rows = $this->filtre($request, $base)->latest('submissions.id')->get();
 
         $statuses = Submission::statuses();
 

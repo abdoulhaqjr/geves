@@ -6,6 +6,7 @@ use App\Enums\SubmissionStatus;
 use App\Observers\SubmissionObserver;
 use App\Support\EventNameFormat;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -156,6 +157,69 @@ class Submission extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /**
+     * ⚠️⚠️ **CE QUI EST ENCORE DANS LE CIRCUIT D'ÉVALUATION**, soit DEUX statuts :
+     * une communication déposée n'a pas encore été mise en évaluation, mais elle
+     * attend bel et bien une décision. L'indicateur « En revue » les compte
+     * ensemble depuis toujours ; le filtre composite `in_review` lui permet
+     * d'être CLIQUABLE sans mentir sur son propre chiffre - un `status` simple
+     * aurait rendu moins de lignes que la carte n'en annonce.
+     */
+    public const STATUS_IN_REVIEW = 'in_review';
+
+    /** @var list<string> */
+    public const IN_REVIEW_STATUSES = ['submitted', 'under_review'];
+
+    /**
+     * États d'avancement de l'évaluation, pour le filtre de la liste.
+     * ⚠️ Ils PARTITIONNENT la liste (`done` + `partial` + `none` = tout) ;
+     * `late` les recoupe, c'est une alerte, pas une quatrième tranche.
+     *
+     * @var array<string, string>
+     */
+    public const REVIEW_STATES = [
+        'done' => 'Toutes rendues',
+        'partial' => 'Partiellement rendues',
+        'none' => 'Aucune rendue',
+        'late' => 'En retard',
+    ];
+
+    /**
+     * Filtre sur l'avancement des évaluations.
+     *
+     * ⚠️⚠️ **ON NE DÉDUIT JAMAIS L'ATTENTE DE L'INACHÈVEMENT** : un
+     * `status != 'completed'` compterait aussi les **refus** et les
+     * **annulations**, qui ne tiennent plus de place - la communication
+     * serait annoncée « en attente » alors que plus personne ne lui doit
+     * rien. On passe donc par {@see Review::PENDING_STATUSES} et
+     * {@see Review::ACTIVE_STATUSES}, exactement comme
+     * {@see Review::progressOf()} qui alimente la colonne de la liste. Les
+     * deux doivent dire la même chose : c'est le chiffre « 1/1 » affiché que
+     * le filtre « Toutes rendues » prétend isoler.
+     *
+     * ⚠️ `none` = **aucune rendue**, qu'un évaluateur ait été assigné ou non :
+     * pour le comité, « rien à lire » est un seul et même cas.
+     *
+     * @param  Builder<Submission>  $query
+     * @return Builder<Submission>
+     */
+    public function scopeReviewsState(Builder $query, string $state): Builder
+    {
+        $rendue = fn (Builder $r) => $r->where('status', 'completed');
+        $due = fn (Builder $r) => $r->whereIn('status', Review::PENDING_STATUSES);
+
+        return match ($state) {
+            'done' => $query->whereHas('reviews', $rendue)->whereDoesntHave('reviews', $due),
+            'partial' => $query->whereHas('reviews', $rendue)->whereHas('reviews', $due),
+            'none' => $query->whereDoesntHave('reviews', $rendue),
+            // Même définition que Review::isLate() : encore due ET échéance
+            // dépassée. ⚠️ Sans échéance, une évaluation n'est jamais en retard.
+            'late' => $query->whereHas('reviews', fn (Builder $r) => $due($r)
+                ->whereNotNull('due_at')->where('due_at', '<', now())),
+            default => $query,
+        };
     }
 
     /**

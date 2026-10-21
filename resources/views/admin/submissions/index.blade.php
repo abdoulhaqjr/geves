@@ -32,13 +32,18 @@
 
         @include('admin.submissions._nav', ['current' => 'liste'])
 
-        {{-- Indicateurs --}}
+        {{-- Indicateurs CLIQUABLES : chaque carte ouvre la liste filtrée sur ce
+             qu'elle compte (cf. SubmissionController::indicateurs). La carte
+             allumée dit où l'on est ; « Total » ramène à la liste entière. --}}
         <div class="ukc-stats">
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div><x-ukc.trend :trend="$trendTotal" period="7 j" /></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Corrections</div><div class="val warn">{{ $stats['revision'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Refusées</div><div class="val" style="color:#dc2626;">{{ $stats['rejected'] }}</div></div>
+            @foreach ($kpis as $kpi)
+                <a href="{{ $kpi['url'] }}" class="ukc-stat-card tw-stat{{ $kpi['active'] ? ' is-on' : '' }}" @if ($kpi['active']) aria-current="true" @endif>
+                    <div class="tw-stat__icon tw-stat__icon--{{ $kpi['teinte'] }}"><x-ukc.icon :name="$kpi['icone']" :size="20" /></div>
+                    <div class="lbl">{{ $kpi['label'] }}</div>
+                    <div class="val {{ $kpi['val'] }}">{{ $kpi['valeur'] }}</div>
+                    @if ($kpi['cle'] === 'total')<x-ukc.trend :trend="$trendTotal" period="7 j" />@endif
+                </a>
+            @endforeach
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
@@ -50,7 +55,14 @@
             <input type="hidden" name="event_id" value="{{ $event_id }}">
             <select name="status">
                 <option value="">Tous les statuts</option>
+                {{-- Filtre composite de la carte « En revue » : il doit apparaître
+                     ici, sinon la barre tairait un filtre pourtant actif. --}}
+                <option value="{{ \App\Models\Submission::STATUS_IN_REVIEW }}" @selected($status === \App\Models\Submission::STATUS_IN_REVIEW)>En revue (soumises ou en évaluation)</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
+            </select>
+            <select name="reviews" aria-label="Filtrer par avancement des évaluations">
+                <option value="">Toutes les évaluations</option>
+                @foreach ($reviewStates as $key => $label)<option value="{{ $key }}" @selected($reviews === $key)>{{ $label }}</option>@endforeach
             </select>
             <select name="type">
                 <option value="">Tous les types</option>
@@ -77,7 +89,7 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
             </label>
-            @if ($search !== '' || $status !== '' || $type !== '' || $presentationMode !== '' || $participationMode !== '' || $track !== '' || $unlinked)
+            @if ($search !== '' || $status !== '' || $reviews !== '' || $type !== '' || $presentationMode !== '' || $participationMode !== '' || $track !== '' || $unlinked)
                 <a href="{{ route('admin.submissions.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>

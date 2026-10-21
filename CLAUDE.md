@@ -1414,6 +1414,70 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   motif a déjà été écrit à trois endroits : un **test de garde**
   (`ReviewLifecycleTest`, « ne déduit jamais l'attente de son inachèvement »)
   scanne `app/` et `resources/views/` et échoue s'il revient.
+
+### La file de travail du comité : le filtre « Évaluations » (2026-10-21)
+
+La liste des soumissions portait la colonne **Évaluations** (« 1/1 », via
+`Review::progressOf`) mais **aucun filtre ne portait dessus** : pour trouver ce
+qui attend une décision, le comité filtrait « En évaluation » et lisait les
+`0/1` et `1/1` à l'œil, page après page. Tenable sur quarante communications,
+pas sur plusieurs centaines.
+
+- **`Submission::scopeReviewsState()`** est la source unique du filtre, et
+  `Submission::REVIEW_STATES` sa liste de choix : **Toutes rendues** (la file de
+  décision), **Partiellement rendues**, **Aucune rendue**, **En retard**.
+  ⚠️ Les trois premiers **partitionnent** la liste ; `late` les recoupe, c'est
+  une alerte, pas une quatrième tranche.
+- ⚠️⚠️ **ON NE DÉDUIT JAMAIS L'ATTENTE DE L'INACHÈVEMENT** (le piège d'au-dessus,
+  en version requête) : « toutes rendues » = au moins une **rendue** et **aucune
+  encore due**, par `Review::PENDING_STATUSES` - un `status != 'completed'`
+  retiendrait une communication dont une évaluation a été **refusée** ou
+  **annulée**, alors que plus personne ne lui doit rien. Un cas de garde porte
+  exactement ce jeu d'essai (une rendue + un refus + une annulation), et un
+  autre compare le filtre à ce que la **colonne affiche** pour le même lot :
+  les deux doivent dire la même chose, sinon on filtre sur autre chose que le
+  « 1/1 » qu'on lit à l'écran.
+- ⚠️ Une valeur inconnue de `?reviews=` est **ignorée** : appliquée, elle
+  viderait la liste et ferait apparaître « Réinitialiser » pour un filtre que
+  la barre ne montre nulle part - l'écran dirait deux choses contraires.
+
+**Les indicateurs du haut sont CLIQUABLES** (`SubmissionController::indicateurs()`,
+un `<a class="ukc-stat-card">` par carte) et une sixième carte est apparue :
+**« À décider »** = encore dans le circuit **et** toutes les évaluations rendues.
+C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
+
+- ⚠️⚠️ **UNE CARTE CLIQUABLE DOIT OUVRIR EXACTEMENT CE QU'ELLE COMPTE.**
+  « En revue » additionne **deux** statuts (déposée + en évaluation) : visée par
+  un `status=under_review`, elle rendait **moins de lignes que son propre
+  chiffre**, et un total qui baisse sans explication se lit comme une panne.
+  D'où le filtre composite **`Submission::STATUS_IN_REVIEW`**, qui figure aussi
+  dans la liste déroulante des statuts - l'écran ne filtre jamais en silence.
+  ⚠️ **Le cas de garde doit SUIVRE le lien de la carte**, jamais reconstruire
+  ses paramètres : écrit à la main, il éprouve le filtre et laisse le lien
+  mentir - c'est exactement ce qui est arrivé, le premier sabotage est passé au
+  vert avant correction du cas.
+- ⚠️ Les chiffres restent calculés sur le **périmètre de l'événement**, pas sur
+  les filtres courants : ce sont des repères de navigation. S'ils suivaient le
+  filtre, la carte qu'on vient de cliquer afficherait le total de sa propre
+  sélection et les autres tomberaient à zéro.
+- ⚠️ La carte allumée nomme son sélecteur **avec son élément**
+  (`.ukc-shell a.ukc-stat-card.is-on`, soit (0,2,1)) : `tailwise.css` peint la
+  même carte à (0,2,0) **et** se charge après `admin.css` - à spécificité égale,
+  l'état allumé ne se verrait jamais. Même piège que `.tdb a.tdb-btn-light`.
+- ⚠️ **Les filtres de la liste et de ses EXPORTS ont une seule construction**
+  (`SubmissionController::filtre()`) : écrits deux fois, ils ont déjà divergé
+  ailleurs, et le CSV exportait autre chose que ce qu'on regardait. Un cas de
+  garde sort le CSV sous filtre et vérifie qui s'y trouve.
+- **Mesuré à l'écran** (1440 px, vrai colloque de 210 communications) : les six
+  cartes tiennent sur **une rangée**, « À décider » annonce 6 et son lien rend
+  **6 lignes**, le filtre s'applique **sans recharger la page** (`data-filter`)
+  et l'URL suit. À 375 px : trois rangées de deux, aucun débordement horizontal.
+  ⚠️ Sous ~1200 px la grille partagée `.ukc-stats` retombe à quatre colonnes et
+  la sixième carte ouvre une rangée orpheline (4 + 2) - le travers d'`auto-fit`
+  déjà documenté, qui existait avec cinq cartes (4 + 1). La grille est partagée
+  par tout le back-office : ne pas la retoucher pour cette seule page.
+- Gardes : **`FileDuComiteTest`** (13 cas, **4 sabotages vérifiés**).
+
 - **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions - Formulaire
   de soumission - Attribution auto - Relecteurs & expertise - Options*, définis
   **une seule fois** dans `resources/views/admin/submissions/_nav.blade.php`

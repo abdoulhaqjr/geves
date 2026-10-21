@@ -12,8 +12,21 @@
 .ukc-shell .ukc-stat-card .val.blue { color: var(--ukc-blue); }
 .ukc-shell .ukc-stat-card .val.green { color: var(--ukc-green); }
 .ukc-shell .ukc-stat-card .val.warn { color: #d97706; }
+.ukc-shell .ukc-stat-card .val.err { color: #dc2626; }
 .ukc-shell .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
 .ukc-shell .ukc-stat-card .hint.up { color: var(--ukc-green); }
+
+/* ---- Indicateur CLIQUABLE (il porte le filtre qu'il décrit) ----
+   ⚠️ Le sélecteur nomme l'ÉLÉMENT (`a.ukc-stat-card`, soit (0,2,1)) : la carte
+   est aussi peinte par `tailwise.css`, importé APRÈS ce fichier, à (0,2,0) -
+   à spécificité égale le fond et la bordure de Tailwise l'emporteraient et
+   l'état allumé ne se verrait jamais. Même piège que `.tdb a.tdb-btn-light`.
+   ⚠️ Rien ici ne touche `.val` : la couleur du chiffre reste celle de sa carte,
+   et `color: inherit` de `.ukc-scope a:not(.ukc-btn)` ne la concerne pas. */
+.ukc-shell a.ukc-stat-card { display: block; cursor: pointer; transition: border-color .15s, box-shadow .15s, background .15s; }
+.ukc-shell a.ukc-stat-card:hover { border-color: var(--ukc-blue); box-shadow: 0 2px 10px rgba(34, 62, 164, .12); }
+.ukc-shell a.ukc-stat-card:focus-visible { outline: 2px solid var(--ukc-blue); outline-offset: 2px; }
+.ukc-shell a.ukc-stat-card.is-on { border-color: var(--ukc-blue); box-shadow: inset 0 0 0 1px var(--ukc-blue); background: #f5f7ff; }
 .admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
 /* ============ Prise en main (back-office + espace participant) ============ */
