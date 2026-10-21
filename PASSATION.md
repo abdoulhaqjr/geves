@@ -3026,4 +3026,12 @@ sans rechargement et l'URL suit. ⚠️ Sous ~1200 px la grille partagée
 orpheline - travers d'`auto-fit` déjà documenté, déjà présent à cinq cartes ;
 la grille sert tout le back-office et n'a pas été retouchée pour cette page.
 
-Gardes : `tests/Feature/FileDuComiteTest.php` (13 cas, 4 sabotages vérifiés).
+⚠️ **La liste déroulante des statuts a été retirée dans la foulée**, à la
+demande de l'équipe : les cartes la disent déjà, et elle était la plus large de
+la barre. Le statut reste un **champ caché** du formulaire, sinon le premier
+filtre suivant le reperdrait. Prix assumé et mesuré : « déposée » et « en
+évaluation » ne se séparent plus à l'écran (19 contre 27 sur le colloque de
+l'eau) - il faudrait une septième carte pour les retrouver, pas le retour de la
+liste déroulante.
+
+Gardes : `tests/Feature/FileDuComiteTest.php` (14 cas, 5 sabotages vérifiés).

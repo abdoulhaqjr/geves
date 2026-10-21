@@ -215,6 +215,25 @@ it('propose le filtre dans la barre et n’applique pas une valeur inconnue', fu
     $reponse->assertDontSee('Réinitialiser');
 });
 
+it('⚠️ la barre de filtres TRANSPORTE le statut choisi sur une carte', function () {
+    // Le statut ne se choisit plus dans une liste déroulante : ce sont les
+    // cartes qui le posent. Mais la barre poste TOUT le formulaire - sans un
+    // champ pour le porter, taper une recherche ou changer d'axe reperdrait le
+    // filtre qu'on vient de poser, et la liste se réélargirait sous les doigts.
+    $html = $this->actingAs($this->staff, 'web')->get(route('admin.submissions.index', [
+        'event_id' => $this->event->id, 'status' => Submission::STATUS_IN_REVIEW,
+    ]))->assertOk()->getContent();
+
+    $barre = str($html)->after('data-filter="submissions"')->before('</form>')->toString();
+
+    expect($barre)->toMatch('/name="status"[^>]*value="'.Submission::STATUS_IN_REVIEW.'"/');
+
+    // Et le serveur le respecte quand il arrive accompagné d'un autre filtre.
+    expect(refsFiltrees($this->staff, $this->event, [
+        'status' => Submission::STATUS_IN_REVIEW, 'track' => 'Sciences',
+    ]))->toHaveCount(5);
+});
+
 it('⚠️ l’export CSV porte le filtre d’évaluation de l’écran', function () {
     $csv = $this->actingAs($this->staff, 'web')
         ->get(route('admin.submissions.export', [

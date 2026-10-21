@@ -53,13 +53,13 @@
              s'applique à la frappe, sans valider ni recharger la page. --}}
         <form method="GET" class="filter-bar filter-bar--inline" data-filter="submissions">
             <input type="hidden" name="event_id" value="{{ $event_id }}">
-            <select name="status">
-                <option value="">Tous les statuts</option>
-                {{-- Filtre composite de la carte « En revue » : il doit apparaître
-                     ici, sinon la barre tairait un filtre pourtant actif. --}}
-                <option value="{{ \App\Models\Submission::STATUS_IN_REVIEW }}" @selected($status === \App\Models\Submission::STATUS_IN_REVIEW)>En revue (soumises ou en évaluation)</option>
-                @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
-            </select>
+            {{-- ⚠️⚠️ LE STATUT SE CHOISIT SUR LES CARTES, PAS DANS UNE LISTE
+                 DÉROULANTE : les six indicateurs du haut le disent déjà, en
+                 annonçant leur nombre. Mais il reste un CHAMP CACHÉ, comme
+                 l'événement : la barre de filtres poste tout le formulaire, et
+                 sans lui, taper une recherche ou changer d'axe REPERDRAIT le
+                 statut qu'on vient de choisir sur une carte. --}}
+            <input type="hidden" name="status" value="{{ $status }}">
             <select name="reviews" aria-label="Filtrer par avancement des évaluations">
                 <option value="">Toutes les évaluations</option>
                 @foreach ($reviewStates as $key => $label)<option value="{{ $key }}" @selected($reviews === $key)>{{ $label }}</option>@endforeach

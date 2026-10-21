@@ -1450,8 +1450,7 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   « En revue » additionne **deux** statuts (déposée + en évaluation) : visée par
   un `status=under_review`, elle rendait **moins de lignes que son propre
   chiffre**, et un total qui baisse sans explication se lit comme une panne.
-  D'où le filtre composite **`Submission::STATUS_IN_REVIEW`**, qui figure aussi
-  dans la liste déroulante des statuts - l'écran ne filtre jamais en silence.
+  D'où le filtre composite **`Submission::STATUS_IN_REVIEW`**.
   ⚠️ **Le cas de garde doit SUIVRE le lien de la carte**, jamais reconstruire
   ses paramètres : écrit à la main, il éprouve le filtre et laisse le lien
   mentir - c'est exactement ce qui est arrivé, le premier sabotage est passé au
@@ -1460,6 +1459,18 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   les filtres courants : ce sont des repères de navigation. S'ils suivaient le
   filtre, la carte qu'on vient de cliquer afficherait le total de sa propre
   sélection et les autres tomberaient à zéro.
+- ⚠️⚠️ **LA LISTE DÉROULANTE DES STATUTS A ÉTÉ RETIRÉE** (les cartes la disent
+  déjà, en annonçant leur nombre), **mais le statut reste un CHAMP CACHÉ du
+  formulaire** - comme l'événement. La barre poste **tout** le formulaire : sans
+  ce champ, taper une recherche ou changer d'axe reperdrait le statut posé par
+  la carte, et la liste se réélargirait sous les doigts. Un cas de garde lit le
+  formulaire rendu et exige le champ (sabotage vérifié).
+  ⚠️ **Prix assumé** : `submitted` et `under_review` ne se séparent plus à
+  l'écran (mesuré sur le colloque de l'eau : **19 déposées** contre **27 en
+  évaluation**, fondues dans « En revue » = 46). Les deux restent atteignables
+  par l'URL et par le tri de la colonne Statut ; pour les filtrer de nouveau, il
+  faut une septième carte - pas le retour de la liste déroulante, qui ferait
+  deux commandes pour un même filtre.
 - ⚠️ La carte allumée nomme son sélecteur **avec son élément**
   (`.ukc-shell a.ukc-stat-card.is-on`, soit (0,2,1)) : `tailwise.css` peint la
   même carte à (0,2,0) **et** se charge après `admin.css` - à spécificité égale,
@@ -1476,7 +1487,11 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
   la sixième carte ouvre une rangée orpheline (4 + 2) - le travers d'`auto-fit`
   déjà documenté, qui existait avec cinq cartes (4 + 1). La grille est partagée
   par tout le back-office : ne pas la retoucher pour cette seule page.
-- Gardes : **`FileDuComiteTest`** (13 cas, **4 sabotages vérifiés**).
+  ⚠️ La **barre de filtres défile chez elle** (`overflow-x: auto`, le patron du
+  projet) : mesurée à 1440 px, elle réclame **1463 px pour 1280** - donc moins
+  qu'avant l'ajout du filtre, le retrait de la liste des statuts ayant rendu
+  269 px. Ne pas y ajouter un contrôle sans regarder ce chiffre.
+- Gardes : **`FileDuComiteTest`** (14 cas, **5 sabotages vérifiés**).
 
 - **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions - Formulaire
   de soumission - Attribution auto - Relecteurs & expertise - Options*, définis
