@@ -396,7 +396,7 @@
                         </template>
                     </ul>
                     <p x-show="(task.documents || []).length === 0" style="color:var(--ukc-muted);font-size:12.5px;margin:0 0 8px;">
-                        Aucun document. Créez un DOCX ou XLSX, ou importez un fichier existant.
+                        Aucun document. Créez un DOCX, XLSX, PPTX ou TXT, ou importez un fichier existant.
                     </p>
                     <div class="ukc-doc-choice" x-data="{
                         mode: 'create', busy: false, error: '',
@@ -431,17 +431,19 @@
                             <select name="format" aria-label="Format du nouveau document" required>
                                 <option value="docx">Word (.docx)</option>
                                 <option value="xlsx">Excel (.xlsx)</option>
+                                <option value="pptx">PowerPoint (.pptx)</option>
+                                <option value="txt">Texte brut (.txt)</option>
                             </select>
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="busy || {{ $officeAvailable ? 'false' : 'true' }}">Créer</button>
                         </form>
                         <form method="POST" :action="task.documentsUrl" enctype="multipart/form-data" class="ukc-doc-new ukc-doc-new--import" x-show="mode === 'import'" x-cloak @submit.prevent="submit($event)">
                             @csrf
-                            <input type="file" name="file" accept=".docx,.xlsx" required aria-label="Fichier Word ou Excel à importer">
+                            <input type="file" name="file" accept=".docx,.xlsx,.pptx,.txt" required aria-label="Fichier DOCX, XLSX, PPTX ou TXT à importer">
                             <input type="text" name="title" maxlength="200" placeholder="Nom personnalisé (facultatif)" aria-label="Nom personnalisé du document">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="busy || {{ $officeAvailable ? 'false' : 'true' }}">Importer</button>
                         </form>
                         <p class="ukc-doc-choice__error" role="alert" x-show="error" x-text="error" x-cloak></p>
-                        <p class="ukc-doc-choice__hint">DOCX ou XLSX, 20 Mo maximum. @if ($officeAvailable) Les collaborateurs de la tâche peuvent modifier le fichier ensemble dans DocSpace. @else Configurez DocSpace pour créer ou importer un document de travail. @endif</p>
+                        <p class="ukc-doc-choice__hint">DOCX, XLSX, PPTX ou TXT, 20 Mo maximum. @if ($officeAvailable) Les collaborateurs de la tâche peuvent modifier le fichier ensemble dans DocSpace. @else Configurez DocSpace pour créer ou importer un document de travail. @endif</p>
                     </div>
                 </div>
 

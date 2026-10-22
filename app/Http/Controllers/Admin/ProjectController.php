@@ -71,7 +71,7 @@ class ProjectController extends Controller
             'event_id' => $event ? (string) $event->id : '',
             'tasksPayload' => $payload['tasks'],
             'milestonesPayload' => $payload['milestones'],
-            'team' => $event ? $this->assigneePool($event, $user) : collect(),
+            'team' => $event ? $this->assigneePool($event) : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
@@ -494,7 +494,7 @@ class ProjectController extends Controller
         ]);
 
         // Le responsable doit appartenir au vivier de l'événement (sinon on ignore).
-        $vivier = $event ? $this->assigneePool($event, $request->user()) : null;
+        $vivier = $event ? $this->assigneePool($event) : null;
 
         if (! empty($validated['assignee_id']) && $vivier
             && ! $vivier->contains('id', (int) $validated['assignee_id'])) {
@@ -826,27 +826,16 @@ class ProjectController extends Controller
     }
 
     /**
-     * Vivier des responsables et collaborateurs : les personnes explicitement
-     * affectées à l'équipe de cet événement, **plus l'administrateur connecté
-     * lui-même**.
-     *
-     * ⚠️⚠️ **Un accès global ne vaut pas affectation au projet** : dérouler
-     * tous les administrateurs de la plateforme désignerait des gens qui n'y
-     * travaillent pas. Mais c'est l'administrateur qui MONTE l'événement, et
-     * sans lui la liste s'ouvre **vide** tant qu'aucune équipe n'existe : il ne
-     * pourrait pas même se confier la première tâche. Il n'y entre donc que
-     * lui, jamais ses pairs. Les deux moitiés de la règle sont sabotées dans
-     * `ProjectTest`.
+     * Vivier des responsables et collaborateurs : seules les personnes
+     * explicitement affectées à l'équipe de cet événement. L'accès global
+     * d'un administrateur ne constitue pas une affectation au projet ; s'il
+     * souhaite participer, il doit aussi rejoindre l'équipe de l'événement.
      *
      * @return EloquentCollection<int, User>
      */
-    private function assigneePool(Event $event, ?User $viewer = null): EloquentCollection
+    private function assigneePool(Event $event): EloquentCollection
     {
         $ids = $event->team()->pluck('users.id');
-
-        if ($viewer && $viewer->isColloqueAdmin()) {
-            $ids = $ids->push($viewer->id)->unique();
-        }
 
         return User::query()->whereIn('id', $ids)->orderBy('name')->get();
     }

@@ -311,65 +311,13 @@ it('⚠️ cliquer la carte ALLUMÉE en ressort, en gardant le contexte', functi
     expect(refsDeLAdresse($this->staff, $carte['url']))->toHaveCount(6);
 });
 
-it('⚠️ « Déposées » et « En évaluation » restent atteignables sous « En revue »', function () {
-    // Prix du retrait de la liste déroulante : les deux statuts se fondent dans
-    // « En revue ». Les pastilles les rendent de nouveau joignables, et elles
-    // n'existent QUE là - une septième carte permanente ferait une rangée de
-    // plus pour un filtre qu'on ne regarde que depuis celle-là.
-    expect(pageFiltree($this->staff, $this->event, [])->viewData('sousStatuts'))->toBe([]);
+it('garde les anciens liens vers les statuts précis sans rétablir les sous-onglets', function () {
+    expect(refsFiltrees($this->staff, $this->event, ['status' => 'submitted']))->toBe(['E-VIERGE']);
+    expect(refsFiltrees($this->staff, $this->event, ['status' => 'under_review']))->toHaveCount(4);
 
-    $pastilles = collect(pageFiltree($this->staff, $this->event, [
-        'status' => Submission::STATUS_IN_REVIEW,
-    ])->viewData('sousStatuts'));
-
-    expect($pastilles->pluck('label')->all())->toBe(['Toutes', 'Déposées', 'En évaluation']);
-    expect($pastilles->firstWhere('valeur', 'submitted')['nombre'])->toBe(1);
-    expect($pastilles->firstWhere('valeur', 'under_review')['nombre'])->toBe(4);
-
-    foreach ($pastilles as $pastille) {
-        expect(refsDeLAdresse($this->staff, $pastille['url']))
-            ->toHaveCount($pastille['nombre'], $pastille['label'].' : le lien ne rend pas le chiffre annoncé');
-    }
-
-    // ⚠️ Raffiner « En revue » ne doit pas ÉTEINDRE la rangée : sans cela, on
-    // se retrouve dans un filtre que plus aucune carte n'annonce.
-    $reponse = pageFiltree($this->staff, $this->event, ['status' => 'submitted']);
-    expect(collect($reponse->viewData('kpis'))->where('active', true)->pluck('cle')->all())->toBe(['underReview']);
-    expect($reponse->viewData('sousStatuts'))->not->toBe([]);
-});
-
-it('⚠️ une pastille de subdivision OUVRE exactement ce qu’elle compte', function () {
-    // À l'inverse des cartes, elles se comptent SOUS les filtres courants :
-    // leurs liens emportent l'avancement des évaluations et le reste de la
-    // barre, donc comptées sur le périmètre entier elles annonceraient 5 là où
-    // elles en ouvrent 2 - le travers que la carte « En revue » a déjà payé.
-    foreach ([['reviews' => 'done'], ['reviews' => 'none'], ['track' => 'Sciences']] as $filtres) {
-        $pastilles = pageFiltree($this->staff, $this->event, [
-            'status' => Submission::STATUS_IN_REVIEW,
-        ] + $filtres)->viewData('sousStatuts');
-
-        foreach ($pastilles as $pastille) {
-            expect(refsDeLAdresse($this->staff, $pastille['url']))->toHaveCount(
-                $pastille['nombre'],
-                $pastille['label'].' sous '.json_encode($filtres).' : le lien ne rend pas le chiffre annoncé',
-            );
-        }
-    }
-
-    // Et le chiffre a bien BOUGÉ : sous « À décider », il ne reste que les deux
-    // communications dont tout est rendu.
-    $sous = collect(pageFiltree($this->staff, $this->event, [
-        'status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done',
-    ])->viewData('sousStatuts'));
-
-    expect($sous->firstWhere('valeur', Submission::STATUS_IN_REVIEW)['nombre'])->toBe(2);
-    expect($sous->firstWhere('valeur', 'submitted')['nombre'])->toBe(0);
-
-    // ⚠️ Le statut courant, lui, ne compte PAS : sinon « Déposées » tomberait à
-    // zéro dès qu'on regarde « En évaluation », et la pastille d'à côté
-    // deviendrait injoignable.
-    $sous = collect(pageFiltree($this->staff, $this->event, ['status' => 'under_review'])->viewData('sousStatuts'));
-    expect($sous->firstWhere('valeur', 'submitted')['nombre'])->toBe(1);
+    $page = pageFiltree($this->staff, $this->event, ['status' => 'submitted']);
+    expect(collect($page->viewData('kpis'))->where('active', true)->pluck('cle')->all())->toBe(['underReview']);
+    expect(array_key_exists('sousStatuts', $page->viewData()))->toBeFalse();
 });
 
 it('⚠️ « Réinitialiser » vit dans une RÉGION ÉCHANGÉE', function () {

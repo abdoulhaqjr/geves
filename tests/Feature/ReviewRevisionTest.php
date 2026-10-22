@@ -81,6 +81,54 @@ it('assigne un relecteur, passe en relecture et l’invite par e-mail', function
     Mail::assertQueued(ReviewerInvitationMail::class);
 });
 
+it('ajoute un modérateur comme évaluateur sans perdre sa fonction de modération', function () {
+    Mail::fake();
+    $staff = adminStaff();
+    $submission = seededSubmission('submitted');
+    $event = $submission->event;
+    $account = User::factory()->create([
+        'first_name' => 'Mariam', 'last_name' => 'Modératrice', 'email' => 'moderateur2@test.tg',
+    ]);
+    $moderator = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Mariam', 'last_name' => 'Modératrice',
+        'email' => $account->email, 'role' => 'moderator',
+    ]);
+
+    $this->actingAs($staff, 'web')->post(route('admin.evenements.reviewers.store', $event), [
+        'reviewerUserId' => $account->id,
+        'reviewerFirstName' => 'Mariam', 'reviewerLastName' => 'Modératrice',
+        'reviewerEmail' => $account->email, 'reviewerTracks' => ['Sciences'],
+    ])->assertSessionHasNoErrors();
+
+    $reviewer = $event->participants()->where('role', 'reviewer')->where('user_id', $account->id)->firstOrFail();
+    expect($moderator->fresh()->role)->toBe('moderator');
+    expect($reviewer->id)->not->toBe($moderator->id);
+    expect($reviewer->meta['review_tracks'])->toBe(['Sciences']);
+
+    $review = (new AssignReviewer)->handle($submission, 'Mariam Modératrice', $account->email);
+    expect($review->reviewer_id)->toBe($reviewer->id);
+    expect($event->participants()->where('role', 'reviewer')->where('user_id', $account->id)->count())->toBe(1);
+});
+
+it('attribue directement une évaluation à un modérateur sans changer son rôle', function () {
+    $submission = seededSubmission('submitted');
+    $account = User::factory()->create([
+        'first_name' => 'Mariam', 'last_name' => 'Modératrice', 'email' => 'moderateur2@test.tg',
+    ]);
+    $moderator = $submission->event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Mariam', 'last_name' => 'Modératrice',
+        'email' => $account->email, 'role' => 'moderator',
+    ]);
+
+    $review = (new AssignReviewer)->handle($submission, 'Mariam Modératrice', $account->email);
+
+    expect($moderator->fresh()->role)->toBe('moderator');
+    expect($review->reviewer->role)->toBe('reviewer');
+    expect($review->reviewer->id)->not->toBe($moderator->id);
+    expect($review->reviewer->user_id)->toBe($account->id);
+    $this->actingAs($account, 'account')->get(route('account.reviews'))->assertOk()->assertSee($submission->ref_code);
+});
+
 it('provisionne un compte relecteur (mot de passe à définir) à l’assignation', function () {
     $submission = seededSubmission('submitted');
 

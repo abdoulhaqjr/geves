@@ -1,8 +1,8 @@
 # Documents de travail dans ONLYOFFICE DocSpace
 
-Un document de tâche **est** un DOCX ou un XLSX chez DocSpace, et rien d'autre
+Un nouveau document de tâche est un DOCX, XLSX, PPTX ou TXT chez DocSpace
 (21/10/2026) : l'ancien éditeur texte Tiptap/Yjs et le pont ONLYOFFICE Docs
-auto-hébergé ont été retirés. Les DOCX et XLSX sont créés ou importés directement
+auto-hébergé ont été retirés. Ces fichiers sont créés ou importés directement
 dans DocSpace. GEVES conserve l'identifiant du fichier, le dossier de la tâche et le
 jeton du lien d'édition de chaque fichier (chiffré en base). Le SDK Embed ouvre le fichier
 dans la page du projet. Les personnes sans droit de rédaction dans GEVES peuvent
@@ -38,7 +38,9 @@ télécharger le fichier, mais ne reçoivent pas le jeton d'édition.
    appliquées sur la base locale ; elles restent à appliquer en production.
 
 Lorsqu'un document est créé, GEVES crée au besoin un dossier dans cette salle,
-un fichier DOCX/XLSX et un lien d'édition vérifié pour ce fichier. Les importations
+un fichier DOCX, XLSX, PPTX ou TXT et un lien d'édition vérifié pour ce fichier.
+La création d'un TXT utilise l'API texte de DocSpace avec une ligne vide initiale.
+Les importations
 jusqu'à 20 Mo sont acceptées ; au-delà de 10 Mo, elles utilisent l'API de transfert
 par morceaux. Un import est jugé sur son **contenu** et non sur son extension.
 Renommer un document dans GEVES renomme le fichier dans DocSpace ; supprimer un
@@ -47,7 +49,7 @@ document retire le fichier, et supprimer la tâche retire aussi son dossier.
 Les documents texte rédigés avant cette date avec l'ancien éditeur restent
 **consultables en lecture seule** sur leur page, versions comprises. Plus rien ne
 les écrit, et il n'existe plus de transfert automatique vers DocSpace : pour
-reprendre ce travail, on crée un DOCX ou un XLSX et on y recopie ce qui doit
+reprendre ce travail, on crée un nouveau fichier adapté et on y recopie ce qui doit
 continuer.
 
 ## Accès et limites

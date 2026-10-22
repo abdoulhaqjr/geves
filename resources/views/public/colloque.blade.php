@@ -676,7 +676,7 @@
             {{-- CTA final (fidèle au mockup : bloc bleu) --}}
             <div class="ukc-final-cta" id="inscription">
                 <h2>{{ __('Prêt à participer ?') }}</h2>
-                <p>{{ __('Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme auditeur. Tout se passe en ligne.') }}</p>
+                <p>{{ __('Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme participant simple. Tout se passe en ligne.') }}</p>
                 <div class="actions">
                     @if (auth('account')->check())
                         <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>

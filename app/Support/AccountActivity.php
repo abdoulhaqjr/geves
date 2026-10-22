@@ -140,7 +140,7 @@ class AccountActivity
         }
 
         if ($roles === [] && $this->hasAnyParticipation()) {
-            $roles[] = 'Auditeur';
+            $roles[] = 'Participant simple';
         }
 
         return $roles;

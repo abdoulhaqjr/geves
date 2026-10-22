@@ -92,6 +92,7 @@ function initTomSelects(root = document) {
         const plugins = [];
         if (isMulti || isInput) plugins.push('remove_button');
         if (isSingleFilter) plugins.push('clear_button');
+        if (el.hasAttribute('data-tom-dropdown-search')) plugins.push('dropdown_input');
 
         const ts = new TomSelect(el, {
             create: tags,
@@ -113,12 +114,52 @@ function initTomSelects(root = document) {
             // de filtres qui défile (overflow) découpait le menu déroulant, qui
             // s'ouvrait sans être visible.
             dropdownParent: 'body',
+            dropdownClass: el.hasAttribute('data-tom-dropdown-search') ? 'ts-dropdown ukc-track-dropdown' : 'ts-dropdown',
+            render: el.hasAttribute('data-tom-dropdown-search') ? {
+                item: (data, escape) => `<div title="${escape(data.text)}">${escape(data.text)}</div>`,
+            } : undefined,
             onChange() {
                 if (autoSubmit && ready && el.form) {
                     el.form.submit();
                 }
             },
         });
+        if (el.hasAttribute('data-tom-dropdown-search')) {
+            ts.control_input.placeholder = 'Rechercher un axe…';
+            ts.dropdown.style.position = 'fixed';
+            const optionStyle = getComputedStyle(ts.dropdown_content.querySelector('.option') || ts.dropdown_content);
+            const textMeasure = document.createElement('canvas').getContext('2d');
+            if (textMeasure) textMeasure.font = optionStyle.font;
+            const optionWidth = textMeasure
+                ? Math.ceil(Math.max(0, ...Array.from(el.options, (option) => textMeasure.measureText(option.textContent.trim()).width))) + 48
+                : 640;
+
+            // La barre de filtres défile horizontalement. Avec le menu ajouté
+            // au <body>, les coordonnées de Tom Select peuvent se décaler :
+            // on l'ancre au contrôle dans le repère visible de la fenêtre.
+            ts.positionDropdown = () => {
+                if (!ts.isOpen) return;
+                const rect = ts.control.getBoundingClientRect();
+                const gap = 6;
+                const width = Math.min(Math.max(rect.width, optionWidth), window.innerWidth - 16);
+                const below = window.innerHeight - rect.bottom - gap - 8;
+                const above = rect.top - gap - 8;
+                const openAbove = below < Math.min(ts.dropdown.offsetHeight, 260) && above > below;
+                const available = openAbove ? above : below;
+
+                ts.dropdown_content.style.maxHeight = `${Math.max(100, Math.min(260, available - 54))}px`;
+                const height = ts.dropdown.offsetHeight;
+                const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+                const top = openAbove ? Math.max(8, rect.top - height - gap) : rect.bottom + gap;
+
+                Object.assign(ts.dropdown.style, {
+                    top: `${top}px`, left: `${left}px`, width: `${width}px`, margin: '0',
+                });
+            };
+            ts.on('dropdown_open', () => window.requestAnimationFrame(() => ts.positionDropdown()));
+            document.addEventListener('scroll', () => ts.positionDropdown(), true);
+            window.addEventListener('resize', () => ts.positionDropdown());
+        }
         seed.forEach((v) => { ts.addOption({ value: v, text: v }); ts.addItem(v, true); });
         if (isInput && separator === 'both') {
             ts.control_input.addEventListener('keydown', (event) => {
@@ -561,9 +602,10 @@ const UKC_FILTRE_DELAI = 350;
 function ukcFiltreUrl(form) {
     const url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
     const params = new URLSearchParams();
+    const preserveEmpty = new Set((form.dataset.filterPreserveEmpty || '').split(/\s+/).filter(Boolean));
     new FormData(form).forEach((valeur, cle) => {
         const v = typeof valeur === 'string' ? valeur.trim() : '';
-        if (v !== '') params.append(cle, v);
+        if (v !== '' || preserveEmpty.has(cle)) params.append(cle, v);
     });
     url.search = params.toString();
 

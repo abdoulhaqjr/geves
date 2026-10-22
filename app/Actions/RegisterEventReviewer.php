@@ -22,21 +22,21 @@ class RegisterEventReviewer
         }
 
         $matches = Participant::where('event_id', $event->id)
-            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where(function ($query) use ($email, $account) {
+                $query->whereRaw('LOWER(email) = ?', [$email]);
+                if ($account) {
+                    $query->orWhere('user_id', $account->id);
+                }
+            })
             ->get();
-        $participant = $matches->firstWhere('role', 'reviewer')
-            ?? $matches->first()
-            ?? ($account ? Participant::where('event_id', $event->id)->where('user_id', $account->id)->first() : null);
-
-        if ($participant?->role === 'reviewer') {
+        if ($matches->contains('role', 'reviewer')) {
             throw ValidationException::withMessages(['reviewerEmail' => 'Cet évaluateur est déjà enregistré pour cet événement.']);
         }
 
-        if ($participant && in_array($participant->role, UpsertParticipantForAccount::STRONG_ROLES, true)) {
-            throw ValidationException::withMessages(['reviewerEmail' => 'Cette personne possède déjà un autre rôle de gestion sur cet événement.']);
-        }
-
-        $participant ??= new Participant(['event_id' => $event->id, 'email' => $email]);
+        // Une personne peut aussi modérer une séance ou appartenir au comité.
+        // Ces rôles restent sur leur fiche ; l'évaluation reçoit sa propre fiche.
+        $participant = $matches->first(fn (Participant $match) => ! in_array($match->role, UpsertParticipantForAccount::STRONG_ROLES, true))
+            ?? new Participant(['event_id' => $event->id, 'email' => $email]);
 
         $participant->first_name = trim($firstName);
         $participant->last_name = trim($lastName);

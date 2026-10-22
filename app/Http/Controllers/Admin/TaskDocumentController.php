@@ -22,8 +22,8 @@ use Throwable;
 /**
  * Documents de travail d'une tâche de projet, rédigés À PLUSIEURS.
  *
- * ⚠️⚠️ **UN DOCUMENT DE TÂCHE EST UN FICHIER DOCX OU XLSX, ET RIEN D'AUTRE**
- * (21/10/2026). Il vit chez ONLYOFFICE DocSpace, où se tiennent aussi la
+ * Un nouveau document de tâche est un fichier DOCX, XLSX, PPTX ou TXT.
+ * Il vit chez ONLYOFFICE DocSpace, où se tiennent aussi la
  * coédition et l'historique ; GEVES ne conserve que son identifiant, son titre
  * et le jeton de son lien d'édition. Le serveur ne voit donc jamais passer une
  * frappe : il autorise l'accès, et il nomme le fichier.
@@ -47,19 +47,19 @@ class TaskDocumentController extends Controller
 
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:200'],
-            'format' => ['nullable', 'in:docx,xlsx'],
-            'file' => ['nullable', 'file', 'mimes:docx,xlsx', 'max:20480'],
+            'format' => ['nullable', 'in:'.implode(',', ProjectTaskDocument::FORMATS)],
+            'file' => ['nullable', 'file', 'mimes:docx,xlsx,pptx,txt', 'max:20480'],
         ]);
 
         abort_if($task->documents()->count() >= self::MAX_PAR_TACHE, 422);
 
         $file = $request->file('file');
         $format = $file ? strtolower($file->getClientOriginalExtension()) : ($data['format'] ?? null);
-        if (! in_array($format, ['docx', 'xlsx'], true)) {
-            throw ValidationException::withMessages(['file' => 'Choisissez Word ou Excel, ou importez un fichier DOCX ou XLSX.']);
+        if (! in_array($format, ProjectTaskDocument::FORMATS, true)) {
+            throw ValidationException::withMessages(['file' => 'Choisissez un format DOCX, XLSX, PPTX ou TXT.']);
         }
         if ($file && ! $docspace->validFile($file->getRealPath(), $format)) {
-            throw ValidationException::withMessages(['file' => 'Ce fichier Word ou Excel est invalide.']);
+            throw ValidationException::withMessages(['file' => 'Le contenu du fichier ne correspond pas à son format ou est invalide.']);
         }
 
         $title = trim((string) ($data['title'] ?? ''));
@@ -285,9 +285,12 @@ class TaskDocumentController extends Controller
         abort_unless($docspace->configured(), 503, 'DocSpace est indisponible.');
 
         return response($docspace->downloadFile((string) $document->docspace_file_id), 200, [
-            'Content-Type' => $document->format === 'xlsx'
-                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Type' => match ($document->format) {
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'txt' => 'text/plain; charset=utf-8',
+                default => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            },
             'Content-Disposition' => 'attachment; filename="'.$this->downloadName($document).'"',
             'Cache-Control' => 'private, no-store',
         ]);

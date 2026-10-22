@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Participant : présence d'une personne sur un événement (auteur, auditeur,
+ * Participant : présence d'une personne sur un événement (auteur, participant simple,
  * évaluateur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *
@@ -29,6 +29,9 @@ class Participant extends Model
 {
     use HasFactory;
 
+    /** Rôles affichés dans le registre des participants de l'événement. */
+    public const PARTICIPATION_ROLES = ['author', 'coauthor', 'attendee'];
+
     protected $guarded = ['id'];
 
     /** Libellés des rôles. */
@@ -39,7 +42,7 @@ class Participant extends Model
         'committee' => 'Comité scientifique',
         'moderator' => 'Modérateur',
         'rapporteur' => 'Rapporteur',
-        'attendee' => 'Auditeur',
+        'attendee' => 'Participant simple',
     ];
 
     protected function casts(): array

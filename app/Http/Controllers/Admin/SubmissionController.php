@@ -90,17 +90,12 @@ class SubmissionController extends Controller
      * @param  Builder<Submission>  $query
      * @return Builder<Submission>
      */
-    private function filtre(Request $request, Builder $query, bool $avecStatut = true): Builder
+    private function filtre(Request $request, Builder $query): Builder
     {
         $search = trim((string) $request->query('search', ''));
-        // ⚠️ `avecStatut: false` sert aux pastilles de subdivision : elles
-        // comptent ce que CHAQUE statut rendrait sous les autres filtres, donc
-        // le statut courant ne doit pas s'appliquer - sinon « Déposées »
-        // annoncerait zéro dès qu'on regarde « En évaluation ».
-        $status = $avecStatut ? (string) $request->query('status', '') : '';
+        $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
         $presentationMode = (string) $request->query('presentation_mode', '');
-        $participationMode = (string) $request->query('participation_mode', '');
         $track = (string) $request->query('track', '');
         $reviews = $this->etatDesEvaluations($request);
 
@@ -113,7 +108,6 @@ class SubmissionController extends Controller
             ->when($reviews !== '', fn ($q) => $q->reviewsState($reviews))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
             ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
-            ->when(in_array($participationMode, ['online', 'onsite'], true), fn ($q) => $q->whereHas('participant', fn ($p) => $p->where('participation_mode', $participationMode)))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($request->boolean('unlinked'), fn ($q) => $q->whereHas('authorLinks', self::liensNonRattaches()))
             ->when($search !== '', function ($q) use ($search) {
@@ -121,6 +115,8 @@ class SubmissionController extends Controller
                 $q->where(fn ($sub) => $sub
                     ->where('submissions.title', 'like', $term)
                     ->orWhere('submissions.ref_code', 'like', $term)
+                    // Les co-auteurs, même sans compte lié, sont conservés dans ce JSON.
+                    ->orWhere('submissions.authors', 'like', $term)
                     ->orWhereHas('participant', fn ($p) => $p
                         ->where('first_name', 'like', $term)
                         ->orWhere('last_name', 'like', $term)
@@ -147,7 +143,6 @@ class SubmissionController extends Controller
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
         $presentationMode = (string) $request->query('presentation_mode', '');
-        $participationMode = (string) $request->query('participation_mode', '');
         $track = (string) $request->query('track', '');
         $unlinked = $request->boolean('unlinked');
         $reviews = $this->etatDesEvaluations($request);
@@ -226,7 +221,6 @@ class SubmissionController extends Controller
             'search' => $search,
             'type' => $type,
             'presentation_mode' => $presentationMode,
-            'participation_mode' => $participationMode,
             'track' => $track,
             'unlinked' => $unlinked ? 1 : null,
         ], fn ($v) => $v !== null && $v !== '');
@@ -265,7 +259,6 @@ class SubmissionController extends Controller
             'event_id' => $editionId,
             'type' => $type,
             'presentationMode' => $presentationMode,
-            'participationMode' => $participationMode,
             'track' => $track,
             'unlinked' => $unlinked,
             'events' => $accessible,
@@ -277,7 +270,6 @@ class SubmissionController extends Controller
                 ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
                 ->whereNotNull('track')->where('track', '!=', '')->distinct()->orderBy('track')->pluck('track'),
             'kpis' => $this->indicateurs($editionId, $status, $reviews, $contexte, $chiffres),
-            'sousStatuts' => $this->sousStatuts($request, $perimetre(), $editionId, $status, $reviews, $contexte),
             'exportUrl' => $exportUrl,
             'resetUrl' => route('admin.submissions.index', ['event_id' => $editionId]),
             'filtreActif' => $status !== '' || $reviews !== '' || $contexte !== [],
@@ -312,10 +304,8 @@ class SubmissionController extends Controller
                 'filtre' => ['status' => Submission::STATUS_IN_REVIEW, 'reviews' => 'done']],
             ['cle' => 'underReview', 'label' => 'En revue', 'icone' => 'clock', 'teinte' => 'slate', 'val' => '',
                 'filtre' => ['status' => Submission::STATUS_IN_REVIEW],
-                // ⚠️ Une carte reste allumée sur ses SUBDIVISIONS : raffiner
-                // « En revue » en « Déposées » ne doit pas éteindre la rangée,
-                // sinon on se retrouve dans un filtre que plus aucune carte
-                // n'annonce - et sans repère pour en sortir.
+                // Les anciennes URL de statut précis restent rattachées à
+                // cette carte, même si les onglets de subdivision ont disparu.
                 'allume' => [Submission::STATUS_IN_REVIEW, ...Submission::IN_REVIEW_STATUSES]],
             ['cle' => 'accepted', 'label' => 'Acceptées', 'icone' => 'check-circle', 'teinte' => 'green', 'val' => 'green',
                 'filtre' => ['status' => 'accepted']],
@@ -346,54 +336,12 @@ class SubmissionController extends Controller
         }, $cartes);
     }
 
-    /**
-     * Les subdivisions de « En revue », affichées SEULEMENT quand on y est.
-     *
-     * ⚠️⚠️ **CE QUE LES CARTES NE SAVENT PAS DIRE.** « En revue » additionne
-     * deux statuts - **déposée** (personne ne l'a encore envoyée en évaluation)
-     * et **en évaluation** - et c'est précisément la distinction que le retrait
-     * de la liste déroulante avait coûtée (mesuré sur le colloque de l'eau :
-     * 19 contre 27). Elle revient ici, **en contexte** : trois pastilles sous la
-     * rangée, visibles uniquement dans cette branche. Une seconde liste
-     * déroulante permanente aurait fait deux commandes pour un même filtre.
-     *
-     * ⚠️⚠️ **MAIS ELLES SE COMPTENT SOUS LES FILTRES COURANTS, À L'INVERSE DES
-     * CARTES.** Une carte est un repère de navigation sur tout l'événement ; une
-     * pastille SUBDIVISE la sélection affichée, et son lien emporte
-     * l'avancement des évaluations comme le reste de la barre. Comptée sur le
-     * périmètre entier, « Toutes » annoncerait 46 là où son lien en ouvre 6 -
-     * exactement le travers que la carte « En revue » a déjà payé. Le statut
-     * courant, lui, est écarté du comptage (`avecStatut: false`) : sinon
-     * « Déposées » tomberait à zéro dès qu'on regarde « En évaluation ».
-     *
-     * ⚠️ La requête n'a lieu que si la rangée s'affiche : un comptage de plus à
-     * chaque chargement, pour trois pastilles qui n'existent que dans cette
-     * branche, serait du gaspillage pur.
-     *
-     * @param  array<string, scalar>  $contexte
-     * @return list<array<string, mixed>>
-     */
-    private function sousStatuts(Request $request, Builder $perimetre, string $editionId, string $status, string $reviews, array $contexte): array
+    /** Empêche qu'un texte fourni par un auteur soit exécuté comme formule dans un tableur. */
+    private static function csvCell(mixed $value): string
     {
-        if (! in_array($status, [Submission::STATUS_IN_REVIEW, ...Submission::IN_REVIEW_STATUSES], true)) {
-            return [];
-        }
+        $text = (string) ($value ?? '');
 
-        $counts = $this->filtre($request, $perimetre, avecStatut: false)
-            ->selectRaw('submissions.status as status, count(*) as c')
-            ->groupBy('submissions.status')->pluck('c', 'status');
-        $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
-
-        $cadre = array_filter(['reviews' => $reviews]) + $contexte;
-
-        return array_map(fn (array $p): array => $p + [
-            'url' => route('admin.submissions.index', ['event_id' => $editionId, 'status' => $p['valeur']] + $cadre),
-            'active' => $status === $p['valeur'],
-        ], [
-            ['valeur' => Submission::STATUS_IN_REVIEW, 'label' => 'Toutes', 'nombre' => $c('submitted') + $c('under_review')],
-            ['valeur' => 'submitted', 'label' => 'Déposées', 'nombre' => $c('submitted')],
-            ['valeur' => 'under_review', 'label' => 'En évaluation', 'nombre' => $c('under_review')],
-        ]);
+        return preg_match('/^(?:\s*[=+\-@]|[\t\r])/u', $text) ? "'".$text : $text;
     }
 
     /** Export CSV des soumissions filtrées (mêmes filtres que la liste). */
@@ -417,9 +365,9 @@ class SubmissionController extends Controller
         return response()->streamDownload(function () use ($rows, $statuses) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF"); // BOM UTF-8 pour Excel
-            fputcsv($out, ['Référence', 'Titre', 'Auteur correspondant', 'Type de communication', 'Mode de présentation', 'Participation au colloque', 'Axe', 'Statut', 'Déposée le', 'Événement']);
+            fputcsv($out, ['Référence', 'Titre', 'Déposant', 'Type de communication', 'Mode de présentation', 'Participation au colloque', 'Axe', 'Statut', 'Déposée le', 'Événement']);
             foreach ($rows as $s) {
-                fputcsv($out, [
+                fputcsv($out, array_map(self::csvCell(...), [
                     $s->ref_code,
                     $s->title,
                     $s->participant?->full_name ?? $s->correspondingAuthorName(),
@@ -430,7 +378,7 @@ class SubmissionController extends Controller
                     $statuses[$s->status] ?? $s->status,
                     $s->created_at?->format('d/m/Y H:i'),
                     $s->event?->title ?: $s->event?->year,
-                ]);
+                ]));
             }
             fclose($out);
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

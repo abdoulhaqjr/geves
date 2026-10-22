@@ -9,11 +9,13 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\AccountActivity;
+use App\Support\EventParticipantRoster;
 use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\Trend;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -27,7 +29,7 @@ class ParticipantController extends Controller
 {
     use Concerns\ScopesEditionAccess;
 
-    public function index(Request $request): View
+    public function index(Request $request, EventParticipantRoster $roster): View
     {
         $events = $this->accessibleEditions($request, 'participants');
         $editionId = (string) $request->query('event_id', '');
@@ -39,30 +41,30 @@ class ParticipantController extends Controller
         $paid = (string) $request->query('paid', '');
         $invited = (string) $request->query('invited', '');
 
-        $base = Participant::query()->where('event_id', $editionId);
+        $all = $roster->forEvent($editionId);
         $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
+        $filtered = $all
+            ->filter(fn (array $person) => $role === '' || ($role === 'communicant'
+                ? $person['role'] !== 'attendee' : $person['role'] === $role))
+            ->filter(fn (array $person) => $paid === '' || $person['paid'] === ($paid === '1'))
+            ->filter(fn (array $person) => $invited === '' || $person['invited'] === ($invited === '1'))
+            ->filter(fn (array $person) => $search === '' || str_contains(
+                mb_strtolower($person['name'].' '.$person['email']), mb_strtolower($search)
+            ));
+        $filtered = $filtered->sort(function (array $a, array $b) use ($sort) {
+            $comparison = match ($sort['sort']) {
+                'role' => strcmp($a['role'], $b['role']),
+                'created_at' => $a['createdAt'] <=> $b['createdAt'],
+                default => strcasecmp($a['name'], $b['name']),
+            };
 
-        $participants = (clone $base)
-            ->with('participationPayments')
-            ->when($role !== '', fn ($q) => $q->where('role', $role))
-            // ⚠️ Paiement = frais de PARTICIPATION (une formation réglée ne compte pas).
-            ->when($paid === '1', fn ($q) => $q->whereHas('participationPayments', fn ($pa) => $pa->where('status', 'paid')))
-            ->when($paid === '0', fn ($q) => $q->whereDoesntHave('participationPayments', fn ($pa) => $pa->where('status', 'paid')))
-            // « Invité » est un horodatage dans meta (Participant::isInvited).
-            ->when($invited === '1', fn ($q) => $q->where('meta', 'like', '%"invited_at"%'))
-            ->when($invited === '0', fn ($q) => $q->where(fn ($w) => $w->whereNull('meta')->orWhere('meta', 'not like', '%"invited_at"%')))
-            ->when($search !== '', function ($q) use ($search) {
-                $term = "%{$search}%";
-                $q->where(fn ($p) => $p->where('first_name', 'like', $term)
-                    ->orWhere('last_name', 'like', $term)
-                    ->orWhere('email', 'like', $term));
-            })
-            ->orderBy($sort['sort'], $sort['dir'])
-            ->orderBy('id', 'desc')
-            ->paginate(20)
-            ->withQueryString();
-
-        $paidCount = (clone $base)->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->count();
+            return ($sort['dir'] === 'desc' ? -1 : 1) * ($comparison ?: ($b['participant']->id <=> $a['participant']->id));
+        })->values();
+        $page = max(1, LengthAwarePaginator::resolveCurrentPage());
+        $participants = new LengthAwarePaginator(
+            $filtered->forPage($page, 20)->values(), $filtered->count(), 20, $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         // Rôles d'organisation cumulés par personne sur CE colloque (event_user),
         // pour montrer qu'un participant peut aussi porter une fonction d'équipe.
@@ -75,8 +77,8 @@ class ParticipantController extends Controller
 
         // Tendance des inscriptions : 7 derniers jours vs les 7 précédents.
         $trendTotal = Trend::of(
-            (int) (clone $base)->whereBetween('created_at', [now()->subDays(7), now()])->count(),
-            (int) (clone $base)->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
+            $all->filter(fn (array $p) => $p['createdAt']?->between(now()->subDays(7), now()))->count(),
+            $all->filter(fn (array $p) => $p['createdAt']?->between(now()->subDays(14), now()->subDays(7)))->count(),
         );
 
         return view('admin.participants.index', [
@@ -88,15 +90,20 @@ class ParticipantController extends Controller
             'paid' => $paid,
             'invited' => $invited,
             'participants' => $participants,
-            'roles' => Participant::ROLES,
+            'roles' => [
+                'communicant' => 'Communicants',
+                'author' => 'Auteurs correspondants',
+                'coauthor' => 'Co-auteurs uniquement',
+                'attendee' => 'Participants simples',
+            ],
             'event_id' => $editionId,
             'role' => $role,
             'search' => $search,
             'stats' => [
-                'total' => (clone $base)->count(),
-                'paid' => $paidCount,
-                'checkedIn' => (clone $base)->whereNotNull('checked_in_at')->count(),
-                'authors' => (clone $base)->where('role', 'author')->count(),
+                'total' => $all->count(),
+                'paid' => $all->where('paid', true)->count(),
+                'checkedIn' => $all->where('checkedIn', true)->count(),
+                'authors' => $all->whereIn('role', ['author', 'coauthor'])->count(),
             ],
         ]);
     }
@@ -116,8 +123,11 @@ class ParticipantController extends Controller
         ]);
     }
 
-    public function invite(Participant $participant): RedirectResponse
+    public function invite(Participant $participant, EventParticipantRoster $roster): RedirectResponse
     {
+        abort_unless($roster->forEvent((string) $participant->event_id)
+            ->contains(fn (array $person) => $person['participant']->id === $participant->id), 404);
+
         if (blank($participant->email)) {
             return back()->with('ukc_error', 'Ce participant n’a pas d’adresse e-mail.');
         }
@@ -128,20 +138,18 @@ class ParticipantController extends Controller
     }
 
     /** Invite les participants ayant payé mais pas encore invités. */
-    public function inviteBulk(Request $request): RedirectResponse
+    public function inviteBulk(Request $request, EventParticipantRoster $roster): RedirectResponse
     {
         $editionId = (string) $request->input('event_id', '');
         if ($editionId === '') {
             return back();
         }
 
-        $participants = Participant::where('event_id', $editionId)
-            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
-            ->get()
-            ->filter(fn ($p) => ! $p->isInvited() && filled($p->email));
+        $participants = $roster->forEvent($editionId)
+            ->filter(fn (array $p) => $p['paid'] && ! $p['invited'] && filled($p['email']));
 
-        foreach ($participants as $participant) {
-            $this->sendInvitation($participant);
+        foreach ($participants as $person) {
+            $this->sendInvitation($person['participant']);
         }
 
         return back()->with('ukc_status', $participants->count().' invitation(s) envoyée(s).');

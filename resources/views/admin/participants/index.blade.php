@@ -29,7 +29,7 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val blue">{{ $stats['total'] }}</div><x-ukc.trend :trend="$trendTotal" period="7 j" /></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Ont payé</div><div class="val green">{{ $stats['paid'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Pointés (accueil)</div><div class="val">{{ $stats['checkedIn'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Auteurs</div><div class="val">{{ $stats['authors'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Communicants</div><div class="val">{{ $stats['authors'] }}</div></div>
         </div>
 
         {{-- Filtres (GET) - une seule ligne ; l'événement est reportée en champ caché
@@ -73,27 +73,30 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($participants as $p)
-                                @php($paid = $p->participationPayments->where('status', 'paid')->isNotEmpty())
+                            @foreach ($participants as $person)
+                                @php($p = $person['participant'])
                                 <tr>
                                     <td>
-                                        <div class="title">{{ $p->full_name }}</div>
-                                        <div class="meta">{{ $p->email }}</div>
+                                        <div class="title">{{ $person['name'] }}</div>
+                                        <div class="meta">{{ $person['email'] }}</div>
                                     </td>
                                     <td>
                                         <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                            <span class="ukc-pill ukc-pill--info">{{ $p->roleLabel() }}</span>
-                                            @foreach (($p->user_id ? ($editionRoles[$p->user_id] ?? []) : []) as $r)
+                                            <span class="ukc-pill ukc-pill--info">{{ $person['role'] === 'attendee' ? 'Participant simple' : 'Communicant' }}</span>
+                                            @if ($person['role'] !== 'attendee')
+                                                <span class="ukc-pill ukc-pill--muted">{{ $person['role'] === 'author' ? 'Auteur correspondant' : 'Co-auteur uniquement' }}</span>
+                                            @endif
+                                            @foreach (($person['userId'] ? ($editionRoles[$person['userId']] ?? []) : []) as $r)
                                                 <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r) }}">{{ \App\Support\StaffRoles::label($r) }}</span>
                                             @endforeach
                                         </div>
                                     </td>
                                     <td>
-                                        @if ($paid)<span class="ukc-pill ukc-pill--ok">Réglé</span>
+                                        @if ($person['paid'])<span class="ukc-pill ukc-pill--ok">Réglé</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
                                     </td>
                                     <td>
-                                        @if ($p->isInvited())<span class="ukc-pill ukc-pill--ok">Oui</span>
+                                        @if ($person['invited'])<span class="ukc-pill ukc-pill--ok">Oui</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
                                     </td>
                                     <td style="text-align:right;white-space:nowrap;">
@@ -105,8 +108,8 @@
                                             <form method="POST" action="{{ route('admin.participants.invite', $p) }}"
                                                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitation envoyée.">
                                                 @csrf
-                                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" @disabled(blank($p->email))>
-                                                    <x-ukc.icon name="mail" :size="14" /> {{ $p->isInvited() ? 'Relancer' : 'Inviter' }}
+                                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" @disabled(blank($person['email']))>
+                                                    <x-ukc.icon name="mail" :size="14" /> {{ $person['invited'] ? 'Relancer' : 'Inviter' }}
                                                 </button>
                                             </form>
                                         </div>

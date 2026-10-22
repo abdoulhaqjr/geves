@@ -24,34 +24,38 @@ class AssignReviewer
      */
     public function handle(Submission $submission, string $name, string $email, ?string $reason = null): Review
     {
-        $reviewer = Participant::firstOrNew([
-            'event_id' => $submission->event_id,
-            'email' => mb_strtolower(trim($email)),
-        ]);
+        $normalized = mb_strtolower(trim($email));
+        $account = User::whereRaw('LOWER(email) = ?', [$normalized])->first();
+        $matches = Participant::where('event_id', $submission->event_id)
+            ->where(function ($query) use ($normalized, $account) {
+                $query->whereRaw('LOWER(email) = ?', [$normalized]);
+                if ($account) {
+                    $query->orWhere('user_id', $account->id);
+                }
+            })->get();
+        $reviewer = $matches->firstWhere('role', 'reviewer')
+            ?? $matches->first(fn (Participant $match) => ! in_array($match->role, UpsertParticipantForAccount::STRONG_ROLES, true))
+            ?? new Participant(['event_id' => $submission->event_id, 'email' => $normalized]);
 
         if (! $reviewer->exists) {
             [$first, $last] = $this->splitName($name);
             $reviewer->first_name = $first;
             $reviewer->last_name = $last;
             $reviewer->access_token = Str::random(64);
-            $reviewer->role = 'reviewer';
         } else {
-            // Garantit un jeton et n'écrase pas un rôle fort par « reviewer ».
+            // Garantit un jeton sur une fiche évaluateur existante ou réutilisable.
             if (blank($reviewer->access_token)) {
                 $reviewer->access_token = Str::random(64);
             }
-            if (! in_array($reviewer->role, UpsertParticipantForAccount::STRONG_ROLES, true)) {
-                $reviewer->role = 'reviewer';
-            }
         }
+        $reviewer->role = 'reviewer';
+        $reviewer->email = $normalized;
 
         // Relie l'inscription à un compte (identité unifiée) : l’évaluation se
         // fait depuis « Mes évaluations » connecté. Provisionne un compte si le
         // évaluateur n'en a pas encore (il définira son mot de passe via l'e-mail).
         if (blank($reviewer->user_id)) {
-            $normalized = mb_strtolower(trim($email));
-            $account = User::whereRaw('LOWER(email) = ?', [$normalized])->first()
-                ?? $this->provisionAccount($normalized, $name);
+            $account ??= $this->provisionAccount($normalized, $name);
             $reviewer->user_id = $account->id;
         }
 

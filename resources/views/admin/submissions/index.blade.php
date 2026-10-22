@@ -55,31 +55,14 @@
                 @endforeach
             </div>
 
-            {{-- ⚠️ « Déposée » et « En évaluation » redeviennent ATTEIGNABLES.
-                 « En revue » additionne les deux (mesuré sur le colloque de
-                 l'eau : 19 contre 27) et le retrait de la liste déroulante les
-                 avait fondues. Elles reviennent ici **en contexte** : les trois
-                 pastilles n'existent que sous « En revue », là où la
-                 subdivision veut dire quelque chose - une septième carte
-                 permanente ferait une rangée de plus pour deux statuts qu'on ne
-                 regarde que depuis celle-là. --}}
-            @if ($sousStatuts !== [])
-                <div class="ukc-nav-docs" style="margin:-6px 0 18px;" aria-label="Préciser « En revue »">
-                    @foreach ($sousStatuts as $p)
-                        <a href="{{ $p['url'] }}" class="{{ $p['active'] ? 'active' : '' }}" @if ($p['active']) aria-current="true" @endif>
-                            {{ $p['label'] }}<span class="nav-count">{{ $p['nombre'] }}</span>
-                        </a>
-                    @endforeach
-                </div>
-            @endif
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
-        {{-- Filtres sur une seule ligne ; l'événement est reportée en champ caché pour
-             qu'un filtre ne réélargisse pas le périmètre. --}}
+        {{-- Les filtres restent sur une ligne quand l'espace le permet et se replient
+             sinon ; l'événement reste en champ caché pour préserver le périmètre. --}}
         {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
              s'applique à la frappe, sans valider ni recharger la page. --}}
-        <form method="GET" class="filter-bar filter-bar--inline" data-filter="submissions">
+        <form method="GET" class="filter-bar filter-bar--inline" data-filter="submissions" data-filter-preserve-empty="event_id">
             <input type="hidden" name="event_id" value="{{ $event_id }}">
             {{-- ⚠️⚠️ LE STATUT SE CHOISIT SUR LES CARTES, PAS DANS UNE LISTE
                  DÉROULANTE : les six indicateurs du haut le disent déjà, en
@@ -88,6 +71,10 @@
                  sans lui, taper une recherche ou changer d'axe REPERDRAIT le
                  statut qu'on vient de choisir sur une carte. --}}
             <input type="hidden" name="status" value="{{ $status }}">
+            @if (request()->filled('sort'))
+                <input type="hidden" name="sort" value="{{ $sort }}">
+                <input type="hidden" name="dir" value="{{ $dir }}">
+            @endif
             <select name="reviews" aria-label="Filtrer par avancement des évaluations">
                 <option value="">Toutes les évaluations</option>
                 @foreach ($reviewStates as $key => $label)<option value="{{ $key }}" @selected($reviews === $key)>{{ $label }}</option>@endforeach
@@ -102,17 +89,12 @@
                 <option value="online" @selected($presentationMode === 'online')>En ligne</option>
                 <option value="onsite" @selected($presentationMode === 'onsite')>En présentiel</option>
             </select>
-            <select name="participation_mode" aria-label="Filtrer par participation au colloque">
-                <option value="">Toutes les participations</option>
-                <option value="online" @selected($participationMode === 'online')>En ligne</option>
-                <option value="onsite" @selected($participationMode === 'onsite')>En présentiel</option>
-            </select>
-            {{-- Liste recherchable (Tom Select) : le libellé de l’option vide sert
-                 de placeholder, ne pas ajouter data-placeholder. --}}
-            <select name="track" data-tom title="Axe thématique">
-                <option value="">Tous les axes</option>
-                @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
-            </select>
+            <div class="ukc-submissions-track">
+                <select name="track" data-tom data-tom-dropdown-search aria-label="Filtrer par axe thématique">
+                    <option value="">Tous les axes</option>
+                    @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
+                </select>
+            </div>
             <input type="search" name="search" value="{{ $search }}" placeholder="Titre, auteur, réf.…" style="min-width:200px;">
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
@@ -135,6 +117,10 @@
             </span>
         </form>
 
+        <div class="ukc-submissions-result-count" data-filter-part="submissions-count">
+            <strong>{{ $submissions->total() }}</strong> {{ $submissions->total() === 1 ? 'soumission' : 'soumissions' }}{{ $filtreActif ? ($submissions->total() === 1 ? ' correspond aux filtres.' : ' correspondent aux filtres.') : ' dans la liste.' }}
+        </div>
+
         <div class="ukc-card" style="padding:0;" data-filter-part="submissions-table">
             <div class="ukc-table-wrap">
                 <table class="ukc-table">
@@ -142,9 +128,8 @@
                         <tr>
                             <x-ukc.th sort="ref_code" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
                             <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
-                            <x-ukc.th sort="author" :current="$sort" :dir="$dir">Auteur(s)</x-ukc.th>
+                            <x-ukc.th sort="author" :current="$sort" :dir="$dir">Déposant</x-ukc.th>
                             <th>Présentation</th>
-                            <th>Au colloque</th>
                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
                             <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>
                             <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
@@ -176,7 +161,6 @@
                                         <span style="color:var(--ukc-light);">-</span>
                                     @endif
                                 </td>
-                                <td>{{ $s->participant?->participationModeLabel() ?? '-' }}</td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
@@ -199,6 +183,7 @@
                                         $pvData = [
                                             'ref' => $s->ref_code,
                                             'author' => $s->participant?->full_name ?? ($s->correspondingAuthorName() ?: '-'),
+                                            'correspondingAuthor' => $s->correspondingAuthorName() ?: '-',
                                             'type' => $s->type === 'poster' ? 'Poster' : 'Orale',
                                             'presentationMode' => $s->presentationModeLabel() ?? '-',
                                             'participationMode' => $s->participant?->participationModeLabel() ?? '-',
@@ -221,7 +206,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
+                            <tr><td colspan="9" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -235,7 +220,8 @@
             <x-slot:header><span x-text="pv?.ref"></span> - Aperçu</x-slot:header>
             <div class="detail-grid">
                 <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
-                <div class="k">Auteur principal</div><div class="v" x-text="pv?.author"></div>
+                <div class="k">Déposant</div><div class="v" x-text="pv?.author"></div>
+                <div class="k">Auteur correspondant</div><div class="v" x-text="pv?.correspondingAuthor"></div>
                 <div class="k">Type de communication</div><div class="v" x-text="pv?.type"></div>
                 <div class="k">Mode de présentation</div><div class="v" x-text="pv?.presentationMode"></div>
                 <div class="k">Participation au colloque</div><div class="v" x-text="pv?.participationMode"></div>

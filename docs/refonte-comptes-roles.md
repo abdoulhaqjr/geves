@@ -9,7 +9,7 @@
 - **Une personne = un `User`, une seule connexion** (fusion de `Account` dans `users`).
 - **3 niveaux d'accès globaux** : `super_admin` - `colloque_admin` (crée + gère/co-gère des colloques) - `user` (aucun accès global).
 - **Rôles par colloque cumulables** (une personne peut en avoir plusieurs), 2 natures :
-  - **Scientifiques** : Communicant, Co-auteur, Relecteur, Modérateur, Rapporteur, **Comité scientifique**, Auditeur.
+  - **Scientifiques** : Communicant, Co-auteur, Relecteur, Modérateur, Rapporteur, **Comité scientifique**, Participant simple.
   - **Organisation** : Gérant/Co-gérant (réservé `colloque_admin`), **Comité d'organisation**, Secrétariat, Comptabilité, Accueil, Appui.
 - **Relecture = rôle à part entière** (accès portail d'évaluation) **+** affectation des soumissions par-dessus.
 - **`participants` reste la fiche d'inscription** (paiement, badge, présence) ; seul son champ `role` migre vers les rôles cumulables.
@@ -72,7 +72,7 @@
 ### Phase 4 - réalisé (cœur)
 - Catalogue `StaffRoles::ROLES` enrichi : **gerant** + **co_gerant** (capacités pleines sur le colloque), **comite_organisation** (org), aux côtés de **scientific** (« Comité scientifique ») → **2 comités distincts**. `teamRoles()` les propose ; `reviewer`/`administrator` restent exclus (relecture = affectation ; administrator = global).
 - Migration `..._000500_rename_edition_admin_to_gerant` : `edition_user.role` `administrator`→`gerant`. `EditionFormController::store` affecte le créateur comme **gerant**.
-- **Cumulabilité** : `edition_user` porte plusieurs fonctions d'organisation par personne/édition (déjà cumulable) ; les rôles **scientifiques** (Communicant, Relecteur, Modérateur, Rapporteur, Membre de comité, Auditeur) sont **dérivés cumulablement** par `AccountActivity` (affichés dans l'aperçu participant). `capabilitiesOnEdition` via `permissionsFor` couvre les nouveaux rôles.
+- **Cumulabilité** : `edition_user` porte plusieurs fonctions d'organisation par personne/édition (déjà cumulable) ; les rôles **scientifiques** (Communicant, Relecteur, Modérateur, Rapporteur, Membre de comité, Participant simple) sont **dérivés cumulablement** par `AccountActivity` (affichés dans l'aperçu participant). `capabilitiesOnEdition` via `permissionsFor` couvre les nouveaux rôles.
 - Team UI + matrice Utilisateurs reflètent le catalogue automatiquement. Tests catalogue + co-gérant. **489 tests verts, PHPStan clean.**
 ### Phase 5 (relecture) & 6 (UI) - réalisé
 - **Phase 5** : la relecture est déjà un **rôle** (« Relecteur », accès portail d'évaluation) **+ affectation** des soumissions (assignation par nom/e-mail ou relecteur existant, jeton). Rien à refondre - conforme à la décision « rôle + affectation ».

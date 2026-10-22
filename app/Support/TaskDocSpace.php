@@ -166,7 +166,7 @@ class TaskDocSpace
     }
 
     /**
-     * Le fichier importé est-il vraiment un DOCX / XLSX ?
+     * Le fichier importé correspond-il vraiment à son format annoncé ?
      *
      * ⚠️ L'extension et le type MIME annoncés viennent du navigateur : seul le
      * contenu dit ce qu'il est. On ouvre donc l'archive et on y cherche la pièce
@@ -176,6 +176,18 @@ class TaskDocSpace
      */
     public function validFile(string $path, string $format): bool
     {
+        if ($format === 'txt') {
+            $content = file_get_contents($path);
+
+            return $content !== false
+                && mb_check_encoding($content, 'UTF-8')
+                && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $content) === 0;
+        }
+
+        if (! in_array($format, ['docx', 'xlsx', 'pptx'], true)) {
+            return false;
+        }
+
         $zip = new ZipArchive;
         if ($zip->open($path) !== true) {
             return false;
@@ -193,8 +205,14 @@ class TaskDocSpace
                 }
             }
 
+            $entry = match ($format) {
+                'xlsx' => 'xl/workbook.xml',
+                'pptx' => 'ppt/presentation.xml',
+                default => 'word/document.xml',
+            };
+
             return $zip->locateName('[Content_Types].xml') !== false
-                && $zip->locateName($format === 'xlsx' ? 'xl/workbook.xml' : 'word/document.xml') !== false;
+                && $zip->locateName($entry) !== false;
         } finally {
             $zip->close();
         }
@@ -284,6 +302,16 @@ class TaskDocSpace
 
     public function createFile(string $folderId, string $title, string $format): string
     {
+        if ($format === 'txt') {
+            $file = $this->json('post', '/api/2.0/files/'.$folderId.'/text', [
+                'title' => mb_substr($title, 0, 160).'.txt',
+                'content' => "\n",
+                'createNewIfExist' => false,
+            ]);
+
+            return $this->fileId($file);
+        }
+
         $file = $this->json('post', '/api/2.0/files/'.$folderId.'/file', [
             'title' => mb_substr($title, 0, 160).'.'.$format,
         ]);

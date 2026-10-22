@@ -86,12 +86,12 @@ it('dérive « Relecteur » d’une participation relecteur', function () {
     expect((new AccountActivity($account))->roles())->toContain('Évaluateur');
 });
 
-it('retombe sur « Auditeur » pour une simple participation sans rôle fort', function () {
+it('retombe sur « Participant simple » pour une simple participation sans rôle fort', function () {
     $event = openEdition();
     $account = accountWith();
     $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'attendee']);
 
-    expect((new AccountActivity($account))->roles())->toBe(['Auditeur']);
+    expect((new AccountActivity($account))->roles())->toBe(['Participant simple']);
 });
 
 it('n’attribue aucun rôle à un compte sans activité', function () {

@@ -2,7 +2,7 @@
     ⚠️⚠️ ANCIEN DOCUMENT TEXTE, EN LECTURE SEULE.
 
     L'éditeur Tiptap/Yjs a été retiré le 21/10/2026 : un document de tâche est
-    désormais un DOCX ou un XLSX chez DocSpace. Cette page ne sert plus qu'à
+    désormais un DOCX, XLSX, PPTX ou TXT chez DocSpace. Cette page ne sert plus qu'à
     RELIRE ce qui a été rédigé avant, contenu courant et versions comprises -
     un texte qu'on cesse d'afficher est un texte perdu, et c'est en production
     qu'on s'en apercevrait. Rien ici n'écrit.
@@ -24,7 +24,7 @@
             <p>
                 Ce document a été rédigé avec l’ancien éditeur texte, qui a été retiré.
                 Son contenu reste consultable ici, avec son historique.
-                Pour reprendre ce travail à plusieurs, créez un document Word ou Excel
+                Pour reprendre ce travail à plusieurs, créez un document DOCX, XLSX, PPTX ou TXT
                 dans la tâche et recopiez-y ce qui doit continuer.
             </p>
         </div>

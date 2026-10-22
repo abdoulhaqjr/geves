@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 /**
  * Document de travail d'une tâche de projet, rédigé à plusieurs.
  *
- * ⚠️⚠️ **UN DOCUMENT EST UN FICHIER DOCX OU XLSX CHEZ DOCSPACE** (21/10/2026) :
+ * Les nouveaux documents sont des fichiers DOCX, XLSX, PPTX ou TXT chez DocSpace :
  * `format` + `docspace_file_id`, et le jeton de son lien d'édition, **chiffré**.
  *
  * ⚠️ `html`, `state`, `revision` et `file_path` ne sont plus ALIMENTÉS : ils
@@ -43,6 +43,8 @@ class ProjectTaskDocument extends Model
 {
     use HasFactory;
 
+    public const FORMATS = ['docx', 'xlsx', 'pptx', 'txt'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -64,7 +66,7 @@ class ProjectTaskDocument extends Model
      */
     public function isOfficeFile(): bool
     {
-        return in_array($this->format, ['docx', 'xlsx'], true)
+        return in_array($this->format, self::FORMATS, true)
             && filled($this->docspace_file_id);
     }
 
