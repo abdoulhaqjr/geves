@@ -42,10 +42,10 @@
         .idx { font-size: 10pt; margin: 0 0 3px; }
         .idx b { color: #111827; }
         .abs-entry { margin-top: 10px; }
-        /* Blocs insécables (dompdf) : l'en-tête d'un résumé (réf. -> correspondant) ne se
-           coupe jamais ; le libellé « Résumé » reste avec le début de son contenu. */
+        /* L'en-tête (réf. -> correspondant) reste entier. Le libellé « Résumé »
+           reste avec le début du texte, qui peut se poursuivre sur la page suivante. */
         .abs-head, .axis-start { page-break-inside: avoid; }
-        .abs-resume { page-break-inside: avoid; }
+        .abs-resume .lbl { page-break-after: avoid; }
         /* Aucune LIGNE ne se coupe en deux (bandeau de jour ou donnée). */
         table.prog tr { page-break-inside: avoid; }
         /* L'en-tête d'un tableau de programme (bandeau de jour + colonnes) reste
@@ -385,9 +385,8 @@
                 @if ($loop->first)</div>@endif
                 @php $body = trim(\App\Support\Html::render($s->abstract)); @endphp
                 @if ($body !== '')
-                    {{-- Le libellé « Résumé » reste SOLIDAIRE de son contenu : s'ils ne tiennent
-                         pas ensemble en bas de page, le bloc entier descend à la page suivante ;
-                         si le contenu dépasse une page, c'est LUI qui se coupe, pas le libellé. --}}
+                    {{-- Le libellé reste avec le début du texte ; le résumé peut se poursuivre
+                         sur la page suivante sans laisser un grand espace vide. --}}
                     <div class="abs-resume">
                         <p class="lbl sans">{{ $isGen ? 'Résumé' : 'RÉSUMÉ :' }}</p>
                         <div class="abs-body ukc-rte">{!! $body !!}</div>
