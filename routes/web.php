@@ -106,6 +106,7 @@ Route::post('/colloque/{event}/contact', [ContactController::class, 'send'])->na
 
 // Notifications (participant ou staff - l'un ou l'autre guard).
 Route::middleware('auth:account,web')->group(function () {
+    Route::get('/notifications/apercu', [NotificationController::class, 'preview'])->name('notifications.preview');
     Route::post('/notifications/{id}/ouvrir', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notifications/tout-lire', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/preferences', [NotificationController::class, 'savePrefs'])->name('notifications.prefs');
@@ -396,6 +397,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/editions/{event}/relecteurs/candidatures/options', [EventFormController::class, 'saveReviewerVolunteering'])->name('admin.evenements.reviewers.volunteering');
             Route::post('/editions/{event}/paiement', [EventFormController::class, 'savePayment'])->name('admin.evenements.payment');
             Route::post('/editions/{event}/visio', [EventFormController::class, 'saveMeetings'])->name('admin.evenements.meetings');
+            Route::post('/editions/{event}/docspace', [EventFormController::class, 'saveDocSpace'])->name('admin.evenements.docspace');
             Route::post('/editions/{event}/traductions', [EventFormController::class, 'saveTranslations'])->name('admin.evenements.translations');
             Route::post('/editions/{event}/equipe', [EventFormController::class, 'attachTeamMember'])->name('admin.evenements.team.attach');
             Route::delete('/editions/{event}/equipe', [EventFormController::class, 'detachTeamMember'])->name('admin.evenements.team.detach');

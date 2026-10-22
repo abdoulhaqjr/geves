@@ -126,7 +126,7 @@ it('enregistre promo et infos pratiques depuis le formulaire d’événement', f
     expect($settings['info_cards'][0]['text'])->toBe('Université de Kara');
 });
 
-it('affiche « Sa page » d’un participant en lecture seule', function () {
+it('affiche l’aperçu d’un participant en lecture seule', function () {
     $staff = adminStaff();
     $event = openEdition();
     $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author', 'title' => 'Docteur']);
@@ -143,7 +143,7 @@ it('affiche « Sa page » d’un participant en lecture seule', function () {
         ->assertSee('15 000');
 });
 
-it('refuse « Sa page » aux invités', function () {
+it('refuse l’aperçu aux invités', function () {
     $event = openEdition();
     $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 

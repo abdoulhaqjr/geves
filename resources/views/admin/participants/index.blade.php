@@ -27,9 +27,9 @@
 
         <div class="ukc-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val blue">{{ $stats['total'] }}</div><x-ukc.trend :trend="$trendTotal" period="7 j" /></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Communicants</div><div class="val">{{ $stats['communicants'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="user" :size="20" /></div><div class="lbl">Participants simples</div><div class="val">{{ $stats['attendees'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Ont payé</div><div class="val green">{{ $stats['paid'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Pointés (accueil)</div><div class="val">{{ $stats['checkedIn'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Communicants</div><div class="val">{{ $stats['authors'] }}</div></div>
         </div>
 
         {{-- Filtres (GET) - une seule ligne ; l'événement est reportée en champ caché
@@ -41,6 +41,11 @@
             <select name="role">
                 <option value="">Tous les rôles</option>
                 @foreach ($roles as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
+            </select>
+            <select name="participation_mode" aria-label="Filtrer par mode de participation" style="min-width:250px;">
+                <option value="">Tous les modes de participation</option>
+                <option value="online" @selected($participationMode === 'online')>En ligne</option>
+                <option value="onsite" @selected($participationMode === 'onsite')>En présentiel</option>
             </select>
             <select name="paid" title="Frais de participation">
                 <option value="">Paiement : tous</option>
@@ -55,7 +60,7 @@
             <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:200px;flex:1;">
             {{-- Le lien dépend des filtres : sa propre région échangée. --}}
             <span data-filter-part="participants-reset">
-                @if ($search !== '' || $role !== '' || $paid !== '' || $invited !== '')
+                @if ($search !== '' || $role !== '' || $participationMode !== '' || $paid !== '' || $invited !== '')
                     <a href="{{ route('admin.participants.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
                 @endif
             </span>
@@ -69,7 +74,7 @@
                             <tr>
                                 <x-ukc.th sort="last_name" :current="$sort" :dir="$dir">Participant</x-ukc.th>
                                 <x-ukc.th sort="role" :current="$sort" :dir="$dir">Rôle</x-ukc.th>
-                                <th>Paiement</th><th>Invité</th><th style="text-align:right;">Action</th>
+                                <th>Mode de participation</th><th>Paiement</th><th>Invité</th><th style="text-align:right;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -91,6 +96,7 @@
                                             @endforeach
                                         </div>
                                     </td>
+                                    <td style="white-space:nowrap;">{{ $person['participationModeLabel'] ?? 'Non renseigné' }}</td>
                                     <td>
                                         @if ($person['paid'])<span class="ukc-pill ukc-pill--ok">Réglé</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
@@ -103,7 +109,7 @@
                                         <div class="ukc-actions">
                                             <a href="{{ route('admin.participants.preview', $p) }}"
                                                class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Aperçu du dossier, en lecture seule (vous restez admin)">
-                                                <x-ukc.icon name="eye" :size="14" /> Sa page
+                                                <x-ukc.icon name="eye" :size="14" /> Aperçu
                                             </a>
                                             <form method="POST" action="{{ route('admin.participants.invite', $p) }}"
                                                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitation envoyée.">

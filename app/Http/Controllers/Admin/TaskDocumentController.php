@@ -77,7 +77,7 @@ class TaskDocumentController extends Controller
         }
         $title = mb_substr($title, 0, 200);
 
-        if (! $docspace->configured()) {
+        if (! $docspace->configured($task->event)) {
             throw ValidationException::withMessages(['file' => 'DocSpace doit être configuré avant de créer ou importer un document de travail.']);
         }
         if (! $docspace->fileLinksEnabled()) {
@@ -152,7 +152,7 @@ class TaskDocumentController extends Controller
 
         $token = null;
         $erreur = null;
-        if ($canWrite && $docspace->configured()) {
+        if ($canWrite && $docspace->configured($task->event)) {
             try {
                 $token = $docspace->fileEditToken($document);
             } catch (RuntimeException $error) {
@@ -203,7 +203,7 @@ class TaskDocumentController extends Controller
     {
         abort_unless($document->isVisibleTo($request->user()) && $request->user()?->isColloqueAdmin(), 403);
         abort_unless($document->isOfficeFile(), 404);
-        abort_unless($docspace->configured(), 503, 'DocSpace est indisponible.');
+        abort_unless($docspace->configured($task->event), 503, 'DocSpace est indisponible.');
 
         try {
             $docspace->rotateFileLink($document);
@@ -224,7 +224,7 @@ class TaskDocumentController extends Controller
         // ⚠️ Le titre de GEVES fait foi, mais le fichier porte le même nom chez
         // le prestataire : sans cela on chercherait « Note de cadrage » dans une
         // salle qui affiche encore l'ancien titre. Un refus ne bloque rien.
-        if ($document->isOfficeFile() && $docspace->configured()) {
+        if ($document->isOfficeFile() && $docspace->configured($task->event)) {
             try {
                 $docspace->renameFile((string) $document->docspace_file_id, $document->title.'.'.$document->format);
             } catch (Throwable $error) {
@@ -251,7 +251,7 @@ class TaskDocumentController extends Controller
 
         if ($document->isOfficeFile()) {
             try {
-                abort_unless($docspace->configured(), 503);
+                abort_unless($docspace->configured($task->event), 503);
                 $docspace->deleteFile((string) $document->docspace_file_id);
             } catch (RuntimeException $error) {
                 Log::warning('Document conservé : DocSpace a refusé de retirer le fichier.', [
@@ -282,7 +282,7 @@ class TaskDocumentController extends Controller
     {
         abort_unless($document->isVisibleTo($request->user()), 403);
         abort_unless($document->isOfficeFile(), 404);
-        abort_unless($docspace->configured(), 503, 'DocSpace est indisponible.');
+        abort_unless($docspace->configured($task->event), 503, 'DocSpace est indisponible.');
 
         return response($docspace->downloadFile((string) $document->docspace_file_id), 200, [
             'Content-Type' => match ($document->format) {

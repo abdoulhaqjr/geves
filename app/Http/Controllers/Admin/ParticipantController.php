@@ -23,7 +23,7 @@ use Illuminate\View\View;
 /**
  * Participants d'un événement (Blade, fidèle au mockup) : rôle, paiement, invitation.
  * Filtres par query string ; invitations (individuelle ou groupée aux payés non
- * invités) en POST. L'aperçu « Sa page » est une vue en lecture seule.
+ * invités) en POST. L'aperçu du dossier est une vue en lecture seule.
  */
 class ParticipantController extends Controller
 {
@@ -37,6 +37,10 @@ class ParticipantController extends Controller
             $editionId = (string) ($events->firstWhere('status', 'open')?->id ?? $events->first()?->id ?? '');
         }
         $role = (string) $request->query('role', '');
+        $participationMode = (string) $request->query('participation_mode', '');
+        if (! in_array($participationMode, ['online', 'onsite'], true)) {
+            $participationMode = '';
+        }
         $search = trim((string) $request->query('search', ''));
         $paid = (string) $request->query('paid', '');
         $invited = (string) $request->query('invited', '');
@@ -46,6 +50,7 @@ class ParticipantController extends Controller
         $filtered = $all
             ->filter(fn (array $person) => $role === '' || ($role === 'communicant'
                 ? $person['role'] !== 'attendee' : $person['role'] === $role))
+            ->filter(fn (array $person) => $participationMode === '' || $person['participationMode'] === $participationMode)
             ->filter(fn (array $person) => $paid === '' || $person['paid'] === ($paid === '1'))
             ->filter(fn (array $person) => $invited === '' || $person['invited'] === ($invited === '1'))
             ->filter(fn (array $person) => $search === '' || str_contains(
@@ -89,6 +94,7 @@ class ParticipantController extends Controller
             'events' => $events,
             'paid' => $paid,
             'invited' => $invited,
+            'participationMode' => $participationMode,
             'participants' => $participants,
             'roles' => [
                 'communicant' => 'Communicants',
@@ -102,13 +108,13 @@ class ParticipantController extends Controller
             'stats' => [
                 'total' => $all->count(),
                 'paid' => $all->where('paid', true)->count(),
-                'checkedIn' => $all->where('checkedIn', true)->count(),
-                'authors' => $all->whereIn('role', ['author', 'coauthor'])->count(),
+                'communicants' => $all->whereIn('role', ['author', 'coauthor'])->count(),
+                'attendees' => $all->where('role', 'attendee')->count(),
             ],
         ]);
     }
 
-    /** « Sa page » - aperçu en lecture seule de l'espace d'un participant. */
+    /** Aperçu en lecture seule du dossier d'un participant. */
     public function preview(Participant $participant): View
     {
         $participant->load('event', 'user');

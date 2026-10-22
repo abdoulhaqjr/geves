@@ -7,8 +7,7 @@ return [
     | Diffusion temps réel
     |--------------------------------------------------------------------------
     |
-    | Le seul usage aujourd'hui est la rédaction À PLUSIEURS des documents de
-    | tâche (module Projet). Le protocole est celui de Pusher, mais le serveur
+    | Les notifications instantanées utilisent le protocole Pusher, mais le serveur
     | est un service HÉBERGÉ (PieSocket, Pusher, Soketi…) désigné par son hôte :
     | la plateforme tourne sur un hébergement mutualisé, où l'on ne fait pas
     | tourner un démon WebSocket à soi.

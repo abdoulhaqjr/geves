@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Notifications\NotificationKinds;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,20 @@ class NotificationController extends Controller
     private function audience(): string
     {
         return Auth::guard('account')->check() ? 'account' : 'staff';
+    }
+
+    /** Relecture de la cloche après un signal WebSocket (source : base de données). */
+    public function preview(): JsonResponse
+    {
+        $user = $this->notifiable();
+        abort_unless($user, 403);
+
+        return response()->json([
+            'unread_count' => $user->unreadNotifications()->count(),
+            'items_html' => view('components.ukc.notification-bell-items', [
+                'recent' => $user->notifications()->latest()->limit(8)->get(),
+            ])->render(),
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     /** Page complète « Notifications » (liste paginée + préférences). */

@@ -5,19 +5,11 @@ namespace App\Support;
 /**
  * Canal temps réel de la plateforme (protocole Pusher, serveur hébergé).
  *
- * ⚠️⚠️ **UN NAVIGATEUR NE PARLE PAS À REDIS.** Redis est un backplane entre
- * processus serveur ; il ne donne aucun point d'entrée WebSocket à une page.
- * Pour que deux rédacteurs se voient taper, il faut un serveur WebSocket joignable
- * depuis le navigateur - et l'hébergement mutualisé de la plateforme ne fait pas
- * tourner un démon à soi. On passe donc par un service HÉBERGÉ qui parle le
- * protocole Pusher (PieSocket, Pusher, Soketi géré…), désigné par son hôte.
+ * Le navigateur reçoit les signaux de nouvelles notifications par un service
+ * WebSocket hébergé compatible Pusher. Leur contenu est relu auprès de GEVES.
  *
- * ⚠️⚠️ **TOUT DOIT FONCTIONNER SANS LUI.** Le temps réel est un CONFORT, pas une
- * condition : sans clés, le document s'ouvre, s'écrit, s'enregistre et garde son
- * historique - seule la simultanéité disparaît, et le contrôle de concurrence
- * par révision empêche alors deux personnes de s'écraser. Même règle que
- * Turnstile, LiveKit et la passerelle de paiement : une intégration absente
- * retire une capacité, elle ne casse pas un écran.
+ * Sans service, la notification enregistrée en base reste disponible au prochain
+ * chargement de page.
  *
  * ⚠️ **LE SECRET NE DESCEND JAMAIS DANS LA PAGE.** {@see self::clientConfig()}
  * ne rend que la clé publique et l'adresse du serveur ; le secret signe
@@ -29,9 +21,7 @@ final class Realtime
     /**
      * Le temps réel est-il utilisable ?
      *
-     * ⚠️ Les trois identifiants sont exigés ENSEMBLE : avec une clé publique
-     * seule, la page ouvrirait une connexion que le serveur ne saurait pas
-     * autoriser, et l'éditeur attendrait des pairs qui n'arriveraient jamais.
+     * Les identifiants et un hôte ou un cluster sont exigés ensemble.
      */
     public static function configured(): bool
     {
@@ -43,7 +33,8 @@ final class Realtime
 
         return filled($c['key'] ?? null)
             && filled($c['secret'] ?? null)
-            && filled($c['app_id'] ?? null);
+            && filled($c['app_id'] ?? null)
+            && (filled($c['options']['host'] ?? null) || filled($c['options']['cluster'] ?? null));
     }
 
     /**

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Listeners\BroadcastStoredNotification;
+use App\Support\PilotMailCopy;
 use App\Support\Settings;
 use App\Support\StaffRolePermissions;
 use App\Support\WindowsSafeFilesystem;
@@ -12,11 +14,14 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -47,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->applySettingsToConfig();
+        EventFacade::listen(MessageSending::class, PilotMailCopy::class);
+        EventFacade::listen(NotificationSent::class, BroadcastStoredNotification::class);
         $this->limiteLeFilDeVisio();
 
         // Pagination sur la charte graphique (composant UKC/Tailwise) partout.
@@ -239,6 +246,24 @@ class AppServiceProvider extends ServiceProvider
             Config::set('mail.default', $mailer);
         } elseif (filled($set('mail.host')) && config('mail.default') !== 'log') {
             Config::set('mail.default', 'smtp');
+        }
+
+        // DocSpace : réglages modifiables sans toucher au .env. La clé API est
+        // chiffrée en base et ne revient jamais dans le formulaire.
+        foreach (['url', 'room_id'] as $key) {
+            if (filled($set("docspace.$key"))) {
+                Config::set("services.docspace.$key", (string) $set("docspace.$key"));
+            }
+        }
+        if (array_key_exists('docspace.file_links_enabled', $s)) {
+            Config::set('services.docspace.file_links_enabled', (bool) $set('docspace.file_links_enabled'));
+        }
+        if (filled($set('docspace.api_key'))) {
+            try {
+                Config::set('services.docspace.api_key', Crypt::decryptString((string) $set('docspace.api_key')));
+            } catch (DecryptException) {
+                Config::set('services.docspace.api_key', null);
+            }
         }
 
         // Passerelle par défaut

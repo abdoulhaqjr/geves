@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 class EventParticipantRoster
 {
     /**
-     * @return Collection<int, array{participant: Participant, role: string, paid: bool, invited: bool, checkedIn: bool, createdAt: mixed, name: string, email: string, userId: int|null}>
+     * @return Collection<int, array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: mixed, name: string, email: string, userId: int|null}>
      */
     public function forEvent(string $eventId): Collection
     {
@@ -112,13 +112,17 @@ class EventParticipantRoster
                 + (int) filled($p->user_id) * 4
                 + (int) $p->participationPayments->contains('status', 'paid') * 2
                 + (int) filled($p->email))->first();
+            $modeParticipant = in_array($representative->participation_mode, ['online', 'onsite'], true)
+                ? $representative
+                : $rows->first(fn (Participant $p) => in_array($p->participation_mode, ['online', 'onsite'], true));
 
             return [
                 'participant' => $representative,
                 'role' => $role,
+                'participationMode' => $modeParticipant?->participation_mode,
+                'participationModeLabel' => $modeParticipant?->participationModeLabel(),
                 'paid' => $paid,
                 'invited' => $rows->contains(fn (Participant $p) => $p->isInvited()),
-                'checkedIn' => $rows->contains(fn (Participant $p) => $p->isCheckedIn()),
                 'createdAt' => $rows->min('created_at'),
                 'name' => $representative->full_name,
                 'email' => (string) $representative->email,

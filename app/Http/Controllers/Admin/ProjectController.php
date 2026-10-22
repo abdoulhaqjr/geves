@@ -79,7 +79,7 @@ class ProjectController extends Controller
             'canDeleteDocuments' => $event !== null && $user !== null
                 && ($user->isColloqueAdmin()
                     || array_intersect(['gerant', 'co_gerant'], $user->rolesOnEdition($event)) !== []),
-            'officeAvailable' => $docspace->configured(),
+            'officeAvailable' => $docspace->configured($event),
         ]);
     }
 
@@ -757,7 +757,7 @@ class ProjectController extends Controller
     private function renouvelerLesLiens(ProjectTask $task, array $associesAvant, TaskDocSpace $docspace): void
     {
         $partis = array_diff($associesAvant, $task->fresh()?->associateIds() ?? []);
-        if ($partis === [] || ! $docspace->configured() || ! $docspace->fileLinksEnabled()) {
+        if ($partis === [] || ! $docspace->configured($task->event) || ! $docspace->fileLinksEnabled()) {
             return;
         }
 
@@ -796,7 +796,7 @@ class ProjectController extends Controller
             return;
         }
 
-        if (! $docspace->configured()) {
+        if (! $docspace->configured($task->event)) {
             Log::warning('Tâche supprimée sans retirer ses fichiers : DocSpace n’est pas configuré.', [
                 'task_id' => $task->id, 'files' => $fichiers, 'folder_id' => $dossier,
             ]);

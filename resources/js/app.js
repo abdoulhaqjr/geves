@@ -959,6 +959,94 @@ document.addEventListener('alpine:init', () => {
             if (t) { clearTimeout(t.timer); t.show = false; }
         },
     }));
+
+    // Le WebSocket ne transporte qu'un signal. La cloche relit toujours ses
+    // notifications depuis GEVES, sur la session du destinataire authentifié.
+    window.Alpine.data('ukcNotificationBell', (config = {}) => ({
+        open: false,
+        count: Number(config.unreadCount) || 0,
+        pusher: null,
+        refreshTimer: null,
+        refreshing: false,
+        pendingRefresh: false,
+        onFocus: null,
+        onVisible: null,
+        init() {
+            this.onFocus = () => this.scheduleRefresh();
+            this.onVisible = () => { if (!document.hidden) this.scheduleRefresh(); };
+            window.addEventListener('focus', this.onFocus);
+            document.addEventListener('visibilitychange', this.onVisible);
+
+            const rt = config.realtime;
+            if (!rt?.key || !config.userId || (!rt.host && !rt.cluster)) return;
+
+            import('pusher-js').then(({ default: Pusher }) => {
+                if (!this.$el?.isConnected) return;
+                const options = {
+                    cluster: rt.cluster || 'mt1',
+                    forceTLS: rt.forceTLS,
+                    enabledTransports: rt.forceTLS ? ['wss'] : ['ws'],
+                    channelAuthorization: {
+                        endpoint: '/broadcasting/auth',
+                        transport: 'ajax',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        },
+                    },
+                };
+                if (rt.host) {
+                    options.wsHost = rt.host;
+                    options.wsPort = rt.port;
+                    options.wssPort = rt.port;
+                }
+
+                this.pusher = new Pusher(rt.key, options);
+                this.pusher.subscribe(`private-ukc.notifications.${config.userId}`)
+                    .bind('notification.arrived', () => this.scheduleRefresh());
+                this.scheduleRefresh();
+            }).catch(() => {});
+        },
+        scheduleRefresh() {
+            if (this.refreshTimer) clearTimeout(this.refreshTimer);
+            this.refreshTimer = setTimeout(() => {
+                this.refreshTimer = null;
+                this.refresh();
+            }, 120);
+        },
+        async refresh() {
+            if (this.refreshing) {
+                this.pendingRefresh = true;
+                return;
+            }
+            this.refreshing = true;
+            try {
+                const response = await fetch(config.previewUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store',
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                this.count = Number(data.unread_count) || 0;
+                this.$refs.items.innerHTML = data.items_html || '';
+            } catch {
+                // La cloche servie au chargement reste utilisable hors connexion.
+            } finally {
+                this.refreshing = false;
+                if (this.pendingRefresh) {
+                    this.pendingRefresh = false;
+                    this.scheduleRefresh();
+                }
+            }
+        },
+        destroy() {
+            if (this.refreshTimer) clearTimeout(this.refreshTimer);
+            if (this.onFocus) window.removeEventListener('focus', this.onFocus);
+            if (this.onVisible) document.removeEventListener('visibilitychange', this.onVisible);
+            this.pusher?.disconnect();
+        },
+    }));
+
     // Gestion de projet d'un événement (kanban + liste + jalons), 100 % AJAX : un
     // seul composant porte l'état (tasks[]/milestones[]) ; tout le CRUD passe par
     // fetch et met à jour l'état en direct - aucun rechargement de page.

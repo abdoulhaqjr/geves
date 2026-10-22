@@ -39,3 +39,9 @@ Broadcast::channel('ukc.doc.{document}', function (User $user, int $document) {
         'canWrite' => $doc->isEditableBy($user),
     ];
 });
+
+// Une notification ne peut être annoncée qu'au compte qui la possède. Les deux
+// espaces utilisent le même modèle User, mais chacun a son propre guard.
+Broadcast::channel('ukc.notifications.{userId}', function (User $user, string $userId) {
+    return (string) $user->getKey() === $userId;
+}, ['guards' => ['account', 'web']]);

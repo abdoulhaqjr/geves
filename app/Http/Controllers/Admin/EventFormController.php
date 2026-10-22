@@ -505,6 +505,27 @@ class EventFormController extends Controller
             ->with('edition_tab', 'integrations');
     }
 
+    /** Salle DocSpace dédiée aux nouveaux dossiers de travail de cet événement. */
+    public function saveDocSpace(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'docspace_room_id' => ['nullable', 'regex:/^\d+$/', 'max:30'],
+        ]);
+
+        $settings = $event->settings ?? [];
+        $roomId = trim((string) ($data['docspace_room_id'] ?? ''));
+        if ($roomId === '') {
+            unset($settings['docspace']);
+        } else {
+            $settings['docspace'] = ['room_id' => $roomId];
+        }
+        $event->update(['settings' => $settings]);
+
+        return redirect()->route('admin.evenements.edit', $event)
+            ->with('ukc_status', 'Salle DocSpace de l’événement mise à jour.')
+            ->with('edition_tab', 'integrations');
+    }
+
     /**
      * Valeurs initiales du formulaire : événement existant, écrasée par les
      * valeurs extraites par IA (flash) le cas échéant.

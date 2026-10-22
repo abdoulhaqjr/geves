@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Aperçu - '.$participant->full_name" subtitle="Sa page (lecture seule)">
+<x-layouts.admin :title="'Aperçu - '.$participant->full_name" subtitle="Dossier du participant (lecture seule)">
     {{-- Bandeau lecture seule --}}
     <div class="ukc-alert ukc-alert--info" style="align-items:center;">
         <span class="ico"><x-ukc.icon name="eye" :size="18" /></span>

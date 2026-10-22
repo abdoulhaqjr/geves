@@ -8,6 +8,7 @@ use App\Support\AiAgents;
 use App\Support\Branding;
 use App\Support\EventArtwork;
 use App\Support\ParticipantTypes;
+use App\Support\PilotMailCopy;
 use App\Support\Settings;
 use App\Support\SiteBanners;
 use Illuminate\Http\RedirectResponse;
@@ -64,6 +65,9 @@ class SettingController extends Controller
         'mail_encryption' => 'mail.encryption',
         'mail_username' => 'mail.username',
         'mail_password' => 'mail.password',
+        'mail_pilot_copy_address' => 'mail.pilot_copy_address',
+        'docspace_url' => 'docspace.url',
+        'docspace_room_id' => 'docspace.room_id',
         'payments_default' => 'payments.default',
         'fedapay_secret' => 'fedapay.secret',
         'fedapay_mode' => 'fedapay.mode',
@@ -132,6 +136,12 @@ class SettingController extends Controller
             'mail_encryption' => $g('mail.encryption', 'tls'),
             'mail_username' => $g('mail.username'),
             'mail_password' => $g('mail.password'),
+            'mail_pilot_copy_enabled' => (bool) Settings::get('mail.pilot_copy_enabled', true),
+            'mail_pilot_copy_address' => $g('mail.pilot_copy_address', PilotMailCopy::DEFAULT_ADDRESS),
+            'docspace_url' => $g('docspace.url', (string) config('services.docspace.url')),
+            'docspace_room_id' => $g('docspace.room_id', (string) config('services.docspace.room_id')),
+            'docspace_file_links_enabled' => (bool) Settings::get('docspace.file_links_enabled', (bool) config('services.docspace.file_links_enabled', false)),
+            'docspace_api_key_configured' => filled(config('services.docspace.api_key')),
             'payments_default' => $g('payments.default', (string) config('payments.default', 'manual')),
             'fedapay_secret' => $g('fedapay.secret'),
             'fedapay_mode' => $g('fedapay.mode', 'test'),
@@ -198,6 +208,10 @@ class SettingController extends Controller
             'app_url' => ['nullable', 'url'],
             'mail_mailer' => ['nullable', 'in:log,smtp'],
             'mail_port' => ['nullable', 'integer'],
+            'mail_pilot_copy_address' => ['required_if:mail_pilot_copy_enabled,1', 'nullable', 'email', 'max:255'],
+            'docspace_url' => ['nullable', 'url', 'starts_with:https://', 'max:255'],
+            'docspace_room_id' => ['nullable', 'regex:/^\d+$/', 'max:30'],
+            'docspace_api_key' => ['nullable', 'string', 'max:4096'],
             'payments_default' => ['required', 'in:manual,fedapay'],
             'fedapay_mode' => ['required', 'in:test,live'],
             'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
@@ -241,7 +255,7 @@ class SettingController extends Controller
         if ($validator->fails()) {
             $tab = $this->tabForField((string) array_key_first($validator->errors()->toArray()));
 
-            return back()->withInput($request->except(['turnstile_secret_key', 'realtime_secret']))
+            return back()->withInput($request->except(['turnstile_secret_key', 'realtime_secret', 'docspace_api_key']))
                 ->withErrors($validator)->with('settings_tab', $tab);
         }
 
@@ -253,6 +267,8 @@ class SettingController extends Controller
         $payload['cookies.notice_enabled'] = $request->boolean('cookies_notice_enabled');
         $payload['fedapay.card'] = $request->boolean('fedapay_card');
         $payload['realtime.enabled'] = $request->boolean('realtime_enabled');
+        $payload['mail.pilot_copy_enabled'] = $request->boolean('mail_pilot_copy_enabled');
+        $payload['docspace.file_links_enabled'] = $request->boolean('docspace_file_links_enabled');
 
         // Tolère le collage d'une ligne d'.env entière (« LIVEKIT_API_KEY=xxx »)
         // dans un champ d'identifiant : on ne conserve que la valeur.
@@ -263,6 +279,9 @@ class SettingController extends Controller
         }
 
         Settings::setMany($payload);
+        if ($request->filled('docspace_api_key')) {
+            Settings::set('docspace.api_key', Crypt::encryptString(trim((string) $request->input('docspace_api_key'))));
+        }
         if ($request->boolean('turnstile_secret_key_remove')) {
             Settings::set('turnstile.secret_key', '');
         } elseif ($request->filled('turnstile_secret_key')) {
@@ -280,9 +299,11 @@ class SettingController extends Controller
         // d'utiliser : renvoyer vers « Général » après un téléversement, c'est
         // priver l'admin du seul retour qui compte, l'aperçu de ce qu'il vient
         // de poser.
+        $activeTab = (string) $request->input('active_tab', 'general');
+
         return back()
             ->with('ukc_status', 'Réglages enregistrés.')
-            ->with('settings_tab', $toucheBanniere ? 'banners' : 'general');
+            ->with('settings_tab', $toucheBanniere ? 'banners' : (in_array($activeTab, self::TABS, true) ? $activeTab : 'general'));
     }
 
     /**
@@ -413,7 +434,7 @@ class SettingController extends Controller
             str_starts_with($field, 'turnstile_'), $field === 'cookies_notice_enabled' => 'security',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
-            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_'), str_starts_with($field, 'realtime_') => 'integrations',
+            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'docspace_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_'), str_starts_with($field, 'realtime_') => 'integrations',
             default => 'general',
         };
     }

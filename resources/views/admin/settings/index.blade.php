@@ -15,6 +15,7 @@
 
         <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="active_tab" :value="tab">
             {{-- Général --}}
             <div class="ukc-panel" :class="{ active: tab==='general' }">
                 <div class="ukc-card">
@@ -331,6 +332,18 @@
                             <label for="mail_password">Mot de passe</label>
                             <input type="password" id="mail_password" name="mail_password" value="{{ $v('mail_password') }}" autocomplete="new-password">
                         </div>
+                        <div class="ukc-field full">
+                            <input type="hidden" name="mail_pilot_copy_enabled" value="0">
+                            <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:500;">
+                                <input type="checkbox" name="mail_pilot_copy_enabled" value="1" style="width:auto;" @checked(old('mail_pilot_copy_enabled', $values['mail_pilot_copy_enabled']))>
+                                Envoyer une copie de chaque e-mail
+                            </label>
+                        </div>
+                        <div class="ukc-field full">
+                            <label for="mail_pilot_copy_address">Adresse de réception des copies</label>
+                            <input type="email" id="mail_pilot_copy_address" name="mail_pilot_copy_address" value="{{ $v('mail_pilot_copy_address') }}" autocomplete="off" style="max-width:420px;">
+                            @error('mail_pilot_copy_address') <span class="error">{{ $message }}</span> @enderror
+                        </div>
                     </div>
 
                     <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--ukc-border);">
@@ -520,6 +533,36 @@
             {{-- Intégrations --}}
             <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                 <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="file" :size="20" /> Documents de travail DocSpace</span></h2>
+                    <p class="desc">Connexion utilisée pour créer, modifier et télécharger les documents des tâches. Les valeurs laissées vides utilisent la configuration du serveur. La salle peut aussi être définie pour chaque événement.</p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label for="docspace_url">Adresse DocSpace (HTTPS)</label>
+                            <input type="url" id="docspace_url" name="docspace_url" value="{{ $v('docspace_url') }}" placeholder="https://votre-docspace.example">
+                            @error('docspace_url') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="docspace_room_id">Identifiant de la salle par défaut</label>
+                            <input type="text" inputmode="numeric" id="docspace_room_id" name="docspace_room_id" value="{{ $v('docspace_room_id') }}" placeholder="Identifiant numérique">
+                            @error('docspace_room_id') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="docspace_api_key">Clé API @if($values['docspace_api_key_configured']) <span class="hint">(déjà configurée)</span> @endif</label>
+                            <input type="password" id="docspace_api_key" name="docspace_api_key" value="" autocomplete="new-password" placeholder="Laisser vide pour conserver la clé actuelle">
+                            @error('docspace_api_key') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full">
+                            <input type="hidden" name="docspace_file_links_enabled" value="0">
+                            <label style="display:inline-flex;align-items:center;gap:8px;">
+                                <input type="checkbox" name="docspace_file_links_enabled" value="1" @checked(old('docspace_file_links_enabled', $values['docspace_file_links_enabled']))>
+                                Activer les liens d’édition externes des fichiers
+                            </label>
+                            <p class="ukc-hint">Un lien donne accès à l’édition du fichier à toute personne qui le possède. GEVES ne le remet qu’aux collaborateurs autorisés.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ukc-card">
                     <h2><span><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</span></h2>
                     <p class="desc">
                         Active l’autocomplétion des affiliations depuis le référentiel des structures HAL (AuréHAL),
@@ -617,25 +660,21 @@
                 </div>
 
                 <div class="ukc-card">
-                    <h2><span><x-ukc.icon name="layers" :size="20" /> Rédaction à plusieurs (temps réel)</span></h2>
+                    <h2><span><x-ukc.icon name="bell" :size="20" /> Notifications instantanées (WebSocket)</span></h2>
                     <p class="desc">
-                        Permet à plusieurs personnes d’écrire <strong>en même temps</strong> dans le document d’une tâche du module
-                        Projet, chacune voyant la frappe des autres. Il faut pour cela un serveur <strong>WebSocket</strong> joignable
-                        depuis le navigateur : un service hébergé parlant le protocole Pusher (PieSocket, Pusher…).
-                        Renseignez l’<strong>hôte</strong> du service ; laissé vide, ce sont les serveurs de Pusher qui sont visés.
+                        Actualise la cloche dès qu’une notification est enregistrée, dans l’espace participant et le back-office.
+                        La connexion utilise un service WebSocket compatible Pusher. Renseignez son hôte, ou laissez-le vide
+                        pour utiliser les serveurs de Pusher avec le cluster de votre application.
                     </p>
                     <p class="desc">
-                        ⚠️ <strong>Sans ces identifiants, rien ne casse</strong> : les documents s’ouvrent, s’écrivent, s’enregistrent et
-                        gardent leur historique. Seule la simultanéité disparaît - deux personnes qui écrivent au même moment sont
-                        alors prévenues au lieu de s’écraser.
+                        Sans connexion WebSocket, les notifications restent disponibles dans la cloche après rechargement de la page.
                     </p>
                     <div class="ukc-form-grid">
                         <div class="ukc-field full">
                             <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
                                 <input type="checkbox" name="realtime_enabled" value="1" style="width:auto;" @checked($v('realtime_enabled'))>
-                                Activer la rédaction simultanée
+                                Activer les notifications instantanées
                             </label>
-                            <span class="hint">Décoché, les documents restent accessibles, un rédacteur à la fois.</span>
                         </div>
                         <div class="ukc-field">
                             <label for="realtime_app_id">App ID</label>

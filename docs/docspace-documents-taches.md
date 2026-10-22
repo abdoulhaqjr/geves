@@ -25,13 +25,17 @@ télécharger le fichier, mais ne reçoivent pas le jeton d'édition.
    une nouvelle clé avec droit d'écriture **avant** de révoquer l'ancienne ;
    sinon les opérations DocSpace s'arrêteront. Ne jamais placer la clé dans le
    navigateur ou dans le dépôt Git.
-4. Renseigner `DOCSPACE_URL`, `DOCSPACE_API_KEY` et `DOCSPACE_ROOM_ID` dans
-   l'environnement du serveur. Sans ces trois valeurs, **aucun document de tâche
-   ne peut être créé** : le panneau désactive ses deux boutons et le serveur
-   refuse en nommant ce qui manque.
+4. Renseigner l'URL HTTPS, la clé API et la salle par défaut dans **Réglages →
+   Intégrations → Documents de travail DocSpace**. Les variables `DOCSPACE_URL`,
+   `DOCSPACE_API_KEY` et `DOCSPACE_ROOM_ID` restent des valeurs de repli. La clé
+   saisie dans les réglages est chiffrée en base et n'est jamais réaffichée.
+   Une salle propre à l'événement peut être renseignée dans **Éditions → Modifier
+   → Intégrations** ; elle s'applique aux nouveaux dossiers de tâches. Les
+   dossiers existants restent dans leur salle d'origine.
 5. Après autorisation explicite des liens externes d'édition pour les fichiers
-   de tâche, définir `DOCSPACE_FILE_LINKS_ENABLED=true`. La valeur par défaut
-   est `false` et empêche toute création automatique de nouveau lien.
+   de tâche, activer l'option correspondante dans ces réglages. La variable
+   `DOCSPACE_FILE_LINKS_ENABLED` reste une valeur de repli ; la valeur par
+   défaut est `false` et empêche toute création automatique de nouveau lien.
 6. Appliquer les migrations `2026_10_20_000300`, `2026_10_20_000400` et
    `2026_10_20_000500`, puis
    recharger la configuration Laravel si elle est mise en cache. Elles ont été

@@ -512,10 +512,10 @@ it('n’expose plus « En tant que » dans la liste des participants', function 
     $event = openEdition();
     $event->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
 
-    // L'impersonation reste accessible depuis « Sa page », pas depuis la liste.
+    // L'impersonation reste accessible depuis l'aperçu, pas depuis la liste.
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.participants.index', ['event_id' => $event->id]))
         ->assertOk()
-        ->assertSee('Sa page')
+        ->assertSee('Aperçu')
         ->assertDontSee('En tant que');
 });

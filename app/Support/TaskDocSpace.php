@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Event;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskDocument;
 use Illuminate\Http\Client\ConnectionException;
@@ -20,14 +21,19 @@ class TaskDocSpace
 
     private const EDIT_ACCESS = 10;
 
-    public function configured(): bool
+    public function configured(?Event $event = null): bool
     {
         $url = (string) config('services.docspace.url');
 
         return filter_var($url, FILTER_VALIDATE_URL) !== false
             && parse_url($url, PHP_URL_SCHEME) === 'https'
             && filled(config('services.docspace.api_key'))
-            && ctype_digit((string) config('services.docspace.room_id'));
+            && ctype_digit($this->roomId($event));
+    }
+
+    public function roomId(?Event $event = null): string
+    {
+        return (string) ($event?->settings['docspace']['room_id'] ?? config('services.docspace.room_id'));
     }
 
     public function fileLinksEnabled(): bool
@@ -50,7 +56,7 @@ class TaskDocSpace
     {
         $folderId = (string) ($task->docspace_folder_id ?? '');
         if ($folderId === '') {
-            $parentId = (string) config('services.docspace.room_id');
+            $parentId = $this->roomId($task->event);
             $folder = $this->json('post', '/api/2.0/files/folder/'.$parentId, [
                 'title' => 'GEVES - tâche '.$task->id.' - '.mb_substr($task->title, 0, 100),
             ]);
@@ -456,8 +462,11 @@ class TaskDocSpace
 
     private function client(): PendingRequest
     {
-        if (! $this->configured()) {
-            throw new RuntimeException('Configurez DOCSPACE_URL, DOCSPACE_API_KEY et DOCSPACE_ROOM_ID.');
+        $url = $this->url();
+        if (filter_var($url, FILTER_VALIDATE_URL) === false
+            || parse_url($url, PHP_URL_SCHEME) !== 'https'
+            || blank(config('services.docspace.api_key'))) {
+            throw new RuntimeException('Configurez l’URL et la clé API DocSpace dans les réglages.');
         }
 
         return Http::withToken((string) config('services.docspace.api_key'))

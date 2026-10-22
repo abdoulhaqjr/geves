@@ -881,6 +881,30 @@
                     </div>
                 @endif
 
+                {{-- ===== INTÉGRATIONS - DOCSPACE (sauvegarde dédiée) ===== --}}
+                @if ($event)
+                    <div class="ukc-panel" :class="{ active: tab==='integrations' }">
+                        <div class="ukc-card">
+                            <h2>Documents de travail DocSpace</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
+                                Choisissez une salle pour les nouveaux dossiers de tâches de cet événement. Laisser vide utilise la salle définie dans les
+                                <a href="{{ route('admin.settings', ['tab' => 'integrations']) }}">réglages globaux</a>. Les dossiers déjà créés ne changent pas de salle.
+                            </p>
+                            <form method="POST" action="{{ route('admin.evenements.docspace', $event) }}" class="ukc-form-grid">
+                                @csrf
+                                <div class="ukc-field full">
+                                    <label for="event-docspace-room">Identifiant de la salle DocSpace</label>
+                                    <input type="text" inputmode="numeric" id="event-docspace-room" name="docspace_room_id" value="{{ old('docspace_room_id', $event->settings['docspace']['room_id'] ?? '') }}" placeholder="Salle globale : {{ config('services.docspace.room_id') }}">
+                                    @error('docspace_room_id') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="ukc-form-actions full">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la salle DocSpace</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- ===== INTÉGRATIONS - VISIOCONFÉRENCE (sauvegarde dédiée) ===== --}}
                 {{-- ⚠️ Deuxième panneau du MÊME onglet : les deux gardent leur propre
                      formulaire et leur propre bouton, parce qu'ils enregistrent des
