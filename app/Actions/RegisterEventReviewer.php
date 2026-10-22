@@ -35,8 +35,14 @@ class RegisterEventReviewer
 
         // Une personne peut aussi modérer une séance ou appartenir au comité.
         // Ces rôles restent sur leur fiche ; l'évaluation reçoit sa propre fiche.
-        $participant = $matches->first(fn (Participant $match) => ! in_array($match->role, UpsertParticipantForAccount::STRONG_ROLES, true))
+        $participant = $matches->firstWhere('role', 'former_reviewer')
+            ?? $matches->first(fn (Participant $match) => ! in_array($match->role, UpsertParticipantForAccount::STRONG_ROLES, true))
             ?? new Participant(['event_id' => $event->id, 'email' => $email]);
+
+        $meta = $participant->meta ?? [];
+        if ($participant->exists && $participant->role !== 'reviewer' && $participant->role !== 'former_reviewer') {
+            $meta['reviewer_previous_role'] = $participant->role;
+        }
 
         $participant->first_name = trim($firstName);
         $participant->last_name = trim($lastName);
@@ -47,7 +53,6 @@ class RegisterEventReviewer
             $participant->user_id = $account->id;
         }
 
-        $meta = $participant->meta ?? [];
         $meta['review_tracks'] = $tracks;
         $participant->meta = $meta;
         $participant->save();

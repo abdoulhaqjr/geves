@@ -391,6 +391,8 @@ Route::prefix('admin')->group(function () {
             Route::put('/editions/{event}/modifier', [EventFormController::class, 'update'])->name('admin.evenements.update');
             Route::post('/editions/{event}/relecteurs/expertise', [EventFormController::class, 'saveReviewerExpertise'])->name('admin.evenements.reviewers.expertise');
             Route::post('/editions/{event}/relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'storeReviewer'])->name('admin.evenements.reviewers.store');
+            Route::post('/editions/{event}/relecteurs/{reviewer}/renvoyer', [App\Http\Controllers\Admin\SubmissionController::class, 'resendReviewerRegistration'])->name('admin.evenements.reviewers.resend');
+            Route::delete('/editions/{event}/relecteurs/{reviewer}', [App\Http\Controllers\Admin\SubmissionController::class, 'removeReviewer'])->name('admin.evenements.reviewers.remove');
             Route::post('/editions/{event}/relecteurs/candidatures/{application}/accepter', [App\Http\Controllers\Admin\SubmissionController::class, 'acceptReviewerApplication'])->name('admin.evenements.reviewers.applications.accept');
             Route::get('/editions/{event}/relecteurs/personnes', [App\Http\Controllers\Admin\SubmissionController::class, 'reviewerPeople'])->name('admin.evenements.reviewers.people');
             Route::post('/editions/{event}/relecteurs/grille', [EventFormController::class, 'saveReviewGrid'])->name('admin.evenements.reviewers.criteria');

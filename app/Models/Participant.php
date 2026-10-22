@@ -39,6 +39,7 @@ class Participant extends Model
         'author' => 'Communicant',
         'coauthor' => 'Co-auteur',
         'reviewer' => 'Évaluateur',
+        'former_reviewer' => 'Ancien évaluateur',
         'committee' => 'Comité scientifique',
         'moderator' => 'Modérateur',
         'rapporteur' => 'Rapporteur',

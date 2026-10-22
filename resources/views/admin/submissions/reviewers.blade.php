@@ -46,7 +46,16 @@
             this.email = ''; this.firstName = ''; this.lastName = '';
             this.institution = ''; this.results = []; this.searching = false; this.searched = false;
             this.$nextTick(() => this.$refs.reviewerSearch?.focus());
-        }
+        },
+        confirmReviewerRemoval(event) {
+            const button = event.currentTarget;
+            window.ukcConfirm(
+                `Retirer « ${button.dataset.reviewerName} » des évaluateurs de cet événement ? Les affectations en attente seront annulées. Les évaluations rendues resteront dans l’historique.`,
+                { title: 'Retirer un évaluateur', confirmLabel: 'Retirer', danger: true, wide: true },
+            ).then(confirmed => {
+                if (confirmed) document.getElementById(button.dataset.formId)?.requestSubmit();
+            });
+        },
     }">
 
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
@@ -153,7 +162,7 @@
                         @endif
                         <div class="ukc-table-wrap">
                             <table class="ukc-table">
-                                <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th>Statut</th><th style="text-align:center;">Charge</th></tr></thead>
+                                <thead><tr><th style="min-width:200px;">Évaluateur</th><th>Axes d’expertise</th><th>Statut</th><th style="text-align:center;">Charge</th>@if ($canWrite)<th>Action</th>@endif</tr></thead>
                                 <tbody>
                                     @foreach ($reviewers as $rev)
                                         <tr>
@@ -181,6 +190,14 @@
                                             </td>
                                             <td><span class="ukc-pill">Confirmé</span></td>
                                             <td style="text-align:center;font-weight:700;">{{ $rev['load'] }}</td>
+                                            @if ($canWrite)
+                                                <td style="white-space:nowrap;">
+                                                    <button type="submit" form="reviewer-resend-{{ $rev['id'] }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Renvoyer l’e-mail</button>
+                                                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm"
+                                                            data-reviewer-name="{{ $rev['name'] }}" data-form-id="reviewer-remove-{{ $rev['id'] }}"
+                                                            @click="confirmReviewerRemoval($event)">Retirer</button>
+                                                </td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -204,6 +221,17 @@
                     </p>
                 @endif
             </form>
+
+            @if ($canWrite)
+                @foreach ($reviewers as $rev)
+                    <form id="reviewer-resend-{{ $rev['id'] }}" method="POST" action="{{ route('admin.evenements.reviewers.resend', [$event, $rev['id']]) }}">
+                        @csrf
+                    </form>
+                    <form id="reviewer-remove-{{ $rev['id'] }}" method="POST" action="{{ route('admin.evenements.reviewers.remove', [$event, $rev['id']]) }}">
+                        @csrf @method('DELETE')
+                    </form>
+                @endforeach
+            @endif
 
             @if ($canWrite)
                 <x-ukc.slideover open="reviewerOpen" onClose="reviewerOpen = false" title="Ajouter un évaluateur" width="500px">

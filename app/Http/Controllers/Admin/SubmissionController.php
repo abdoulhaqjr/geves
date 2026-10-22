@@ -44,11 +44,13 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
  * Soumissions du back-office (contrôleur + Blade) : liste filtrable + fiche
@@ -818,13 +820,16 @@ class SubmissionController extends Controller
             return [$application, $reviewer];
         });
         if ($acceptedApplication) {
-            $this->notifyReviewerApplicationAccepted($acceptedApplication, $reviewer);
+            $mailSent = $this->notifyReviewerApplicationAccepted($acceptedApplication, $reviewer);
         } else {
-            Mail::to($reviewer->email)->send(new ReviewerRegistrationMail($reviewer));
+            $mailSent = $this->sendReviewerRegistrationMail($reviewer);
         }
 
-        return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
-            ->with('ukc_status', 'Évaluateur ajouté à cet événement. Il est disponible pour les attributions.');
+        $redirect = redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id]);
+
+        return $mailSent
+            ? $redirect->with('ukc_status', 'Évaluateur ajouté à cet événement. Il est disponible pour les attributions.')
+            : $redirect->with('ukc_error', 'Évaluateur ajouté à cet événement, mais son e-mail n’a pas été envoyé. Vérifiez son adresse et les réglages SMTP.');
     }
 
     public function acceptReviewerApplication(Event $event, ReviewerApplication $application, RegisterEventReviewer $action): RedirectResponse
@@ -853,12 +858,73 @@ class SubmissionController extends Controller
 
             return $reviewer;
         });
-        if ($acceptedReviewer) {
-            $this->notifyReviewerApplicationAccepted($application, $acceptedReviewer);
+        $redirect = redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id]);
+        if (! $acceptedReviewer) {
+            return $redirect->with('ukc_status', 'Cette candidature a déjà été traitée.');
         }
 
-        return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
-            ->with('ukc_status', 'Candidature acceptée. Le participant a été informé.');
+        $mailSent = $this->notifyReviewerApplicationAccepted($application, $acceptedReviewer);
+
+        return ! $mailSent
+            ? $redirect->with('ukc_error', 'Candidature acceptée, mais l’e-mail de confirmation n’a pas été envoyé. Vérifiez l’adresse du participant et les réglages SMTP.')
+            : $redirect->with('ukc_status', 'Candidature acceptée. Le participant a été informé.');
+    }
+
+    public function resendReviewerRegistration(Event $event, Participant $reviewer): RedirectResponse
+    {
+        abort_unless($reviewer->event_id === $event->id && $reviewer->role === 'reviewer', 404);
+
+        $mailSent = $this->sendReviewerRegistrationMail($reviewer);
+        $redirect = redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id]);
+
+        return $mailSent
+            ? $redirect->with('ukc_status', 'E-mail de l’évaluateur envoyé.')
+            : $redirect->with('ukc_error', 'E-mail non envoyé. Vérifiez l’adresse de l’évaluateur et les réglages SMTP.');
+    }
+
+    public function removeReviewer(Event $event, Participant $reviewer): RedirectResponse
+    {
+        abort_unless($reviewer->event_id === $event->id, 404);
+
+        $result = DB::transaction(function () use ($event, $reviewer): ?array {
+            $reviewer = Participant::where('event_id', $event->id)->lockForUpdate()->findOrFail($reviewer->id);
+            if ($reviewer->role !== 'reviewer') {
+                return null;
+            }
+
+            // Les travaux non rendus sont annulés ; les évaluations terminées,
+            // refusées et annulées restent rattachées à la fiche historique.
+            $cancelled = Review::where('reviewer_id', $reviewer->id)
+                ->whereIn('status', Review::PENDING_STATUSES)
+                ->update(['status' => 'cancelled']);
+
+            $previousRole = ($reviewer->meta ?? [])['reviewer_previous_role'] ?? null;
+            $reviewer->role = in_array($previousRole, ['author', 'coauthor', 'attendee'], true)
+                ? $previousRole
+                : 'former_reviewer';
+            $reviewer->save();
+
+            return [$reviewer, $cancelled];
+        });
+
+        $redirect = redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id]);
+        if ($result === null) {
+            return $redirect->with('ukc_status', 'Cette personne ne figure déjà plus parmi les évaluateurs.');
+        }
+
+        [$reviewer, $cancelled] = $result;
+        if ($cancelled > 0) {
+            Notifier::account(
+                $reviewer->user,
+                'review_assigned',
+                'Évaluations annulées',
+                'Votre rôle d’évaluateur pour « '.$event->title.' » a été retiré. Vos évaluations en attente ont été annulées.',
+                route('account.dashboard'),
+                'inbox',
+            );
+        }
+
+        return $redirect->with('ukc_status', 'Évaluateur retiré de cet événement.'.($cancelled > 0 ? ' '.$cancelled.' affectation(s) en attente annulée(s).' : ''));
     }
 
     private function markReviewerApplicationAccepted(ReviewerApplication $application): void
@@ -870,7 +936,7 @@ class SubmissionController extends Controller
         ]);
     }
 
-    private function notifyReviewerApplicationAccepted(ReviewerApplication $application, Participant $reviewer): void
+    private function notifyReviewerApplicationAccepted(ReviewerApplication $application, Participant $reviewer): bool
     {
         Notifier::accountNow(
             $application->user,
@@ -880,7 +946,25 @@ class SubmissionController extends Controller
             route('account.dashboard'),
             'check-circle',
         );
-        Mail::to($reviewer->email)->send(new ReviewerRegistrationMail($reviewer, fromApplication: true));
+        return $this->sendReviewerRegistrationMail($reviewer, fromApplication: true);
+    }
+
+    private function sendReviewerRegistrationMail(Participant $reviewer, bool $fromApplication = false): bool
+    {
+        try {
+            Mail::to($reviewer->email)->send(new ReviewerRegistrationMail($reviewer, $fromApplication));
+
+            return true;
+        } catch (TransportExceptionInterface $exception) {
+            Log::warning('E-mail d’inscription de l’évaluateur non envoyé.', [
+                'event_id' => $reviewer->event_id,
+                'reviewer_id' => $reviewer->id,
+                'recipient' => $reviewer->email,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /** Suggestions de comptes pour le panneau d'ajout d'un évaluateur. */

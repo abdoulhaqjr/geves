@@ -34,6 +34,7 @@ class AssignReviewer
                 }
             })->get();
         $reviewer = $matches->firstWhere('role', 'reviewer')
+            ?? $matches->firstWhere('role', 'former_reviewer')
             ?? $matches->first(fn (Participant $match) => ! in_array($match->role, UpsertParticipantForAccount::STRONG_ROLES, true))
             ?? new Participant(['event_id' => $submission->event_id, 'email' => $normalized]);
 
@@ -47,6 +48,11 @@ class AssignReviewer
             if (blank($reviewer->access_token)) {
                 $reviewer->access_token = Str::random(64);
             }
+        }
+        if ($reviewer->exists && $reviewer->role !== 'reviewer' && $reviewer->role !== 'former_reviewer') {
+            $meta = $reviewer->meta ?? [];
+            $meta['reviewer_previous_role'] = $reviewer->role;
+            $reviewer->meta = $meta;
         }
         $reviewer->role = 'reviewer';
         $reviewer->email = $normalized;
