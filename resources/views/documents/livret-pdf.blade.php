@@ -26,7 +26,9 @@
         h1.part { font-size: 16pt; color: {{ $primary }}; border-bottom: 2px solid #ffd700; padding-bottom: 4px; margin: 0 0 14px; }
         h2.axis { font-size: {{ $opts['size_axis'] }}pt; color: {{ $primary }}; text-transform: uppercase; margin: 18px 0 8px; }
         .ref { font-size: 9pt; font-weight: bold; color: {{ $muted }}; text-align: center; margin: 14px 0 2px; }
-        .abs-title { font-size: {{ $opts['size_abstract'] }}pt; font-weight: bold; color: {{ $primary }}; margin: 0 0 3px; }
+        /* Dompdf applique aux titres Jost des métriques verticales généreuses :
+           cet interligne évite les deux lignes trop écartées du PDF. */
+        .abs-title { font-size: {{ $opts['size_abstract'] }}pt; line-height: .9; font-weight: bold; color: {{ $primary }}; margin: 0 0 3px; }
         .authors { font-size: {{ $opts['size_authors'] }}pt; color: {{ $muted }}; margin: 0 0 2px; }
         .aff { font-size: 8.5pt; font-style: italic; color: {{ $muted }}; margin: 0; }
         .corr { font-size: 8.5pt; color: {{ $muted }}; margin: 3px 0 4px; }
@@ -42,7 +44,7 @@
         .abs-entry { margin-top: 10px; }
         /* Blocs insécables (dompdf) : l'en-tête d'un résumé (réf. -> correspondant) ne se
            coupe jamais ; le libellé « Résumé » reste avec le début de son contenu. */
-        .abs-head { page-break-inside: avoid; }
+        .abs-head, .axis-start { page-break-inside: avoid; }
         .abs-resume { page-break-inside: avoid; }
         /* Aucune LIGNE ne se coupe en deux (bandeau de jour ou donnée). */
         table.prog tr { page-break-inside: avoid; }
@@ -317,11 +319,6 @@
     @php $n = 0; $axisNo = 0; @endphp
     @forelse ($groups as $track => $submissions)
         @php $axisNo++; $axisClean = \App\Documents\LivretDocx::ateliersAxisLabel((string) ($track ?: 'Autres')); @endphp
-        @if ($isGen)
-            <h2 class="axis sans" style="text-align:center;font-size:14pt;">{{ $axisNo }}- {{ \Illuminate\Support\Str::upper($axisClean !== '' ? $axisClean : (string) ($track ?: 'Autres')) }}</h2>
-        @else
-            <h2 class="axis sans" style="text-align:{{ $opts['align_axis'] }};">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
-        @endif
         @foreach ($submissions as $s)
             @php
                 $n++;
@@ -355,6 +352,16 @@
                 }
             @endphp
             <div class="abs-entry">
+                @if ($loop->first)
+                    {{-- L'axe et le premier en-tête forment un seul bloc : si ce bloc
+                         ne tient plus, dompdf le reporte entier sur la page suivante. --}}
+                    <div class="axis-start">
+                        @if ($isGen)
+                            <h2 class="axis sans" style="text-align:center;font-size:14pt;">{{ $axisNo }}- {{ \Illuminate\Support\Str::upper($axisClean !== '' ? $axisClean : (string) ($track ?: 'Autres')) }}</h2>
+                        @else
+                            <h2 class="axis sans" style="text-align:{{ $opts['align_axis'] }};">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
+                        @endif
+                @endif
                 {{-- Bloc insécable : réf. + titre + auteurs + affiliations + correspondant
                      ne se coupent JAMAIS entre deux pages (pas de code seul en bas de page). --}}
                 <div class="abs-head">
@@ -375,6 +382,7 @@
                         @endif
                     @endif
                 </div>
+                @if ($loop->first)</div>@endif
                 @php $body = trim(\App\Support\Html::render($s->abstract)); @endphp
                 @if ($body !== '')
                     {{-- Le libellé « Résumé » reste SOLIDAIRE de son contenu : s'ils ne tiennent
