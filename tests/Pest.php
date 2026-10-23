@@ -1,9 +1,13 @@
 <?php
 
+use App\AI\AiManager;
+use App\AI\Contracts\AiProvider;
+use App\AI\Exceptions\AiUnavailableException;
 use App\Models\Account;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\EventSession;
+use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\User;
@@ -77,6 +81,69 @@ function openEdition(array $settings = []): Event
         'submission_open' => true,
         'settings' => array_merge(['tracks' => ['Sciences', 'Santé'], 'max_communications' => 3], $settings),
     ]);
+}
+
+/** Formation proposée dans un événement dont le module est activé. */
+function publishedFormation(Event $event, float $fee): Formation
+{
+    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => true])]);
+
+    return Formation::create([
+        'event_id' => $event->id,
+        'title' => $fee > 0 ? 'Formation payante' : 'Formation gratuite',
+        'fee' => $fee,
+        'published' => true,
+    ]);
+}
+
+/** Fournisseur IA factice partagé, disponible aussi quand une suite est lancée seule. */
+function fakeAiProvider(array $result): AiProvider
+{
+    return new class($result) implements AiProvider
+    {
+        public function __construct(private array $result) {}
+
+        public function key(): string
+        {
+            return 'fake';
+        }
+
+        public function label(): string
+        {
+            return 'Fake';
+        }
+
+        public function isAvailable(): bool
+        {
+            return true;
+        }
+
+        public function supportsPdf(): bool
+        {
+            return true;
+        }
+
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
+        {
+            return $this->result;
+        }
+    };
+}
+
+function bindFakeAi(?AiProvider $provider): void
+{
+    $manager = Mockery::mock(AiManager::class);
+    $manager->shouldReceive('resolve')->andReturn($provider);
+
+    if ($provider === null) {
+        $manager->shouldReceive('extract')->andThrow(new AiUnavailableException('Aucun assistant IA n’est configuré (voir Réglages).'));
+    } else {
+        $manager->shouldReceive('extract')->andReturnUsing(
+            fn (string $instruction, array $files = [], ?string $tier = null, ?string $preferKey = null) => $provider->extract($instruction, $files, $tier)
+        );
+    }
+
+    app()->instance(AiManager::class, $manager);
 }
 
 /**

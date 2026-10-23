@@ -80,6 +80,7 @@
                                     <option value="openai">OpenAI</option>
                                     <option value="gemini">Gemini</option>
                                     <option value="grok">Grok</option>
+                                    <option value="openrouter">OpenRouter (Gemma)</option>
                                 </select>
                             </div>
                         </div>

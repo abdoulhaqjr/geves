@@ -52,10 +52,13 @@ final class DocxCoverMerger
         $reference = $bookBody->firstChild;
 
         foreach (iterator_to_array($coverBody->childNodes) as $sourceNode) {
-            if ($sourceNode->nodeType !== XML_ELEMENT_NODE || $sourceNode->localName === 'sectPr') {
+            if (! $sourceNode instanceof DOMElement || $sourceNode->localName === 'sectPr') {
                 continue;
             }
             $node = $bookDoc->importNode($sourceNode, true);
+            if (! $node instanceof DOMElement) {
+                throw new RuntimeException('La couverture contient un élément Word invalide.');
+            }
             $bookBody->insertBefore($node, $reference);
             $nodeXp = new DOMXPath($bookDoc);
             $nodeXp->registerNamespace('w', self::W);

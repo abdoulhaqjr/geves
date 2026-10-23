@@ -1,63 +1,9 @@
 <?php
 
 use App\Actions\GenerateReport;
-use App\AI\AiManager;
-use App\AI\Contracts\AiProvider;
-use App\AI\Exceptions\AiUnavailableException;
 use App\Support\Settings;
 
-// openEdition() -> AccountSubmissionTest ; adminStaff() -> helpers partagés
-
-/** Fournisseur IA factice renvoyant une réponse figée (aucun appel réseau). */
-function fakeAiProvider(array $result): AiProvider
-{
-    return new class($result) implements AiProvider
-    {
-        public function __construct(private array $result) {}
-
-        public function key(): string
-        {
-            return 'fake';
-        }
-
-        public function label(): string
-        {
-            return 'Fake';
-        }
-
-        public function isAvailable(): bool
-        {
-            return true;
-        }
-
-        public function supportsPdf(): bool
-        {
-            return true;
-        }
-
-        public function extract(string $instruction, array $files = [], ?string $tier = null): array
-        {
-            return $this->result;
-        }
-    };
-}
-
-function bindFakeAi(?AiProvider $provider): void
-{
-    $manager = Mockery::mock(AiManager::class);
-    $manager->shouldReceive('resolve')->andReturn($provider);
-
-    // La bascule de fournisseurs passe par extract() : on la relaie au fournisseur factice.
-    if ($provider === null) {
-        $manager->shouldReceive('extract')->andThrow(new AiUnavailableException('Aucun assistant IA n’est configuré (voir Réglages).'));
-    } else {
-        $manager->shouldReceive('extract')->andReturnUsing(
-            fn (string $instruction, array $files = [], ?string $tier = null, ?string $preferKey = null) => $provider->extract($instruction, $files, $tier)
-        );
-    }
-
-    app()->instance(AiManager::class, $manager);
-}
+// Helpers IA communs chargés dans tests/Pest.php pour chaque fichier de test.
 
 it('génère et assainit un rapport (section vide filtrée)', function () {
     bindFakeAi(fakeAiProvider([

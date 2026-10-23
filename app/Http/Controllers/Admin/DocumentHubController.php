@@ -442,8 +442,8 @@ class DocumentHubController extends Controller
 
     public function restore(Attestation $attestation): RedirectResponse
     {
+        $reviewer = $attestation->participant;
         if ($attestation->type === 'instruction_resumes') {
-            $reviewer = $attestation->participant;
             if ($reviewer?->event_id !== $attestation->event_id || $reviewer->role !== 'reviewer') {
                 return back()->with('ukc_error', 'Réajoutez cette personne comme évaluateur de cet événement avant de rétablir son attestation.');
             }
@@ -455,7 +455,7 @@ class DocumentHubController extends Controller
             }
         }
         $attestation->update(['revoked' => false]);
-        if ($attestation->type === 'instruction_resumes') {
+        if ($attestation->type === 'instruction_resumes' && $reviewer) {
             $meta = $reviewer->meta ?? [];
             unset($meta['instruction_attestation_revoked_with_reviewer']);
             $reviewer->update(['meta' => $meta]);

@@ -345,7 +345,7 @@ class SecretariatController extends Controller
             'example' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx,xls,xlsx,csv', 'max:10240'],
             'format' => ['nullable', 'in:xlsx,csv,pdf,docx'],
             'dataset' => ['nullable', 'in:presence,none'],
-            'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok'],
+            'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok,openrouter'],
         ]);
 
         $event = Event::findOrFail($data['event_id']);

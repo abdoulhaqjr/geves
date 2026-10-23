@@ -19,42 +19,37 @@ class TutorialVideoCreativePlanner
         $guide = (array) ($brief['guide'] ?? []);
         $creative = ['requested_at' => now()->toIso8601String(), 'errors' => []];
         $providers = [];
+        $available = $this->providers();
 
-        $scenarioProvider = $this->director();
-        if ($scenarioProvider !== null) {
+        foreach ($available as $scenarioProvider) {
             try {
                 $creative['scenario'] = $scenarioProvider->extract($this->scenarioPrompt($guide), [], $this->tier());
                 $creative['scenario_provider'] = $scenarioProvider->key();
                 $providers[] = $scenarioProvider->key();
+                break;
             } catch (Throwable $exception) {
                 $creative['errors'][] = $this->error($scenarioProvider->key(), $exception);
-                $fallback = $this->nextProvider($scenarioProvider->key());
-                if ($fallback !== null) {
-                    try {
-                        $creative['scenario'] = $fallback->extract($this->scenarioPrompt($guide), [], $this->tier());
-                        $creative['scenario_provider'] = $fallback->key();
-                        $providers[] = $fallback->key();
-                    } catch (Throwable $fallbackException) {
-                        $creative['errors'][] = $this->error($fallback->key(), $fallbackException);
-                    }
-                }
             }
-        } else {
+        }
+        if ($available === []) {
             $creative['errors'][] = 'Aucun fournisseur de scénario n’est configuré.';
         }
 
-        $reviewProvider = isset($creative['scenario_provider'])
-            ? $this->nextProvider((string) $creative['scenario_provider'])
-            : null;
-        if ($reviewProvider !== null && isset($creative['scenario'])) {
-            try {
-                $creative['review'] = $reviewProvider->extract(
-                    $this->reviewPrompt($guide, (array) $creative['scenario']), [], $this->tier(),
-                );
-                $creative['review_provider'] = $reviewProvider->key();
-                $providers[] = $reviewProvider->key();
-            } catch (Throwable $exception) {
-                $creative['errors'][] = $this->error($reviewProvider->key(), $exception);
+        if (isset($creative['scenario'])) {
+            foreach ($available as $reviewProvider) {
+                if ($reviewProvider->key() === $creative['scenario_provider']) {
+                    continue;
+                }
+                try {
+                    $creative['review'] = $reviewProvider->extract(
+                        $this->reviewPrompt($guide, (array) $creative['scenario']), [], $this->tier(),
+                    );
+                    $creative['review_provider'] = $reviewProvider->key();
+                    $providers[] = $reviewProvider->key();
+                    break;
+                } catch (Throwable $exception) {
+                    $creative['errors'][] = $this->error($reviewProvider->key(), $exception);
+                }
             }
         }
 
@@ -65,36 +60,15 @@ class TutorialVideoCreativePlanner
         return ['creative' => $creative, 'providers' => array_values(array_unique($providers))];
     }
 
-    private function provider(string $key): ?AiProvider
+    /** @return array<int, AiProvider> */
+    private function providers(): array
     {
-        $provider = $this->ai->get($key);
-
-        return $provider !== null && $provider->isAvailable() ? $provider : null;
-    }
-
-    private function director(): ?AiProvider
-    {
+        $available = $this->ai->available();
         $configured = (string) config('services.ai.default');
-        $keys = array_values(array_unique([$configured, 'gemini', 'claude', 'openai']));
+        usort($available, fn (AiProvider $a, AiProvider $b) =>
+            ($a->key() === $configured ? 0 : 1) <=> ($b->key() === $configured ? 0 : 1));
 
-        foreach ($keys as $key) {
-            if (in_array($key, ['gemini', 'claude', 'openai'], true) && ($provider = $this->provider($key)) !== null) {
-                return $provider;
-            }
-        }
-
-        return null;
-    }
-
-    private function nextProvider(string $except): ?AiProvider
-    {
-        foreach (['claude', 'gemini', 'openai'] as $key) {
-            if ($key !== $except && ($provider = $this->provider($key)) !== null) {
-                return $provider;
-            }
-        }
-
-        return null;
+        return $available;
     }
 
     /** @param array<string, mixed> $guide */

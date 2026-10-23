@@ -257,9 +257,13 @@ it('donne au copilote admin les relectures, formations et réclamations', functi
     $sub = seededSubmission('accepted');
     $event = $sub->event;
 
-    // Une relecture confiée (en attente).
+    // Une relecture confiée à un évaluateur actif (en attente).
+    $reviewer = $event->participants()->create([
+        'first_name' => 'Komi', 'last_name' => 'Relecteur',
+        'email' => 'relecteur@example.tg', 'role' => 'reviewer',
+    ]);
     Review::create([
-        'submission_id' => $sub->id, 'reviewer_id' => $sub->participant_id, 'status' => 'invited',
+        'submission_id' => $sub->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited',
     ]);
 
     // Une réclamation ouverte.

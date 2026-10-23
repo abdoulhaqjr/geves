@@ -91,8 +91,12 @@ return [
         'model_fast' => env('GROK_MODEL_FAST'),
         'model_deep' => env('GROK_MODEL_DEEP'),
     ],
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'google/gemma-4-31b-it:free'),
+    ],
     'ai' => [
-        'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok
+        'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok | openrouter
         // Chatbot public (admins/gestionnaires non limités ; par IP si anonyme) :
         // rate-limit court terme (questions / heure) + plafond journalier (questions / jour).
         'public_rate_limit' => (int) env('AI_PUBLIC_RATE_LIMIT', 20),

@@ -7,23 +7,6 @@ use App\Models\Payment;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
-/**
- * Formation publiée + module Formations activé sur son événement : c'est
- * l'invariant réel (une formation n'est proposée que si le module est activé
- * pour l'événement, cf. Formation::offeredIn).
- */
-function publishedFormation($event, float $fee): Formation
-{
-    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => true])]);
-
-    return Formation::create([
-        'event_id' => $event->id,
-        'title' => $fee > 0 ? 'Formation payante' : 'Formation gratuite',
-        'fee' => $fee,
-        'published' => true,
-    ]);
-}
-
 it('affiche les formations de l’événement sélectionné (formation payante) sans erreur', function () {
     $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();

@@ -184,6 +184,35 @@ it('bascule sur un autre fournisseur quand le premier échoue', function () {
     expect($calls)->toBe(['gemini', 'claude']); // le défaut d'abord, puis bascule
 });
 
+it('essaie les autres fournisseurs quand OpenRouter est le défaut et échoue', function () {
+    config(['services.ai.default' => 'openrouter']);
+    $calls = [];
+    $manager = aiManagerWith([
+        aiProv('claude', true, function () use (&$calls) {
+            $calls[] = 'claude';
+
+            return ['answer' => 'secours'];
+        }),
+        aiProv('openrouter', true, function () use (&$calls) {
+            $calls[] = 'openrouter';
+            throw new AiUnavailableException('quota épuisé');
+        }),
+    ]);
+
+    expect($manager->extract('question')['answer'])->toBe('secours');
+    expect($calls)->toBe(['openrouter', 'claude']);
+});
+
+it('se replie aussi après une réponse vide du fournisseur par défaut', function () {
+    config(['services.ai.default' => 'openrouter']);
+    $manager = aiManagerWith([
+        aiProv('openrouter', true, fn () => []),
+        aiProv('gemini', true, fn () => ['answer' => 'ok']),
+    ]);
+
+    expect($manager->extract('question')['answer'])->toBe('ok');
+});
+
 it('ignore les fournisseurs incapables de lire les PDF', function () {
     config(['services.ai.default' => 'openai']);
 

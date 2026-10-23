@@ -184,7 +184,7 @@ it('la page Participants ne marque pas « payé » sur un simple paiement de for
     $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $participant = $event->participants()->create([
-        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'attendee', 'user_id' => $user->id,
     ]);
     $formation = publishedFormation($event, 10000);
     Payment::create([

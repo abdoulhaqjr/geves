@@ -414,8 +414,8 @@
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</span></h2>
                     <p class="desc">
-                        Utilisée pour le paramétrage assisté d’un événement et la génération de modèles (badges, attestations).
-                        Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
+                        Utilisée dans les chats, les rapports, l’analyse et la génération de documents.
+                        Les clés sont facultatives ; renseignez au moins un fournisseur.
                     </p>
                     <div class="ukc-field" style="max-width:360px;">
                         <label for="ai_default">Fournisseur par défaut</label>
@@ -424,9 +424,12 @@
                             <option value="openai" @selected($v('ai_default') === 'openai')>OpenAI</option>
                             <option value="gemini" @selected($v('ai_default') === 'gemini')>Gemini (Google)</option>
                             <option value="grok" @selected($v('ai_default') === 'grok')>Grok (xAI)</option>
+                            <option value="openrouter" @selected($v('ai_default') === 'openrouter')>OpenRouter (Gemma)</option>
                         </select>
-                        <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
                         @error('ai_default') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field" style="margin-top:6px;">
+                        <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
                     </div>
 
                     @php($aiProviders = [
@@ -448,6 +451,15 @@
                                        style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
                             </div>
                         @endforeach
+                        <div style="display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;align-items:center;">
+                            <span style="font-weight:600;font-size:.88rem;">OpenRouter (Gemma)</span>
+                            <input type="password" name="ai_openrouter_key" autocomplete="new-password" placeholder="Clé API"
+                                   style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                            <input type="text" name="ai_openrouter_model" value="{{ $v('ai_openrouter_model') }}" placeholder="google/gemma-4-31b-it:free"
+                                   style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        </div>
+                        @error('ai_openrouter_key') <span class="error">{{ $message }}</span> @enderror
+                        @error('ai_openrouter_model') <span class="error">{{ $message }}</span> @enderror
                     </div>
                 </div>
             </div>

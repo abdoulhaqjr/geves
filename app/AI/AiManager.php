@@ -8,6 +8,7 @@ use App\AI\Providers\AnthropicProvider;
 use App\AI\Providers\GeminiProvider;
 use App\AI\Providers\GrokProvider;
 use App\AI\Providers\OpenAiProvider;
+use App\AI\Providers\OpenRouterProvider;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +29,7 @@ class AiManager
             new OpenAiProvider,
             new GeminiProvider,
             new GrokProvider,
+            new OpenRouterProvider,
         ];
     }
 
@@ -57,7 +59,7 @@ class AiManager
     /**
      * Fournisseur à utiliser : le défaut configuré s'il est disponible, sinon le
      * premier disponible. Si un PDF est présent, on privilégie un fournisseur
-     * qui sait lire les PDF (Claude/Gemini).
+     * qui sait lire les PDF (Claude/Gemini/OpenRouter).
      */
     public function resolve(bool $needsPdf = false): ?AiProvider
     {
@@ -108,10 +110,19 @@ class AiManager
         $authFailures = [];
         foreach ($candidates as $provider) {
             try {
-                return $provider->extract($instruction, $files, $tier);
+                $result = $provider->extract($instruction, $files, $tier);
+                if ($result === []) {
+                    throw new AiUnavailableException('Le fournisseur IA n’a pas renvoyé de réponse exploitable.');
+                }
+
+                return $result;
             } catch (AiUnavailableException|RequestException|ConnectionException $e) {
                 // Ce fournisseur ne peut pas honorer la tâche : on tente le suivant.
-                Log::warning('IA : bascule de fournisseur après échec de '.$provider->key(), ['message' => $e->getMessage()]);
+                // La réponse d'un fournisseur peut contenir des données transmises à l'IA.
+                Log::warning('IA : bascule de fournisseur après échec de '.$provider->key(), [
+                    'exception' => $e::class,
+                    'status' => $e instanceof RequestException ? $e->response->status() : null,
+                ]);
                 $last = $e;
                 if ($e instanceof RequestException && in_array($e->response->status(), [401, 403], true)) {
                     $authFailures[] = $provider->label();

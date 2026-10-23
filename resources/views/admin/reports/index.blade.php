@@ -500,6 +500,7 @@
                                 <option value="openai" @selected(old('aiProvider')==='openai')>OpenAI</option>
                                 <option value="gemini" @selected(old('aiProvider')==='gemini')>Gemini</option>
                                 <option value="grok" @selected(old('aiProvider')==='grok')>Grok</option>
+                                <option value="openrouter" @selected(old('aiProvider')==='openrouter')>OpenRouter (Gemma)</option>
                             </select>
                         </div>
 

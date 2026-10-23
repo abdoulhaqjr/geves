@@ -368,6 +368,18 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
+        if (array_key_exists('ai.openrouter_key', $s)) {
+            try {
+                Config::set('services.openrouter.key', filled($set('ai.openrouter_key'))
+                    ? Crypt::decryptString((string) $set('ai.openrouter_key'))
+                    : null);
+            } catch (DecryptException) {
+                Config::set('services.openrouter.key', null);
+            }
+        }
+        if (filled($set('ai.openrouter_model'))) {
+            Config::set('services.openrouter.model', $set('ai.openrouter_model'));
+        }
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
 
         // Visio : fournisseur par défaut + identifiants LiveKit (repli config/.env).

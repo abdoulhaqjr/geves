@@ -51,7 +51,13 @@ final class LivretCover
         try {
             $coverPdf = $docspace->downloadFile($convertedId);
         } finally {
-            $docspace->deleteFile($convertedId);
+            // Un refus de suppression du fichier temporaire par DocSpace ne doit
+            // pas transformer un export réussi en erreur 500 pour l'utilisateur.
+            try {
+                $docspace->deleteFile($convertedId);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         $paths = [];

@@ -481,14 +481,14 @@ it('filtre les participants par paiement et par invitation', function () {
     Payment::create(['event_id' => $event->id, 'participant_id' => $payeur->id, 'amount' => 25000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
 
     // Ne règle QU'UNE formation : ne doit pas ressortir dans « Ont payé ».
-    $stagiaire = $event->participants()->create(['first_name' => 'Sara', 'last_name' => 'Stagiaire', 'email' => 'sara@test.tg', 'role' => 'trainee']);
+    $stagiaire = $event->participants()->create(['first_name' => 'Sara', 'last_name' => 'Stagiaire', 'email' => 'sara@test.tg', 'role' => 'attendee']);
     Payment::create([
         'event_id' => $event->id, 'participant_id' => $stagiaire->id, 'amount' => 5000,
         'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid', 'meta' => ['flow' => 'formation', 'formation_id' => 1],
     ]);
 
     $invite = $event->participants()->create([
-        'first_name' => 'Ines', 'last_name' => 'Invitee', 'email' => 'ines@test.tg', 'role' => 'author',
+        'first_name' => 'Ines', 'last_name' => 'Invitee', 'email' => 'ines@test.tg', 'role' => 'attendee',
         'meta' => ['invited_at' => now()->toDateTimeString()],
     ]);
 
@@ -510,7 +510,7 @@ it('filtre les participants par paiement et par invitation', function () {
 
 it('n’expose plus « En tant que » dans la liste des participants', function () {
     $event = openEdition();
-    $event->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
+    $event->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'attendee']);
 
     // L'impersonation reste accessible depuis l'aperçu, pas depuis la liste.
     $this->actingAs(adminStaff(), 'web')

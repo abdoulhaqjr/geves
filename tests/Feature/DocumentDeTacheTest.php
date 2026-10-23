@@ -271,6 +271,7 @@ describe('couche temps reel en reserve', function () {
         Config::set('broadcasting.default', 'pusher');
         Config::set('broadcasting.connections.pusher.app_id', '1');
         Config::set('broadcasting.connections.pusher.key', 'cle');
+        Config::set('broadcasting.connections.pusher.options.host', 'exemple.piesocket.com');
         Config::set('broadcasting.connections.pusher.secret', null);
 
         // Avec la clé publique seule, une page ouvrirait une connexion que le

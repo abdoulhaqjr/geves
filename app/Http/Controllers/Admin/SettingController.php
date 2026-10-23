@@ -83,6 +83,7 @@ class SettingController extends Controller
         'ai_gemini_model' => 'ai.gemini_model',
         'ai_grok_key' => 'ai.grok_key',
         'ai_grok_model' => 'ai.grok_model',
+        'ai_openrouter_model' => 'ai.openrouter_model',
         'meeting_default' => 'meetings.default',
         'meetings_backgrounds' => 'meetings.backgrounds',
         'livekit_url' => 'livekit.url',
@@ -158,6 +159,7 @@ class SettingController extends Controller
             'ai_gemini_model' => $g('ai.gemini_model', (string) config('services.gemini.model')),
             'ai_grok_key' => $g('ai.grok_key'),
             'ai_grok_model' => $g('ai.grok_model', (string) config('services.grok.model')),
+            'ai_openrouter_model' => $g('ai.openrouter_model', (string) config('services.openrouter.model')),
             'meeting_default' => $g('meetings.default', (string) config('meetings.default', 'livekit')),
             'meetings_backgrounds' => $g('meetings.backgrounds'),
             'livekit_url' => $g('livekit.url', (string) config('meetings.livekit.url')),
@@ -214,7 +216,9 @@ class SettingController extends Controller
             'docspace_api_key' => ['nullable', 'string', 'max:4096'],
             'payments_default' => ['required', 'in:manual,fedapay'],
             'fedapay_mode' => ['required', 'in:test,live'],
-            'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
+            'ai_default' => ['required', 'in:openai,claude,gemini,grok,openrouter'],
+            'ai_openrouter_key' => ['nullable', 'string', 'max:4096'],
+            'ai_openrouter_model' => ['nullable', 'string', 'max:255'],
             'meeting_default' => ['required', 'in:livekit,jitsi'],
             'livekit_meet_url' => ['nullable', 'url'],
             'livekit_egress_s3_endpoint' => ['nullable', 'url'],
@@ -255,7 +259,7 @@ class SettingController extends Controller
         if ($validator->fails()) {
             $tab = $this->tabForField((string) array_key_first($validator->errors()->toArray()));
 
-            return back()->withInput($request->except(['turnstile_secret_key', 'realtime_secret', 'docspace_api_key']))
+            return back()->withInput($request->except(['turnstile_secret_key', 'realtime_secret', 'docspace_api_key', 'ai_openrouter_key']))
                 ->withErrors($validator)->with('settings_tab', $tab);
         }
 
@@ -279,6 +283,9 @@ class SettingController extends Controller
         }
 
         Settings::setMany($payload);
+        if ($request->filled('ai_openrouter_key')) {
+            Settings::set('ai.openrouter_key', Crypt::encryptString(trim((string) $request->input('ai_openrouter_key'))));
+        }
         if ($request->filled('docspace_api_key')) {
             Settings::set('docspace.api_key', Crypt::encryptString(trim((string) $request->input('docspace_api_key'))));
         }

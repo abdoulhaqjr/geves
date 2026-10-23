@@ -32,6 +32,8 @@ Larastan **niveau 5**.
 - Retirer un évaluateur révoque son attestation `instruction_resumes` et l'exclut des statistiques d'évaluation actives. Une réinscription ou réattribution peut rétablir l'attestation révoquée par ce retrait si une évaluation terminée existe ; une révocation manuelle reste manuelle.
 - Les onglets de `/admin/rapports` utilisent `?event_id=…&tab=…` et le composant `.ukc-nav-docs`. Dans cette vue, déclarer les tableaux PHP avec `@php … @endphp` : la forme courte `@php(...)` a déjà absorbé le bloc suivant à la compilation Blade.
 - La couverture DocSpace du livret est propre à l'événement et facultative. Le PDF fusionné utilise `pdf-lib` via `scripts/merge-livret-cover.mjs` et le binaire `LIVRET_PDF_NODE_BINARY` (défaut `node`). Sans couverture DocSpace active, la couverture automatique reste utilisée.
+- La page Utilisateurs lit le pays de la dernière IP depuis la base locale DB-IP Country Lite (`storage/app/geoip/dbip-country-lite.mmdb`) ; ce fichier est ignoré par Git. L'installer après déploiement avec `php artisan geoip:update` ; le planificateur le renouvelle le 3 de chaque mois. La page porte l'attribution DB-IP exigée par la licence.
+- Les exemples Office transmis au repli IA OpenRouter sont lus localement ; l'extracteur refuse les archives dépassant 32 Mo après décompression. Les clés API restent dans les réglages chiffrés ou l'environnement.
 
 ### Comptes et droits (2026-10-20)
 

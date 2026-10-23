@@ -204,7 +204,7 @@ class ReportController extends Controller
             'aiExample' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx,xls,xlsx,csv', 'max:10240'],
             'format' => ['nullable', 'in:xlsx,csv,pdf,docx'],
             'scope' => ['nullable', 'in:event,subs,part,pay,reports,all'],
-            'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok'],
+            'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok,openrouter'],
         ]);
 
         $mode = $data['mode'] ?? 'describe';

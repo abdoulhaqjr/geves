@@ -9,8 +9,8 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Socle des fournisseurs à API compatible OpenAI (chat/completions) : OpenAI et
- * Grok (xAI). Multimodal images uniquement (pas de PDF).
+ * Socle des fournisseurs à API compatible OpenAI (chat/completions) : OpenAI,
+ * Grok (xAI) et OpenRouter. Le PDF est ajouté par OpenRouterProvider.
  */
 abstract class OpenAiCompatibleProvider implements AiProvider
 {
@@ -21,7 +21,7 @@ abstract class OpenAiCompatibleProvider implements AiProvider
 
     abstract public function label(): string;
 
-    /** Nom du service dans config/services.php (openai | grok). */
+    /** Nom du service dans config/services.php (openai | grok | openrouter). */
     abstract protected function service(): string;
 
     abstract protected function endpoint(): string;

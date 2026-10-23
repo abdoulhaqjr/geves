@@ -8,7 +8,7 @@ namespace App\AI\Contracts;
  */
 interface AiProvider
 {
-    /** Jeton du fournisseur (aligné sur services.ai.default : claude|openai|gemini|grok). */
+    /** Jeton du fournisseur (aligné sur services.ai.default : claude|openai|gemini|grok|openrouter). */
     public function key(): string;
 
     public function label(): string;

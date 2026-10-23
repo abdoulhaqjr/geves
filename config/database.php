@@ -38,8 +38,11 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
+            // Les requêtes HTTP, sessions et jobs peuvent écrire en parallèle sur
+            // SQLite. WAL laisse les lectures avancer pendant une écriture et le
+            // délai évite qu'un verrou transitoire échoue immédiatement.
+            'busy_timeout' => (int) env('DB_BUSY_TIMEOUT', 5000),
+            'journal_mode' => env('DB_JOURNAL_MODE', 'WAL'),
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
         ],

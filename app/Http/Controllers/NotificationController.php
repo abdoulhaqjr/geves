@@ -33,7 +33,7 @@ class NotificationController extends Controller
     public function preview(): JsonResponse
     {
         $user = $this->notifiable();
-        abort_unless($user, 403);
+        abort_unless($user !== null, 403);
 
         return response()->json([
             'unread_count' => $user->unreadNotifications()->count(),
