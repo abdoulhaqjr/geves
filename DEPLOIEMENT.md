@@ -359,6 +359,21 @@ base et considère son travail fini. C'est un travailleur qui les expédie. Le
 symptôme est trompeur : l'interface affiche « invitation envoyée », et rien
 n'arrive.
 
+Ne masquez pas les erreurs du travailleur pendant le diagnostic : le renvoi
+`>> /dev/null 2>&1` dissimule aussi les erreurs de démarrage. Pour vérifier
+que cPanel exécute bien la tâche sans traiter les messages, remplacez
+temporairement sa commande par :
+
+```bash
+cd /home/UTILISATEUR/apps/geves && php artisan queue:work --help > storage/logs/queue-cron-probe.log 2>&1
+```
+
+Après une minute, consultez `storage/logs/queue-cron-probe.log` : l'aide
+confirme que cron et PHP démarrent ; une erreur indique ce qu'il faut corriger ;
+un fichier absent oriente vers la planification ou le chemin du projet. Cette
+commande ne consomme aucun travail en attente. Remettez ensuite le travailleur
+en service seulement après avoir examiné les tâches accumulées.
+
 `--stop-when-empty` et `--max-time=55` font que le processus se termine de
 lui-même : un hébergement mutualisé n'autorise pas de démon permanent.
 
@@ -405,11 +420,14 @@ Dans le back-office, invitez un participant à une adresse à vous.
 
 ```bash
 cd ~/apps/geves
-php artisan queue:work --stop-when-empty      # forcer un passage à la main
+php artisan tinker --execute='$oldest=DB::table("jobs")->min("created_at"); echo "pending=".DB::table("jobs")->count()." oldest=".($oldest ? date("Y-m-d H:i:s", $oldest) : "none").PHP_EOL;'
 tail -n 40 storage/logs/laravel.log
 ```
 
-Si l'e-mail part avec la commande manuelle, c'est le cron F2 qui est mal réglé.
+Si des tâches anciennes sont en attente, examinez leurs types et dates avant
+de relancer le travailleur : une reprise en bloc peut envoyer de vieilles
+invitations et notifications. Si la file est vide, vérifiez que l'e-mail a bien
+été créé puis contrôlez le cron F2 avec la commande `--help` ci-dessus.
 Si le journal montre une erreur SMTP, ce sont les `MAIL_*` du `.env` (et pensez
 à `config:cache` après correction).
 
