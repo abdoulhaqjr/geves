@@ -1,0 +1,6 @@
+1. admin_dashboard: KPI cards, event list, side menu.
+2. submission_wizard: The multi-step form, progress bar, summary.
+3. planning_grid: The a-grid of sessions and slots.
+4. visio_room: The LiveKit interface, chat, and reactions.
+5. participant_docs: The document hub with certified PDF previews.
+6. ai_assistant: The chat interface with Peace and Marc.

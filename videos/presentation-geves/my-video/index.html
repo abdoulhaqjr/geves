@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>GEVES - Présentation Institutionnelle</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;700&display=swap">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <style>
+    :root {
+      --ukc-blue: #223ea4;
+      --ukc-gold: #ffd700;
+      --ukc-white: #ffffff;
+      --ukc-gray: #f4f7fa;
+      --ukc-hero-navy: #14205a;
+      --font-main: 'Jost', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-main);
+      background: #000;
+      overflow: hidden;
+      width: 1920px;
+      height: 1080px;
+    }
+    .scene {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      z-index: 1;
+    }
+    .scene.active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 2;
+    }
+    /* Backgrounds */
+    .hero-bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--ukc-hero-navy), var(--ukc-blue));
+      z-index: -1;
+    }
+    .title-card {
+      text-align: center;
+      color: var(--ukc-white);
+      transform: translateY(30px);
+    }
+    .title-card h1 {
+      font-size: 140px;
+      margin: 0;
+      color: var(--ukc-gold);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+    }
+    .title-card p {
+      font-size: 48px;
+      font-weight: 400;
+      margin-top: 20px;
+    }
+    /* Mockup Engine */
+    .mockup {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+      overflow: hidden;
+      border: 12px solid #222;
+      position: relative;
+      width: 1400px;
+      height: 800px;
+      transform: scale(0.9);
+    }
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      background: var(--ukc-gray);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .overlay-text {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(34, 62, 164, 0.95);
+      color: white;
+      padding: 25px 50px;
+      border-radius: 100px;
+      font-size: 38px;
+      border: 3px solid var(--ukc-gold);
+      white-space: nowrap;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    .feature-box {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-left: 10px solid var(--ukc-blue);
+      max-width: 800px;
+    }
+    .feature-box h2 {
+      color: var(--ukc-blue);
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    .feature-box p {
+      font-size: 32px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div id="composition-root" data-composition-id="geves-presentation" data-width="1920" data-height="1080">
+    <audio id="voiceover" src="assets/audio/voiceover.wav" data-start="0" data-has-audio="true"></audio>
+
+
+    <!-- Sequence 1: Intro -->
+    <div class="scene clip" id="scene-1" data-start="0" data-duration="10">
+      <div class="hero-bg"></div>
+      <div class="title-card" id="intro-text">
+        <h1>GEVES</h1>
+        <p>L'innovation au service de la recherche</p>
+      </div>
+    </div>
+
+    <!-- ... (rest of the scenes remain identical) ... -->
+  </div>
+
+    <!-- Sequence 2: Concept -->
+    <div class="scene clip" id="scene-2" data-start="10" data-duration="12">
+      <div class="mockup" id="mockup-concept">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Gestion d'Événements</h2>
+            <p>Colloques, Séminaires, Journées Scientifiques : une plateforme unique pour une rigueur totale.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-concept">L'excellence organisationnelle</div>
+    </div>
+
+    <!-- Sequence 3: Appel -->
+    <div class="scene clip" id="scene-3" data-start="22" data-duration="13">
+      <div class="mockup" id="mockup-appel">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Soumission Simplifiée</h2>
+            <p>Dépôt de résumés, choix des axes thématiques et suivi en temps réel.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-appel">Un parcours fluide pour les chercheurs</div>
+    </div>
+
+    <!-- Sequence 4: Qualité -->
+    <div class="scene clip" id="scene-4" data-start="35" data-duration="13">
+      <div class="mockup" id="mockup-qualite">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Évaluation Rigoureuse</h2>
+            <p>Processus de relecture en aveugle pour garantir la qualité scientifique.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-qualite">La garantie de l'excellence</div>
+    </div>
+
+    <!-- Sequence 5: Planning -->
+    <div class="scene clip" id="scene-5" data-start="48" data-duration="14">
+      <div class="mockup" id="mockup-planning">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Planning Interactif</h2>
+            <p>Optimisation des salles et des créneaux en un clic.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-planning">Une logistique agile et précise</div>
+    </div>
+
+    <!-- Sequence 6: Accès -->
+    <div class="scene clip" id="scene-6" data-start="62" data-duration="13">
+      <div class="mockup" id="mockup-acces">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Accès Simplifié</h2>
+            <p>Inscription rapide et règlement sécurisé via Mobile Money ou Carte.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-acces">L'accessibilité pour tous</div>
+    </div>
+
+    <!-- Sequence 7: Direct -->
+    <div class="scene clip" id="scene-7" data-start="75" data-duration="15">
+      <div class="mockup" id="mockup-direct">
+        <div class="screen-content" style="background: #111; color: white;">
+          <div class="feature-box" style="background: #222; color: white; border-left-color: var(--ukc-gold);">
+            <h2 style="color: var(--ukc-gold);">Visioconférence</h2>
+            <p>Chat, Q&A et interactions en direct pour un savoir sans frontières.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-direct">L'interaction en temps réel</div>
+    </div>
+
+    <!-- Sequence 8: Documents -->
+    <div class="scene clip" id="scene-8" data-start="90" data-duration="20">
+      <div class="mockup" id="mockup-docs">
+        <div class="screen-content">
+          <div class="feature-box">
+            <h2>Dossier Personnel</h2>
+            <p>Reçus, documents et attestations certifiées, tous centralisés et vérifiables.</p>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-docs">La valeur de vos contributions</div>
+    </div>
+
+    <!-- Sequence 9: IA -->
+    <div class="scene clip" id="scene-9" data-start="110" data-duration="15">
+      <div style="display: flex; gap: 100px;">
+        <div class="mockup" id="mockup-peace" style="transform: scale(0.7); width: 600px; height: 400px;">
+          <div class="screen-content">
+            <div class="feature-box" style="font-size: 0.8em;">
+              <h2>Peace</h2>
+              <p>Gestion des plaintes et assistance publique.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mockup" id="mockup-marc" style="transform: scale(0.7); width: 600px; height: 400px;">
+          <div class="screen-content">
+            <div class="feature-box" style="font-size: 0.8em;">
+              <h2>Marc</h2>
+              <p>Copilote intelligent pour les administrateurs.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-text" id="text-ia">L'IA au service de l'utilisateur</div>
+    </div>
+
+    <!-- Sequence 10: Outro -->
+    <div class="scene clip" id="scene-10" data-start="125" data-duration="15">
+      <div class="hero-bg"></div>
+      <div class="title-card" id="outro-text">
+        <h1>GEVES</h1>
+        <p>L'innovation au service de la recherche</p>
+        <div style="margin-top: 30px; font-size: 32px; color: var(--ukc-gold);">geves.univkara.tg</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    const mainTimeline = gsap.timeline({ paused: true });
+    window.__timelines["geves-presentation"] = mainTimeline;
+
+    // Animation logic for each scene
+    const scenes = document.querySelectorAll('.scene');
+    scenes.forEach((scene, index) => {
+      const start = parseFloat(scene.getAttribute('data-start'));
+      const duration = parseFloat(scene.getAttribute('data-duration'));
+
+      mainTimeline.to(scene, {
+        opacity: 1,
+        visibility: 'visible',
+        duration: 0.5,
+        onStart: () => scene.classList.add('active')
+      }, start);
+
+      mainTimeline.to(scene, {
+        opacity: 0,
+        visibility: 'hidden',
+        duration: 0.5,
+        onComplete: () => scene.classList.remove('active')
+      }, start + duration);
+    });
+
+    // Intro animation
+    mainTimeline.from("#intro-text", {
+      y: 50,
+      opacity: 0,
+      duration: 1.5,
+      ease: "power3.out"
+    }, 0);
+
+    // Cinematic movements for mockups
+    document.querySelectorAll('.mockup').forEach((mockup, i) => {
+      const scene = mockup.closest('.scene');
+      const start = parseFloat(scene.getAttribute('data-start'));
+      const duration = parseFloat(scene.getAttribute('data-duration'));
+
+      // Initial entry
+      mainTimeline.from(mockup, {
+        scale: 0.7,
+        opacity: 0,
+        duration: 1,
+        ease: "back.out(1.7)"
+      }, start);
+
+      // Subtle Ken Burns zoom/pan during the scene
+      mainTimeline.to(mockup, {
+        scale: 0.95,
+        x: -20,
+        y: -20,
+        duration: duration,
+        ease: "linear"
+      }, start + 1);
+    });
+
+    // Overlay animations
+    document.querySelectorAll('.overlay-text').forEach((text, i) => {
+      const scene = text.closest('.scene');
+      const start = parseFloat(scene.getAttribute('data-start'));
+      mainTimeline.from(text, {
+        y: 20,
+        opacity: 0,
+        duration: 0.8,
+        delay: 0.5
+      }, start);
+    });
+  </script>
+</body>
+</html>

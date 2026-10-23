@@ -1,0 +1,8 @@
+/.hyperframes/
+/.thumbnails/
+/.waveform-cache/
+/index.html2
+/index.html`
+/videos/
+/renders/*
+!/renders/my-video_2026-10-22_23-35-39.mp4

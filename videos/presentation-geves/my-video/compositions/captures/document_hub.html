@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="stylesheet" href="../../resources/css/ukc.css">
+  <style>
+    @font-face { font-family: 'Jost'; src: local('Jost'); }
+    body { margin: 0; background: #f4f7fa; font-family: 'Jost', sans-serif; width: 1920px; height: 1080px; overflow: hidden; }
+    #root { display: flex; width: 100%; height: 100%; }
+    .sidebar { width: 260px; background: #14205a; color: white; height: 100%; padding: 20px; }
+    .main { flex: 1; padding: 40px; }
+
+    .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 30px; }
+    .doc-card { background: white; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #eee; transition: transform 0.2s; }
+    .doc-preview { width: 150px; height: 200px; background: #ddd; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; overflow: hidden; border: 1px solid #ccc; }
+    .doc-preview .page-top { width: 100%; height: 20px; background: #eee; }
+    .doc-title { font-weight: bold; font-size: 18px; color: #223ea4; margin-bottom: 10px; }
+    .doc-meta { font-size: 14px; color: #666; margin-bottom: 15px; }
+    .btn-download { background: #ffd700; color: #223ea4; padding: 8px 20px; border-radius: 100px; font-weight: bold; font-size: 14px; text-decoration: none; }
+    .verified-badge { position: absolute; top: 10px; right: 10px; background: #009933; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="capture-document-hub">
+    <div class="sidebar">
+      <div style="font-size: 24px; font-weight: bold; margin-bottom: 40px; color: #ffd700;">GEVES</div>
+      <div style="display: flex; flex-direction: column; gap: 15px;">
+        <div style="padding: 10px;">Tableau de bord</div>
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;">Mes Documents</div>
+        <div style="padding: 10px;">Mon Compte</div>
+      </div>
+    </div>
+    <div class="main">
+      <h1>Mes documents certifiés</h1>
+      <p style="color: #666; margin-bottom: 30px;">Tous vos documents sont signés cryptographiquement et vérifiables en un clic.</p>
+      <div class="doc-grid">
+        <div class="doc-card">
+          <div class="doc-preview"><div class="page-top"></div><div class="verified-badge">VÉRIFIÉ</div></div>
+          <div class="doc-title">Attestation de Participation</div>
+          <div class="doc-meta">Colloque Eau au Togo 2026</div>
+          <div class="btn-download">Télécharger PDF</div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-preview"><div class="page-top"></div><div class="verified-badge">VÉRIFIÉ</div></div>
+          <div class="doc-title">Reçu de Paiement</div>
+          <div class="doc-meta">Réf: REC-2026-0452</div>
+          <div class="btn-download">Télécharger PDF</div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-preview"><div class="page-top"></div><div class="verified-badge">VÉRIFIÉ</div></div>
+          <div class="doc-title">Attestation de Modérateur</div>
+          <div class="doc-meta">Session: Gestion des Bassins</div>
+          <div class="btn-download">Télécharger PDF</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

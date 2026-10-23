@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="stylesheet" href="../../resources/css/ukc.css">
+  <style>
+    @font-face { font-family: 'Jost'; src: local('Jost'); }
+    body { margin: 0; background: #0f1a33; font-family: 'Jost', sans-serif; width: 1920px; height: 1080px; overflow: hidden; color: white; }
+    #root { display: grid; grid-template-columns: 1fr 400px; width: 100%; height: 100%; }
+    .stage { position: relative; background: #000; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 20px; padding: 40px; }
+
+    .participant-tile { background: #1a264d; border-radius: 20px; position: relative; overflow: hidden; border: 2px solid #223ea4; }
+    .participant-name { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 5px; font-size: 18px; }
+    .speaker-border { border: 4px solid var(--ukc-gold) !important; box-shadow: 0 0 20px var(--ukc-gold); }
+    .sidebar { background: #14205a; border-left: 1px solid #223ea4; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 20px; background: #0f1a33; font-weight: bold; font-size: 20px; border-bottom: 1px solid #223ea4; }
+    .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .msg { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; font-size: 14px; }
+    .msg-user { font-weight: bold; color: var(--ukc-gold); margin-bottom: 4px; display: block; }
+    .chat-input { padding: 20px; background: #0f1a33; border-top: 1px solid #223ea4; }
+    .input-box { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; }
+    .reaction-bubble { position: absolute; top: 50px; right: 50px; font-size: 40px; animation: float 2s infinite ease-in-out; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="capture-visio-room">
+    <div class="stage">
+      <div class="participant-tile speaker-border">
+        <div class="participant-name">Dr. Awa Doumbia (Présentatrice)</div>
+      </div>
+      <div class="participant-tile">
+        <div class="participant-name">Prof. Koffi</div>
+      </div>
+      <div class="participant-tile">
+        <div class="participant-name">Dr. Mensah</div>
+      </div>
+      <div class="participant-tile">
+        <div class="participant-name">Chercheur Invité</div>
+      </div>
+      <div class="reaction-bubble">👏</div>
+    </div>
+    <div class="sidebar">
+      <div class="sidebar-header">Échanges en direct</div>
+      <div class="chat-messages">
+        <div class="msg"><span class="msg-user">Prof. Koffi</span>C'est une approche très innovante pour le Sahel.</div>
+        <div class="msg"><span class="msg-user">Dr. Mensah</span>Je suis d'accord, les résultats sont probants.</div>
+        <div class="msg"><span class="msg-user">Système</span>Sondage lancé : "L'approche est-elle applicable ?"</div>
+      </div>
+      <div class="chat-input">
+        <div class="input-box">Écrivez votre message...</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
