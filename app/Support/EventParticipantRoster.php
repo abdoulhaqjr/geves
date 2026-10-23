@@ -47,6 +47,7 @@ class EventParticipantRoster
             $groups[$key]['userId'] = $userId ? (int) $userId : null;
             $groups[$key]['corresponding'] ??= false;
             $groups[$key]['coauthor'] ??= false;
+            $groups[$key]['deposited'] ??= false;
             $byParticipantId[$participant->id] = $key;
             if ($userId) {
                 $byUserId[$userId] = $key;
@@ -64,8 +65,10 @@ class EventParticipantRoster
             ->with('authorLinks')->get(['id', 'participant_id', 'authors']);
 
         foreach ($submissions as $submission) {
-            if (isset($byParticipantId[$submission->participant_id])) {
-                $groups[$byParticipantId[$submission->participant_id]]['corresponding'] = true;
+            // Le participant_id désigne le déposant, pas nécessairement un auteur.
+            $deposant = $byParticipantId[$submission->participant_id] ?? null;
+            if ($deposant !== null) {
+                $groups[$deposant]['deposited'] = true;
             }
 
             $declinedEmails = [];
@@ -82,7 +85,7 @@ class EventParticipantRoster
 
                 $key = ($link->user_id ? ($byUserId[$link->user_id] ?? null) : null)
                     ?? ($byEmail[$this->email($link->email)] ?? null);
-                if ($key !== null) {
+                if ($key !== null && in_array($link->role, ['corresponding', 'coauthor'], true)) {
                     $groups[$key][$link->role === 'corresponding' ? 'corresponding' : 'coauthor'] = true;
                 }
             }
@@ -90,6 +93,12 @@ class EventParticipantRoster
             // Les anciennes communications n'ont pas toujours de lignes submission_authors.
             foreach ($submission->authors ?? [] as $index => $author) {
                 $email = $this->email($author['email'] ?? null);
+                // Un ancien dépôt « pour soi » peut porter ce marqueur explicite
+                // sans e-mail. Il constitue alors une preuve d'auteur suffisante.
+                if ($index === 0 && $email === '' && ($author['is_submitter'] ?? false) === true
+                    && $deposant !== null && ! isset($declinedKeys[$deposant])) {
+                    $groups[$deposant]['corresponding'] = true;
+                }
                 if ($email === '' || isset($declinedEmails[$email])) {
                     continue;
                 }
@@ -102,8 +111,10 @@ class EventParticipantRoster
         return collect($groups)->map(function (array $group) {
             $rows = collect($group['rows']);
             $paid = $rows->contains(fn (Participant $p) => $p->participationPayments->contains('status', 'paid'));
-            if (! $group['corresponding'] && ! $group['coauthor']
-                && ! $paid && ! $rows->contains('role', 'attendee')) {
+            // Un déposant non auteur entre comme auditeur seulement s'il a payé.
+            // Les inscriptions simples sans dépôt gardent leur statut habituel.
+            if (! $group['corresponding'] && ! $group['coauthor'] && ! $paid
+                && (! $rows->contains('role', 'attendee') || $group['deposited'])) {
                 return null;
             }
 
