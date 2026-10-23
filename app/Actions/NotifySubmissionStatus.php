@@ -8,6 +8,7 @@ use App\Models\Submission;
 use App\Support\EmailTemplates;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 /**
  * Envoie l'e-mail de statut à l'auteur correspondant d'une soumission et
@@ -28,17 +29,24 @@ class NotifySubmissionStatus
             return;
         }
 
-        Mail::to($recipient)->send(new SubmissionStatusMail($submission, $statusKey, $note));
-
-        Email::create([
+        $email = Email::create([
             'event_id' => $submission->event_id,
             'participant_id' => $submission->participant_id,
             'template' => 'submission_'.$statusKey,
             'recipient' => $recipient,
             'subject' => EmailTemplates::forSubmission($submission, $statusKey)['subject'],
             'body' => $note,
-            'sent_at' => now(),
-            'status' => 'sent',
+            'status' => 'queued',
         ]);
+
+        try {
+            Mail::to($recipient)->send(
+                (new SubmissionStatusMail($submission, $statusKey, $note, $email->id))->afterCommit()
+            );
+        } catch (Throwable $exception) {
+            $email->update(['status' => 'failed', 'error' => mb_substr($exception->getMessage(), 0, 500)]);
+
+            throw $exception;
+        }
     }
 }

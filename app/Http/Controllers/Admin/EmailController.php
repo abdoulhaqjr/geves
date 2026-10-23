@@ -222,29 +222,24 @@ class EmailController extends Controller
     /** Annule un e-mail encore en file. */
     public function cancel(Email $email): RedirectResponse
     {
-        if ($email->status === 'queued') {
-            $email->delete();
+        if ($email->status !== 'queued' || $email->batch_id === null || $email->scheduled_at === null) {
+            return back()->with('ukc_error', 'Seule une campagne programmée peut être annulée depuis cette page.');
         }
+
+        $email->delete();
 
         return back()->with('ukc_status', 'E-mail annulé.');
     }
 
-    /** Relance les e-mails en échec d'une campagne (lot) ou d'un déclencheur auto. */
+    /** Relance les e-mails en échec d'une campagne programmée. */
     public function retryBatch(Request $request, SendDueEmails $sender): RedirectResponse
     {
         $batch = (string) $request->input('batch_id');
-        $template = (string) $request->input('template');
-        $editionId = (string) $request->input('event_id');
-
-        $query = Email::where('status', 'failed');
-        if ($batch !== '') {
-            $query->where('batch_id', $batch);
-        } elseif ($template !== '' && $editionId !== '') {
-            $query->where('template', $template)->where('event_id', $editionId);
-        } else {
-            return back()->with('ukc_error', 'Campagne introuvable pour la relance.');
+        if ($batch === '') {
+            return back()->with('ukc_error', 'Seules les campagnes programmées peuvent être relancées depuis cette page.');
         }
 
+        $query = Email::where('status', 'failed')->where('batch_id', $batch);
         $n = $query->update(['status' => 'queued', 'sent_at' => null, 'scheduled_at' => now()]);
 
         if ($n === 0) {

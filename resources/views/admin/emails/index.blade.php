@@ -86,7 +86,7 @@
                 </select>
                 <select onchange="window.location='{{ route('admin.emails.index') }}?event_id={{ $event_id }}&status='+this.value">
                     <option value="">Tous les statuts</option>
-                    <option value="queued" @selected($status === 'queued')>Programmé</option>
+                    <option value="queued" @selected($status === 'queued')>En file / Programmé</option>
                     <option value="sent" @selected($status === 'sent')>Envoyé</option>
                     <option value="failed" @selected($status === 'failed')>Échec</option>
                     <option value="cancelled" @selected($status === 'cancelled')>Annulé</option>
@@ -109,6 +109,9 @@
                         <tbody>
                             @forelse ($campaigns as $c)
                                 @php([$sLabel, $sPill] = $campStatus[$c['status']] ?? ['-', 'muted'])
+                                @if ($c['status'] === 'queued' && ! $c['is_campaign'])
+                                    @php($sLabel = 'En file')
+                                @endif
                                 <tr>
                                     <td>
                                         <strong>{{ \Illuminate\Support\Str::limit($c['label'], 60) }}</strong>
@@ -131,7 +134,7 @@
                                                     @click="log = {{ \Illuminate\Support\Js::from([
                                                         'label' => $c['label'], 'total' => $c['total'], 'rows' => $c['log'],
                                                     ]) }}"><x-ukc.icon name="list" :size="16" /></button>
-                                            @if (in_array($c['status'], ['failed', 'partial'], true))
+                                            @if ($c['is_campaign'] && in_array($c['status'], ['failed', 'partial'], true))
                                                 <form method="POST" action="{{ route('admin.emails.retry-batch') }}" data-ajax data-ajax-target="emails" data-ajax-msg="Relance des échecs lancée." data-confirm="Relancer les e-mails en échec de cette campagne ?">
                                                     @csrf
                                                     <input type="hidden" name="batch_id" value="{{ $c['batch_id'] }}">

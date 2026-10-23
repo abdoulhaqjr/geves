@@ -52,7 +52,7 @@ it('accepte une soumission, notifie l’auteur et journalise l’e-mail', functi
     $log = Email::where('template', 'submission_accepted')->first();
     expect($log)->not->toBeNull();
     expect($log->recipient)->toBe('awa@example.tg');
-    expect($log->status)->toBe('sent');
+    expect($log->status)->toBe('queued');
 });
 
 it('refuse un statut non autorisé', function () {
