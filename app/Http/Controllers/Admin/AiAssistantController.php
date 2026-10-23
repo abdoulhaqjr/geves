@@ -60,8 +60,13 @@ class AiAssistantController extends Controller
             ->values()
             ->all();
 
+        $event = $this->activeEdition($request, $data['event_id'] ?? null);
+        if (isset($data['event_id']) && $event?->id !== (int) $data['event_id']) {
+            return response()->json(['answer' => 'Colloque sélectionné indisponible.', 'action' => null], 403);
+        }
+
         try {
-            $result = $ask->handle($history, trim($data['question']), $this->activeEdition($request, $data['event_id'] ?? null), $request->user());
+            $result = $ask->handle($history, trim($data['question']), $event, $request->user());
 
             return response()->json($result);
         } catch (\Throwable $e) {
@@ -86,6 +91,12 @@ class AiAssistantController extends Controller
         $event = $this->activeEdition($request, $data['event_id'] ?? null);
         $user = $request->user();
 
+        // Ne jamais remplacer silencieusement un événement demandé mais
+        // inaccessible par un autre lors de l'exécution d'une action.
+        if (isset($data['event_id']) && $event?->id !== (int) $data['event_id']) {
+            return response()->json(['message' => 'Colloque sélectionné indisponible.'], 403);
+        }
+
         $action = $registry->resolveFor($user, $event, $data['key']);
         if ($action === null || $event === null) {
             return response()->json(['message' => 'Action non autorisée ou indisponible pour votre fonction.'], 403);
@@ -93,6 +104,8 @@ class AiAssistantController extends Controller
 
         try {
             $message = $action->execute($data['params'] ?? [], $event, $user);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
             report($e);
 

@@ -3,6 +3,7 @@
 namespace App\AI\Copilot;
 
 use App\AI\Copilot\Actions\SendDueEmails;
+use App\AI\Copilot\Actions\DeleteSubmission;
 use App\AI\Copilot\Actions\SendPaymentReminders;
 use App\Models\Event;
 use App\Models\User;
@@ -22,6 +23,7 @@ class CopilotActions
         $this->actions = [
             new SendPaymentReminders,
             new SendDueEmails,
+            new DeleteSubmission,
         ];
     }
 

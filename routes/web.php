@@ -439,6 +439,9 @@ Route::prefix('admin')->group(function () {
             Route::post('/soumissions/{submission}/auteurs/{link}/detacher', [App\Http\Controllers\Admin\SubmissionController::class, 'detachAuthor'])->name('admin.submissions.author.detach');
         });
 
+        Route::delete('/soumissions/{submission}', [App\Http\Controllers\Admin\SubmissionController::class, 'destroy'])
+            ->middleware('edition.cap:editions_write')->name('admin.submissions.destroy');
+
         // Paiements.
         Route::middleware('edition.cap:payments')->group(function () {
             Route::get('/paiements', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');

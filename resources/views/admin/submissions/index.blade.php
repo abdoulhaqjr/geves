@@ -202,6 +202,15 @@
                                     <div class="ukc-actions" style="justify-content:flex-end;">
                                         <button type="button" class="ukc-btn--icon" title="Voir l’aperçu" @click="pv = {{ \Illuminate\Support\Js::from($pvData) }}"><x-ukc.icon name="eye" :size="16" /></button>
                                         <a class="ukc-btn--icon" title="Ouvrir la fiche" href="{{ route('admin.submissions.show', $s) }}"><x-ukc.icon name="external" :size="16" /></a>
+                                        @if (auth()->user()->canOnEdition('editions_write', $s->event))
+                                            <form method="POST" action="{{ route('admin.submissions.destroy', $s) }}"
+                                                  data-confirm="Supprimer définitivement le résumé {{ $s->ref_code }} « {{ \Illuminate\Support\Str::limit($s->title, 80) }} » et ses versions ? Les évaluations liées seront supprimées, les créneaux libérés et les attestations concernées révoquées.">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="ukc-btn--icon ukc-btn--danger" title="Supprimer le résumé {{ $s->ref_code }}" aria-label="Supprimer le résumé {{ $s->ref_code }}">
+                                                    <x-ukc.icon name="trash" :size="16" />
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

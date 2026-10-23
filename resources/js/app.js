@@ -1806,6 +1806,12 @@ document.addEventListener('alpine:init', () => {
         async runAction(index) {
             const m = this.messages[index];
             if (!m || !m.action || m.actionState === 'running' || m.actionState === 'done') return;
+            if (m.action.key === 'delete_submission') {
+                const confirmed = await window.ukcConfirm(m.action.summary || 'Supprimer ce résumé ?', {
+                    title: 'Supprimer le résumé', confirmLabel: 'Supprimer', danger: true, wide: true,
+                });
+                if (!confirmed) return;
+            }
             m.actionState = 'running';
             try {
                 const res = await fetch(executeUrl, {

@@ -56,9 +56,17 @@ class AskAdmin
         $raw = $this->manager->extract($this->instruction($history, $question, $event, $staff), [], $tier);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
+        try {
+            $action = $this->sanitizeAction($raw['action'] ?? null, $staff, $event);
+        } catch (\InvalidArgumentException $e) {
+            // Une référence absente ou inconnue ne doit jamais produire un bouton
+            // de suppression exécutable, même si le modèle en a proposé un.
+            return ['answer' => $e->getMessage(), 'action' => null];
+        }
+
         return [
             'answer' => $answer !== '' ? Str::limit($answer, 4000, '') : 'Je n’ai pas d’élément suffisant pour répondre.',
-            'action' => $this->sanitizeAction($raw['action'] ?? null, $staff, $event),
+            'action' => $action,
         ];
     }
 

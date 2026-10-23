@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\AssignReviewer;
 use App\Actions\AutoAssignReviewers;
+use App\Actions\DeleteSubmission;
 use App\Actions\LinkSubmissionAuthors;
 use App\Actions\RegisterEventReviewer;
 use App\Actions\UpsertParticipantForAccount;
@@ -480,6 +481,17 @@ class SubmissionController extends Controller
             'reviewCriteria' => ReviewGrid::criteria($submission->event),
             'reviewScale' => ReviewGrid::SCALE,
         ]);
+    }
+
+    /** Suppression explicite d'une communication depuis la liste. */
+    public function destroy(Request $request, Submission $submission, DeleteSubmission $delete): RedirectResponse
+    {
+        abort_unless((int) $submission->revision_of === 0, 404);
+
+        $reference = $submission->ref_code;
+        $delete->handle($submission, $request->user());
+
+        return back()->with('ukc_status', 'Résumé '.$reference.' supprimé.');
     }
 
     /** Rattache manuellement un auteur à un compte (par e-mail) - correction d'un rapprochement. */
