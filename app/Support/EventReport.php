@@ -448,7 +448,9 @@ class EventReport
      */
     public function reviewStats(): array
     {
-        $reviews = Review::whereHas('submission', fn ($q) => $q->where('event_id', $this->event->id))->get();
+        $reviews = Review::whereHas('submission', fn ($q) => $q->where('event_id', $this->event->id))
+            ->whereHas('reviewer', fn ($q) => $q->where('event_id', $this->event->id)->where('role', 'reviewer'))
+            ->get();
 
         $completed = $reviews->where('status', 'completed');
         $avgDays = $completed->isNotEmpty()
@@ -456,7 +458,7 @@ class EventReport
             : 0.0;
 
         return [
-            'reviewers' => (int) $reviews->pluck('reviewer_id')->filter()->unique()->count(),
+            'reviewers' => Participant::where('event_id', $this->event->id)->where('role', 'reviewer')->count(),
             'done' => $completed->count(),
             'late' => $reviews->filter(fn (Review $r) => $r->isLate())->count(),
             'pending' => $reviews->filter(fn (Review $r) => $r->isPending())->count(),
@@ -476,6 +478,7 @@ class EventReport
     public function reviewsByReviewer(): array
     {
         return Review::whereHas('submission', fn ($q) => $q->where('event_id', $this->event->id))
+            ->whereHas('reviewer', fn ($q) => $q->where('event_id', $this->event->id)->where('role', 'reviewer'))
             ->with('reviewer')
             ->get()
             ->groupBy('reviewer_id')

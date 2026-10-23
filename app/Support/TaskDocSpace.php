@@ -376,6 +376,21 @@ class TaskDocSpace
         return $response->body();
     }
 
+    /** Convertit un DOCX en PDF dans la même salle ; le fichier créé doit être supprimé après lecture. */
+    public function saveAsPdf(string $fileId, string $folderId): string
+    {
+        if (! ctype_digit($fileId) || ! ctype_digit($folderId)) {
+            throw new RuntimeException('Identifiant DocSpace invalide.');
+        }
+
+        $file = $this->json('post', '/api/2.0/files/file/'.$fileId.'/saveaspdf', [
+            'folderId' => (int) $folderId,
+            'title' => 'GEVES - couverture livret - export',
+        ]);
+
+        return $this->fileId(is_array($file) ? $file : []);
+    }
+
     public function deleteFile(string $fileId): void
     {
         $this->json('delete', '/api/2.0/files/file/'.$fileId, ['deleteAfter' => true]);

@@ -621,6 +621,8 @@ Route::prefix('admin')->group(function () {
             Route::get('/attestations/emargement.pdf', [AttestationExportController::class, 'emargement'])->name('admin.documents.attestations.emargement');
             Route::post('/attestations/{attestation}/remise', [AttestationExportController::class, 'deliver'])->name('admin.documents.attestations.deliver');
             Route::post('/livret/options', [DocumentHubController::class, 'saveLivretOptions'])->name('admin.documents.livret.options');
+            Route::post('/livret/couverture', [DocumentHubController::class, 'createLivretCover'])->name('admin.documents.livret.cover.create');
+            Route::delete('/livret/couverture', [DocumentHubController::class, 'deleteLivretCover'])->name('admin.documents.livret.cover.delete');
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');
             Route::post('/livret/apparence', [DocumentHubController::class, 'saveLivretApparence'])->name('admin.documents.livret.apparence');
             Route::post('/livret/modele', [DocumentHubController::class, 'saveLivretTemplate'])->name('admin.documents.livret.template');

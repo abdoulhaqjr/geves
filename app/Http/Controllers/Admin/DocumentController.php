@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Documents\BadgePdfRenderer;
 use App\Documents\BadgeSheet;
-use App\Documents\BrandedPdf;
+use App\Documents\DocxCoverMerger;
+use App\Documents\LivretCover;
 use App\Documents\LivretDocx;
+use App\Documents\LivretPdf;
 use App\Documents\LivretTemplate;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
@@ -16,7 +18,7 @@ use App\Services\BadgeExportWorkerLauncher;
 use App\Support\BadgeCatalog;
 use App\Support\EventSettings;
 use App\Support\SessionDocLayout;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\TaskDocSpace;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +34,7 @@ use Symfony\Component\HttpFoundation\Response;
 class DocumentController extends Controller
 {
     /** Livret des résumés : communications acceptées, groupées par axe. */
-    public function livret(Event $event, Request $request): View|Response
+    public function livret(Event $event, Request $request, TaskDocSpace $docspace): View|Response
     {
         if ($request->query('format') === 'pdf' && $request->boolean('inline') && ! $request->boolean('raw')) {
             return view('documents.pdf-preview', [
@@ -47,15 +49,27 @@ class DocumentController extends Controller
         // de la section Résumés (cf. Submission::scopeForBooklet).
         $groups = $event->submissions()
             ->acceptedCanonical()
+            ->with('authorLinks.user')
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
         if ($request->query('format') === 'docx') {
             $base = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.docx';
+            $template = $this->selectedLivretTemplate($event);
+            if (LivretCover::fileId($event) !== '') {
+                $book = $template
+                    ? (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))->render()
+                    : (new LivretDocx($event, $groups, $request->boolean('harmonize'), LivretView::style($event)))->render();
+                $merged = DocxCoverMerger::merge($book, $docspace->downloadFile(LivretCover::fileId($event)));
+
+                return response()->streamDownload(static function () use ($merged): void { echo $merged; }, $base, [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                ]);
+            }
             // Modèle .docx personnalisé sélectionné ? On remplit ses balises ; sinon
             // on retombe sur le générateur intégré paramétrable.
-            if ($template = $this->selectedLivretTemplate($event)) {
+            if ($template) {
                 return (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))
                     ->download($base);
             }
@@ -64,11 +78,16 @@ class DocumentController extends Controller
         }
 
         if ($request->query('format') === 'pdf') {
-            $pdf = BrandedPdf::stamp(
-                Pdf::loadView('documents.livret-pdf', LivretView::data($event, $groups))->setPaper('a4'),
-                'Livre des résumés - '.$event->title,
-            );
+            $pdf = LivretPdf::make($event, $groups);
             $file = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf';
+            if (LivretCover::fileId($event) !== '') {
+                $binary = LivretCover::pdf($event, $pdf->output(), $docspace);
+
+                return response($binary, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => ($request->boolean('inline') ? 'inline' : 'attachment').'; filename="'.$file.'"',
+                ]);
+            }
 
             // `inline` → aperçu dans le navigateur (vrai rendu final) ; sinon téléchargement.
             return $request->boolean('inline') ? $pdf->stream($file) : $pdf->download($file);

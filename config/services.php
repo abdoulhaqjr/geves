@@ -106,4 +106,7 @@ return [
         'endpoint' => env('HAL_STRUCTURE_ENDPOINT', 'https://api.archives-ouvertes.fr/ref/structure/'),
     ],
 
+    // Binaire Node.js utilisé pour fusionner les PDF du livret (pdf-lib).
+    'livret_pdf_node_binary' => env('LIVRET_PDF_NODE_BINARY', 'node'),
+
 ];

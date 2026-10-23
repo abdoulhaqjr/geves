@@ -13,6 +13,12 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Livret, évaluateurs et onglets Rapports (2026-10-23)
+
+- Une couverture du livre des résumés peut être créée et éditée dans DocSpace pour chaque événement. `LivretCover` conserve sa référence dans les réglages de l'événement ; `LivretDocx` et `LivretPdf` la joignent aux exports Word et PDF. La fusion PDF passe par `pdf-lib` et `scripts/merge-livret-cover.mjs` ; `LIVRET_PDF_NODE_BINARY` permet de choisir Node.js. La couverture automatique reste le repli quand aucune couverture DocSpace n'est active.
+- Le retrait d'un évaluateur annule ses évaluations en attente, conserve son historique et révoque son attestation d'instruction de résumés. `EventReport` ne le compte plus parmi les évaluateurs actifs. Une réinscription ou une réattribution rétablit l'attestation révoquée par ce retrait seulement si une évaluation terminée existe ; les révocations manuelles restent distinctes. La migration `2026_10_22_000000_revoke_instruction_attestations_for_former_reviewers` corrige les attestations antérieures.
+- Les onglets de `/admin/rapports` reprennent les pilules de Documents et Programme et portent leur état dans l'URL (`event_id`, `tab`). Les tableaux déclarés dans sa vue Blade emploient `@php … @endphp` : la forme courte avec un tableau empêchait la compilation du bloc de synthèse.
+
 ### Comptes, permissions et compteurs (2026-10-20)
 
 Les accès `super_admin` ne se distribuent que par un super administrateur. La

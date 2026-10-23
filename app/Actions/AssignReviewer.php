@@ -67,6 +67,8 @@ class AssignReviewer
 
         $reviewer->save();
 
+        (new RestoreReviewerInstructionAttestation)->handle($reviewer);
+
         // Échéance : durée d'évaluation de l'événement, sinon la valeur par défaut.
         $dueDays = ReviewGrid::dueDays($submission->event);
 

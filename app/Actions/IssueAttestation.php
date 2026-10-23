@@ -38,6 +38,10 @@ class IssueAttestation
             ->first();
 
         if ($existing) {
+            if ($type === 'instruction_resumes' && $existing->revoked) {
+                (new RestoreReviewerInstructionAttestation)->handle($participant);
+                $existing->refresh();
+            }
             return $existing;
         }
 

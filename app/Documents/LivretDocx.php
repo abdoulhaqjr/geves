@@ -118,6 +118,23 @@ class LivretDocx
         ]);
     }
 
+    /** Binaire utilisé lorsque la couverture DocSpace doit remplacer la couverture intégrée. */
+    public function render(): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'livret-docx-');
+        try {
+            (new Word2007($this->build()))->save($path);
+            $binary = file_get_contents($path);
+            if ($binary === false) {
+                throw new \RuntimeException('Impossible de lire le livre Word généré.');
+            }
+
+            return $binary;
+        } finally {
+            @unlink($path);
+        }
+    }
+
     /** Construit le document phpword complet (ordre du booklet uk-colloques). */
     public function build(): PhpWord
     {
@@ -914,9 +931,11 @@ class LivretDocx
             return '';
         }
         $authors = collect($sl->submission->authors ?? []);
-        $corr = $authors->firstWhere('corresponding', true) ?? $authors->first();
+        $index = $authors->search(fn ($author) => (bool) ($author['corresponding'] ?? false));
+        $index = $index === false ? 0 : (int) $index;
+        $corr = $authors->get($index);
 
-        return $corr ? $this->authorName($corr) : '';
+        return $corr ? $this->authorName($corr, $sl->submission, $index) : '';
     }
 
     /**
@@ -1031,8 +1050,8 @@ class LivretDocx
             return '';
         }
 
-        return collect($sl->submission->authors ?? [])->map(function ($a) {
-            $name = $this->authorName($a);
+        return collect($sl->submission->authors ?? [])->map(function ($a, $index) use ($sl) {
+            $name = $this->authorName($a, $sl->submission, (int) $index);
             $aff = $this->mapAff(trim((string) ($a['affiliation'] ?? '')));
 
             return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
@@ -1169,8 +1188,8 @@ class LivretDocx
 
         // Auteurs + affiliations numérotées (exposants) + auteur correspondant (*).
         // ⚠️ Nom affiché en MAJUSCULES (convention du livret).
-        $people = collect($s->authors ?? [])->map(fn ($a) => [
-            'name' => $this->authorName($a),
+        $people = collect($s->authors ?? [])->map(fn ($a, $index) => [
+            'name' => $this->authorName($a, $s, (int) $index),
             'aff' => $this->mapAff(trim((string) ($a['affiliation'] ?? ''))),
             'email' => trim((string) ($a['email'] ?? '')),
             'phone' => trim((string) ($a['phone'] ?? '')),
@@ -1499,13 +1518,16 @@ class LivretDocx
     }
 
     /** Applique l'ordre de l'événement avant la casse du modèle de livre. */
-    private function authorName(array $author): string
+    private function authorName(array $author, ?Submission $submission = null, ?int $index = null): string
     {
         $original = trim((string) ($author['name'] ?? ''));
         $hasParts = filled($author['first_name'] ?? null) || filled($author['last_name'] ?? null);
-        $name = $hasParts
-            ? EventNameFormat::author($this->event, $author)
-            : $this->mapName($original);
+        if (! $hasParts) {
+            $author['name'] = $this->mapName($original);
+        }
+        $name = $submission && $index !== null
+            ? EventNameFormat::submissionAuthor($this->event, $submission, $author, $index)
+            : EventNameFormat::author($this->event, $author);
 
         return $this->displayName($name);
     }

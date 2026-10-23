@@ -14,6 +14,7 @@ use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
 use App\Mail\ReviewerRegistrationMail;
 use App\Models\Event;
+use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerApplication;
@@ -898,7 +899,18 @@ class SubmissionController extends Controller
                 ->whereIn('status', Review::PENDING_STATUSES)
                 ->update(['status' => 'cancelled']);
 
+            $revoked = Attestation::where('event_id', $event->id)
+                ->where('participant_id', $reviewer->id)
+                ->where('type', 'instruction_resumes')
+                ->where('revoked', false)
+                ->update(['revoked' => true]);
+
             $previousRole = ($reviewer->meta ?? [])['reviewer_previous_role'] ?? null;
+            if ($revoked > 0) {
+                $meta = $reviewer->meta ?? [];
+                $meta['instruction_attestation_revoked_with_reviewer'] = true;
+                $reviewer->meta = $meta;
+            }
             $reviewer->role = in_array($previousRole, ['author', 'coauthor', 'attendee'], true)
                 ? $previousRole
                 : 'former_reviewer';

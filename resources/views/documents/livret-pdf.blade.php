@@ -16,8 +16,6 @@
         * { box-sizing: border-box; }
         body { font-family: {!! $opts['font_body'] !!}; font-size: {{ $opts['size_body'] }}pt; line-height: {{ $opts['line_height'] }}; color: #1f2937; }
         h1, h2, h3, .sans { font-family: {!! $opts['font_head'] !!}; }
-        .footer { position: fixed; bottom: -1.3cm; left: 0; right: 0; text-align: center; font-size: 9pt; color: {{ $muted }}; }
-        .footer:after { content: counter(page); }
         .page-break { page-break-before: always; }
         .center { text-align: center; }
         .muted { color: {{ $muted }}; }
@@ -83,7 +81,6 @@
     @endif
 </head>
 <body>
-@if ($opts['page_numbers'])<div class="footer"></div>@endif
 
 {{-- ===================== PAGE DE GARDE ===================== --}}
 <div style="padding-top: 90px;">
@@ -286,10 +283,10 @@
                     @foreach ($daySlots as $sl)
                         @php
                             $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a) use ($isGen) {
+                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a, $index) use ($isGen, $event, $sl) {
                                 // Même casse que le .docx (source unique) ; ce bloc n'est
                                 // atteint que hors « general » (le general n'a pas d'auteurs ici).
-                                $name = \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::author($event, $a), $isGen);
+                                $name = \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::submissionAuthor($event, $sl->submission, $a, (int) $index), $isGen);
                                 $aff = trim((string) ($a['affiliation'] ?? ''));
                                 return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
                             })->filter()->implode('; ');
@@ -323,10 +320,10 @@
             @php
                 $n++;
                 $ref = trim((string) $s->ref_code);
-                $people = collect($s->authors ?? [])->map(fn ($a) => [
+                $people = collect($s->authors ?? [])->map(fn ($a, $index) => [
                     // Casse SELON LE STYLE, via la source unique partagée avec le .docx
                     // (« NOM Prénom » tel quel pour general, MAJUSCULES pour default/fss).
-                    'name' => \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::author($event, $a), $isGen),
+                    'name' => \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::submissionAuthor($event, $s, $a, (int) $index), $isGen),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
                     'phone' => trim((string) ($a['phone'] ?? '')),

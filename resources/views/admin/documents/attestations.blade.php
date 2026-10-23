@@ -1,4 +1,10 @@
 <x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active - '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
+    @if ($tab === 'livre' && $stab === 'couverture' && $coverOfficeScript)
+        @push('head')
+            @vite(['resources/css/task-office.css'])
+            <script src="{{ $coverOfficeScript }}"></script>
+        @endpush
+    @endif
     <div class="admin-page admin-documents" x-data="{ newAtt: false, del: null, typed: '' }">
         {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -330,8 +336,91 @@
                 @php($livreBase = ['event_id' => $event->id, 'tab' => 'livre'])
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'main']) }}" @class(['active' => $stab === 'main'])>Livre des résumés</a>
+                    <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'couverture']) }}" @class(['active' => $stab === 'couverture'])>Page de garde</a>
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'modeles']) }}" @class(['active' => $stab === 'modeles'])>Modèles de document</a>
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'apparence']) }}" @class(['active' => $stab === 'apparence'])>Apparence du livre</a>
+                </div>
+
+                {{-- ---------- Couverture Word conçue dans DocSpace ---------- --}}
+                <div @if ($stab !== 'couverture') style="display:none;" @endif>
+                    <div class="ukc-card">
+                        <h3 style="margin:0 0 6px;">Page de garde du livre</h3>
+                        <x-ukc.scope-edition :event="$event" />
+
+                        @if ($coverFileId === '')
+                            <p class="ukc-hint" style="margin:16px 0 0;">Aucune page conçue : la couverture automatique reste utilisée.</p>
+                            @if ($coverDocspaceAvailable)
+                                <form method="POST" action="{{ route('admin.documents.livret.cover.create') }}" style="padding-top:14px;">
+                                    @csrf
+                                    <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="file" :size="16" /> Créer la page de garde</button>
+                                </form>
+                            @else
+                                <p class="ukc-hint">Configurez DocSpace et activez les liens d’édition dans les réglages pour créer cette page.</p>
+                            @endif
+                        @else
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0;">
+                                <span class="ukc-pill ukc-pill--ok">Couverture DocSpace active</span>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <a href="{{ route('admin.documents.livret', ['event' => $event, 'format' => 'pdf', 'inline' => 1]) }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-btn--sm">Aperçu du livre</a>
+                                    <form id="ukcCoverResetForm" method="POST" action="{{ route('admin.documents.livret.cover.delete') }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">Revenir à la couverture automatique</button>
+                                    </form>
+                                </div>
+                            </div>
+                            @if ($coverEditor)
+                                <div class="ukc-office">
+                                    <div class="ukc-office__heading">
+                                        <strong>Éditeur Word de la couverture</strong>
+                                        <div class="ukc-office__heading-actions">
+                                            <span id="ukcCoverStatus" class="ukc-office__status">Ouverture de l’éditeur…</span>
+                                            <button type="button" id="ukcCoverFullscreen" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Plein écran</button>
+                                        </div>
+                                    </div>
+                                    <div id="ukcCoverArea" class="ukc-office__editor" style="min-height:700px;" aria-label="Éditeur de la page de garde">
+                                        <div id="ukcCoverEditor" class="ukc-office__editor-frame"></div>
+                                    </div>
+                                </div>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        const status = document.getElementById('ukcCoverStatus');
+                                        const area = document.getElementById('ukcCoverArea');
+                                        const fullscreen = document.getElementById('ukcCoverFullscreen');
+                                        if (area && fullscreen && area.requestFullscreen) {
+                                            fullscreen.addEventListener('click', function () { area.requestFullscreen(); });
+                                        } else if (fullscreen) {
+                                            fullscreen.hidden = true;
+                                        }
+                                        if (!window.DocSpace?.SDK?.initEditor) {
+                                            status.textContent = 'SDK DocSpace inaccessible. Réessayez plus tard.';
+                                            status.classList.add('ukc-office__status--error');
+                                            return;
+                                        }
+                                        const config = @json($coverEditor);
+                                        config.events = {
+                                            onAppReady: function () { status.textContent = 'Éditeur prêt'; },
+                                            onNoAccess: function () { status.textContent = 'Accès au document refusé.'; status.classList.add('ukc-office__status--error'); },
+                                            onNotFound: function () { status.textContent = 'Fichier DocSpace introuvable.'; status.classList.add('ukc-office__status--error'); },
+                                        };
+                                        const editor = window.DocSpace.SDK.initEditor(config);
+                                        const resetForm = document.getElementById('ukcCoverResetForm');
+                                        resetForm?.addEventListener('submit', function (event) {
+                                            event.preventDefault();
+                                            resetForm.querySelector('button[type="submit"]').disabled = true;
+                                            try { editor?.destroyFrame(); } catch (error) { console.error(error); }
+                                            document.querySelector('.ukc-office')?.remove();
+                                            setTimeout(function () { resetForm.submit(); }, 500);
+                                        });
+                                    });
+                                </script>
+                            @else
+                                <p class="ukc-hint" role="alert">{{ $coverError ?: 'Éditeur indisponible.' }}</p>
+                            @endif
+                        @endif
+                    </div>
                 </div>
 
                 {{-- ---------- Livre : génération + état + contenu ---------- --}}
@@ -654,7 +743,8 @@
                             </div>
                         </div>
 
-                        <h3 style="font-size:13px;margin:16px 0 10px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">Page de garde</h3>
+                        <h3 style="font-size:13px;margin:16px 0 10px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">Couverture automatique</h3>
+                        <p class="ukc-hint">Ces réglages s’appliquent lorsque la couverture automatique est active.</p>
                         <div class="ukc-form-row">
                             <label>Mention sur la page de garde</label>
                             <input type="text" name="livretCoverMention" value="{{ $opts['livretCoverMention'] }}" placeholder="Livre des résumés - Colloque … - Université de Kara">

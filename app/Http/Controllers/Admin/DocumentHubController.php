@@ -10,6 +10,7 @@ use App\Documents\BadgeSheet;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
+use App\Documents\LivretCover;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
@@ -28,6 +29,7 @@ use App\Support\CommunicationAttestations;
 use App\Support\EventSettings;
 use App\Support\EventStorage;
 use App\Support\ListSort;
+use App\Support\TaskDocSpace;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,7 +48,7 @@ class DocumentHubController extends Controller
 {
     use Concerns\ScopesEditionAccess;
 
-    public function index(Request $request): View
+    public function index(Request $request, TaskDocSpace $docspace): View
     {
         $event = $this->currentEdition($request);
 
@@ -185,11 +187,43 @@ class DocumentHubController extends Controller
         $allowed = match ($tab) {
             'badges' => ['modeles', 'prets'],
             'attestations' => ['modeles', 'delivrees', 'options'],
-            'livre' => ['main', 'modeles', 'apparence'],
+            'livre' => ['main', 'couverture', 'modeles', 'apparence'],
         };
         $defaultStab = $tab === 'livre' ? 'main' : 'modeles';
         $stab = (string) $request->query('stab', $defaultStab);
         $stab = in_array($stab, $allowed, true) ? $stab : $defaultStab;
+
+        $coverFileId = $event ? LivretCover::fileId($event) : '';
+        $coverError = null;
+        $coverEditor = null;
+        if ($tab === 'livre' && $stab === 'couverture' && $event && $coverFileId !== '') {
+            if (! $docspace->configured($event)) {
+                $coverError = 'DocSpace doit être configuré pour ouvrir la couverture.';
+            } else {
+                try {
+                    $token = LivretCover::token($event);
+                    if ($token === '') {
+                        throw new \RuntimeException('Le lien d’édition de la couverture est introuvable.');
+                    }
+                    $coverEditor = [
+                        'frameId' => 'ukcCoverEditor',
+                        'src' => $docspace->url(),
+                        'id' => $coverFileId,
+                        'requestToken' => $token,
+                        'width' => '100%',
+                        'height' => '100%',
+                        'editorCustomization' => [
+                            'anonymous' => [
+                                'request' => false,
+                                'label' => mb_substr($request->user()?->salutationName() ?: (string) $request->user()?->name, 0, 64),
+                            ],
+                        ],
+                    ];
+                } catch (\Throwable $error) {
+                    $coverError = $error->getMessage();
+                }
+            }
+        }
 
         return view('admin.documents.attestations', [
             'events' => $this->accessibleEditions($request, 'documents'),
@@ -202,6 +236,11 @@ class DocumentHubController extends Controller
             'badgeReadyCount' => $badgeReadyCount,
             'tab' => $tab,
             'stab' => $stab,
+            'coverFileId' => $coverFileId,
+            'coverEditor' => $coverEditor,
+            'coverError' => $coverError,
+            'coverOfficeScript' => $coverEditor ? $docspace->scriptUrl() : null,
+            'coverDocspaceAvailable' => $event && $docspace->configured($event) && $docspace->fileLinksEnabled(),
             ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event, $offerts) : []),
             ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $event) : []),
             // ⚠️ La page qui ÉMET doit dire ce que l'émission déclenche : en ligne,
@@ -392,13 +431,35 @@ class DocumentHubController extends Controller
     public function revoke(Attestation $attestation): RedirectResponse
     {
         $attestation->update(['revoked' => true]);
+        if ($attestation->type === 'instruction_resumes' && $attestation->participant) {
+            $meta = $attestation->participant->meta ?? [];
+            unset($meta['instruction_attestation_revoked_with_reviewer']);
+            $attestation->participant->update(['meta' => $meta]);
+        }
 
         return back()->with('ukc_status', 'Attestation révoquée.');
     }
 
     public function restore(Attestation $attestation): RedirectResponse
     {
+        if ($attestation->type === 'instruction_resumes') {
+            $reviewer = $attestation->participant;
+            if ($reviewer?->event_id !== $attestation->event_id || $reviewer->role !== 'reviewer') {
+                return back()->with('ukc_error', 'Réajoutez cette personne comme évaluateur de cet événement avant de rétablir son attestation.');
+            }
+            if (! Review::where('reviewer_id', $reviewer->id)
+                ->where('status', 'completed')
+                ->whereHas('submission', fn ($query) => $query->where('event_id', $attestation->event_id))
+                ->exists()) {
+                return back()->with('ukc_error', 'Une évaluation terminée est nécessaire pour rétablir cette attestation.');
+            }
+        }
         $attestation->update(['revoked' => false]);
+        if ($attestation->type === 'instruction_resumes') {
+            $meta = $reviewer->meta ?? [];
+            unset($meta['instruction_attestation_revoked_with_reviewer']);
+            $reviewer->update(['meta' => $meta]);
+        }
 
         return back()->with('ukc_status', 'Attestation rétablie.');
     }
@@ -457,6 +518,67 @@ class DocumentHubController extends Controller
         ]);
 
         return back()->with('ukc_status', 'Contenu du livre enregistré.');
+    }
+
+    public function createLivretCover(Request $request, TaskDocSpace $docspace): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+        if (LivretCover::fileId($event) !== '') {
+            return back()->with('ukc_error', 'Une couverture DocSpace existe déjà pour cet événement.');
+        }
+        if (! $docspace->configured($event) || ! $docspace->fileLinksEnabled()) {
+            return back()->with('ukc_error', 'Configurez DocSpace et activez ses liens d’édition avant de créer la couverture.');
+        }
+
+        $fileId = null;
+        try {
+            $title = 'GEVES - Page de garde du livret - '.$event->id.' - '.now()->format('YmdHis').'-'.bin2hex(random_bytes(3));
+            $fileId = $docspace->createFile($docspace->roomId($event), $title, 'docx');
+            $token = $docspace->createFileEditLink($fileId);
+            EventSettings::setMany($event, [
+                'livret.cover_docspace_file_id' => $fileId,
+                'livret.cover_docspace_token' => LivretCover::encryptedToken($token),
+                'livret.cover_docspace_active' => true,
+            ]);
+        } catch (\Throwable $error) {
+            if ($fileId !== null) {
+                try { $docspace->deleteFile($fileId); } catch (\Throwable) {}
+            }
+
+            return back()->with('ukc_error', $error->getMessage());
+        }
+
+        return redirect()->route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre', 'stab' => 'couverture'])
+            ->with('ukc_status', 'Couverture créée dans DocSpace.');
+    }
+
+    public function deleteLivretCover(Request $request, TaskDocSpace $docspace): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+        $fileId = LivretCover::storedFileId($event);
+        if ($fileId === '') {
+            return back()->with('ukc_error', 'Aucune couverture DocSpace à retirer.');
+        }
+        EventSettings::setMany($event, [
+            'livret.cover_docspace_file_id' => '',
+            'livret.cover_docspace_token' => '',
+            'livret.cover_docspace_active' => false,
+        ]);
+
+        try {
+            $docspace->deleteFile($fileId);
+        } catch (\Throwable $error) {
+            report($error);
+        }
+
+        return redirect()->route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre', 'stab' => 'couverture'])
+            ->with('ukc_status', 'Couverture automatique rétablie. L’éditeur a été retiré et une nouvelle page de garde sera vierge.');
     }
 
     /**
@@ -869,6 +991,7 @@ class DocumentHubController extends Controller
         }
 
         return Participant::where('event_id', $event->id)
+            ->where('role', 'reviewer')
             ->whereIn('id', $ids->all())
             ->get();
     }

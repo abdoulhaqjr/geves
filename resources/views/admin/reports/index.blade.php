@@ -15,9 +15,10 @@
         ];
         $firstReportTab = collect($reportTabs)->filter()->keys()->first() ?? 'payments';
         $defaultReportTab = ((session('ai_report') || session('ai_error')) && ($reportTabs['ai'] ?? false)) ? 'ai' : $firstReportTab;
+        $requestedReportTab = (string) request()->query('tab', '');
+        $activeReportTab = ($reportTabs[$requestedReportTab] ?? false) ? $requestedReportTab : $defaultReportTab;
     @endphp
     <div class="admin-page admin-reports" x-data="{
-            tab: '{{ $defaultReportTab }}',
             aiMode: '{{ old('mode', 'describe') }}',
             aiFileName: '',
             pickFile() { const i = this.$refs.aiFile; if (i.files && i.files[0]) this.aiFileName = i.files[0].name; },
@@ -27,7 +28,7 @@
         {{-- Barre : sélecteur d'événement + exports globaux --}}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="min-width:220px;margin:0;">
-                <select onchange="window.location='{{ route('admin.reports.index') }}?event_id='+this.value">
+                <select onchange="window.location='{{ route('admin.reports.index') }}?event_id='+encodeURIComponent(this.value)+'&tab={{ $activeReportTab }}'">
                     <option value="">- Événement -</option>
                     @foreach ($events as $ed)
                         <option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>
@@ -51,14 +52,17 @@
             {{-- Données des graphiques (lues par charts.js) --}}
             <script type="application/json" id="dashboardData">@json($chartData)</script>
 
+            @php
+                $reportsBase = ['event_id' => $event->id];
+            @endphp
             <div class="ukc-nav-docs">
-                @if ($reportTabs['overview'])<button type="button" @click="tab='overview'" :class="{ active: tab==='overview' }">Vue d’ensemble</button>@endif
-                @if ($reportTabs['submissions'])<button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions</button>@endif
-                @if ($reportTabs['participants'])<button type="button" @click="tab='participants'" :class="{ active: tab==='participants' }">Participants</button>@endif
-                @if ($reportTabs['payments'])<button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>@endif
-                @if ($reportTabs['reviews'])<button type="button" @click="tab='reviews'" :class="{ active: tab==='reviews' }">Évaluations</button>@endif
-                @if ($reportTabs['exports'])<button type="button" @click="tab='exports'" :class="{ active: tab==='exports' }">Exports prêts</button>@endif
-                @if ($reportTabs['ai'])<button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Export personnalisé (IA)</button>@endif
+                @if ($reportTabs['overview'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'overview']) }}" @class(['active' => $activeReportTab === 'overview'])>Vue d’ensemble</a>@endif
+                @if ($reportTabs['submissions'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'submissions']) }}" @class(['active' => $activeReportTab === 'submissions'])>Soumissions</a>@endif
+                @if ($reportTabs['participants'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'participants']) }}" @class(['active' => $activeReportTab === 'participants'])>Participants</a>@endif
+                @if ($reportTabs['payments'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'payments']) }}" @class(['active' => $activeReportTab === 'payments'])>Paiements</a>@endif
+                @if ($reportTabs['reviews'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'reviews']) }}" @class(['active' => $activeReportTab === 'reviews'])>Évaluations</a>@endif
+                @if ($reportTabs['exports'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'exports']) }}" @class(['active' => $activeReportTab === 'exports'])>Exports prêts</a>@endif
+                @if ($reportTabs['ai'])<a href="{{ route('admin.reports.index', $reportsBase + ['tab' => 'ai']) }}" @class(['active' => $activeReportTab === 'ai'])>Export personnalisé (IA)</a>@endif
             </div>
 
             @php
@@ -74,7 +78,7 @@
 
             @if ($reportTabs['overview'])
             {{-- Vue d'ensemble --}}
-            <div class="ukc-panel" :class="{ active: tab==='overview' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'overview'])>
                 <div class="ukc-stats">
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue - {{ $summary['accepted'] }} acceptées</div></div>
                     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
@@ -107,7 +111,7 @@
             @endif
             @if ($reportTabs['submissions'])
             {{-- Soumissions --}}
-            <div class="ukc-panel" :class="{ active: tab==='submissions' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'submissions'])>
                 <div class="ukc-card">
                     <h2>Rapport soumissions
                         <span class="card-actions">
@@ -163,7 +167,7 @@
             @endif
             @if ($reportTabs['participants'])
             {{-- Participants --}}
-            <div class="ukc-panel" :class="{ active: tab==='participants' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'participants'])>
                 <div class="ukc-card">
                     <h2>Rapport participants
                         <span class="card-actions">
@@ -216,7 +220,7 @@
             @endif
             @if ($reportTabs['payments'])
             {{-- Paiements --}}
-            <div class="ukc-panel" :class="{ active: tab==='payments' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'payments'])>
                 @php($payStats = $report->paymentStats())
                 <div class="ukc-card">
                     <h2>Rapport paiements
@@ -270,7 +274,7 @@
             @endif
             @if ($reportTabs['reviews'])
             {{-- Évaluations --}}
-            <div class="ukc-panel" :class="{ active: tab==='reviews' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'reviews'])>
                 <div class="ukc-card">
                     <h2>Rapport évaluations</h2>
                     <p class="desc">Charge des évaluateurs et délais moyens.</p>
@@ -312,7 +316,7 @@
             @endif
             @if ($reportTabs['exports'])
             {{-- Exports prêts --}}
-            <div class="ukc-panel" :class="{ active: tab==='exports' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'exports'])>
                 <div class="ukc-card">
                     <h2>Exports prêts à télécharger</h2>
                     <p class="desc">Fichiers générés à la demande à partir des données réelles de l’événement. Formats CSV, Excel et PDF.</p>
@@ -386,7 +390,7 @@
             @endif
             @if ($reportTabs['ai'])
             {{-- Export personnalisé (IA) --}}
-            <div class="ukc-panel" :class="{ active: tab==='ai' }">
+            <div @class(['ukc-panel', 'active' => $activeReportTab === 'ai'])>
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="sparkles" :size="18" /> Export personnalisé assisté par l’IA</span></h2>
                     <p class="desc">

@@ -57,6 +57,8 @@ class RegisterEventReviewer
         $participant->meta = $meta;
         $participant->save();
 
+        (new RestoreReviewerInstructionAttestation)->handle($participant);
+
         return $participant;
     }
 }

@@ -29,6 +29,9 @@ Larastan **niveau 5**.
 ### Terminologie de l'évaluation
 
 - Dans les textes affichés, employer **évaluateur** et **évaluation**. Les identifiants techniques historiques (`reviewer`, `review`, chemins et clés de routes contenant `relecteur` ou `relecture`) restent stables pour préserver les liens et données existants.
+- Retirer un évaluateur révoque son attestation `instruction_resumes` et l'exclut des statistiques d'évaluation actives. Une réinscription ou réattribution peut rétablir l'attestation révoquée par ce retrait si une évaluation terminée existe ; une révocation manuelle reste manuelle.
+- Les onglets de `/admin/rapports` utilisent `?event_id=…&tab=…` et le composant `.ukc-nav-docs`. Dans cette vue, déclarer les tableaux PHP avec `@php … @endphp` : la forme courte `@php(...)` a déjà absorbé le bloc suivant à la compilation Blade.
+- La couverture DocSpace du livret est propre à l'événement et facultative. Le PDF fusionné utilise `pdf-lib` via `scripts/merge-livret-cover.mjs` et le binaire `LIVRET_PDF_NODE_BINARY` (défaut `node`). Sans couverture DocSpace active, la couverture automatique reste utilisée.
 
 ### Comptes et droits (2026-10-20)
 

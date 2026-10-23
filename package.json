@@ -43,6 +43,7 @@
         "intl-tel-input": "^29.4.0",
         "laravel-echo": "^2.6.1",
         "livekit-client": "^2.21.0",
+        "pdf-lib": "^1.17.1",
         "perfect-scrollbar": "^1.5.6",
         "pusher-js": "^8.6.0",
         "tom-select": "^2.6.2",

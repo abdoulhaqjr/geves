@@ -88,11 +88,11 @@ final class LivretView
                 // callback must have exactly two elements », et l'aperçu du livret
                 // comme son PDF tombaient en 500 dès qu'une communication portait
                 // un auteur - c'est-à-dire toujours.
-                foreach (collect($s->authors ?? []) as $auteur) {
+                foreach (collect($s->authors ?? []) as $index => $auteur) {
                     // ⚠️ Casse SELON LE STYLE, via la source unique partagée avec le
                     // .docx (majuscules pour default/fss, « NOM Prénom » tel quel pour
                     // general) - ne pas remettre un mb_strtoupper inconditionnel ici.
-                    $name = LivretDocx::authorCase(EventNameFormat::author($event, $auteur), $general);
+                    $name = LivretDocx::authorCase(EventNameFormat::submissionAuthor($event, $s, $auteur, (int) $index), $general);
                     if ($name !== '') {
                         $authorIndex[$name][] = $ref;
                     }

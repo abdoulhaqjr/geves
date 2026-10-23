@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Account;
 
 use App\Documents\BadgeLayout;
-use App\Documents\BrandedPdf;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
+use App\Documents\LivretCover;
+use App\Documents\LivretPdf;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
@@ -19,7 +20,7 @@ use App\Support\AttestationPolicy;
 use App\Support\BadgeCatalog;
 use App\Support\CurrentEvent;
 use App\Support\EventSettings;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\TaskDocSpace;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -276,7 +277,7 @@ class DocumentController extends Controller
      * l'espace participant rendait sa propre vue HTML, plus pauvre - sans les
      * comités ni le programme - sans que rien ne le signale.
      */
-    public function livret(Event $event, Request $request): View|Response
+    public function livret(Event $event, Request $request, TaskDocSpace $docspace): View|Response
     {
         $account = Auth::guard('account')->user();
 
@@ -291,14 +292,21 @@ class DocumentController extends Controller
         // fini par annoncer des communications absentes des résumés.
         $groups = $event->submissions()
             ->acceptedCanonical()
+            ->with('authorLinks.user')
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
-        $pdf = BrandedPdf::stamp(
-            Pdf::loadView('documents.livret-pdf', LivretView::data($event, $groups))->setPaper('a4'),
-            'Livre des résumés - '.$event->title,
-        );
+        $pdf = LivretPdf::make($event, $groups);
+
+        if (LivretCover::fileId($event) !== '') {
+            $binary = LivretCover::pdf($event, $pdf->output(), $docspace);
+
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf"',
+            ]);
+        }
 
         // Ouvert dans l'onglet : le lecteur du navigateur sait l'enregistrer.
         return $pdf->stream('livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf');
