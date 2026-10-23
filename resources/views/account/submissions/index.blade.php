@@ -59,7 +59,7 @@
                                 <td>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</td>
                                 <td>{{ $s->track ?: '-' }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
-                                <td style="text-align:right;white-space:nowrap;">
+                                <td class="ukc-cell-actions">
                                     <a href="{{ route('account.submissions.show', $s) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Voir') }}</a>
                                 </td>
                             </tr>

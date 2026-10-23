@@ -799,6 +799,35 @@ conservé pour l'existant), `events/`
   `formation-signatures/` à une **personne** - sa photo ne change pas d'un
   colloque à l'autre, et la ranger par événement la dupliquerait.
 
+⚠️⚠️ **UN RÉSUMÉ DÉPOSÉ PORTE LE NOM DE SA RÉFÉRENCE** - `EAU26-029.pdf`, pas
+les quarante caractères aléatoires que rend `store()`. Le participant le lit dans
+« Fichiers joints », le gestionnaire le télécharge par paquets, et un dossier de
+`x8HFrERkQmjt9DGaJi3Ln5VzPUb8JNExBzSwr5Z8.pdf` ne se trie ni ne se relie à rien.
+C'est déjà ainsi que l'import Eau-Togo nomme ses 49 pièces. Source unique :
+**`EventStorage::renameSubmissionFile()`**, appelée par le dépôt
+(`CreateSubmission`) et par la resoumission (`SubmissionController::resubmit`).
+
+- ⚠️ **On dépose puis on RENOMME**, on ne nomme pas à l'écriture : `ref_code` est
+  posé par `SubmissionObserver::creating()`, donc il n'existe pas encore au
+  moment du téléversement. Déplacer l'écriture du fichier après la transaction
+  créerait la communication même quand le dépôt du résumé échoue.
+- ⚠️⚠️ **LA VERSION EST SUFFIXÉE AU-DELÀ DE LA PREMIÈRE** (`EAU26-029-v2.pdf`),
+  et ce n'est pas cosmétique : la resoumission **archive** l'exemplaire précédent
+  en lui laissant son `file_url`. Réécrire le même nom écraserait sur le disque
+  le fichier que la version archivée désigne encore - on perdrait l'original en
+  croyant déposer une correction.
+- ⚠️ **On ne renomme jamais par-dessus un fichier existant** : on garde alors le
+  nom actuel. Un homonyme (référence ressaisie, reprise d'import) coûterait la
+  pièce de quelqu'un d'autre, et un nom moins lisible vaut mieux qu'un fichier
+  perdu. Un renommage qui échoue laisse de même le fichier en place.
+- ⚠️ **La référence est ASSAINIE** : elle finit en nom de fichier, et un « / »
+  y ouvrirait un chemin.
+- ⚠️ **Les fichiers DÉJÀ déposés gardent leur nom de hachage** : rien ne les
+  renomme rétroactivement. **À faire** si on veut l'historique aligné (migration,
+  sur le modèle de `classer_les_fichiers_par_evenement`).
+
+Gardes : `ClassementDesFichiersTest` (4 cas, **4 sabotages vérifiés**).
+
 **Migration `2026_10_17_000100_classer_les_fichiers_par_evenement`** : elle a
 déplacé l'existant ET réécrit les adresses enregistrées dans le même passage -
 un fichier déplacé sans son adresse est un fichier perdu.
@@ -872,6 +901,25 @@ D'où `min-width: 0` sur les enfants de `.rev-grid`, la même ligne que `.layout
 ⚠️ `.kv` et `.msg-box` n'étaient portés que par `.account-submission-detail` : la page
 de correction les reprend, d'où la liste de sélecteurs. **Pas de remontée vers
 `.ukc-shell`** - « kv » est un nom trop commun pour être lâché dans tout le back-office.
+
+⚠️⚠️ **UNE CLASSE QUI N'EXISTE PAS SE REND, SIMPLEMENT SANS STYLE.** La carte de
+rappel portait `<dl class="ukc-dl">` - une classe qu'aucune feuille ne déclare.
+Rien ne tombe, rien ne prévient : le `<dl>` retombe sur le défaut du navigateur,
+lui-même aplati par le reset Preflight de Tailwind, et les huit lignes sortent de
+même taille, même graisse et même couleur - l'intitulé ne se distingue plus de sa
+valeur. Les paires vivent sous **`.rev-recap`**.
+
+- ⚠️ **Les paires sont EMPILÉES, pas en grille « intitulé | valeur »** : la
+  colonne ne fait que ~378px, et « Type de communication » s'y enroule à lui
+  seul. C'est la typographie qui les sépare - intitulé en capitales fines et
+  grises (10,5px/800), valeur en corps appuyé (13,5px/600).
+- ⚠️ **Pas de chasse fixe pour la référence, et c'est une DÉCISION du projet** :
+  `--ukc-mono` pointe sur la police courante (cf. son commentaire dans `:root`),
+  donc le `font-family: var(--ukc-mono)` qu'elle portait ne faisait rien du tout.
+  Elle se distingue par la graisse et l'interlettrage (`.rev-ref`), comme
+  `.secret-code`.
+- ⚠️ **La note est DÉTACHÉE** (filet + icône, corps plus petit) : collée sous la
+  liste dans la même graisse, on la lisait comme une cinquième paire.
 
 Gardes : `ReviewRevisionTest` (5 cas, **4 sabotages vérifiés** : la garde
 `canBeRevised()` retirée, le résumé redevenu un textarea nu, les remarques retirées de
@@ -1708,6 +1756,13 @@ C'est le seul indicateur qui appelle un geste ; les autres décrivent un état.
     `.admin-page .ukc-pill` l'est à juste titre (« Soumissions ouvertes » ne se
     coupe pas), mais les pastilles de `.chip-list` portent le nom complet d'un axe
     et réclamaient 386px. Exception explicite, `overflow-wrap` compris.
+    - ⚠️ **Et la réciproque vaut DANS UNE TABLE** : une pastille d'état coupée en
+      deux (« Correction / demandée », colonne Statut de `/communications`) double
+      la hauteur de sa rangée. `.ukc-shell .ukc-table .ukc-pill` est donc `nowrap`,
+      et la cellule d'actions `.ukc-cell-actions` avec elle - elle tenait sa ligne
+      par un `style=` en ligne, qui l'emporte sur toute media query. Les pastilles
+      à phrase ne vivent pas dans une table : la règle ne les atteint pas.
+      Garde : `AccountSubmissionTest`, qui lit la feuille **commentaires retirés**.
   - ⚠️ **Une barre dont la hauteur sert d'ancrage est une VARIABLE** : les
     concepteurs (`template-designer.css`, `badge-designer.css` - **deux fichiers
     jumeaux, corriger les deux**) accrochent `.ed-shell` à

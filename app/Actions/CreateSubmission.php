@@ -38,6 +38,7 @@ class CreateSubmission
     {
         // Téléversement du fichier (I/O) hors transaction.
         $fileUrl = null;
+        $path = null;
         if ($config->enabled('file') && $file) {
             $path = $file->store(EventStorage::submissions($event), 'public');
             $fileUrl = Storage::disk('public')->url($path);
@@ -121,6 +122,18 @@ class CreateSubmission
                 'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
             ]);
         });
+
+        // ⚠️⚠️ **LE FICHIER PREND LE NOM DE LA RÉFÉRENCE, et c'est APRÈS la
+        // création qu'on peut le faire** : `ref_code` est posé par
+        // `SubmissionObserver::creating()`, donc il n'existe pas encore au
+        // moment du téléversement. On dépose sous le nom aléatoire de `store()`
+        // puis on renomme - plutôt que de déplacer l'écriture du fichier après
+        // la transaction, ce qui créerait la communication même quand le dépôt
+        // du résumé échoue. Un renommage qui échoue laisse le fichier en place
+        // sous son nom d'origine : moins lisible, jamais perdu.
+        if ($path !== null && ($renomme = EventStorage::renameSubmissionFile($path, (string) $submission->ref_code, 1)) !== null) {
+            $submission->update(['file_url' => Storage::disk('public')->url($renomme)]);
+        }
 
         // Rapproche les auteurs des comptes existants (liaison + notif/e-mail/SMS)
         // ou invite les personnes non inscrites. Hors transaction (I/O réseau).

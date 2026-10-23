@@ -114,6 +114,110 @@ it('ne rend jamais un dossier vide', function () {
     expect(EventStorage::folder(''))->toBe('evenement');
 });
 
+/**
+ * ⚠️⚠️ **LE FICHIER PORTE LA RÉFÉRENCE, PAS QUARANTE CARACTÈRES ALÉATOIRES.**
+ * `store()` nomme d'après un hachage : le participant voyait
+ * `x8HFrERkQmjt9DGaJi3Ln5VzPUb8JNExBzSwr5Z8.pdf` dans « Fichiers joints », et
+ * un dossier de ces noms-là ne se trie ni ne se relie à rien. C'est déjà ainsi
+ * que l'import Eau-Togo nomme ses 49 pièces (`EAU26-049.docx`).
+ *
+ * ⚠️ `ref_code` est posé par `SubmissionObserver::creating()` : il n'existe pas
+ * encore au téléversement. On dépose donc sous le nom de `store()` puis on
+ * renomme - déplacer l'écriture après la transaction créerait la communication
+ * même quand le dépôt du résumé échoue.
+ */
+it('nomme la pièce jointe d’après la référence de la communication', function () {
+    Storage::fake('public');
+    $event = evenementSansAnnee();
+    $account = verifiedAccount();
+    $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $event->slug), [
+            'title' => 'Communication nommée',
+            'abstract' => str_repeat('Contexte et objectifs. ', 5),
+            'track' => 'Sciences', 'type' => 'oral', 'keywords' => 'nom, fichier',
+            'file' => UploadedFile::fake()->create('resume.pdf', 80, 'application/pdf'),
+        ])
+        ->assertSessionHasNoErrors();
+
+    $submission = Submission::where('event_id', $event->id)->latest('id')->firstOrFail();
+
+    expect(basename((string) $submission->file_url))->toBe($submission->ref_code.'.pdf');
+    Storage::disk('public')->assertExists(storagePath($submission->file_url));
+});
+
+/**
+ * ⚠️⚠️ **LA VERSION EST SUFFIXÉE, ET CE N'EST PAS COSMÉTIQUE** : la
+ * resoumission ARCHIVE l'exemplaire précédent en lui laissant son `file_url`.
+ * Réécrire le même nom écraserait sur le disque le fichier que la version
+ * archivée désigne encore - on perdrait l'original en croyant déposer une
+ * correction.
+ */
+it('suffixe la version et ne réécrit pas le fichier archivé', function () {
+    Storage::fake('public');
+    $event = evenementSansAnnee();
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $event->slug), [
+            'title' => 'À corriger',
+            'abstract' => str_repeat('Contexte et objectifs. ', 5),
+            'track' => 'Sciences', 'type' => 'oral', 'keywords' => 'version, fichier',
+            'file' => UploadedFile::fake()->create('v1.pdf', 80, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+    $submission = Submission::where('event_id', $event->id)->latest('id')->firstOrFail();
+    $premier = storagePath($submission->file_url);
+    $submission->update(['status' => 'revision']);
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.resubmit', $submission), [
+            'title' => 'Corrigée',
+            'abstract' => str_repeat('Nouveau contenu. ', 6),
+            'file' => UploadedFile::fake()->create('v2.pdf', 80, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+    $canonique = $submission->fresh();
+    expect(basename((string) $canonique->file_url))->toBe($canonique->ref_code.'-v2.pdf');
+
+    // L'archive garde son fichier, intact et toujours sur le disque.
+    $archive = Submission::where('revision_of', $submission->id)->firstOrFail();
+    expect(storagePath($archive->file_url))->toBe($premier);
+    Storage::disk('public')->assertExists($premier);
+    expect(storagePath($canonique->file_url))->not->toBe($premier);
+});
+
+/** ⚠️ Un homonyme ne coûte pas la pièce de quelqu'un d'autre : on garde le nom actuel. */
+it('ne renomme pas par-dessus un fichier existant', function () {
+    Storage::fake('public');
+    $event = evenementSansAnnee();
+    $dossier = EventStorage::submissions($event);
+    Storage::disk('public')->put($dossier.'/26-001.pdf', 'la pièce de quelqu’un d’autre');
+    Storage::disk('public')->put($dossier.'/hachage.pdf', 'la mienne');
+
+    expect(EventStorage::renameSubmissionFile($dossier.'/hachage.pdf', '26-001', 1))->toBeNull();
+    expect(Storage::disk('public')->get($dossier.'/26-001.pdf'))->toBe('la pièce de quelqu’un d’autre');
+});
+
+/** ⚠️ La référence finit en NOM DE FICHIER : un « / » y ouvrirait un chemin. */
+it('n’accepte dans le nom que ce qui est un nom de fichier', function () {
+    Storage::fake('public');
+    $event = evenementSansAnnee();
+    $dossier = EventStorage::submissions($event);
+    Storage::disk('public')->put($dossier.'/hachage.pdf', 'contenu');
+
+    $cible = EventStorage::renameSubmissionFile($dossier.'/hachage.pdf', '../../26-001', 1);
+
+    expect($cible)->toBe($dossier.'/....26-001.pdf');
+    expect($cible)->not->toContain('/../');
+});
+
 it('dépose la pièce jointe d’une communication sous le nom de l’événement', function () {
     Storage::fake('public');
     $event = evenementSansAnnee();

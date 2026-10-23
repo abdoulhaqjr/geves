@@ -841,18 +841,10 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-submission-detail .status-track .step.active::before { background: var(--ukc-blue); color: #fff; box-shadow: 0 0 0 4px rgba(34,62,164,.18); }
 .account-submission-detail .status-track .step .lbl { font-size: 11.5px; font-weight: 700; color: var(--ukc-muted); line-height: 1.3; }
 .account-submission-detail .status-track .step.done .lbl, .account-submission-detail .status-track .step.active .lbl { color: var(--ukc-text); }
-.account-submission-detail .kv,
-.account-submission-revise .kv { display: grid; grid-template-columns: 150px 1fr; gap: 8px 12px; font-size: 13.5px; margin: 0; }
-.account-submission-detail .kv dt,
-.account-submission-revise .kv dt { color: var(--ukc-muted); font-weight: 600; }
-.account-submission-detail .kv dd,
-.account-submission-revise .kv dd { color: var(--ukc-text); font-weight: 500; margin: 0; }
-@media (max-width: 520px) {
-    .account-submission-detail .kv,
-    .account-submission-revise .kv { grid-template-columns: 1fr; gap: 2px 0; }
-    .account-submission-detail .kv dt,
-    .account-submission-revise .kv dt { margin-top: 8px; }
-}
+.account-submission-detail .kv { display: grid; grid-template-columns: 150px 1fr; gap: 8px 12px; font-size: 13.5px; margin: 0; }
+.account-submission-detail .kv dt { color: var(--ukc-muted); font-weight: 600; }
+.account-submission-detail .kv dd { color: var(--ukc-text); font-weight: 500; margin: 0; }
+@media (max-width: 520px) { .account-submission-detail .kv { grid-template-columns: 1fr; gap: 2px 0; } .account-submission-detail .kv dt { margin-top: 8px; } }
 .account-submission-detail .abstract { background: var(--ukc-bg); border: 1px solid var(--ukc-border); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.6; color: var(--ukc-text); text-align: justify; }
 .account-submission-detail .abstract > :first-child { margin-top: 0; }
 .account-submission-detail .abstract > :last-child { margin-bottom: 0; }
@@ -906,6 +898,26 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-submission-revise .rev-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
 .account-submission-revise .rev-file-current { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 @media (max-width: 900px) { .account-submission-revise .rev-grid { grid-template-columns: 1fr; } }
+
+/* Le rappel : des PAIRES étiquetées, pas une liste à plat.
+   ⚠️ La colonne ne fait que ~378px : une grille « intitulé | valeur » y
+   écraserait les deux côtés (« Type de communication » s'enroule à lui seul).
+   Les paires sont donc EMPILÉES, et c'est la typographie qui les sépare -
+   intitulé en capitales fines et grises, valeur en corps de texte appuyé. */
+.account-submission-revise .rev-recap { display: grid; gap: 14px; margin: 0; }
+.account-submission-revise .rev-recap > div { display: grid; gap: 3px; }
+.account-submission-revise .rev-recap dt { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ukc-light); line-height: 1.3; }
+.account-submission-revise .rev-recap dd { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ukc-text); line-height: 1.45; }
+/* ⚠️ **Pas de chasse fixe, et c'est une DÉCISION du projet** : `--ukc-mono`
+   pointe sur la police courante (cf. son commentaire dans `:root`), donc le
+   `font-family: var(--ukc-mono)` que portait la référence ne faisait
+   strictement rien. Une référence se distingue ici par la graisse et
+   l'interlettrage, comme `.secret-code`. */
+.account-submission-revise .rev-ref { font-weight: 800; letter-spacing: .08em; }
+/* La note est DÉTACHÉE de la liste : collée dessous, on la lisait comme une
+   paire de plus. Filet, icône, corps plus petit. */
+.account-submission-revise .rev-note { display: flex; align-items: flex-start; gap: 9px; margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--ukc-border); font-size: 12.5px; line-height: 1.55; color: var(--ukc-muted); }
+.account-submission-revise .rev-note .ico { display: inline-flex; flex: 0 0 auto; margin-top: 1px; color: var(--ukc-light); }
 .ukc-field label { font-size: 13px; font-weight: 600; color: var(--ukc-text); }
 .ukc-field label .req { color: #dc2626; }
 
@@ -1309,6 +1321,18 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-shell .tdb-ctx__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .ukc-shell .tdb-ctx__head .e,
 .ukc-shell .tdb-ctx__head .ukc-pill { white-space: nowrap; }
+
+/* ⚠️ **Une pastille d'ÉTAT ne se coupe pas en deux, et une cellule d'actions
+   non plus.** « Correction demandée » tombait sur deux lignes dans la colonne
+   Statut de `/communications` et doublait la hauteur de la rangée. Le
+   back-office avait déjà la règle (`.admin-page .ukc-pill`) ; l'espace
+   participant, non.
+   ⚠️ **Les pastilles qui portent une PHRASE gardent leur `white-space: normal`**
+   (les axes d'un atelier, `.admin-program .chip-list`) : elles ne vivent pas
+   dans une table, la règle ne les atteint pas - et c'est délibéré, un nom d'axe
+   entier en `nowrap` réclamait 386px et faisait défiler la page. */
+.ukc-shell .ukc-table .ukc-pill { white-space: nowrap; }
+.ukc-shell .ukc-table td.ukc-cell-actions { text-align: right; white-space: nowrap; }
 .ukc-shell .tdb-ctx__head .e {
   font-size: 11.5px; font-weight: 800; letter-spacing: .09em;
   text-transform: uppercase; color: #64748b;

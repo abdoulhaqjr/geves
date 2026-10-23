@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Event;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -122,5 +123,49 @@ final class EventStorage
     public static function artwork(Event|string $event, int|string|null $year = null): string
     {
         return self::in(self::ARTWORK, $event, $year);
+    }
+
+    /**
+     * ⚠️⚠️ **UN RÉSUMÉ DÉPOSÉ PORTE LE NOM DE SA RÉFÉRENCE**, `EAU26-029.pdf`,
+     * pas les quarante caractères aléatoires que rend `store()`. Le participant
+     * le voit dans « Fichiers joints », le gestionnaire le télécharge par
+     * paquets, et un dossier de `x8HFrERkQmjt9DGaJi3Ln5VzPUb8JNExBzSwr5Z8.pdf`
+     * ne se trie ni ne se relie à rien. C'est déjà ainsi que l'import Eau-Togo
+     * nomme ses 49 pièces ; le dépôt et la resoumission s'alignent.
+     *
+     * ⚠️ **La version est suffixée au-delà de la première** (`EAU26-029-v2.pdf`) :
+     * la resoumission ARCHIVE l'exemplaire précédent en lui laissant son
+     * `file_url`. Réécrire le même nom écraserait sur le disque le fichier que
+     * la version archivée désigne encore - on perdrait l'original en croyant
+     * déposer une correction.
+     *
+     * ⚠️ **On ne renomme PAS par-dessus un fichier existant** : on garde alors
+     * le nom actuel. Un homonyme inattendu (référence ressaisie à la main,
+     * reprise d'import) coûterait la pièce de quelqu'un d'autre, et un nom moins
+     * lisible vaut mieux qu'un fichier perdu.
+     *
+     * @param  string  $chemin  chemin ACTUEL sur le disque `public`, tel que rendu par `store()`
+     * @return string|null le nouveau chemin, ou null si rien n'a bougé
+     */
+    public static function renameSubmissionFile(string $chemin, string $ref, int $version): ?string
+    {
+        // ⚠️ La référence finit en NOM DE FICHIER : on n'y laisse passer que ce
+        // qui en est un. Elle est générée (`AA-NNN`), mais elle se saisit aussi
+        // à l'import - un « / » y ouvrirait un chemin.
+        $base = preg_replace('/[^A-Za-z0-9._-]/', '', $ref) ?? '';
+        if ($base === '') {
+            return null;
+        }
+
+        $extension = Str::lower(pathinfo($chemin, PATHINFO_EXTENSION));
+        $nom = $base.($version > 1 ? '-v'.$version : '').($extension !== '' ? '.'.$extension : '');
+        $cible = trim(Str::beforeLast($chemin, '/'), '/').'/'.$nom;
+
+        $disque = Storage::disk('public');
+        if ($cible === $chemin || ! $disque->exists($chemin) || $disque->exists($cible)) {
+            return null;
+        }
+
+        return $disque->move($chemin, $cible) ? $cible : null;
     }
 }

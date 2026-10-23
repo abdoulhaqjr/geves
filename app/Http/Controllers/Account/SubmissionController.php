@@ -348,9 +348,16 @@ class SubmissionController extends Controller
         ]);
 
         // Nouveau fichier éventuel.
+        //
+        // ⚠️ **Il porte la référence ET LA VERSION** (`EAU26-029-v2.pdf`) : la
+        // version archivée juste au-dessus garde son `file_url`, donc réécrire
+        // le même nom écraserait sur le disque l'exemplaire qu'elle désigne
+        // encore. {@see EventStorage::renameSubmissionFile()}
+        $nouvelleVersion = $submission->version + 1;
         $fileUrl = $submission->file_url;
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store(EventStorage::submissions($submission->event), 'public');
+            $path = EventStorage::renameSubmissionFile($path, (string) $submission->ref_code, $nouvelleVersion) ?? $path;
             $fileUrl = Storage::disk('public')->url($path);
         }
 
@@ -360,7 +367,7 @@ class SubmissionController extends Controller
             'abstract' => Html::clean($data['abstract']),
             'keywords' => SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($submission->event))->keywordSeparator()),
             'file_url' => $fileUrl,
-            'version' => $submission->version + 1,
+            'version' => $nouvelleVersion,
             'status' => 'submitted',
         ]);
 

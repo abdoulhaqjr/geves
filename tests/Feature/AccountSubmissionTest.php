@@ -170,6 +170,30 @@ it('applique le garde-fou du nombre max de communications', function () {
     expect(Submission::count())->toBe(1);
 });
 
+/**
+ * ⚠️ **Une pastille d'ÉTAT ne se coupe pas en deux.** « Correction demandée »
+ * tombait sur deux lignes dans la colonne Statut et doublait la hauteur de la
+ * rangée ; la cellule d'actions, elle, tenait sa ligne par un `style=` en
+ * ligne - qui l'emporte sur toute règle, media query comprise.
+ *
+ * ⚠️ La règle se lit dans la FEUILLE, commentaires retirés : un commentaire qui
+ * cite le sélecteur ferait passer la garde sans qu'aucune règle n'existe (même
+ * leçon que `DegradeHerosTest`).
+ */
+it('garde la pastille d’état et les actions sur une seule ligne', function () {
+    $css = (string) file_get_contents(resource_path('css/ukc.css'));
+    $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
+
+    expect($css)
+        ->toContain('.ukc-shell .ukc-table .ukc-pill { white-space: nowrap; }')
+        ->toContain('.ukc-shell .ukc-table td.ukc-cell-actions');
+
+    $vue = (string) file_get_contents(resource_path('views/account/submissions/index.blade.php'));
+    expect($vue)
+        ->toContain('class="ukc-cell-actions"')
+        ->not->toContain('style="text-align:right;white-space:nowrap;"');
+});
+
 it('liste les communications du compte', function () {
     $event = openEdition();
     $account = verifiedAccount();

@@ -36,7 +36,7 @@
             </a>
             <div class="rev-topbar__pills">
                 <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
-                <span class="ukc-pill ukc-pill--muted" style="font-family:var(--ukc-mono);">{{ $s->ref_code }}</span>
+                <span class="ukc-pill ukc-pill--muted rev-ref">{{ $s->ref_code }}</span>
             </div>
         </div>
 
@@ -142,24 +142,43 @@
                     @endforelse
                 </div>
 
+                {{-- ⚠️⚠️ **`<dl class="ukc-dl">` N'AVAIT AUCUNE RÈGLE** - la classe
+                     n'existait dans aucune feuille. Une classe inventée ne lève
+                     rien : elle se rend, simplement sans style. Le `<dl>`
+                     retombait donc sur le défaut du navigateur, lui-même aplati
+                     par le reset Preflight de Tailwind, et les huit lignes
+                     sortaient de même taille, même graisse et même couleur -
+                     l'intitulé ne se distinguait plus de sa valeur. --}}
                 <div class="ukc-card">
-                    <h2>{{ __('Rappel') }}</h2>
-                    <dl class="ukc-dl">
-                        <dt>{{ __('Référence') }}</dt>
-                        <dd style="font-family:var(--ukc-mono);">{{ $s->ref_code }}</dd>
-                        <dt>{{ $config->label('type') }}</dt>
-                        <dd>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</dd>
+                    <h2>{{ __('Votre communication') }}</h2>
+                    <dl class="rev-recap">
+                        <div>
+                            <dt>{{ __('Référence') }}</dt>
+                            <dd class="rev-ref">{{ $s->ref_code }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ $config->label('type') }}</dt>
+                            <dd>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</dd>
+                        </div>
                         @if (filled($s->track))
-                            <dt>{{ $config->label('track') }}</dt>
-                            <dd>{{ $s->track }}</dd>
+                            <div>
+                                <dt>{{ $config->label('track') }}</dt>
+                                <dd>{{ $s->track }}</dd>
+                            </div>
                         @endif
-                        <dt>{{ __('Version') }}</dt>
-                        <dd>{{ $s->version }}</dd>
+                        <div>
+                            <dt>{{ __('Version') }}</dt>
+                            <dd>{{ $s->version }}</dd>
+                        </div>
                     </dl>
                     {{-- ⚠️ Ces trois-là ne se corrigent PAS par la resoumission : on
-                         le dit, plutôt que de laisser chercher un champ absent. --}}
-                    <p class="hint" style="margin-top:12px;">
-                        {{ __('L’axe, le type de communication et les auteurs ne se modifient pas par ce formulaire : écrivez-le au comité dans votre résumé ou contactez le secrétariat.') }}
+                         le dit, plutôt que de laisser chercher un champ absent. Et
+                         la note est DÉTACHÉE de la liste (filet + icône) : collée
+                         dessous dans la même graisse, on la lisait comme une
+                         cinquième paire. --}}
+                    <p class="rev-note">
+                        <span class="ico"><x-ukc.icon name="info" :size="15" /></span>
+                        <span>{{ __('L’axe, le type de communication et les auteurs ne se modifient pas par ce formulaire : écrivez-le au comité dans votre résumé ou contactez le secrétariat.') }}</span>
                     </p>
                 </div>
             </aside>
