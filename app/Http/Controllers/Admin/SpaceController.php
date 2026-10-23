@@ -19,7 +19,8 @@ class SpaceController extends Controller
     {
         $user = Auth::guard('web')->user();
 
-        if ($user !== null && ! Auth::guard('account')->check()) {
+        if ($user !== null && ! app('impersonate')->isImpersonating()
+            && Auth::guard('account')->id() !== $user->getAuthIdentifier()) {
             Auth::guard('account')->login($user);
         }
 

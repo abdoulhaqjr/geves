@@ -77,6 +77,7 @@ use App\Http\Controllers\Public\GescoController;
 use App\Http\Controllers\SessionEngagementController;
 use App\Http\Controllers\SessionPresenceApiController;
 use App\Http\Middleware\StampAccountSession;
+use App\Http\Middleware\SyncStaffParticipantSession;
 use App\Models\Event;
 use Illuminate\Support\Facades\Route;
 
@@ -225,7 +226,7 @@ Route::middleware('guest:account')->group(function () {
 Route::permanentRedirect('/profil', '/compte/profil');
 Route::permanentRedirect('/notifications', '/compte/notifications');
 
-Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
+Route::middleware(['auth:account,web', SyncStaffParticipantSession::class, StampAccountSession::class])->group(function () {
     Route::get('/compte', DashboardController::class)->name('account.dashboard');
     Route::post('/compte/evaluateur/candidature/{event}', [ReviewerApplicationController::class, 'store'])->name('account.reviewer-applications.store');
     Route::get('/prise-en-main', AccountOnboardingController::class)->name('account.onboarding');

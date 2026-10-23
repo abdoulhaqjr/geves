@@ -210,10 +210,7 @@
                                 <div class="mail">{{ $staff?->email }}</div>
                             </div>
                             <a href="{{ route('admin.profile') }}" class="ukc-usermenu__item"><x-ukc.icon name="user" :size="16" /> Mon compte</a>
-                            <form method="POST" action="{{ route('admin.space.participant') }}">
-                                @csrf
-                                <button type="submit" class="ukc-usermenu__item"><x-ukc.icon name="external" :size="16" /> Espace participant</button>
-                            </form>
+                            <a href="{{ route('account.dashboard') }}" class="ukc-usermenu__item"><x-ukc.icon name="external" :size="16" /> Espace participant</a>
                             @can('settings')
                                 <a href="{{ route('admin.settings') }}" class="ukc-usermenu__item"><x-ukc.icon name="settings" :size="16" /> Réglages</a>
                             @endcan

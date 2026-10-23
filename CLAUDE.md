@@ -35,6 +35,7 @@ Larastan **niveau 5**.
 
 ### Comptes et droits (2026-10-20)
 
+- Le lien « Espace participant » du menu admin cible directement `/compte`. Les routes participant acceptent les guards `account` ou `web`, puis `SyncStaffParticipantSession` ouvre le guard `account` pour le même utilisateur avant le contrôleur. Préserver l'impersonation : ne jamais remplacer le compte emprunté pendant sa session.
 - Un compte désactivé ne peut plus se connecter ; `active.user` coupe aussi sa session à la requête suivante, dans les espaces participant, admin et les routes partagées. Le challenge 2FA vérifie à nouveau le statut.
 - Seul un super administrateur peut attribuer `access_level=super_admin` ou modifier la matrice des permissions. La visibilité des super administrateurs couvre aussi les anciens rôles `administrator` et la permission `manage_colloques`, y compris avant une usurpation de compte.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
