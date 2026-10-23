@@ -830,6 +830,52 @@ d'écriture, le flyer, le déplacement, le rejeu, l'adresse laissée intacte qua
 le fichier manque, et le dossier orphelin qu'aucune ligne ne réclame) - 7
 sabotages vérifiés, dont celui qui déplace les répertoires par leur nom.
 
+### Corriger & renvoyer une communication = une PAGE, pas un bloc de fiche
+
+`/communications/{submission}/corriger` (`account.submissions.revise`). Le POST qui
+applique la correction reste `account.submissions.resubmit` : la page montre le
+formulaire, la resoumission l'enregistre.
+
+⚠️⚠️ **Le formulaire vivait AU BAS DE LA FICHE**, après l'historique, les documents
+liés et le créneau de passage ; le bouton « Corriger & renvoyer » n'était qu'une ancre
+**`#resubmit`**. On changeait de tâche sans changer d'écran - une page de consultation
+qui se mettait soudain à demander une saisie - et une erreur de validation renvoyait
+l'auteur retrouver le bloc lui-même.
+
+⚠️ **Une page, pas une fenêtre.** Le formulaire porte l'éditeur de résumé (CKEditor +
+compteur de mots), le sélecteur de mots-clés et un dépôt de fichier : trois composants
+qu'une modale enfermerait dans une boîte, sur une fiche qui tient déjà son propre état
+Alpine et sa modale de créneau. Et le **dépôt est une page** : corriger doit se
+présenter comme déposer.
+
+⚠️ **Les champs sont CEUX DU DÉPÔT, pas une approximation.** Le résumé passe par le
+même `partials.abstract-editor`, les mots-clés par le même Tom Select, le fichier par
+le même `<x-ukc.filedrop>`. Il était rendu par un **`<textarea>` nu, sans compteur**,
+alors que `ResubmitSubmissionRequest` refuse hors des bornes de mots de l'événement :
+on corrigeait à l'aveugle, et la mise en forme du résumé se perdait au passage.
+
+⚠️ **Seuls les champs que la resoumission APPLIQUE sont proposés** (titre, résumé,
+mots-clés, fichier). L'axe, le type et les auteurs ne sont pas rééditables par ce
+circuit : les montrer en saisie promettrait un enregistrement qui n'a pas lieu. Ils
+sont rappelés en lecture, et la page **dit** qu'ils ne se changent pas ici.
+
+⚠️ **Les retours du comité sont SUR cette page**, en colonne de droite : on corrige
+avec les remarques sous les yeux. C'est le point de l'écran - elles vivaient en haut
+d'une fiche longue, et corriger imposait l'aller-retour de mémoire.
+
+⚠️ **Mesuré à 375px** : `min-width: auto` d'un élément de grille vaut la largeur
+INTRINSÈQUE de son contenu, et la piste `1fr` s'étire pour l'absorber. Le champ caché
+de Tom Select (201px) et l'input du dépôt de fichier (248px) gonflaient la colonne à
+517px dans un conteneur de 385 - **119px de défilement latéral sur toute la page**.
+D'où `min-width: 0` sur les enfants de `.rev-grid`, la même ligne que `.layout-plan > *`.
+
+⚠️ `.kv` et `.msg-box` n'étaient portés que par `.account-submission-detail` : la page
+de correction les reprend, d'où la liste de sélecteurs. **Pas de remontée vers
+`.ukc-shell`** - « kv » est un nom trop commun pour être lâché dans tout le back-office.
+
+Gardes : `ReviewRevisionTest` (5 cas, **4 sabotages vérifiés** : la garde
+`canBeRevised()` retirée, le résumé redevenu un textarea nu, les remarques retirées de
+la page, et le formulaire remis au bas de la fiche).
 ### URLs de l'espace participant = sous `/compte`
 
 Les pages personnelles du compte vivent sous **`/compte/...`** (`/compte`, `/compte/profil`,

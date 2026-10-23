@@ -177,6 +177,40 @@ class SubmissionController extends Controller
         ]);
     }
 
+    /**
+     * **La correction a sa propre page.**
+     *
+     * ⚠️⚠️ Elle vivait **au bas de la fiche**, après l'historique, les documents
+     * liés et le créneau de passage : le bouton « Corriger & renvoyer » n'était
+     * qu'une ancre `#resubmit`, et l'auteur se retrouvait devant un formulaire
+     * surgi au milieu d'une page de consultation, sans comprendre qu'il venait
+     * de changer de tâche. Une erreur de validation le renvoyait au même endroit,
+     * à lui de retrouver le bloc.
+     *
+     * ⚠️ **Une page, pas une fenêtre.** Le formulaire porte l'éditeur de résumé
+     * (CKEditor + compteur de mots), le sélecteur de mots-clés et un dépôt de
+     * fichier - trois composants qu'une fenêtre enfermerait dans une boîte, sur
+     * une fiche qui tient déjà son propre état Alpine et sa modale de créneau.
+     * Et le DÉPÔT est une page : corriger doit se présenter comme déposer.
+     *
+     * ⚠️ **Les retours du comité sont sur CETTE page**, au-dessus du formulaire :
+     * on corrige avec les remarques sous les yeux, sans remonter la fiche.
+     */
+    public function revise(Submission $submission): View
+    {
+        $this->authorizeOwnership($submission);
+        abort_unless($submission->canBeRevised(), 403);
+
+        $config = new SubmissionFormConfig($submission->event);
+
+        return view('account.submissions.revise', [
+            'submission' => $submission,
+            'config' => $config,
+            'feedback' => $this->authorFeedback($submission),
+            'keywordSeparator' => $config->keywordSeparator(),
+        ]);
+    }
+
     /** Réponse de l'auteur aux évaluateurs (rebuttal), tant que la phase est ouverte. */
     public function rebuttal(Request $request, Submission $submission): RedirectResponse
     {

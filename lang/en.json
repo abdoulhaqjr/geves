@@ -1179,5 +1179,22 @@
     "jours au plus": "days at most",
     "Durée du plus long d’entre eux.": "Lifetime of the longest-lived one.",
     "Les seuls cookies posés servent à vous garder connecté et à protéger les formulaires. C’est pourquoi aucune bannière ne vous demande d’accepter ou de refuser : il n’y a rien de facultatif à refuser. Les voici, un par un.": "The only cookies stored keep you signed in and protect the forms. That is why no banner asks you to accept or decline: there is nothing optional to decline. Here they are, one by one.",
-    "Pour toute question sur vos données, écrivez à la Direction de la Recherche et de l’Innovation.": "For any question about your data, write to the Research and Innovation Directorate."
+    "Pour toute question sur vos données, écrivez à la Direction de la Recherche et de l’Innovation.": "For any question about your data, write to the Research and Innovation Directorate.",
+    "Version corrigée de votre communication": "Corrected version of your paper",
+    "Retour à la communication": "Back to the paper",
+    "Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous, puis renvoyez-la au comité.": "A <strong>correction</strong> has been requested. Edit your paper below, then send it back to the committee.",
+    "Une <strong>correction</strong> vous est demandée. Ouvrez le formulaire de correction pour modifier votre communication, puis renvoyez-la.": "A <strong>correction</strong> has been requested. Open the correction form to edit your paper, then send it back.",
+    "Votre version actuelle (version :v) est conservée dans l’historique ; la communication repart en évaluation.": "Your current version (version :v) is kept in the history; the paper goes back for review.",
+    "Entrée ou virgule pour ajouter": "Enter or comma to add",
+    "Entrée ou point-virgule pour ajouter": "Enter or semicolon to add",
+    "Entrée, virgule ou point-virgule pour ajouter": "Enter, comma or semicolon to add",
+    "Fichier actuel :": "Current file:",
+    "ouvrir": "open",
+    "laissez vide pour le conserver.": "leave empty to keep it.",
+    "PDF": "PDF",
+    "Ce que demande le comité": "What the committee asks for",
+    "Aucun commentaire n’a été transmis avec la demande de correction. Reprenez votre communication et renvoyez-la.": "No comment was sent with the correction request. Revise your paper and send it back.",
+    "Rappel": "Reminder",
+    "Version": "Version",
+    "L’axe, le type de communication et les auteurs ne se modifient pas par ce formulaire : écrivez-le au comité dans votre résumé ou contactez le secrétariat.": "The track, the paper type and the authors cannot be changed from this form: tell the committee in your abstract, or contact the secretariat."
 }

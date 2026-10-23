@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Mail;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest ; adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest
@@ -36,6 +37,99 @@ it('permet à l’auteur de resoumettre une version corrigée', function () {
     expect($archive->version)->toBe(1);
 
     Mail::assertQueued(SubmissionStatusMail::class, fn ($m) => $m->statusKey === 'submitted');
+});
+
+/* ------------------------- La PAGE de correction -------------------------- */
+
+/**
+ * ⚠️⚠️ **LA CORRECTION A SA PAGE, ELLE N'EST PLUS UN BLOC AU BAS DE LA FICHE.**
+ * Le bouton « Corriger & renvoyer » était une ancre `#resubmit` : il faisait
+ * défiler une page de CONSULTATION jusqu'à un formulaire posé après
+ * l'historique, les documents liés et le créneau de passage. On changeait de
+ * tâche sans changer d'écran, et une erreur de validation renvoyait l'auteur
+ * chercher le bloc lui-même.
+ */
+it('mène à la page de correction, et ne porte plus le formulaire sur la fiche', function () {
+    $submission = seededSubmission('revision');
+    $account = $submission->participant->user;
+
+    $html = $this->actingAs($account, 'account')
+        ->get(route('account.submissions.show', $submission))->assertOk()->getContent();
+
+    expect($html)->toContain(route('account.submissions.revise', $submission));
+
+    // ⚠️ On vise l'ACTION du formulaire, pas le mot « Corriger » : la fiche
+    // l'affiche encore, dans le bandeau qui mène à la page.
+    expect($html)->not->toContain(route('account.submissions.resubmit', $submission));
+    expect($html)->not->toContain('id="resubmit"');
+});
+
+/**
+ * ⚠️ **Les champs sont ceux du DÉPÔT.** Le résumé était un `<textarea>` nu, sans
+ * compteur, alors que le serveur refuse hors des bornes de mots de l'événement :
+ * on corrigeait à l'aveugle et la mise en forme se perdait. Il passe par le même
+ * `partials.abstract-editor` que le dépôt, les mots-clés par le même Tom Select.
+ */
+it('sert les champs du formulaire de soumission sur la page de correction', function () {
+    $submission = seededSubmission('revision');
+    $account = $submission->participant->user;
+
+    $html = $this->actingAs($account, 'account')
+        ->get(route('account.submissions.revise', $submission))->assertOk()->getContent();
+
+    $config = new SubmissionFormConfig($submission->event);
+
+    expect($html)
+        ->toContain('action="'.route('account.submissions.resubmit', $submission).'"')
+        // L'éditeur de résumé, avec les bornes de mots de l'événement.
+        ->toContain('data-ckeditor')
+        ->toContain('data-max-words="'.$config->abstractMax().'"')
+        // Le sélecteur de mots-clés, et le dépôt de fichier.
+        ->toContain('data-tom')
+        ->toContain('name="file"')
+        // Le titre et le résumé arrivent remplis : on corrige, on ne ressaisit pas.
+        ->toContain($submission->title);
+});
+
+/**
+ * ⚠️ **Le point de l'écran** : les remarques sont À CÔTÉ du formulaire. Elles
+ * vivaient en haut d'une fiche longue, et corriger obligeait à l'aller-retour.
+ */
+it('montre les remarques du comité à côté du formulaire', function () {
+    $submission = seededSubmission('revision');
+    $reviewer = Participant::create([
+        'event_id' => $submission->event_id, 'first_name' => 'Rel', 'last_name' => 'Ecteur',
+        'email' => 'rel.correction@example.tg', 'role' => 'reviewer',
+    ]);
+    Review::create([
+        'submission_id' => $submission->id, 'reviewer_id' => $reviewer->id,
+        'status' => 'completed', 'comments' => 'Précisez la taille de l’échantillon.',
+    ]);
+
+    $this->actingAs($submission->participant->user, 'account')
+        ->get(route('account.submissions.revise', $submission))
+        ->assertOk()
+        ->assertSee('Précisez la taille de l’échantillon.', false);
+});
+
+it('ferme la page de correction quand aucune correction n’est demandée', function () {
+    $submission = seededSubmission('under_review');
+
+    $this->actingAs($submission->participant->user, 'account')
+        ->get(route('account.submissions.revise', $submission))
+        ->assertForbidden();
+});
+
+it('ferme la page de correction à un autre compte', function () {
+    $submission = seededSubmission('revision');
+    $autre = User::create([
+        'first_name' => 'Komi', 'last_name' => 'Autre',
+        'email' => 'komi.correction@example.tg', 'password' => 'pass12345',
+    ]);
+
+    $this->actingAs($autre, 'account')
+        ->get(route('account.submissions.revise', $submission))
+        ->assertNotFound();
 });
 
 it('bloque la resoumission si aucune correction n’est demandée', function () {

@@ -120,14 +120,18 @@
             </div>
         @endif
 
-        {{-- Correction demandée : resoumission (fonctionnalité réelle) --}}
+        {{-- Correction demandée : la resoumission a sa PAGE.
+             ⚠️ Le bouton était une ancre `#resubmit` vers un formulaire posé tout
+             en bas de cette fiche, après l'historique et le créneau de passage :
+             on changeait de tâche sans quitter une page de consultation, et une
+             erreur de validation renvoyait l'auteur chercher le bloc. --}}
         @if ($isOwner && $s->canBeRevised())
             <div class="ukc-card" style="margin-bottom:18px;border-color:#fde68a;background:#fffbeb;">
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
-                    <div>{!! __('Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.') !!}</div>
+                    <div>{!! __('Une <strong>correction</strong> vous est demandée. Ouvrez le formulaire de correction pour modifier votre communication, puis renvoyez-la.') !!}</div>
                 </div>
-                <a href="#resubmit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Corriger & renvoyer') }}</a>
+                <a href="{{ route('account.submissions.revise', $s) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Corriger & renvoyer') }}</a>
             </div>
         @endif
 
@@ -339,37 +343,11 @@
         </div>
 
         {{-- Formulaire de resoumission (correction) - déposant seulement --}}
-        @if ($isOwner && $s->canBeRevised())
-            <div class="ukc-card" id="resubmit" style="margin-top:18px;">
-                <h2>{{ __('Corriger & renvoyer') }}</h2>
-                <form method="POST" action="{{ route('account.submissions.resubmit', $s) }}" enctype="multipart/form-data" class="ukc-form-grid">
-                    @csrf
-                    <div class="ukc-field full">
-                        <label for="title">{{ __('Titre') }} <span class="req">*</span></label>
-                        <input type="text" id="title" name="title" value="{{ old('title', $s->title) }}">
-                        @error('title') <span class="error">{{ $message }}</span> @enderror
-                    </div>
-                    <div class="ukc-field full">
-                        <label for="abstract">{{ __('Résumé') }} <span class="req">*</span></label>
-                        <textarea id="abstract" name="abstract" rows="6">{{ old('abstract', $s->abstract) }}</textarea>
-                        @error('abstract') <span class="error">{{ $message }}</span> @enderror
-                    </div>
-                    <div class="ukc-field full">
-                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">({{ $keywordHelp }})</span></label>
-                        <input type="text" id="keywords" name="keywords" data-tom data-keyword-separator="{{ $keywordSeparator }}" data-placeholder="{{ __('Saisir un mot-clé…') }}" value="{{ old('keywords', \App\Support\SubmissionKeywords::join($s->keywords, $keywordSeparator)) }}">
-                        @error('keywords') <span class="error">{{ $message }}</span> @enderror
-                    </div>
-                    <div class="ukc-field full">
-                        <label for="file">{{ __('Nouveau fichier (PDF, optionnel)') }}</label>
-                        <x-ukc.filedrop name="file" id="file" accept=".pdf" :hint="__('PDF')" />
-                        @error('file') <span class="error">{{ $message }}</span> @enderror
-                    </div>
-                    <div class="ukc-field full">
-                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="upload" :size="16" /> {{ __('Renvoyer la communication') }}</button>
-                    </div>
-                </form>
-            </div>
-        @endif
+        {{-- ⚠️ **Plus de formulaire de resoumission ici.** Il vivait sous cette
+             ligne, et c'est précisément ce qui a été corrigé : la correction se
+             fait sur `account.submissions.revise`, où les remarques du comité
+             sont à côté des champs. Ne pas le réintroduire - deux formulaires
+             pour le même geste, c'est deux endroits à tenir d'accord. --}}
 
         {{-- Modale : choix / changement de créneau --}}
         @if ($isOwner && $availableSlots->count() && ($slot || $s->status === 'accepted'))

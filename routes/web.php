@@ -266,6 +266,9 @@ Route::middleware(['auth:account,web', SyncStaffParticipantSession::class, Stamp
     Route::get('/communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
     Route::post('/communications/{submission}/modifier', [SubmissionController::class, 'updateContent'])->name('account.submissions.update');
     Route::put('/communications/{submission}/mode-presentation', [SubmissionController::class, 'updatePresentationMode'])->name('account.submissions.presentation-mode.update');
+    // ⚠️ La correction a sa PAGE (`revise`), et le POST qui l'applique reste
+    // `resubmit` : la page affiche le formulaire, la resoumission l'enregistre.
+    Route::get('/communications/{submission}/corriger', [SubmissionController::class, 'revise'])->name('account.submissions.revise');
     Route::post('/communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
     Route::post('/communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');
     Route::post('/communications/{submission}/reponse-relecteurs', [SubmissionController::class, 'rebuttal'])->name('account.submissions.rebuttal');
