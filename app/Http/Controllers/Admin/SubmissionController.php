@@ -416,11 +416,10 @@ class SubmissionController extends Controller
     {
         $submission->load(['event', 'participant']);
 
-        // Une personne retirée du vivier ne doit plus apparaître sur la fiche,
-        // sauf si elle a effectivement rendu son évaluation. Les anciennes
-        // affectations restent en base pour l'historique.
+        // Les affectations annulées ne figurent plus sur la fiche. Une personne
+        // retirée du vivier n'y reste que si son évaluation a été rendue.
         $reviews = $submission->reviews()->with('reviewer')->get()
-            ->filter(fn (Review $review) => $review->status === 'completed' || $review->reviewer?->role === 'reviewer')
+            ->filter(fn (Review $review) => self::visibleReview($review))
             ->values();
         $completed = $reviews->where('status', 'completed');
 
@@ -659,7 +658,7 @@ class SubmissionController extends Controller
      * Retire une assignation. ⚠️ On n'efface pas la ligne : une évaluation est une
      * pièce du dossier (qui a été sollicité, quand, et ce qu'il a éventuellement
      * rendu). Elle passe « annulée » - hors des compteurs et de la couverture
-     * (cf. Review::ACTIVE_STATUSES) mais toujours lisible dans l'historique.
+     * (cf. Review::ACTIVE_STATUSES), tout en restant conservée en base.
      */
     public function removeReview(Submission $submission, Review $review): RedirectResponse
     {
@@ -682,7 +681,7 @@ class SubmissionController extends Controller
         );
 
         return back()->with('ukc_status', $wasCompleted
-            ? 'Assignation annulée : l’évaluation reste consultable dans l’historique mais ne compte plus.'
+            ? 'Assignation annulée : l’évaluation ne compte plus et reste conservée dans le dossier.'
             : 'Assignation annulée : la place est libérée pour un autre évaluateur.');
     }
 
@@ -1099,6 +1098,13 @@ class SubmissionController extends Controller
                 : 'Aucune nouvelle assignation (déjà en place ou conflit d’intérêt).');
     }
 
+    /** Même règle pour la liste des évaluateurs, les conflits et l'historique. */
+    private static function visibleReview(Review $review): bool
+    {
+        return $review->status !== 'cancelled'
+            && ($review->status === 'completed' || $review->reviewer?->role === 'reviewer');
+    }
+
     /**
      * Historique dérivé des vrais événements (dépôt, versions, évaluations).
      *
@@ -1117,6 +1123,10 @@ class SubmissionController extends Controller
         }
 
         foreach ($reviews as $review) {
+            if (! self::visibleReview($review)) {
+                continue;
+            }
+
             $name = $review->reviewer?->full_name ?: 'un évaluateur';
             $events[] = ['when' => $review->created_at, 'what' => 'Assignée à '.$name, 'done' => false];
             if ($review->isCompleted()) {
