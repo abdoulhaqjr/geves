@@ -175,7 +175,7 @@
                             <a href="{{ route('admin.reports.export', [$event, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                         </span>
                     </h2>
-                    <p class="desc">Inscriptions, catégories et provenance.</p>
+                    <p class="desc">Inscriptions, catégories, institutions et provenance.</p>
                     <div class="ukc-stats" style="margin-bottom:14px;">
                         <div class="ukc-stat-card"><div class="lbl">Total inscrits</div><div class="val blue">{{ $summary['participants'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Payés</div><div class="val green">{{ $summary['paidCount'] }}</div></div>
@@ -212,6 +212,21 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;">
+                        <h3 class="sub-h">Par institution (top 6)</h3>
+                        <div class="ukc-table-wrap">
+                            <table class="ukc-table" style="min-width:0;">
+                                <thead><tr><th>Institution</th><th class="num">Participants</th><th class="num">Part</th></tr></thead>
+                                <tbody>
+                                    @forelse ($report->participantsByInstitution() as $r)
+                                        <tr><td>{{ $r['institution'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ $r['part'] }} %</td></tr>
+                                    @empty
+                                        <tr><td colspan="3" style="text-align:center;color:var(--ukc-muted);padding:16px;">Aucune donnée.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

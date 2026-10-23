@@ -40,8 +40,9 @@
                                     @foreach ($statuses as $k => $l)<option value="{{ $k }}" @selected($claim->status === $k)>{{ $l }}</option>@endforeach
                                 </select>
                             </div>
-                            <div class="ukc-field"><label>Résolution (facultatif)</label>
+                            <div class="ukc-field"><label>Réponse au déclarant (facultatif)</label>
                                 <textarea name="resolution" rows="4" placeholder="Ce qui a été fait / la réponse apportée…">{{ $claim->resolution }}</textarea>
+                                <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Une nouvelle réponse, ou le passage au statut « Résolue », déclenche un e-mail au déclarant.</p>
                             </div>
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Enregistrer</button>
                         </form>
@@ -95,6 +96,7 @@
                                 <input type="hidden" name="status" value="resolved">
                                 <input type="hidden" name="resolution" value="{{ $a['resolution'] }}">
                                 <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Utiliser cette résolution et marquer résolue</button>
+                                <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">La résolution proposée sera envoyée au déclarant par e-mail.</p>
                             </form>
                         @elseif ($verdict === 'procedure' && ! empty($a['steps']))
                             <ol style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.5;">

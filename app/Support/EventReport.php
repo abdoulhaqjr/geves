@@ -74,7 +74,7 @@ class EventReport
     public function participantRows(): array
     {
         return Participant::where('event_id', $this->event->id)
-            ->with('participationPayments')
+            ->with(['participationPayments', 'user'])
             ->orderBy('last_name')
             ->get()
             ->map(function (Participant $p) {
@@ -85,7 +85,7 @@ class EventReport
                     $p->first_name,
                     (string) $p->email,
                     (string) $p->phone,
-                    (string) $p->institution,
+                    $p->displayInstitution(),
                     (string) $p->country,
                     $p->roleLabel(),
                     (string) $p->title,
@@ -398,6 +398,46 @@ class EventReport
 
         if ($rest > 0) {
             $rows[] = ['country' => 'Autres', 'count' => (int) $rest, 'part' => (int) round($rest / $grand * 100)];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Participants par institution (top 6 + « Autres »), avec part en %.
+     * Reprend l'institution de l'événement, puis l'affiliation du compte lié.
+     *
+     * @return array<int, array{institution:string, count:int, part:int}>
+     */
+    public function participantsByInstitution(): array
+    {
+        $participants = Participant::where('event_id', $this->event->id)
+            ->with('user')
+            ->get();
+        $grand = max(1, $participants->count());
+
+        $byInstitution = $participants
+            ->groupBy(function (Participant $participant): string {
+                $institution = trim((string) preg_replace('/\s+/u', ' ', $participant->displayInstitution()));
+
+                return $institution !== '' ? $institution : 'Non précisée';
+            })
+            ->map(fn ($group, $institution) => [
+                'institution' => (string) $institution,
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('count')
+            ->values();
+
+        $rows = $byInstitution->take(6)
+            ->map(fn ($row) => [
+                ...$row,
+                'part' => (int) round($row['count'] / $grand * 100),
+            ])
+            ->all();
+        $rest = (int) $byInstitution->slice(6)->sum('count');
+        if ($rest > 0) {
+            $rows[] = ['institution' => 'Autres', 'count' => $rest, 'part' => (int) round($rest / $grand * 100)];
         }
 
         return $rows;

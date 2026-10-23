@@ -416,7 +416,12 @@ class SubmissionController extends Controller
     {
         $submission->load(['event', 'participant']);
 
-        $reviews = $submission->reviews()->with('reviewer')->get();
+        // Une personne retirée du vivier ne doit plus apparaître sur la fiche,
+        // sauf si elle a effectivement rendu son évaluation. Les anciennes
+        // affectations restent en base pour l'historique.
+        $reviews = $submission->reviews()->with('reviewer')->get()
+            ->filter(fn (Review $review) => $review->status === 'completed' || $review->reviewer?->role === 'reviewer')
+            ->values();
         $completed = $reviews->where('status', 'completed');
 
         // Similarité interne (gratuite) : autres soumissions les plus proches,

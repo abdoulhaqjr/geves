@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\AnalyzeClaim;
 use App\Http\Controllers\Controller;
+use App\Mail\ClaimUpdateMail;
 use App\Models\Claim;
 use App\Models\User;
 use App\Support\StaffRoles;
@@ -11,8 +12,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * Réclamations & incidents (back-office). Traitement par l'admin, les
@@ -82,14 +86,68 @@ class ClaimController extends Controller
             'resolution' => ['nullable', 'string', 'max:8000'],
         ]);
 
+        $wasResolved = $claim->status === 'resolved';
+        $newResponse = trim((string) ($data['resolution'] ?? ''));
+        $responseChanged = $newResponse !== '' && $newResponse !== trim((string) $claim->resolution);
+        $becameResolved = ! $wasResolved && $data['status'] === 'resolved';
+
         $claim->status = $data['status'];
-        if (filled($data['resolution'] ?? null)) {
-            $claim->resolution = $data['resolution'];
+        if ($newResponse !== '') {
+            $claim->resolution = $newResponse;
         }
         $claim->resolved_at = in_array($data['status'], ['resolved', 'closed'], true) ? ($claim->resolved_at ?? now()) : null;
+
+        // Conserver l'envoi à effectuer si le serveur mail échoue : un second
+        // clic sur Enregistrer pourra alors relancer l'envoi sans créer de doublon.
+        $meta = (array) $claim->meta;
+        if ($becameResolved || $responseChanged) {
+            $meta['claim_mail_pending'] = [
+                'resolved' => $becameResolved,
+                'response' => $claim->resolution,
+            ];
+            $claim->meta = $meta;
+        } elseif (($meta['claim_mail_pending']['resolved'] ?? false) && $data['status'] !== 'resolved') {
+            // Ne pas annoncer une résolution qui vient d'être annulée.
+            unset($meta['claim_mail_pending']);
+            $claim->meta = $meta;
+        }
         $claim->save();
 
-        return back()->with('ukc_status', 'Statut mis à jour.');
+        $pending = $meta['claim_mail_pending'] ?? null;
+        if (! is_array($pending)) {
+            return back()->with('ukc_status', 'Statut mis à jour.');
+        }
+
+        $email = collect([$claim->email, $claim->user?->email])
+            ->map(fn ($address) => trim((string) $address))
+            ->first(fn ($address) => filter_var($address, FILTER_VALIDATE_EMAIL) !== false);
+        if ($email === null) {
+            return back()
+                ->with('ukc_status', 'Réclamation mise à jour.')
+                ->with('ukc_error', 'Notification non envoyée : aucune adresse e-mail valide pour le déclarant.');
+        }
+
+        try {
+            Mail::to($email)->send(new ClaimUpdateMail(
+                $claim->loadMissing('event'),
+                (bool) ($pending['resolved'] ?? false),
+                $pending['response'] ?? null,
+            ));
+        } catch (Throwable $exception) {
+            Log::warning('Notification de réclamation non envoyée.', [
+                'claim_id' => $claim->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return back()
+                ->with('ukc_status', 'Réclamation mise à jour.')
+                ->with('ukc_error', 'L’e-mail au déclarant n’a pas pu être envoyé. Enregistrez à nouveau pour réessayer.');
+        }
+
+        unset($meta['claim_mail_pending']);
+        $claim->update(['meta' => $meta]);
+
+        return back()->with('ukc_status', 'Réclamation mise à jour et e-mail envoyé au déclarant.');
     }
 
     public function assign(Request $request, Claim $claim): RedirectResponse
