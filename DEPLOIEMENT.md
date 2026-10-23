@@ -350,7 +350,7 @@ paiements en ligne (10 min), le passage des visios en direct puis en terminé
 ### F2. Le travailleur de file d'attente, chaque minute
 
 ```
-cd /home/UTILISATEUR/apps/geves && php artisan queue:work --stop-when-empty --max-time=55 --tries=3 >> /dev/null 2>&1
+cd /home/UTILISATEUR/apps/geves && php artisan queue:work database --queue=default --stop-when-empty --max-time=55 --tries=3 --timeout=60 -v >> storage/logs/queue-worker.log 2>&1
 ```
 
 ⚠️ **Sans cette seconde ligne, aucun e-mail ne partira jamais.** Dix des onze
@@ -359,8 +359,8 @@ base et considère son travail fini. C'est un travailleur qui les expédie. Le
 symptôme est trompeur : l'interface affiche « invitation envoyée », et rien
 n'arrive.
 
-Ne masquez pas les erreurs du travailleur pendant le diagnostic : le renvoi
-`>> /dev/null 2>&1` dissimule aussi les erreurs de démarrage. Pour vérifier
+Le journal `storage/logs/queue-worker.log` rend visibles les erreurs du
+travailleur ; l'ancien renvoi `>> /dev/null 2>&1` les dissimulait. Pour vérifier
 que cPanel exécute bien la tâche sans traiter les messages, remplacez
 temporairement sa commande par :
 
