@@ -93,6 +93,15 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         });
     }
 
+    /** Mémorise une connexion réellement achevée, quel que soit l'espace utilisé. */
+    public function recordSuccessfulLogin(?string $ip): void
+    {
+        $this->forceFill([
+            'last_login_at' => now(),
+            'last_login_ip' => $ip,
+        ])->save();
+    }
+
     /**
      * Qui peut impersonifier un compte : UNIQUEMENT l'administrateur de colloque
      * et le super-administrateur ({@see isColloqueAdmin}). Un gestionnaire ou un

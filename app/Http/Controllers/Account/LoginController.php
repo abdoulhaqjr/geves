@@ -219,11 +219,7 @@ class LoginController extends Controller
         Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
 
-        // Activité de connexion (page Utilisateurs) : date + IP.
-        $user->forceFill([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-        ])->save();
+        $user->recordSuccessfulLogin($request->ip());
 
         return redirect()->intended(route('admin.dashboard'));
     }
@@ -233,6 +229,7 @@ class LoginController extends Controller
         Auth::guard('account')->login($account, $remember);
         $request->session()->regenerate();
         session()->put('account.2fa.passed', true);
+        $account->recordSuccessfulLogin($request->ip());
 
         return redirect()->intended(route('account.dashboard'));
     }

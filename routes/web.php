@@ -453,6 +453,7 @@ Route::prefix('admin')->group(function () {
         // Utilisateurs & rôles.
         Route::middleware('can:users_roles')->group(function () {
             Route::get('/utilisateurs', [UserController::class, 'index'])->name('admin.users.index');
+            Route::get('/utilisateurs/en-ligne', [UserController::class, 'online'])->name('admin.users.online');
             Route::get('/utilisateurs/creer', [UserController::class, 'create'])->name('admin.users.create');
             Route::post('/utilisateurs', [UserController::class, 'store'])->name('admin.users.store');
             Route::put('/utilisateurs/matrice-acces', [UserController::class, 'updateAccess'])->name('admin.users.access');

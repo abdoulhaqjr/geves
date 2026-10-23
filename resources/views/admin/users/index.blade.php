@@ -6,7 +6,9 @@
         </a>
     </x-slot:actions>
 
-    <div class="admin-page admin-users" x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || 'list', delOpen: false, delConfirm: '', delUser: { url: '', name: '' } }">
+    <div class="admin-page admin-users"
+         x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || 'list', onlineCount: @js($stats['online']), delOpen: false, delConfirm: '', delUser: { url: '', name: '' } }"
+         x-init="setInterval(() => { if (document.visibilityState === 'visible' && tab === 'list') fetch(@js(route('admin.users.online')), { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : null).then(data => { if (data) onlineCount = data.count; }).catch(() => {}); }, 30000)">
         <div class="ukc-nav-docs">
             <button type="button" @click="tab='list'" :class="{ active: tab==='list' }">Liste des utilisateurs</button>
             <button type="button" @click="tab='roles'" :class="{ active: tab==='roles' }">Rôles</button>
@@ -19,6 +21,7 @@
         <div x-show="tab==='list'">
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Utilisateurs</div><div class="val blue">{{ $stats['total'] }}</div></div>
+                <div class="ukc-stat-card tw-stat" title="Comptes distincts ayant utilisé le site durant les 5 dernières minutes ; actualisation toutes les 30 secondes"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">En ligne (5 min)</div><div class="val green" x-text="onlineCount === null ? '-' : onlineCount">{{ $stats['online'] ?? '-' }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Comptes visibles ayant un niveau administrateur ou les droits effectifs de super administrateur"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="shield" :size="20" /></div><div class="lbl">Admins</div><div class="val">{{ $stats['admins'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes ayant une fiche évaluateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val">{{ $stats['reviewers'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes affectées comme organisateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Organisateurs</div><div class="val">{{ $stats['organizers'] }}</div></div>
@@ -55,10 +58,10 @@
                         <thead>
                             <tr>
                                 <x-ukc.th sort="name" :current="$sort" :dir="$dir">Utilisateur</x-ukc.th>
-                                <th>Fonction(s) et anciens rôles</th>
-                                <x-ukc.th sort="email" :current="$sort" :dir="$dir">E-mail</x-ukc.th>
+                                <x-ukc.th sort="email" :current="$sort" :dir="$dir">E-mail vérifié</x-ukc.th>
                                 <x-ukc.th sort="last_login_at" :current="$sort" :dir="$dir">Dernière connexion</x-ukc.th>
                                 <th>IP</th>
+                                <th>Pays (IP)</th>
                                 <x-ukc.th sort="is_active" :current="$sort" :dir="$dir">Statut</x-ukc.th>
                                 <th style="text-align:right;">Actions</th>
                             </tr>
@@ -78,22 +81,6 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="role-pills">
-                                            @foreach ($eventRolesByUser[$u->id] ?? [] as $eventRole)
-                                                <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($eventRole) }}">{{ \App\Support\StaffRoles::label($eventRole) }}</span>
-                                            @endforeach
-                                            @if (in_array($u->id, $reviewerIds, true))
-                                                <span class="ukc-pill ukc-pill--info">Évaluateur</span>
-                                            @endif
-                                            @foreach ($u->roles as $r)
-                                                <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r->name) }}">{{ \App\Support\StaffRoles::label($r->name) }}</span>
-                                            @endforeach
-                                            @if (($eventRolesByUser[$u->id] ?? []) === [] && ! in_array($u->id, $reviewerIds, true) && $u->roles->isEmpty())
-                                                <span class="ukc-pill ukc-pill--muted">-</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td>
                                         @if ($u->hasVerifiedEmail())
                                             <span class="ukc-pill ukc-pill--ok">Vérifié</span>
                                         @else
@@ -102,6 +89,7 @@
                                     </td>
                                     <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y - H:i') ?? 'Jamais' }}</td>
                                     <td><span class="ip-cell">{{ $u->last_login_ip ?: '-' }}</span></td>
+                                    <td>{{ $countriesByIp[$u->last_login_ip] ?? '-' }}</td>
                                     <td>
                                         @if ($u->is_active)<span class="ukc-pill ukc-pill--ok">Actif</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Inactif</span>@endif
@@ -154,7 +142,7 @@
                 </div>
             </div>
             <div style="margin-top:12px;" data-filter-part="users-foot">{{ $users->links() }}</div>
-            <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">L’adresse IP et la date de dernière connexion sont enregistrées à chaque connexion au back-office. Les rôles {{ config('app.name') }} déterminent l’accès aux fonctionnalités (matrice ci-dessous).</p>
+            <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La date et l’IP sont enregistrées après chaque connexion réussie, dans l’espace participant ou le back-office. « En ligne » désigne une activité durant les cinq dernières minutes. Le pays est estimé depuis l’IP publique ; une IP locale ou inconnue n’a pas de pays. <a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>.</p>
         </div>
 
         @include('admin.users._delete-modal')

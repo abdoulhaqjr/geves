@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\AccountResetPassword;
+use App\Support\IpCountry;
 use App\Support\ListSort;
 use App\Support\StaffRolePermissions;
 use App\Support\StaffRoles;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -30,7 +31,7 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class UserController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, IpCountry $ipCountry): View
     {
         $role = (string) $request->query('role', '');
         $status = (string) $request->query('status', '');
@@ -45,7 +46,6 @@ class UserController extends Controller
 
         $users = User::query()
             ->visiblesPar($moi)
-            ->with('roles')
             ->when($role !== '', function ($q) use ($role) {
                 if ($role === 'administrator') {
                     $q->whereHas('roles', fn ($r) => $r->where('name', $role));
@@ -71,12 +71,7 @@ class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $pageIds = $users->getCollection()->pluck('id')->all();
-        $eventRolesByUser = DB::table('event_user')->whereIn('user_id', $pageIds)
-            ->get(['user_id', 'role'])->groupBy('user_id')
-            ->map(fn ($assignments) => $assignments->pluck('role')->unique()->values()->all());
-        $reviewerIds = DB::table('participants')->whereIn('user_id', $pageIds)
-            ->where('role', 'reviewer')->distinct()->pluck('user_id')->all();
+        $countriesByIp = $ipCountry->namesFor($users->getCollection()->pluck('last_login_ip'));
 
         // Comptes par rôle GLOBAL (pour les indicateurs + l'onglet Rôles).
         // whereHas plutôt que le scope role() de spatie : renvoie 0 sans lever
@@ -126,9 +121,8 @@ class UserController extends Controller
 
         return view('admin.users.index', [
             'users' => $users,
+            'countriesByIp' => $countriesByIp,
             'role' => $role,
-            'eventRolesByUser' => $eventRolesByUser,
-            'reviewerIds' => $reviewerIds,
             'status' => $status,
             'search' => $search,
             'sort' => $sort['sort'],
@@ -141,6 +135,7 @@ class UserController extends Controller
             'rolePermissions' => $rolePermissions,
             'stats' => [
                 'total' => User::query()->visiblesPar($moi)->count(),
+                'online' => $this->onlineCount($moi),
                 'admins' => User::query()->visiblesPar($moi)
                     ->where(fn ($q) => $q->where('access_level', User::ACCESS_COLLOQUE_ADMIN)
                         ->orWhereIn('users.id', User::query()->superAdministrateurs()->select('users.id')))
@@ -150,6 +145,31 @@ class UserController extends Controller
                 'support' => (clone $eventUsers)->whereIn('role', $supportRoles)->distinct()->count('user_id'),
             ],
         ]);
+    }
+
+    /** Personnes distinctes dont une session authentifiée a été active récemment. */
+    private function onlineCount(?User $viewer): ?int
+    {
+        if (config('session.driver') !== 'database') {
+            return null;
+        }
+
+        $window = min(5 * 60, (int) config('session.lifetime', 120) * 60);
+
+        return User::query()
+            ->visiblesPar($viewer)
+            ->where('is_active', true)
+            ->whereIn('users.id', DB::table(config('session.table', 'sessions'))
+                ->where('last_activity', '>=', now()->timestamp - $window)
+                ->whereNotNull('user_id')
+                ->select('user_id'))
+            ->count();
+    }
+
+    /** Rafraîchissement du compteur sans recharger les filtres du tableau. */
+    public function online(): JsonResponse
+    {
+        return response()->json(['count' => $this->onlineCount($this->moi())]);
     }
 
     /**

@@ -72,6 +72,7 @@ class RegisterController extends Controller
         event(new Registered($account));
 
         Auth::guard('account')->login($account);
+        $account->recordSuccessfulLogin($request->ip());
 
         return redirect()->route('account.dashboard');
     }

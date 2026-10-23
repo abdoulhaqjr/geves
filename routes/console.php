@@ -41,6 +41,10 @@ Schedule::command('backup:clean')->daily()->at('01:00');
 Schedule::command('backup:run')->daily()->at('01:30');
 Schedule::command('backup:monitor')->daily()->at('02:00');
 
+// DB-IP Country Lite publie une nouvelle édition chaque mois. En cas d'échec,
+// la commande garde la dernière base installée.
+Schedule::command('geoip:update')->monthlyOn(3, '03:00')->withoutOverlapping();
+
 // Rend les demandes de tutoriels directement depuis la base. Ce processus est
 // démarré par l'interface d'administration : aucune queue worker externe n'est
 // requise sur le poste qui a demandé la vidéo.
