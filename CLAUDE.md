@@ -694,11 +694,14 @@ test rouge : de l'anglais au milieu d'un document officiel en français.
   suit un atelier sans s'être inscrit au colloque, et un paiement de formation
   n'ouvre aucun droit ({@see App\Models\Participant::participationPayments()}).
 
-⚠️ **À TRANCHER** : `Participant::PARTICIPATION_ROLES` (`author`, `coauthor`,
-`attendee`) est **déclarée et lue nulle part**. Elle a suffi à faire croire -
-dans cette documentation même - qu'un rôle absent de la liste disparaissait du
-registre des participants, ce qui est faux. Soit elle sert à quelque chose et il
-faut l'employer, soit elle part.
+⚠️ **`Participant::PARTICIPATION_ROLES` a été SUPPRIMÉE** (2026-10-24). Elle
+listait `author`, `coauthor`, `attendee` sous l'intitulé « rôles affichés dans le
+registre des participants » et n'était **lue nulle part**. Son seul effet
+mesurable aura été de faire croire - dans cette documentation même - qu'un rôle
+absent de la liste disparaissait du registre, ce qui était faux et a envoyé une
+correction au mauvais endroit. Un commentaire qui décrit une règle que rien
+n'applique est pire qu'un silence : on le croit. Le registre n'a jamais filtré
+sur les rôles ; il n'y a donc rien à remettre en place.
 
 Gardes : `InscriptionParticipantSimpleTest` (19 cas, **10 sabotages vérifiés**).
 

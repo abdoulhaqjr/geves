@@ -30,9 +30,6 @@ class Participant extends Model
 {
     use HasFactory;
 
-    /** Rôles affichés dans le registre des participants de l'événement. */
-    public const PARTICIPATION_ROLES = ['author', 'coauthor', 'attendee'];
-
     protected $guarded = ['id'];
 
     /**
