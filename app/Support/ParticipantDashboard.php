@@ -122,7 +122,7 @@ class ParticipantDashboard
     {
         return $this->submissions ??= Submission::query()
             ->canonical()
-            ->with('event')
+            ->with(['event', 'authorLinks'])
             ->where(function ($q): void {
                 $q->whereHas('participant', fn ($p) => $p->where('user_id', $this->account->id))
                     ->orWhereHas(
@@ -135,10 +135,25 @@ class ParticipantDashboard
             ->get();
     }
 
-    /** Suis-je l'auteur correspondant de cette communication (sinon : co-auteur) ? */
+    /**
+     * Je porte cette communication : je l'ai déposée, ou j'en suis l'auteur
+     * correspondant. Sinon, je n'y suis que co-auteur.
+     *
+     * ⚠️⚠️ **ELLE NE DEMANDAIT QUE « SUIS-JE LE DÉPOSANT ».** Un auteur
+     * correspondant dont la communication a été déposée par quelqu'un d'autre -
+     * un secrétariat, un collègue - s'affichait donc en **co-auteur de sa propre
+     * communication** : « 0 déposée - 1 en co-auteur » sur le tableau de bord, et
+     * « Vous co-présentez » sur son propre passage.
+     */
     public function estCorrespondant(Submission $submission): bool
     {
-        return $this->participantIds()->contains($submission->participant_id);
+        return $submission->isEditableBy($this->account);
+    }
+
+    /** Je l'ai déposée moi-même (distinct de « j'en suis l'auteur correspondant »). */
+    public function aiDepose(Submission $submission): bool
+    {
+        return $submission->wasDepositedBy($this->account);
     }
 
     /** @return Collection<int, Submission> */
@@ -554,18 +569,35 @@ class ParticipantDashboard
      */
     public function indicateurs(): array
     {
+        // ⚠️⚠️ **TROIS POSITIONS, PAS DEUX.** Le détail opposait « déposée » à
+        // « en co-auteur » : l'auteur correspondant dont quelqu'un d'autre a
+        // déposé la communication n'entrait dans aucune des deux, et tombait
+        // donc en co-auteur. On ne montre que les parts non nulles.
         $communications = $this->communications();
-        $deposees = $communications->filter(fn (Submission $s) => $this->estCorrespondant($s))->count();
-        $coauteur = $communications->count() - $deposees;
+        $deposees = $communications->filter(fn (Submission $s) => $this->aiDepose($s))->count();
+        $correspondant = $communications->filter(
+            fn (Submission $s) => ! $this->aiDepose($s) && $this->estCorrespondant($s)
+        )->count();
+        $coauteur = $communications->count() - $deposees - $correspondant;
+
+        $parts = [];
+        if ($deposees > 0) {
+            $parts[] = trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees]);
+        }
+        if ($correspondant > 0) {
+            $parts[] = trans_choice(':count en auteur correspondant|:count en auteur correspondant', $correspondant, ['count' => $correspondant]);
+        }
+        if ($coauteur > 0) {
+            $parts[] = trans_choice(':count en co-auteur|:count en co-auteur', $coauteur, ['count' => $coauteur]);
+        }
 
         $carteCommunications = [
             'libelle' => __('Mes communications'),
             'valeur' => (string) $communications->count(),
             'unite' => '',
-            'detail' => $coauteur > 0
-                ? trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees])
-                    .' - '.trans_choice(':count en co-auteur|:count en co-auteur', $coauteur, ['count' => $coauteur])
-                : trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees]),
+            'detail' => $parts === []
+                ? trans_choice(':count déposée|:count déposées', 0, ['count' => 0])
+                : implode(' - ', $parts),
             'icone' => 'file',
             'ton' => 'blue',
         ];

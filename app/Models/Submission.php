@@ -233,6 +233,73 @@ class Submission extends Model
     }
 
     /**
+     * ⚠️⚠️ **TROIS POSITIONS, ET ON LES CONFONDAIT EN DEUX.** Tout le code ne
+     * demandait qu'une chose - « ce compte a-t-il DÉPOSÉ ? » - et rangeait tout
+     * le reste en « co-auteur ». Or le déposant n'est pas toujours un auteur :
+     * un secrétariat dépose pour une équipe, et **l'auteur correspondant, quand
+     * il se connectait enfin, s'affichait comme CO-AUTEUR de sa propre
+     * communication**, sans pouvoir la corriger.
+     *
+     * - {@see wasDepositedBy()} : c'est lui qui a déposé ;
+     * - {@see isCorrespondingAuthor()} : il porte la communication (`submission_authors`) ;
+     * - {@see isEditableBy()} : l'un **ou** l'autre peut la modifier.
+     */
+    public function wasDepositedBy(?User $account): bool
+    {
+        return $account !== null
+            && (int) $this->revision_of === 0
+            && $this->participant !== null
+            && (int) $this->participant->user_id === (int) $account->id;
+    }
+
+    /**
+     * Auteur correspondant **rattaché à un compte** (`submission_authors`).
+     *
+     * ⚠️ Le rattachement se fait par `LinkSubmissionAuthors` au dépôt, ou par
+     * `LinkPendingAuthorships` quand la personne crée son compte plus tard - ce
+     * second cas est exactement celui qui était mal rendu.
+     *
+     * ⚠️ **On lit la relation CHARGÉE quand elle l'est** : le tableau de bord
+     * pose la question sur chaque communication de la liste, et une requête par
+     * ligne y ferait un N+1 silencieux.
+     */
+    public function isCorrespondingAuthor(?User $account): bool
+    {
+        if ($account === null || (int) $this->revision_of !== 0) {
+            return false;
+        }
+
+        if ($this->relationLoaded('authorLinks')) {
+            return $this->authorLinks->contains(
+                fn (SubmissionAuthor $l) => (int) $l->user_id === (int) $account->id
+                    && $l->role === 'corresponding'
+                    && $l->status === 'linked'
+            );
+        }
+
+        return $this->authorLinks()
+            ->where('user_id', $account->id)
+            ->where('role', 'corresponding')
+            ->where('status', 'linked')
+            ->exists();
+    }
+
+    /**
+     * Qui peut MODIFIER cette communication : le déposant **ou** l'auteur
+     * correspondant.
+     *
+     * ⚠️ **Les deux, et pas l'un à la place de l'autre.** C'est l'auteur
+     * correspondant qui doit répondre à une demande de correction - c'est son
+     * travail. Mais il peut très bien ne jamais créer de compte : le déposant
+     * garde donc la main, sans quoi une communication déposée par un
+     * secrétariat deviendrait incorrigible le jour où personne ne se connecte.
+     */
+    public function isEditableBy(?User $account): bool
+    {
+        return $this->wasDepositedBy($account) || $this->isCorrespondingAuthor($account);
+    }
+
+    /**
      * Versions antérieures archivées lors des resoumissions.
      *
      * @return HasMany<Submission, $this>

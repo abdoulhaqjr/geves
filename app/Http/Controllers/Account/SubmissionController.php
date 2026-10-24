@@ -156,9 +156,11 @@ class SubmissionController extends Controller
 
     public function show(Submission $submission): View
     {
-        // Le déposant OU un auteur/co-auteur rattaché peut consulter la fiche ;
-        // seul le déposant peut la modifier (gardé par $isOwner dans la vue).
+        // Le déposant, l'auteur correspondant OU un co-auteur rattaché peut
+        // consulter la fiche ; les DEUX premiers peuvent la modifier (gardé par
+        // $isOwner dans la vue). {@see Submission::isEditableBy()}
         $isOwner = $this->authorizeView($submission);
+        $account = Auth::guard('account')->user();
 
         $slot = $this->currentSlot($submission);
 
@@ -169,6 +171,11 @@ class SubmissionController extends Controller
             'slot' => $slot,
             'availableSlots' => $this->availableSlots($submission),
             'isOwner' => $isOwner,
+            // ⚠️ « Peut modifier » ne dit pas À QUEL TITRE : l'auteur
+            // correspondant dont un tiers a déposé la communication doit lire
+            // autre chose que le déposant.
+            'correspondantNonDeposant' => $submission->isCorrespondingAuthor($account)
+                && ! $submission->wasDepositedBy($account),
             'abstractMin' => (new SubmissionFormConfig($submission->event))->abstractMin(),
             'abstractMax' => (new SubmissionFormConfig($submission->event))->abstractMax(),
             'googleCal' => $slot && $slot->starts_at
@@ -379,34 +386,36 @@ class SubmissionController extends Controller
 
     // --- Helpers (suivi de communication) -------------------------------------
 
-    /** La communication doit appartenir au compte connecté (version canonique). */
     /**
-     * Propriété du dépôt + événement non archivée. ⚠️ Cette garde est le point
-     * de passage des CINQ actions d'écriture sur une communication : y placer
-     * le gel évite d'avoir à le répéter (et à l'oublier) dans chacune.
+     * Droit d'ÉCRITURE sur une communication + événement non archivé.
+     *
+     * ⚠️ Cette garde est le point de passage des SIX actions d'écriture : y
+     * placer le gel évite d'avoir à le répéter (et à l'oublier) dans chacune.
+     *
+     * ⚠️⚠️ **LE DÉPOSANT N'EST PAS TOUJOURS L'AUTEUR.** Elle n'acceptait que
+     * lui : un secrétariat qui dépose pour une équipe gardait seul la main, et
+     * l'auteur correspondant - celui à qui le comité demande la correction - ne
+     * pouvait rien modifier une fois son compte créé. Les DEUX passent
+     * désormais ({@see Submission::isEditableBy()}), et c'est voulu : l'auteur
+     * correspondant peut très bien ne jamais se connecter.
      */
     private function authorizeOwnership(Submission $submission): void
     {
         $account = Auth::guard('account')->user();
         EventLock::guard($submission->event);
 
-        abort_unless(
-            (int) $submission->revision_of === 0
-            && $submission->participant
-            && (int) $submission->participant->user_id === (int) $account->id,
-            404
-        );
+        abort_unless($submission->isEditableBy($account), 404);
     }
 
-    /** Le déposant OU un auteur rattaché peut voir la fiche. Retourne « est propriétaire ». */
+    /**
+     * Qui peut VOIR la fiche : le déposant, l'auteur correspondant, ou un
+     * co-auteur rattaché. Rend « peut modifier » ({@see Submission::isEditableBy()}).
+     */
     private function authorizeView(Submission $submission): bool
     {
         $account = Auth::guard('account')->user();
-        $isOwner = (int) $submission->revision_of === 0
-            && $submission->participant
-            && (int) $submission->participant->user_id === (int) $account->id;
 
-        if ($isOwner) {
+        if ($submission->isEditableBy($account)) {
             return true;
         }
 

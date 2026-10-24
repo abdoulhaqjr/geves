@@ -558,6 +558,49 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   unique** d'application d'un statut vérifié (retour navigateur, webhook, réconciliation).
   Bouton **« Revérifier »** sur un paiement en ligne en attente (`admin.payments.recheck`).
 
+### Le déposant n'est pas toujours l'auteur (2026-10-24)
+
+⚠️⚠️ **TROIS POSITIONS, ET LE CODE N'EN CONNAISSAIT QUE DEUX.** Tout ne demandait
+qu'une chose - « ce compte a-t-il **déposé** ? » - et rangeait tout le reste en
+**co-auteur**. Or un secrétariat dépose pour une équipe : l'**auteur
+correspondant**, quand il créait enfin son compte, s'affichait alors en
+**co-auteur de sa propre communication** (« 0 déposée - 1 en co-auteur » sur le
+tableau de bord, « Vous co-présentez » sur son propre passage), lisait « Seul le
+déposant peut la modifier » sur sa fiche, et n'avait **aucun moyen de répondre à
+une demande de correction** - alors que c'est précisément son travail.
+
+Source unique, trois prédicats sur `Submission` :
+
+- **`wasDepositedBy()`** - c'est lui qui a déposé (le `participant_id` de la
+  communication) ;
+- **`isCorrespondingAuthor()`** - il porte la communication, rattaché par
+  `submission_authors` (`role = 'corresponding'`, `status = 'linked'`) ;
+- **`isEditableBy()`** - l'un **ou** l'autre peut la modifier.
+
+⚠️ **LES DEUX, et pas l'un à la place de l'autre.** C'est l'auteur correspondant
+qui doit répondre au comité, mais il peut très bien ne **jamais** créer de
+compte : le déposant garde donc la main, sans quoi une communication déposée par
+un secrétariat deviendrait incorrigible le jour où personne ne se connecte.
+
+⚠️ **`status = 'linked'` est obligatoire** : une invitation en attente ou
+déclinée n'ouvre rien. Un rattachement proposé n'est pas un rattachement accepté.
+
+⚠️ **La relation est lue CHARGÉE quand elle l'est** (`relationLoaded('authorLinks')`) :
+le tableau de bord pose la question sur chaque ligne de la liste, et une requête
+par ligne y ferait un N+1 silencieux - d'où le `with(['event', 'authorLinks'])`
+de `ParticipantDashboard::communications()`.
+
+⚠️ **L'indicateur compte TROIS parts, pas deux** (« N déposée - N en auteur
+correspondant - N en co-auteur », celles à zéro masquées) : opposer « déposée » à
+« en co-auteur » ne laissait aucune place à celui qui porte une communication
+qu'il n'a pas déposée.
+
+⚠️ `authorizeOwnership()` est le point de passage des **six** actions d'écriture
+(correction, resoumission, réponse aux évaluateurs, choix de créneau, mode de
+présentation, modification libre) : la règle s'y pose une fois.
+
+Gardes : `AuteurCorrespondantTest` (9 cas, **4 sabotages vérifiés**).
+
 ### S'inscrire sans présenter de communication (2026-10-24)
 
 **Le participant simple a enfin une porte.** On ne devenait `Participant` qu'en

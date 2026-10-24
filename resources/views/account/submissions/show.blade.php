@@ -23,13 +23,21 @@
             </div>
         </div>
 
-        {{-- Bandeau lecture seule pour un auteur rattaché qui n'est pas le déposant --}}
-        @unless ($isOwner)
+        {{-- ⚠️⚠️ **TROIS POSITIONS, ET LE BANDEAU N'EN NOMMAIT QU'UNE.** Il
+             annonçait « Seul le déposant peut la modifier » à TOUT compte non
+             déposant - y compris à l'auteur correspondant, qui est pourtant
+             celui à qui le comité demande la correction. --}}
+        @if ($correspondantNonDeposant)
             <div class="ukc-alert ukc-alert--info" style="margin-bottom:14px;">
                 <span class="ico"><x-ukc.icon name="users" :size="18" /></span>
-                <div>{!! __('Vous êtes rattaché(e) à cette communication en tant qu’<strong>auteur</strong>. Seul le déposant peut la modifier.') !!}</div>
+                <div>{!! __('Vous êtes l’<strong>auteur correspondant</strong> de cette communication, déposée pour vous. Vous pouvez la modifier et répondre aux demandes du comité.') !!}</div>
             </div>
-        @endunless
+        @elseif (! $isOwner)
+            <div class="ukc-alert ukc-alert--info" style="margin-bottom:14px;">
+                <span class="ico"><x-ukc.icon name="users" :size="18" /></span>
+                <div>{!! __('Vous êtes rattaché(e) à cette communication en tant que <strong>co-auteur</strong>. Le déposant et l’auteur correspondant peuvent la modifier.') !!}</div>
+            </div>
+        @endif
 
         {{-- En-tête + parcours --}}
         <div class="ukc-card" style="margin-bottom:18px;">
