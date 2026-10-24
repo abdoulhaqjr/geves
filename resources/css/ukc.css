@@ -734,7 +734,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
    s'étirait sur 1480px pour un pictogramme et deux mots, centrés au milieu d'un
    désert. Bornée et calée à gauche, elle garde la même allure à une comme à
    deux. (Même famille que l'`auto-fit` du barème et des ateliers.) */
-.ukc-mm-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 300px)); justify-content: start; gap: 12px; margin-bottom: 18px; }
+.ukc-mm-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 360px)); justify-content: start; gap: 12px; margin-bottom: 18px; }
 .ukc-mm-method { position: relative; border: 1.5px solid var(--ukc-border); border-radius: 12px; padding: 14px 12px; text-align: center; cursor: pointer; background: #fff; transition: border-color .2s, box-shadow .2s; font-size: 13px; font-weight: 600; color: var(--ukc-text); display: block; }
 .ukc-mm-method.selected { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34,62,164,.12); background: rgba(34,62,164,.03); }
 .ukc-mm-method input { position: absolute; opacity: 0; pointer-events: none; }

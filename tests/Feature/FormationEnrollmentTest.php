@@ -160,7 +160,7 @@ it('propose à la formation la passerelle de l’événement, pas celle de la pl
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
         ->assertOk()
-        ->assertSee('Mobile money / carte bancaire')
+        ->assertSee('Mobile money')
         ->assertDontSee('Paiement sur place / virement');
 });
 

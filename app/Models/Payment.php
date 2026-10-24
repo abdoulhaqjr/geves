@@ -48,9 +48,21 @@ class Payment extends Model
      * elle garde sa clé en base : sans ce libellé, l'historique l'afficherait
      * sans nom. Ne rien proposer sous cette clé - le registre ne la connaît
      * plus, elle n'est donc plus sélectionnable.
+     *
+     * ⚠️ **Les deux passerelles en ligne portent désormais le MÊME libellé**, et
+     * c'est voulu : le payeur ne doit pas pouvoir dire quel agrégateur a servi
+     * (convention du projet). Qui a besoin de les distinguer lit la colonne
+     * `gateway`, qui n'est pas affichée au payeur.
+     */
+    /*
+     * ⚠️ **Ce libellé finit sur un REÇU**, que le participant télécharge : il
+     * annonçait « Mobile money / carte » alors que la carte n'est pas ouverte
+     * sur le compte marchand. Un reçu dit ce qui s'est passé, pas ce qui aurait
+     * pu. L'opérateur réellement employé, lui, est relevé à part
+     * ({@see OnlineGateway::details()} -> `meta.gateway_detail`).
      */
     public const ONLINE_METHODS = [
-        'fedapay' => 'En ligne - Mobile money / carte',
+        'fedapay' => 'En ligne - Mobile money',
         'cashpay' => 'En ligne - Mobile money',
         'manual' => 'Sur place / virement (à valider)',
     ];

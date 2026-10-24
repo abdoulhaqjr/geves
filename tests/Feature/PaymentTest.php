@@ -149,7 +149,7 @@ it('attribue une référence unique à chaque paiement dès la création (avant 
     expect($p1->receipt_no)->toBeNull();
 
     // Le libellé de moyen reste générique (jamais le nom de l'agrégateur).
-    expect($p2->methodLabel())->toBe('En ligne - Mobile money / carte');
+    expect($p2->methodLabel())->toBe('En ligne - Mobile money');
 });
 
 it('la page paiements se cale par défaut sur le colloque courant (pas tous les événements)', function () {

@@ -59,8 +59,8 @@ DEUX.** Deux travers, tous deux **mesurés** sur un harnais isolé à 1600px :
 
 - **`repeat(auto-fit, minmax(140px, 1fr))` étirait la carte du moyen de paiement
   sur toute la largeur** - **1298px** pour un pictogramme et deux mots, centrés
-  au milieu d'un désert. La piste est **bornée** (`minmax(180px, 300px)`) et
-  calée à gauche : **270px** mesurés, même allure à une comme à deux cartes.
+  au milieu d'un désert. La piste est **bornée** (`minmax(180px, 360px)`) et
+  calée à gauche : **360px** mesurés, même allure à une comme à deux cartes.
   C'est la famille de piège déjà payée sur le barème et les ateliers de la page
   publique - `auto-fit` ne sait pas combien d'éléments il reste.
 - **La phrase d'accroche annonçait une décision qui n'existe pas** :
@@ -69,6 +69,24 @@ DEUX.** Deux travers, tous deux **mesurés** sur un harnais isolé à 1600px :
   « confirmation. » tout seul. La première phrase ne sort plus qu'à partir de
   deux passerelles ; le reste tient sur **une ligne (348px dans une boîte de
   520)**.
+
+⚠️⚠️ **ET ON N'ANNONCE PLUS LA CARTE BANCAIRE** (2026-10-24). Le libellé
+promettait « Mobile money / **carte bancaire** » : elle demande une couverture
+que le compte marchand n'a pas, et le formulaire du prestataire n'offre que du
+mobile money. Un payeur venu pour la carte y renonçait devant un écran qui ne la
+montre nulle part - **dans un cadre qui n'est pas le nôtre**, donc sans un mot
+d'explication possible. La règle porte sur **tout ce que le payeur lit** :
+`FedaPayGateway::label()`, `Payment::ONLINE_METHODS` (ce libellé finit sur son
+**reçu**) et l'étape « Paiement » du parcours de la page publique. Le jour où la
+couverture est accordée, c'est dans `label()` qu'on la rajoute - et nulle part
+ailleurs.
+
+- ⚠️ **Les deux passerelles en ligne portent désormais le même libellé**, et
+  c'est voulu : le payeur ne doit pas pouvoir dire quel agrégateur a servi. Qui
+  a besoin de les distinguer lit la colonne `gateway`, qui ne lui est pas
+  montrée.
+- ⚠️ Rien à régler pour autant : la case « Proposer la carte bancaire » avait
+  déjà été retirée la veille, faute de commander quoi que ce soit.
 
 ⚠️ **Mesuré sur la VRAIE police** : `.account-payment` impose
 `font-family: var(--ukc-font)` à 13.5px, donc **Jost** - pas le Public Sans du
@@ -80,11 +98,12 @@ Depuis que la passerelle se **règle** en plus, des clés sans sélection laisse
 l'événement au guichet - c'est le réglage même qu'on veut éprouver. L'aide pose
 donc `payments.default` avec.
 
-Gardes : `PaymentGatewayTest` (37 cas) et `FormationEnrollmentTest` (10 cas),
-**7 sabotages vérifiés** - `offered()` rendu à `available()`, la garde d'écriture
-retirée des deux parcours, la légende figée sur « Choisir »,
-`EventPaymentConfig` retiré de l'affichage des formations, la piste rendue à
-`1fr`, et la phrase d'accroche remise à « Choisissez… ».
+Gardes : `PaymentGatewayTest` (37 cas), `FormationEnrollmentTest` (10 cas) et
+`PaymentOperatorTest` (14 cas), **9 sabotages vérifiés** - `offered()` rendu à
+`available()`, la garde d'écriture retirée des deux parcours, la légende figée
+sur « Choisir », `EventPaymentConfig` retiré de l'affichage des formations, la
+piste rendue à `1fr`, la phrase d’accroche remise à « Choisissez… », et la carte
+bancaire repromise dans le libellé puis dans le parcours public.
 
 ### Le choix de l'opérateur a été retiré (2026-10-24)
 

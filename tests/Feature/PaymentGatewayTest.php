@@ -129,7 +129,7 @@ it('ne fait plus choisir d’opérateur sur la page de paiement', function () {
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event->id))
         ->assertOk()
-        ->assertSee('Mobile money / carte bancaire')
+        ->assertSee('Mobile money')
         // Rien d'autre à trancher ici.
         ->assertDontSee('name="operator"', false)
         ->assertDontSee('Je choisis sur la page de paiement')
@@ -153,7 +153,7 @@ it('ne propose que la passerelle réglée pour l’événement', function () {
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event->id))
         ->assertOk()
-        ->assertSee('Mobile money / carte bancaire')
+        ->assertSee('Mobile money')
         ->assertDontSee('Paiement sur place / virement')
         // ⚠️ Un seul moyen : on n'invite plus à choisir, ni dans la légende du
         // groupe ni dans la phrase d'accroche - elle annonçait une décision qui
@@ -191,7 +191,7 @@ it('ne propose que le guichet quand c’est lui qui est réglé', function () {
         ->get(route('account.payment', $event->id))
         ->assertOk()
         ->assertSee('Paiement sur place / virement')
-        ->assertDontSee('Mobile money / carte bancaire');
+        ->assertDontSee('Mobile money');
 });
 
 /**
@@ -225,7 +225,7 @@ it('suit la passerelle propre à l’événement, pas celle de la plateforme', f
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event->id))
         ->assertOk()
-        ->assertSee('Mobile money / carte bancaire')
+        ->assertSee('Mobile money')
         ->assertDontSee('Paiement sur place / virement');
 });
 

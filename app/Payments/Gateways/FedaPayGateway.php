@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 /**
- * FedaPay - mobile money (MTN, Moov, Togocom…) et carte bancaire via page hébergée.
+ * FedaPay - mobile money (MTN, Moov, Togocom…) via page hébergée ou formulaire
+ * embarqué. ⚠️ La carte bancaire demande une couverture que le compte marchand
+ * n'a pas : elle n'est ni proposée ni annoncée (cf. `label()`).
  *
  * Flux : POST /transactions → POST /transactions/{id}/token (URL hébergée) →
  * GET /transactions/{id} (status « approved ») ; webhook signé HMAC-SHA256
@@ -27,7 +29,14 @@ class FedaPayGateway implements OnlineGateway
     public function label(): string
     {
         // ⚠️ Convention projet : on n'expose jamais le nom de l'agrégateur au payeur.
-        return 'Mobile money / carte bancaire';
+        //
+        // ⚠️⚠️ **PAS DE « CARTE BANCAIRE » TANT QU'ELLE N'EST PAS OUVERTE.** Le
+        // libellé la promettait ; elle demande une couverture que le compte
+        // marchand n'a pas, et le formulaire du prestataire ne propose que du
+        // mobile money. Annoncer un moyen qui n'apparaît pas sur la page
+        // suivante, c'est faire renoncer un payeur venu pour lui. Le jour où
+        // elle est accordée, c'est ici qu'on la rajoute - et nulle part ailleurs.
+        return 'Mobile money';
     }
 
     /**

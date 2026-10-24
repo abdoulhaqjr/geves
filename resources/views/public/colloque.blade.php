@@ -367,7 +367,7 @@
                     <li class="ukc-step"><span class="circle" aria-hidden="true">1</span><h4>{{ __('Compte') }}</h4><p>{{ __('Création & vérification') }}</p></li>
                     <li class="ukc-step"><span class="circle" aria-hidden="true">2</span><h4>{{ __('Soumission') }}</h4><p>{{ __('Résumé en ligne') }}</p></li>
                     <li class="ukc-step"><span class="circle" aria-hidden="true">3</span><h4>{{ __('Évaluation') }}</h4><p>{{ __('Évaluation en aveugle') }}</p></li>
-                    <li class="ukc-step"><span class="circle" aria-hidden="true">4</span><h4>{{ __('Paiement') }}</h4><p>{{ __('Mobile money / carte') }}</p></li>
+                    <li class="ukc-step"><span class="circle" aria-hidden="true">4</span><h4>{{ __('Paiement') }}</h4><p>{{ __('Mobile money') }}</p></li>
                     <li class="ukc-step"><span class="circle" aria-hidden="true">5</span><h4>{{ __('Attestation') }}</h4><p>{{ __('Documents & livret') }}</p></li>
                 </ol>
             </section>

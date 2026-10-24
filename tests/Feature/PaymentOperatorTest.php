@@ -19,6 +19,29 @@ it('n’expose jamais le nom de l’agrégateur dans le libellé d’un moyen de
 });
 
 /**
+ * ⚠️⚠️ **ON N'ANNONCE PAS UN MOYEN QUE LA PAGE SUIVANTE NE PROPOSE PAS.** Le
+ * libellé promettait « Mobile money / carte bancaire » ; la carte demande une
+ * couverture que le compte marchand n'a pas, et le formulaire du prestataire
+ * n'offre que du mobile money. Un payeur venu pour la carte y renonçait devant
+ * un écran qui ne la montre nulle part - dans un cadre qui n'est pas le nôtre,
+ * donc sans un mot d'explication possible.
+ *
+ * ⚠️ La règle porte sur **tout ce que le payeur lit** : le libellé de la
+ * passerelle, celui qui finit sur son **reçu** (`Payment::ONLINE_METHODS`), et
+ * l'étape « Paiement » du parcours de la page publique.
+ */
+it('n’annonce aucune carte bancaire tant qu’elle n’est pas ouverte', function () {
+    expect((new FedaPayGateway)->label())->not->toContain('carte');
+
+    foreach (Payment::ONLINE_METHODS as $libelle) {
+        expect(mb_strtolower($libelle))->not->toContain('carte');
+    }
+
+    $parcours = (string) file_get_contents(resource_path('views/public/colloque.blade.php'));
+    expect($parcours)->not->toContain('Mobile money / carte');
+});
+
+/**
  * ⚠️ Le lexique des opérateurs sert à **LIRE** ce que le prestataire rapporte
  * sur un encaissement abouti, plus à faire choisir le payeur. Il finit sous les
  * yeux d'un gestionnaire et sur un reçu : il reste donc nommé en clair, et sans
