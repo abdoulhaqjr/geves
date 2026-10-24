@@ -243,6 +243,26 @@ class Event extends Model
         return blank($deadline) || Carbon::parse((string) $deadline)->endOfDay()->isFuture();
     }
 
+    /**
+     * ⚠️⚠️ **S'INSCRIRE ET PAYER SONT DEUX MOMENTS DISTINCTS.** L'usage est
+     * d'ouvrir le paiement des participants simples **après la clôture des
+     * dépôts** : jusque-là, l'organisation ne sait pas encore combien de
+     * communicants seront retenus, ni ce que valent les places restantes. Le
+     * participant s'inscrit donc d'abord, et règle quand on le lui dit.
+     *
+     * ⚠️ **Fermé par DÉFAUT**, contrairement à la fenêtre d'inscription : c'est
+     * un geste délibéré du gestionnaire, pas un état qu'on subit. Un réglage
+     * qui ouvrirait seul un encaissement serait une mauvaise surprise.
+     *
+     * ⚠️ **Cela ne concerne QUE les participants simples.** Un communicant dont
+     * la communication est acceptée règle ses frais sans attendre ce réglage -
+     * sa décision est déjà tombée ({@see Participant::owesParticipationFees()}).
+     */
+    public function attendeePaymentIsOpen(): bool
+    {
+        return (bool) (($this->settings ?? [])['attendee_payment_open'] ?? false);
+    }
+
     /** Le module Formations est-il activé pour cet événement ? (réglage du formulaire d'événement). */
     public function formationEnabled(): bool
     {

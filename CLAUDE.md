@@ -640,8 +640,26 @@ participant simple » pendant que la page d'inscription renvoyait vers
 
 ⚠️⚠️ **QUI DOIT DES FRAIS ? PAS « QUI A UNE COMMUNICATION ACCEPTÉE ».** Le
 paiement était gardé par `hasAcceptedSubmission()` seul. L'invariant est
-**`Participant::owesParticipationFees()`** : on doit des frais quand on **s'est
-inscrit**, ou quand une **communication a été retenue**.
+**`Participant::owesParticipationFees()`** : on doit des frais quand une
+**communication a été retenue**, ou quand on **s'est inscrit ET que
+l'organisation a ouvert le paiement aux participants simples**.
+
+⚠️⚠️ **S'INSCRIRE ET PAYER SONT DEUX MOMENTS, ET ILS ONT CHACUN LEUR RÉGLAGE.**
+L'usage est d'ouvrir le paiement des participants simples **après la clôture des
+dépôts** : jusque-là, l'organisation ne sait pas encore combien de communicants
+seront retenus. D'où **`Event::attendeePaymentIsOpen()`**
+(`settings.attendee_payment_open`, case « Ouvrir le paiement aux participants
+simples », carte Inscriptions).
+
+- ⚠️ **Fermé par DÉFAUT**, contrairement à la fenêtre d'inscription : ouvrir un
+  encaissement est un geste délibéré, pas un état qu'on subit.
+- ⚠️ **Le communicant n'en dépend PAS** : sa décision est tombée, ses frais sont
+  dus. L'y soumettre bloquerait le parcours qui marchait déjà.
+- ⚠️ **Et on le DIT à l'intéressé** : inscrit mais paiement fermé, il lit
+  « Votre inscription est enregistrée » et la raison - le message générique lui
+  parlait d'une communication à faire accepter, ce qui ne le concerne pas. Le
+  formulaire d'inscription annonce déjà la suite telle qu'elle sera, plutôt que
+  de promettre un paiement « ensuite » qui n'ouvrira qu'après la clôture.
 
 ⚠️⚠️ **ET L'INSCRIPTION EST UNE DATE, PAS UN RÔLE** (`meta['registered_at']`,
 `isRegisteredAttendee()`). Un participant simple qui dépose ensuite un résumé
@@ -661,7 +679,7 @@ posé par l'inscription à une formation n'a **aucun libellé** dans
 `Participant::ROLES` et n'est pas dans `PARTICIPATION_ROLES` - un compte venu par
 une formation s'affiche « Trainee » et manque au registre des participants.
 
-Gardes : `InscriptionParticipantSimpleTest` (16 cas, **6 sabotages vérifiés**).
+Gardes : `InscriptionParticipantSimpleTest` (19 cas, **10 sabotages vérifiés**).
 
 ### Tableau de bord participant = il BASCULE sur les dates
 

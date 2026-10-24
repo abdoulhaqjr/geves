@@ -292,12 +292,26 @@ class Participant extends Model
      * pourtant déjà dans {@see ROLES}, et la page publique promettait de
      * pouvoir s'inscrire ainsi.
      *
-     * Deux populations, un seul invariant : **on doit des frais quand on s'est
-     * inscrit, ou quand une communication a été retenue.**
+     * Deux populations, un seul invariant : **on doit des frais quand une
+     * communication a été retenue, ou quand on s'est inscrit ET que
+     * l'organisation a ouvert le paiement aux participants simples.**
+     *
+     * ⚠️ **Les deux moments ne se confondent pas** : on s'inscrit dès que les
+     * inscriptions sont ouvertes, on règle quand l'organisation le dit - en
+     * général après la clôture des dépôts
+     * ({@see Event::attendeePaymentIsOpen()}). Sans cette seconde porte, une
+     * inscription ouvrait aussitôt un encaissement que personne n'avait décidé.
+     *
+     * ⚠️ Le communicant, lui, ne dépend PAS de ce réglage : sa décision est
+     * tombée, ses frais sont dus.
      */
     public function owesParticipationFees(): bool
     {
-        return $this->isRegisteredAttendee() || $this->hasAcceptedSubmission();
+        if ($this->hasAcceptedSubmission()) {
+            return true;
+        }
+
+        return $this->isRegisteredAttendee() && (bool) $this->event?->attendeePaymentIsOpen();
     }
 
     /**

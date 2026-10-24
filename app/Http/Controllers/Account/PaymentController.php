@@ -67,6 +67,14 @@ class PaymentController extends Controller
             // Inscription possible : aucune fiche sur cet événement, et la
             // fenêtre d'inscription est ouverte.
             'canRegister' => ! $participant && $event->registrationIsOpen(),
+            // ⚠️ Inscrit, mais le paiement des participants simples n'est pas
+            // encore ouvert : il faut le lui DIRE. Le message générique parlait
+            // d'une communication à faire accepter, ce qui ne le concerne pas.
+            'attendRegleMentPourSimple' => $participant !== null
+                && $participant->isRegisteredAttendee()
+                && ! $participant->hasAcceptedSubmission()
+                && ! $event->attendeePaymentIsOpen(),
+            'attendeePaymentOpen' => $event->attendeePaymentIsOpen(),
             'grades' => ParticipantTypes::all(),
             'accountGrade' => $account?->grade,
             'accountAffiliation' => $account?->affiliation,

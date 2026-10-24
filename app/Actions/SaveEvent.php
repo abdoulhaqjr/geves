@@ -190,6 +190,9 @@ class SaveEvent
                 // saurait pas distinguer « fermé » de « champ absent ».
                 'registration_open' => $request->boolean('registration_open'),
                 'registration_deadline' => ($data['registration_deadline'] ?? null) ?: null,
+                // ⚠️ Même champ caché devant la case : décocher doit envoyer 0,
+                // sinon on ne distingue pas « fermé » de « champ absent ».
+                'attendee_payment_open' => $request->boolean('attendee_payment_open'),
                 'ref_prefix_mode' => ($data['ref_prefix_mode'] ?? null) ?: 'global',
                 'ref_prefix' => ($data['ref_prefix'] ?? null) ?: null,
                 'ref_prefix_axes' => $refAxes,

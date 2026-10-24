@@ -71,9 +71,12 @@ it('inscrit un compte qui ne présente aucune communication', function () {
  * `hasAcceptedSubmission()` : même avec une fiche, un participant simple ne
  * pouvait rien régler. L'invariant est « il y a des frais à régler », pas
  * « il a une communication acceptée ».
+ *
+ * ⚠️ Le paiement des participants simples est **ouvert explicitement** ici :
+ * s'inscrire et régler sont deux moments distincts (cf. plus bas).
  */
 it('lui ouvre le paiement, au tarif de son grade', function () {
-    $event = evenementAvecTarifs();
+    $event = evenementAvecTarifs(['attendee_payment_open' => true]);
     $account = verifiedAccount();
 
     app(RegisterAttendee::class)->handle($event, $account, 'Doctorant');
@@ -102,6 +105,73 @@ it('montre le formulaire d’inscription à qui n’a pas de fiche', function ()
         ->assertSee('M’inscrire à cet événement', false)
         ->assertSee('Ma catégorie')
         ->assertDontSee('contactez l’organisation', false);
+});
+
+// ------------------------------------------- S'INSCRIRE N'EST PAS PAYER -----
+
+/**
+ * ⚠️⚠️ **DEUX MOMENTS DISTINCTS.** L'usage est d'ouvrir le paiement des
+ * participants simples **après la clôture des dépôts** : jusque-là,
+ * l'organisation ne sait pas encore combien de communicants seront retenus.
+ * Sans cette seconde porte, une inscription ouvrait aussitôt un encaissement
+ * que personne n'avait décidé.
+ */
+it('n’ouvre pas le paiement au participant simple tant que l’événement ne l’a pas décidé', function () {
+    $event = evenementAvecTarifs();
+    $account = verifiedAccount();
+
+    expect($event->attendeePaymentIsOpen())->toBeFalse();
+
+    app(RegisterAttendee::class)->handle($event, $account, 'Doctorant');
+    $participant = Participant::where('user_id', $account->id)->firstOrFail();
+
+    expect($participant->isRegisteredAttendee())->toBeTrue();
+    expect($participant->owesParticipationFees())->toBeFalse();
+
+    // ⚠️ Et la page le DIT : le message générique lui parlait d'une
+    // communication à faire accepter, ce qui ne le concerne pas.
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event))
+        ->assertOk()
+        ->assertSee('Votre inscription est enregistrée')
+        ->assertDontSee('lorsqu’au moins une de vos communications aura été acceptée', false);
+});
+
+it('ouvre le paiement dès que l’événement le décide', function () {
+    $event = evenementAvecTarifs();
+    $account = verifiedAccount();
+    app(RegisterAttendee::class)->handle($event, $account, 'Doctorant');
+
+    expect(Participant::where('user_id', $account->id)->firstOrFail()->owesParticipationFees())->toBeFalse();
+
+    $event->update(['settings' => array_merge($event->settings, ['attendee_payment_open' => true])]);
+
+    $participant = Participant::where('user_id', $account->id)->firstOrFail();
+    expect($participant->owesParticipationFees())->toBeTrue();
+});
+
+/**
+ * ⚠️ **Le communicant ne dépend PAS de ce réglage** : sa décision est tombée,
+ * ses frais sont dus. L'y soumettre bloquerait le parcours qui marchait.
+ */
+it('laisse régler le communicant accepté, réglage fermé ou non', function () {
+    $event = evenementAvecTarifs();
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+    $event->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-900',
+        'title' => 'Acceptée', 'abstract' => 'Résumé.', 'status' => 'accepted', 'revision_of' => 0,
+    ]);
+
+    expect($event->attendeePaymentIsOpen())->toBeFalse();
+    expect($participant->fresh()->owesParticipationFees())->toBeTrue();
+});
+
+/** ⚠️ Fermé par défaut : ouvrir un encaissement est un geste délibéré. */
+it('garde le paiement des participants simples fermé par défaut', function () {
+    expect(openEdition()->attendeePaymentIsOpen())->toBeFalse();
 });
 
 // ----------------------------------------------------------- LA FENÊTRE -----
@@ -182,7 +252,7 @@ it('ne rétrograde pas un évaluateur qui s’inscrit', function () {
  * prendre - et jusqu'à l'acceptation de son résumé.
  */
 it('garde ses frais à régler quand il dépose ensuite une communication', function () {
-    $event = evenementAvecTarifs();
+    $event = evenementAvecTarifs(['attendee_payment_open' => true]);
     $account = verifiedAccount();
 
     app(RegisterAttendee::class)->handle($event, $account, 'Doctorant');

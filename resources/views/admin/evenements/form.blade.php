@@ -390,6 +390,17 @@
                                 Ouvrir les inscriptions (participants simples compris)
                             </label>
                             <p class="ukc-hint">Permet à toute personne ayant un compte de s’inscrire à l’événement depuis « Inscription &amp; paiement », qu’elle présente une communication ou non. L’archivage de l’événement ferme les inscriptions de toute façon.</p>
+
+                            {{-- ⚠️⚠️ S'INSCRIRE ET PAYER SONT DEUX MOMENTS. L'usage
+                                 est d'ouvrir le paiement des participants simples
+                                 APRÈS la clôture des dépôts : jusque-là on ne sait
+                                 pas combien de communicants seront retenus. --}}
+                            <input type="hidden" name="attendee_payment_open" value="0">
+                            <label class="ukc-check" style="margin-top:10px;">
+                                <input type="checkbox" name="attendee_payment_open" value="1" @checked($v('attendee_payment_open'))>
+                                Ouvrir le paiement aux participants simples
+                            </label>
+                            <p class="ukc-hint">À cocher en général <strong>après la clôture des soumissions</strong>. Tant que la case est décochée, un participant simple peut s’inscrire mais pas encore régler ses frais. Les communicants dont la communication est acceptée règlent les leurs sans attendre ce réglage.</p>
                             <div class="ukc-form-grid" style="margin-top:8px;">
                                 <div class="ukc-form-row">
                                     <label for="registration_deadline">Date limite d’inscription</label>

@@ -1215,5 +1215,11 @@
     "Vous n’êtes pas inscrit à cet événement et les inscriptions ne sont plus ouvertes. Si votre dossier doit être régularisé, contactez le secrétariat de l’événement.": "You are not registered for this event and registration is no longer open. If your file needs to be sorted out, contact the event secretariat.",
     ":count en auteur correspondant|:count en auteur correspondant": ":count as corresponding author|:count as corresponding author",
     "Vous êtes l’<strong>auteur correspondant</strong> de cette communication, déposée pour vous. Vous pouvez la modifier et répondre aux demandes du comité.": "You are the <strong>corresponding author</strong> of this paper, submitted on your behalf. You can edit it and answer the committee’s requests.",
-    "Vous êtes rattaché(e) à cette communication en tant que <strong>co-auteur</strong>. Le déposant et l’auteur correspondant peuvent la modifier.": "You are linked to this paper as a <strong>co-author</strong>. The submitter and the corresponding author can edit it."
+    "Vous êtes rattaché(e) à cette communication en tant que <strong>co-auteur</strong>. Le déposant et l’auteur correspondant peuvent la modifier.": "You are linked to this paper as a <strong>co-author</strong>. The submitter and the corresponding author can edit it.",
+    "Inscrivez-vous pour assister à l’événement, que vous présentiez une communication ou non.": "Register to attend the event, whether or not you are presenting a paper.",
+    "Vos frais s’afficheront ensuite ici.": "Your fees will then appear here.",
+    "Le règlement des frais ouvrira plus tard, en général après la clôture des dépôts.": "Fee payment will open later, usually once submissions have closed.",
+    "Votre inscription est enregistrée": "Your registration is recorded",
+    "Le règlement des frais n’est pas encore ouvert aux participants sans communication : il l’est en général après la clôture des dépôts. Vous serez prévenu(e) et pourrez régler depuis cette page.": "Fee payment is not yet open to attendees without a paper: it usually opens once submissions have closed. You will be notified and will be able to pay from this page.",
+    "Mon tableau de bord": "My dashboard"
 }

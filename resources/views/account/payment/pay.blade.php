@@ -68,7 +68,15 @@
         <section class="ukc-card payment-register" id="inscription" aria-labelledby="payment-register-title">
             <h2 id="payment-register-title"><x-ukc.icon name="user-plus" :size="20" /> {{ __('M’inscrire à cet événement') }}</h2>
             <p class="payment-register__intro">
-                {{ __('Inscrivez-vous pour assister à l’événement, que vous présentiez une communication ou non. Vos frais s’afficheront ensuite ici.') }}
+                {{ __('Inscrivez-vous pour assister à l’événement, que vous présentiez une communication ou non.') }}
+                {{-- ⚠️ On annonce la SUITE telle qu'elle sera : promettre un
+                     paiement « ensuite » alors qu'il n'ouvre qu'après la clôture
+                     des dépôts, c'est laisser quelqu'un revenir chaque jour. --}}
+                @if ($attendeePaymentOpen)
+                    {{ __('Vos frais s’afficheront ensuite ici.') }}
+                @else
+                    {{ __('Le règlement des frais ouvrira plus tard, en général après la clôture des dépôts.') }}
+                @endif
             </p>
 
             <form method="POST" action="{{ route('account.registration.store', $event) }}" class="ukc-form-grid">
@@ -140,6 +148,16 @@
         <div class="ukc-card">
             <h2><x-ukc.icon name="lock" :size="20" /> Cet événement est archivé</h2>
             <p style="color:var(--ukc-muted);margin:0;">Le paiement en ligne est fermé. Si votre dossier reste à régulariser, contactez le secrétariat de l’événement.</p>
+        </div>
+    @elseif ($attendRegleMentPourSimple)
+        {{-- ⚠️ Message PROPRE au participant simple : le générique lui parlait
+             d'une communication à faire accepter, ce qui ne le concerne pas. --}}
+        <div class="ukc-card">
+            <h2><x-ukc.icon name="check-circle" :size="20" /> {{ __('Votre inscription est enregistrée') }}</h2>
+            <p style="color:var(--ukc-muted);margin:0 0 16px;">
+                {{ __('Le règlement des frais n’est pas encore ouvert aux participants sans communication : il l’est en général après la clôture des dépôts. Vous serez prévenu(e) et pourrez régler depuis cette page.') }}
+            </p>
+            <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--blue">{{ __('Mon tableau de bord') }}</a>
         </div>
     @elseif (! $eligible)
         <div class="ukc-card">

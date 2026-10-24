@@ -558,6 +558,8 @@ class EventFormController extends Controller
             // faux, la fonctionnalité naîtrait éteinte partout.
             'registration_open' => (bool) ($s['registration_open'] ?? true),
             'registration_deadline' => (string) ($s['registration_deadline'] ?? ''),
+            // ⚠️ Fermé par défaut : ouvrir un encaissement est un geste délibéré.
+            'attendee_payment_open' => (bool) ($s['attendee_payment_open'] ?? false),
             'max_communications' => (int) ($s['max_communications'] ?? 3),
             'intro' => (string) ($s['intro'] ?? ''),
             'tracks' => implode("\n", $s['tracks'] ?? []),
