@@ -660,6 +660,27 @@ simples », carte Inscriptions).
   parlait d'une communication à faire accepter, ce qui ne le concerne pas. Le
   formulaire d'inscription annonce déjà la suite telle qu'elle sera, plutôt que
   de promettre un paiement « ensuite » qui n'ouvrira qu'après la clôture.
+- ⚠️⚠️ **ET ON LE PRÉVIENT QUAND ÇA OUVRE** (`NotifyAttendeePaymentOpen`, genre
+  de notification `payment_open`) : sans ce message, « plus tard » voudrait dire
+  « revenez voir tous les jours ».
+  - ⚠️ **C'est une BASCULE qu'on guette, pas un état.** La fiche d'événement
+    poste TOUS ses onglets à chaque enregistrement : lu sur l'état courant, le
+    message repartirait à chaque sauvegarde. L'ancien état se lit donc **avant**
+    l'écriture, dans `SaveEvent`.
+  - ⚠️ **L'envoi vit dans l'action qu'un humain déclenche**, jamais dans un
+    évènement de modèle - un seed ou un rejeu idempotent enverrait des centaines
+    de messages. Même règle que `NotifySlotRescheduled`.
+  - ⚠️ **On ne prévient que ceux que ça concerne** : inscrits, pas encore
+    réglés, rattachés à un compte. Un **communicant accepté en est exclu** - ses
+    frais étaient dus dès l'acceptation, et lui annoncer une « ouverture »
+    sèmerait le doute sur ce qu'il a déjà réglé.
+  - ⚠️ **Le montant n'est annoncé que si la grille n'en porte qu'un** : il se
+    déduit du grade, donc il diffère d'une personne à l'autre. Annoncer le tarif
+    du voisin serait pire que de n'en annoncer aucun.
+  - ⚠️ `hasMail => false` sur le genre : il n'y a **pas** de Mailable dédié,
+    c'est l'e-mail générique de la notification qui part. Posé à `true`, la
+    notification supprimerait son propre envoi en attendant un Mailable qui
+    n'existe pas - et personne ne serait prévenu.
 
 ⚠️⚠️ **ET L'INSCRIPTION EST UNE DATE, PAS UN RÔLE** (`meta['registered_at']`,
 `isRegisteredAttendee()`). Un participant simple qui dépose ensuite un résumé
@@ -703,7 +724,7 @@ correction au mauvais endroit. Un commentaire qui décrit une règle que rien
 n'applique est pire qu'un silence : on le croit. Le registre n'a jamais filtré
 sur les rôles ; il n'y a donc rien à remettre en place.
 
-Gardes : `InscriptionParticipantSimpleTest` (19 cas, **10 sabotages vérifiés**).
+Gardes : `InscriptionParticipantSimpleTest` (24 cas, **14 sabotages vérifiés**).
 
 ### Tableau de bord participant = il BASCULE sur les dates
 

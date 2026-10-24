@@ -30,6 +30,11 @@ class NotificationKinds
             'invitation' => ['label' => 'Invitations au colloque', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'authorship' => ['label' => 'Communications où je suis auteur/co-auteur', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'payment' => ['label' => 'Paiements', 'audience' => 'both', 'inapp' => true, 'email' => true, 'hasMail' => true],
+            // ⚠️ `hasMail => false` : il n'y a pas de Mailable dédié, c'est
+            // l'e-mail GÉNÉRIQUE de la notification qui part. Posé à true, la
+            // notification supprimerait son propre envoi en attendant un
+            // Mailable qui n'existe pas - et personne ne serait prévenu.
+            'payment_open' => ['label' => 'Ouverture du règlement des frais', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'task_assigned' => ['label' => 'Tâches de projet qui me sont assignées', 'audience' => 'staff', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'submission_new' => ['label' => 'Nouvelles communications', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'review_response' => ['label' => 'Réponses des évaluateurs (acceptation / refus)', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],

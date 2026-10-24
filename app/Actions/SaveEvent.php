@@ -254,12 +254,29 @@ class SaveEvent
             $committees = collect($data['committees'])->map(fn ($r) => (array) $r)->all();
         }
 
-        return DB::transaction(function () use ($payload, $event, $committees): Event {
+        // ⚠️⚠️ **LA BASCULE SE LIT AVANT L'ÉCRITURE.** Les inscrits attendent
+        // qu'on leur dise que le règlement vient d'ouvrir : comparé après coup,
+        // l'ancien état a déjà disparu. Et c'est bien une BASCULE qu'on guette,
+        // pas l'état courant - la fiche poste tous ses onglets à chaque
+        // enregistrement, donc « ouvert » serait vrai à chaque fois et le
+        // message repartirait à chaque sauvegarde.
+        $ouvertAvant = (bool) $event?->attendeePaymentIsOpen();
+
+        $model = DB::transaction(function () use ($payload, $event, $committees): Event {
             $model = $event ? tap($event)->update($payload) : Event::create($payload);
             $this->syncCommittees($model, $committees);
 
             return $model;
         });
+
+        // ⚠️ L'envoi vit ICI, dans l'action qu'un humain déclenche, et jamais
+        // dans un évènement de modèle : un seed ou un rejeu idempotent enverrait
+        // des centaines de messages (même règle que `NotifySlotRescheduled`).
+        if (! $ouvertAvant && $model->attendeePaymentIsOpen()) {
+            app(NotifyAttendeePaymentOpen::class)->handle($model);
+        }
+
+        return $model;
     }
 
     /** Remplace les membres de comité de l'événement par ceux du formulaire. */

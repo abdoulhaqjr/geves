@@ -1,10 +1,14 @@
 <?php
 
+use App\Actions\NotifyAttendeePaymentOpen;
 use App\Actions\RegisterAttendee;
 use App\Actions\UpsertParticipantForAccount;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\Participant;
+use App\Models\Payment;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * **S'inscrire sans présenter de communication.**
@@ -172,6 +176,120 @@ it('laisse régler le communicant accepté, réglage fermé ou non', function ()
 /** ⚠️ Fermé par défaut : ouvrir un encaissement est un geste délibéré. */
 it('garde le paiement des participants simples fermé par défaut', function () {
     expect(openEdition()->attendeePaymentIsOpen())->toBeFalse();
+});
+
+// ------------------------------- ON PRÉVIENT QUAND LE PAIEMENT S'OUVRE ------
+
+/**
+ * ⚠️⚠️ **SANS CE MESSAGE, « PLUS TARD » VEUT DIRE : REVENIR TOUS LES JOURS.**
+ * Le participant simple s'inscrit, lit que le règlement ouvrira « en général
+ * après la clôture des dépôts », et n'a ensuite aucun moyen de savoir quand.
+ */
+it('prévient les inscrits quand le paiement s’ouvre', function () {
+    Notification::fake();
+
+    $event = evenementAvecTarifs();
+    $inscrit = verifiedAccount();
+    app(RegisterAttendee::class)->handle($event, $inscrit, 'Doctorant');
+
+    $event->update(['settings' => array_merge($event->settings, ['attendee_payment_open' => true])]);
+    $prevenus = app(NotifyAttendeePaymentOpen::class)->handle($event->fresh());
+
+    expect($prevenus)->toBe(1);
+    Notification::assertSentTo($inscrit, SystemNotification::class,
+        fn (SystemNotification $n) => $n->kind === 'payment_open');
+});
+
+/** ⚠️ On ne réclame pas à qui a déjà payé. */
+it('ne prévient pas un inscrit qui a déjà réglé', function () {
+    Notification::fake();
+
+    $event = evenementAvecTarifs();
+    $inscrit = verifiedAccount();
+    $participant = app(RegisterAttendee::class)->handle($event, $inscrit, 'Doctorant');
+    Payment::create([
+        'event_id' => $event->id, 'participant_id' => $participant->id,
+        'amount' => 5000, 'currency' => 'XOF', 'method' => 'cash', 'gateway' => 'manual',
+        'status' => 'paid',
+    ]);
+
+    expect(app(NotifyAttendeePaymentOpen::class)->handle($event))->toBe(0);
+    Notification::assertNothingSent();
+});
+
+/**
+ * ⚠️ **Le communicant n'a rien à y faire** : ses frais étaient dus dès
+ * l'acceptation, sans attendre ce réglage. Lui annoncer une « ouverture » ne lui
+ * apprendrait rien, et sèmerait le doute sur ce qu'il a déjà pu régler.
+ */
+it('ne prévient pas un communicant accepté', function () {
+    Notification::fake();
+
+    $event = evenementAvecTarifs();
+    $account = verifiedAccount();
+    $participant = app(RegisterAttendee::class)->handle($event, $account, 'Doctorant');
+    $event->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-901',
+        'title' => 'Acceptée', 'abstract' => 'Résumé.', 'status' => 'accepted', 'revision_of' => 0,
+    ]);
+
+    expect(app(NotifyAttendeePaymentOpen::class)->handle($event))->toBe(0);
+    Notification::assertNothingSent();
+});
+
+/** ⚠️ Ni celui qui n'a jamais pris d'inscription (co-auteur rattaché, par exemple). */
+it('ne prévient pas quelqu’un qui ne s’est pas inscrit', function () {
+    Notification::fake();
+
+    $event = evenementAvecTarifs();
+    $account = verifiedAccount();
+    $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'email' => $account->email, 'role' => 'coauthor',
+    ]);
+
+    expect(app(NotifyAttendeePaymentOpen::class)->handle($event))->toBe(0);
+    Notification::assertNothingSent();
+});
+
+/**
+ * ⚠️⚠️ **C'EST UNE BASCULE QU'ON GUETTE, PAS UN ÉTAT.** La fiche d'événement
+ * poste TOUS ses onglets à chaque enregistrement : lu sur l'état courant, le
+ * message repartirait à chaque sauvegarde, et les inscrits recevraient le même
+ * e-mail autant de fois que le gestionnaire corrige une virgule.
+ */
+it('n’envoie le message qu’à l’ouverture, pas à chaque enregistrement', function () {
+    Notification::fake();
+
+    $event = evenementAvecTarifs();
+    $inscrit = verifiedAccount();
+    app(RegisterAttendee::class)->handle($event, $inscrit, 'Doctorant');
+
+    $champs = fn (bool $ouvert) => [
+        'event_series_id' => $event->event_series_id,
+        'title' => $event->title,
+        'year' => $event->year,
+        'status' => 'open',
+        'max_communications' => 3,
+        'attendee_payment_open' => $ouvert ? '1' : '0',
+        'fees' => [['label' => 'Doctorants', 'amount' => '5000']],
+    ];
+
+    $staff = adminStaff();
+
+    // 1er enregistrement : la bascule a lieu, le message part.
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.evenements.update', $event), $champs(true))
+        ->assertSessionHasNoErrors();
+
+    Notification::assertSentToTimes($inscrit, SystemNotification::class, 1);
+
+    // 2e enregistrement, réglage DÉJÀ ouvert : rien ne repart.
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.evenements.update', $event->fresh()), $champs(true))
+        ->assertSessionHasNoErrors();
+
+    Notification::assertSentToTimes($inscrit, SystemNotification::class, 1);
 });
 
 // ----------------------------------------------------------- LA FENÊTRE -----
