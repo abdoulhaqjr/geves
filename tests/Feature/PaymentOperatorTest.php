@@ -18,7 +18,13 @@ it('n’expose jamais le nom de l’agrégateur dans le libellé d’un moyen de
     }
 });
 
-it('propose des opérateurs mobile money ciblables', function () {
+/**
+ * ⚠️ Le lexique des opérateurs sert à **LIRE** ce que le prestataire rapporte
+ * sur un encaissement abouti, plus à faire choisir le payeur. Il finit sous les
+ * yeux d'un gestionnaire et sur un reçu : il reste donc nommé en clair, et sans
+ * jamais citer l'agrégateur.
+ */
+it('nomme en clair les opérateurs que le prestataire rapporte', function () {
     $operators = (new FedaPayGateway)->mobileOperators();
 
     expect($operators)->toHaveKey('togocel');
@@ -57,22 +63,6 @@ it('ne propose plus CashPay comme passerelle, ni dans le registre ni en réglage
 it('sait encore nommer un paiement déjà encaissé par CashPay', function () {
     expect(Payment::ONLINE_METHODS)->toHaveKey('cashpay');
     expect(Payment::ONLINE_METHODS['cashpay'])->not->toContain('CashPay')->not->toContain('SEMOA');
-});
-
-it('mémorise l’opérateur choisi sur le paiement et l’oublie si vidé', function () {
-    $event = openEdition();
-    $payment = Payment::create([
-        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
-        'meta' => ['flow' => 'formation'],
-    ]);
-
-    $payment->setOperator('togocel');
-    expect($payment->fresh()->meta['operator'])->toBe('togocel');
-    // Le flux d'origine est préservé.
-    expect($payment->fresh()->meta['flow'])->toBe('formation');
-
-    $payment->setOperator('');
-    expect($payment->fresh()->meta)->not->toHaveKey('operator');
 });
 
 it('distingue la nature des paiements et nomme la formation concernée', function () {
@@ -139,49 +129,18 @@ it('filtre les paiements par nature sur la page admin', function () {
 });
 
 /**
- * ⚠️ **Le moyen choisi n'a de sens que pour la passerelle qui le propose.** Ce
- * cas postait un opérateur mobile money sur un paiement MANUEL - on règle alors
- * au guichet ou par virement, et l'opérateur ne veut plus rien dire. Le code est
- * désormais validé contre les moyens de la passerelle du paiement
- * ({@see Payment::setOperator()}), donc l'un est gardé et l'autre écarté.
+ * ⚠️⚠️ **LA PASSERELLE CHOISIE EST LE MOYEN DE PAIEMENT.** Le payeur désignait
+ * d'abord son opérateur chez nous, pour que la page du prestataire arrive
+ * pré-sélectionnée. Mesuré en conditions réelles : **elle ne l'était pas** - la
+ * page affichait son propre sélecteur quand même. C'était donc un écran de plus
+ * pour un choix refait aussitôt après, dans un cadre qui n'est pas le nôtre.
  *
- * ⚠️ La validation vit dans le MODÈLE, pas dans les écrans : deux parcours
- * enregistrent ce champ (frais de participation et formation), et un troisième
- * viendra.
+ * ⚠️ **Le champ a été retiré du formulaire ET de ce qu'on accepte.** Retirer la
+ * saisie sans fermer la porte laisserait un paramètre invisible piloter la page
+ * du prestataire : qui le poste à la main dirigerait le paiement, et personne ne
+ * le verrait - ni à l'écran, ni dans les gardes.
  */
-it('garde le moyen choisi sur un paiement en ligne, et l’écarte sur un paiement manuel', function () {
-    $event = openEdition();
-
-    $enLigne = Payment::create([
-        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
-    ]);
-    $enLigne->setOperator('moov_tg');
-    expect($enLigne->fresh()->meta['operator'])->toBe('moov_tg');
-
-    // La carte est un moyen proposable, elle se retient aussi.
-    $enLigne->setOperator('card');
-    expect($enLigne->fresh()->meta['operator'])->toBe('card');
-
-    $manuel = Payment::create([
-        'event_id' => $event->id, 'amount' => 5000, 'method' => 'cash', 'gateway' => 'manual',
-    ]);
-    $manuel->setOperator('moov_tg');
-    expect($manuel->fresh()->meta)->not->toHaveKey('operator');
-});
-
-/** ⚠️ Le code vient d'un formulaire, donc de n'importe où. */
-it('n’enregistre pas un moyen de paiement inconnu', function () {
-    $event = openEdition();
-    $payment = Payment::create([
-        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
-    ]);
-
-    $payment->setOperator('<script>alert(1)</script>');
-
-    expect($payment->fresh()->meta ?? [])->not->toHaveKey('operator');
-});
-
-it('enregistre l’opérateur choisi lors de l’inscription payante à une formation', function () {
+it('ne fait plus choisir d’opérateur au payeur', function () {
     $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $event->participants()->create([
@@ -189,20 +148,72 @@ it('enregistre l’opérateur choisi lors de l’inscription payante à une form
     ]);
     $formation = publishedFormation($event, 10000);
 
-    // ⚠️ La passerelle doit être CONFIGURÉE pour être proposée, et la création de
-    // la transaction est simulée : ce cas porte sur ce qu'on enregistre, pas sur
-    // l'échange avec le prestataire.
-    config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec', 'card' => true]]);
+    config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec']]);
     Http::fake([
         '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
         '*/transactions' => Http::response(['v1/transaction' => ['id' => 77]], 201),
     ]);
 
+    // La page ne propose aucun opérateur…
+    $this->actingAs($user, 'account')->get(route('account.formations'))
+        ->assertOk()
+        ->assertDontSee('name="operator"', false);
+
+    // … et un code posté à la main n'est ni retenu, ni transmis.
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation), [
         'gateway' => 'fedapay', 'operator' => 'moov_tg',
     ]);
 
-    expect(Payment::first()->meta['operator'])->toBe('moov_tg');
+    expect(Payment::first()->meta ?? [])->not->toHaveKey('operator');
+
+    $creation = collect(Http::recorded())
+        ->first(fn (array $paire) => str_ends_with((string) $paire[0]->url(), '/transactions'));
+
+    expect($creation)->not->toBeNull('aucune transaction créée');
+    expect($creation[0]->data())->not->toHaveKey('mode');
+});
+
+/**
+ * ⚠️ **Et plus rien ne sait enregistrer un opérateur AVANT le paiement.** Le
+ * champ `meta['operator']` n'est plus alimenté que par ce que le prestataire
+ * RAPPORTE une fois l'encaissement abouti ({@see OnlineGateway::details()}, qui
+ * écrit sous `meta['gateway_detail']`). Laisser un `setOperator()` dormant
+ * rouvrirait la porte qu'on vient de fermer, sans un écran pour le signaler.
+ */
+it('n’offre plus aucun moyen d’imposer l’opérateur avant le paiement', function () {
+    expect(method_exists(Payment::class, 'setOperator'))->toBeFalse();
+
+    $fautifs = [];
+
+    foreach ([app_path(), resource_path('views')] as $dossier) {
+        /** @var iterable<SplFileInfo> $fichiers */
+        $fichiers = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dossier, FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($fichiers as $f) {
+            if (! $f instanceof SplFileInfo || ! in_array($f->getExtension(), ['php'], true)) {
+                continue;
+            }
+
+            // ⚠️ On lit le CODE, commentaires retirés : cette garde s'explique
+            // elle-même en citant `setOperator`, et un commentaire ne doit pas
+            // la faire tomber (même esprit que `DegradeHerosTest`).
+            $code = '';
+            foreach (token_get_all((string) file_get_contents($f->getPathname())) as $t) {
+                if (is_array($t) && in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+                $code .= is_array($t) ? $t[1] : $t;
+            }
+
+            if (str_contains($code, 'setOperator') || str_contains($code, "input('operator')")) {
+                $fautifs[] = $f->getFilename();
+            }
+        }
+    }
+
+    expect($fautifs)->toBe([]);
 });
 
 it('garde l’événement sélectionné quand on change un filtre sur la page Paiements', function () {

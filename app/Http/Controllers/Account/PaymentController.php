@@ -163,19 +163,16 @@ class PaymentController extends Controller
         // ⚠️⚠️ **UN PAIEMENT EN ATTENTE A PU ÊTRE OUVERT AVEC UNE AUTRE
         // PASSERELLE.** `firstOrCreate` ne pose `method`/`gateway` qu'à la
         // CRÉATION : qui avait d'abord choisi « sur place », puis revenait régler
-        // en ligne, repartait sur une ligne restée `manual`. Trois conséquences,
-        // toutes silencieuses, et mesurées sur un vrai paiement :
+        // en ligne, repartait sur une ligne restée `manual`. Deux conséquences,
+        // toutes deux silencieuses, et mesurées sur un vrai paiement :
         //
-        // - `setOperator()` interroge la passerelle **enregistrée** : la
-        //   passerelle hors ligne ne connaît aucun opérateur, donc tout code
-        //   était REJETÉ et le moyen choisi n'atteignait jamais le prestataire ;
         // - `payments:reconcile` ne repasse que par la passerelle enregistrée :
         //   un règlement en ligne resté `manual` n'aurait **jamais** été
         //   revérifié, et le filet de sécurité ne couvrait pas cette ligne ;
         // - la comptabilité annonçait un encaissement au guichet pour un
         //   paiement en ligne.
         //
-        // D'où le réalignement **avant** `setOperator()` : l'ordre est la règle.
+        // D'où le réalignement **avant** d'engager la passerelle.
         if ($payment->gateway !== $gateway->key()) {
             // ⚠️ La référence appartenait à l'autre prestataire : la garder
             // reviendrait à lui demander des nouvelles d'une transaction qui
@@ -196,9 +193,6 @@ class PaymentController extends Controller
                 'gateway_ref' => null,
             ]);
         }
-
-        // Opérateur choisi chez nous (pré-sélection sur la page du prestataire).
-        $payment->setOperator($request->input('operator'));
 
         try {
             $result = $gateway->initiate($payment);

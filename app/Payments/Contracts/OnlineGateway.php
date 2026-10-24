@@ -12,42 +12,20 @@ use Illuminate\Http\Request;
 interface OnlineGateway extends PaymentGateway
 {
     /**
-     * Opérateurs mobile money **transmissibles au prestataire** pour que sa page
-     * arrive pré-sélectionnée. Clé = code qu'il attend, valeur = libellé affiché
-     * (⚠️ jamais le nom de l'agrégateur). Vide si la passerelle ne sait pas
-     * cibler un opérateur.
+     * Le LEXIQUE des opérateurs mobile money du prestataire : clé = le code qu'il
+     * emploie, valeur = le libellé qu'on en montre (⚠️ jamais le nom de
+     * l'agrégateur). Vide si la passerelle n'en nomme aucun.
+     *
+     * ⚠️ **Il sert à LIRE, plus à choisir.** Le payeur ne désigne plus son
+     * opérateur chez nous : la passerelle qu'il a retenue EST le moyen de
+     * paiement, et c'est la page du prestataire qui propose ce que le compte
+     * marchand accepte. Cette liste ne survit que pour traduire le `mode` que le
+     * prestataire RAPPORTE sur un encaissement abouti ({@see self::details()}),
+     * là où un code brut ne dirait rien au gestionnaire ni au reçu.
      *
      * @return array<string, string>
      */
     public function mobileOperators(): array;
-
-    /**
-     * Moyens de paiement **proposables au payeur avant la redirection** : les
-     * opérateurs ci-dessus, et tout ce qui se choisit chez nous sans être un code
-     * du prestataire - la **carte bancaire** au premier chef.
-     *
-     * ⚠️ **Les deux listes sont distinctes à dessein.** `mobileOperators()` dit ce
-     * qu'on peut TRANSMETTRE, celle-ci ce qu'on peut PROPOSER : un moyen présent
-     * ici et absent de l'autre ne doit jamais partir dans la requête. Tout code
-     * hors de cette liste est refusé à l'enregistrement
-     * ({@see Payment::setOperator()}).
-     *
-     * @return array<string, string>
-     */
-    public function paymentMethods(): array;
-
-    /**
-     * L'opérateur **déduit du numéro de téléphone** du payeur, dit dans le
-     * vocabulaire du prestataire, ou null si rien ne se déduit.
-     *
-     * ⚠️ **C'est une présomption, pas un fait** : la portabilité des numéros peut
-     * l'avoir démentie. Elle sert à PRÉ-SÉLECTIONNER un choix qui reste à l'écran
-     * et modifiable d'un geste - jamais à décider en silence.
-     *
-     * ⚠️ Le code rendu est forcément une clé de `mobileOperators()` : c'est la
-     * seule liste transmissible au prestataire.
-     */
-    public function operatorFromPhone(?string $phone): ?string;
 
     /**
      * Interroge le prestataire et renvoie un statut normalisé.

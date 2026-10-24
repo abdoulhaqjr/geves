@@ -4,8 +4,6 @@ namespace App\Models;
 
 use App\Actions\ConfirmPayment;
 use App\Enums\PaymentStatus;
-use App\Payments\Contracts\OnlineGateway;
-use App\Payments\GatewayRegistry;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -263,35 +261,6 @@ class Payment extends Model
     public function isPaid(): bool
     {
         return $this->status === 'paid';
-    }
-
-    /**
-     * Mémorise le **moyen de paiement** choisi pour cette tentative - un opérateur
-     * mobile money ou la carte (un paiement en attente peut être repris avec un
-     * autre). Vide = laisser le payeur choisir sur la page du prestataire.
-     *
-     * ⚠️ **Le code est VALIDÉ ici, et pas dans les écrans qui appellent.** Il vient
-     * d'un formulaire, donc de n'importe où ; deux parcours l'enregistrent (frais de
-     * participation et formation) et un troisième viendra. Un code inconnu est
-     * ignoré plutôt que stocké : la passerelle le filtrerait de toute façon avant
-     * de l'envoyer, mais on n'a aucune raison de garder en base un moyen de
-     * paiement qui n'existe pas.
-     */
-    public function setOperator(?string $operator): void
-    {
-        $operator = trim((string) $operator);
-        $gateway = app(GatewayRegistry::class)->get((string) $this->gateway);
-        $connus = $gateway instanceof OnlineGateway ? $gateway->paymentMethods() : [];
-
-        $meta = $this->meta ?? [];
-
-        if ($operator === '' || ! array_key_exists($operator, $connus)) {
-            unset($meta['operator']);
-        } else {
-            $meta['operator'] = $operator;
-        }
-
-        $this->update(['meta' => $meta]);
     }
 
     /**

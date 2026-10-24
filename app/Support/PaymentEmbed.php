@@ -34,15 +34,17 @@ final class PaymentEmbed
             'environment' => (string) ($result['environment'] ?? 'sandbox'),
             'transaction_id' => (string) ($result['transaction_id'] ?? ''),
             // ⚠️ **Ce que le formulaire embarqué ne devinera pas tout seul** : le
-            // pays du payeur (sans quoi il propose les opérateurs du Bénin, quel
-            // que soit l'indicatif) et l'opérateur choisi. Les deux viennent de
-            // la passerelle, donc de la MÊME construction que la transaction.
+            // pays du payeur, sans quoi il propose les opérateurs du Bénin quel
+            // que soit l'indicatif. Il vient de la passerelle, donc de la MÊME
+            // construction que la transaction.
             //
-            // ⚠️ Le montant, lui, n'y figure toujours pas : la transaction a été
-            // créée côté serveur, et c'est son identifiant que le formulaire
-            // reprend. Le payeur ne peut pas fixer ce qu'il règle.
+            // ⚠️ L'opérateur, lui, n'y figure PLUS : le moyen de paiement se
+            // choisit sur la page du prestataire.
+            //
+            // ⚠️ Le montant n'y figure toujours pas : la transaction a été créée
+            // côté serveur, et c'est son identifiant que le formulaire reprend.
+            // Le payeur ne peut pas fixer ce qu'il règle.
             'customer' => is_array($result['customer'] ?? null) ? $result['customer'] : [],
-            'mode' => (string) ($result['mode'] ?? ''),
             // Porte de sortie : la page hébergée, si le script du prestataire ne
             // charge pas.
             'url' => (string) ($result['url'] ?? ''),

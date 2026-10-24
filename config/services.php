@@ -57,11 +57,6 @@ return [
         // ⚠️ Elle part dans le navigateur, c'est son rôle - ne JAMAIS y mettre
         // la clé secrète. Sans elle, le paiement repart en redirection.
         'public_key' => env('FEDAPAY_PUBLIC_KEY'),
-        // Proposer la CARTE BANCAIRE au payeur. ⚠️ C'est le compte marchand qui
-        // décide vraiment : la carte demande une couverture (UEMOA ou monde) qui
-        // s'accorde sur demande. Décocher ici si elle n'est pas ouverte, sinon on
-        // annonce un moyen que la page du prestataire ne proposera pas.
-        'card' => (bool) env('FEDAPAY_CARD', true),
     ],
 
     // Fournisseurs d'IA (paramétrage assisté, génération badges/attestations à venir).

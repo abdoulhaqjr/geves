@@ -13,6 +13,36 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Le choix de l'opérateur a été retiré (2026-10-24)
+
+**La passerelle choisie EST le moyen de paiement.** Prendre « Mobile money /
+carte bancaire », c'est aller sur la page du prestataire, qui propose tout ce que
+le compte marchand accepte. Le payeur désignait d'abord son opérateur chez nous -
+et la carte, pour qu'il sache qu'elle était acceptée - sur un écran de plus.
+
+⚠️ **Et il ne servait à rien** : `mode` ne pré-sélectionne rien, mesuré en
+conditions réelles (voir plus bas). La page du prestataire affichait son propre
+sélecteur de toute façon.
+
+**Retirés** : `<x-ukc.pay-method>` et ses deux emplois, `Payment::setOperator()`,
+`OnlineGateway::paymentMethods()` et `operatorFromPhone()`,
+`App\Support\MobileNetwork`, le `mode` de la requête et du formulaire embarqué,
+le réglage « Proposer la carte bancaire » (`services.fedapay.card`,
+`FEDAPAY_CARD`) devenu inerte, et `OperateurDeduitTest`.
+
+⚠️ **On retire la saisie ET ce qu'on accepte** : fermer le formulaire sans fermer
+la porte laisserait un paramètre invisible piloter la page du prestataire. Une
+garde de source balaie `app/` et `resources/views/`.
+
+⚠️ **`mobileOperators()` reste**, mais pour LIRE : le prestataire rapporte un
+`mode` sur un encaissement abouti, et sans ce lexique le back-office et le reçu
+afficheraient un code brut.
+
+⚠️ **Le pays, lui, part toujours** : sans lui le formulaire embarqué retombe sur
+le Bénin, quel que soit l'indicatif.
+
+**Garde** : `PaymentOperatorTest` (13 cas) et `PaymentGatewayTest` (31 cas),
+**cinq sabotages vérifiés**.
 ### Livret, évaluateurs et onglets Rapports (2026-10-23)
 
 - Une couverture du livre des résumés peut être créée et éditée dans DocSpace pour chaque événement. `LivretCover` conserve sa référence dans les réglages de l'événement ; `LivretDocx` et `LivretPdf` la joignent aux exports Word et PDF. La fusion PDF passe par `pdf-lib` et `scripts/merge-livret-cover.mjs` ; `LIVRET_PDF_NODE_BINARY` permet de choisir Node.js. La couverture automatique reste le repli quand aucune couverture DocSpace n'est active.
@@ -363,12 +393,12 @@ formulaire paraîtrait cassé.
 vérifiés** - fenêtre horaire, jour imposé, salle imposée, exception de la
 plénière, filtre des placées, borne haute du champ heure.
 
-### L'opérateur se déduit du numéro, et la fenêtre attend le formulaire (2026-10-18)
+### L'opérateur se déduisait du numéro, et la fenêtre attend le formulaire (2026-10-18)
 
-**Le numéro dit déjà l'opérateur.** La liste en portait onze, du Togo au Niger :
-`App\Support\MobileNetwork` lit les plans de numérotation publiés et rend un
-réseau, que la passerelle traduit dans ses propres codes
-(`OnlineGateway::operatorFromPhone`). Le moyen arrive pré-sélectionné.
+⚠️ **La déduction d'opérateur a été RETIRÉE le 2026-10-24** (voir en tête) :
+`MobileNetwork` et `operatorFromPhone()` n'existent plus, le moyen se choisit
+sur la page du prestataire. Ce qui suit garde la trace de ce qui a été essayé,
+parce que c'est ce qui explique pourquoi on ne le refera pas.
 
 ⚠️ **C'est une présomption, jamais un fait** : la portabilité des numéros peut
 l'avoir démentie. Le choix reste à l'écran, nommé, et se change d'un geste - avec
@@ -386,16 +416,15 @@ erreur de formulaire.
 
 ⚠️ **Un paiement en attente a pu être ouvert avec une autre passerelle** :
 `firstOrCreate` ne pose `gateway` qu'à la création, et qui avait d'abord choisi
-« sur place » repartait sur une ligne restée `manual`. `setOperator()` rejetait
-alors tout code (la passerelle hors ligne n'a pas d'opérateurs), `payments:reconcile`
-ne couvrait plus la ligne, et la comptabilité annonçait un encaissement au
-guichet. La passerelle est réalignée **avant** `setOperator()`, et la référence
+« sur place » repartait sur une ligne restée `manual`. `payments:reconcile` ne
+couvrait plus la ligne, et la comptabilité annonçait un encaissement au guichet.
+La passerelle est réalignée **avant** d'engager le prestataire, et la référence
 étrangère est journalisée puis abandonnée.
 
 **Le formulaire embarqué ne devine pas le pays** : il POSTE ses options au
 prestataire et, sans pays, retombe sur le Bénin. Mesuré en production - un numéro
 togolais arrivait sur « Mtn Bénin ». On lui passe le `customer` de la transaction
-(pays compris) et l'opérateur choisi.
+(pays compris).
 
 ⚠️⚠️ **`mode` ne pré-sélectionne RIEN sur la page de paiement** - établi en trois
 essais réels. Il est bien envoyé (mesuré en base), et la page affiche quand même
@@ -489,8 +518,7 @@ s'ouvrait vide : on montre une attente animée, puis la fenêtre entière.
 ⚠️ **Avec un plancher**, et l'échec ouvre quand même la fenêtre - c'est elle qui
 porte la porte de sortie, et une attente sans fin serait un paiement perdu.
 
-**Garde** : `OperateurDeduitTest` (9 cas, 25 avec leurs jeux de données) et dix cas de `PaymentGatewayTest`,
-seize sabotages vérifiés.
+**Garde** : les cas de `PaymentGatewayTest` sur la fenêtre et son découpage.
 
 ### Paiement sans redirection : le formulaire s'ouvre sur notre page (2026-10-18)
 
@@ -540,48 +568,32 @@ transaction, et il arrive **pré-rempli** de l'e-mail et du téléphone du payeu
 ⚠️ **La CARTE dépend du compte marchand, et elle n'était pas ouverte** : le
 formulaire ne proposait que Mobile Money. Le réglage « Proposer la carte
 bancaire » doit alors être **décoché**, sinon GEVES annonce un moyen que la page
-de paiement ne donne pas.
+de paiement ne donne pas. ⚠️ Ce réglage a été retiré le 2026-10-24 avec le choix
+du moyen : la couverture se demande au prestataire, rien à régler chez nous.
 
 **Garde** : cinq cas dans `PaymentGatewayTest`, trois sabotages vérifiés.
 
-### La carte bancaire est enfin PROPOSÉE (2026-10-18)
+### La carte bancaire a été proposée, puis le choix retiré (2026-10-18 / 24)
 
-Régler par carte marchait déjà : en ne choisissant aucun opérateur, la page
-hébergée du prestataire propose tout ce que le compte marchand accepte, Visa et
-Mastercard compris. Mais rien ne le disait - la liste ne portait que des
-opérateurs mobile money, sous l'intitulé « Choisir mon opérateur ». Tout
-invitait à en prendre un, donc à croire la carte refusée.
+Régler par carte marchait déjà : en ne choisissant aucun opérateur, la page du
+prestataire propose tout ce que le compte marchand accepte. Mais rien ne le
+disait - la liste ne portait que des opérateurs, sous « Choisir mon opérateur ».
+Elle a donc été ajoutée aux moyens proposés, derrière un réglage
+`services.fedapay.card`.
 
-⚠️ **Le code « carte » ne quitte jamais la plateforme.** Le champ `mode` de la
-requête ne désigne que des opérateurs mobile money, et aucun code carte n'est
-documenté côté prestataire. L'omettre donne exactement ce qu'on veut ; en
-inventer un ferait échouer la création de la transaction, donc le paiement
-entier - le payeur n'aurait pas une page sans carte, il n'aurait pas de page.
-
-D'où **deux listes distinctes** sur `OnlineGateway` : `mobileOperators()` = ce
-qui est **transmissible** en `mode` ; `paymentMethods()` = ce qui est
-**proposable** au payeur, carte comprise.
-
-⚠️ **La validation du code vit dans `Payment::setOperator()`, pas dans les
-écrans** : il vient d'un formulaire, et deux parcours l'enregistrent (frais de
-participation et formation). Un code que la passerelle du paiement ne propose
-pas est écarté - y compris un opérateur mobile money posé sur un paiement
-**manuel**, où l'on règle au guichet.
+⚠️ **Le 2026-10-24, le choix du moyen a été retiré en entier** (voir en tête) :
+la carte n'avait plus à être « proposée » puisque le payeur ne choisit plus chez
+nous, et le réglage, devenu inerte, est parti avec. ⚠️ **Ce qui reste vrai, et
+ce qui a motivé les deux changements** : le code « carte » ne quitte jamais la
+plateforme - le champ `mode` ne désigne que du mobile money, et en inventer un
+ferait échouer la création de la transaction, donc le paiement entier.
 
 ⚠️ **C'est le compte marchand qui accepte la carte, pas nous** : elle demande
-une couverture accordée sur demande. Réglage `services.fedapay.card` (Réglages ›
-Paiement, défaut ouvert), au niveau **plateforme**.
+une couverture accordée sur demande, et c'est au prestataire qu'on la demande.
 
-Le composant s'appelle désormais `<x-ukc.pay-method>` (ex-`pay-operator`), et
-son premier choix est « Je choisis sur la page de paiement ».
-
-**Garde** : cinq cas dans `PaymentGatewayTest`, trois dans
-`PaymentOperatorTest`, quatre sabotages vérifiés.
-
-⚠️ **Un des cas était décoratif, et seul le sabotage l'a montré** :
-`Http::assertSent` réussit dès qu'UNE requête satisfait le rappel, donc un
-rappel qui laisse passer la demande de jeton est toujours satisfait. On lit la
-requête de création et on l'éprouve.
+⚠️ **Piège Pest trouvé ici par le sabotage** : `Http::assertSent` réussit dès
+qu'UNE requête satisfait le rappel, donc un rappel qui laisse passer la demande
+de jeton est toujours satisfait. On lit la requête de création et on l'éprouve.
 
 ### CashPay (SEMOA) retirée des moyens de paiement (2026-10-18)
 

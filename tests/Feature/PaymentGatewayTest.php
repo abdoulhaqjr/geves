@@ -52,40 +52,26 @@ function corpsDeCreation(): ?array
 }
 
 /**
- * ⚠️ **La carte bancaire était acceptée sans être proposée.** La page de
- * paiement ne listait que des opérateurs mobile money, sous l'intitulé
- * « Choisir mon opérateur » : rien ne disait qu'on pouvait régler par carte, et
- * tout laissait croire qu'il fallait prendre un opérateur. Elle fonctionnait
- * pourtant - en ne choisissant rien, la page du prestataire propose tout ce que
- * le compte marchand accepte.
- */
-it('propose la carte bancaire en plus du mobile money', function () {
-    $moyens = (new FedaPayGateway)->paymentMethods();
-
-    expect($moyens)->toHaveKey('card');
-    expect($moyens['card'])->toContain('Carte');
-    // ⚠️ Convention du projet : jamais le nom de l'agrégateur devant le payeur.
-    expect($moyens['card'])->not->toContain('FedaPay');
-    // Les opérateurs restent proposés à côté.
-    expect($moyens)->toHaveKey('togocel');
-});
-
-/**
- * ⚠️ **Le code « carte » ne quitte JAMAIS la plateforme.** Le champ `mode` de la
- * requête ne désigne que des opérateurs mobile money ; aucun code carte n'est
- * documenté. En l'omettant, la page hébergée propose tout ce que le compte
- * marchand accepte - carte comprise, ce qu'on veut. Un code inventé ferait
+ * ⚠️⚠️ **AUCUN `mode` NE PART AU PRESTATAIRE, QUOI QU'ON METTE SUR LE PAIEMENT.**
+ * Le champ ne désignait que du mobile money (aucun code carte n'est documenté),
+ * et mesuré en conditions réelles **il ne pré-sélectionnait rien** : la page du
+ * prestataire affichait son propre sélecteur quand même. Le payeur choisit donc
+ * là-bas, parmi tout ce que le compte marchand accepte - carte comprise.
+ *
+ * ⚠️ Le cas pose `meta['operator']` **à la main**, précisément parce que plus
+ * aucun écran ne l'alimente : c'est une vieille ligne, ou une ligne forgée, et
+ * ni l'une ni l'autre ne doit rouvrir ce canal. Un code inventé ferait d'ailleurs
  * échouer la création de la transaction, donc le paiement ENTIER : le payeur
  * n'aurait pas une page sans carte, il n'aurait pas de page du tout.
  */
-it('n’envoie aucun mode au prestataire quand le payeur annonce la carte', function () {
+it('n’envoie aucun mode au prestataire', function () {
     configureFedapay();
     [$event, $account, $participant] = onlineSetup();
     $payment = $event->payments()->create([
         'participant_id' => $participant->id, 'amount' => 15000,
         'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+        'meta' => ['operator' => 'moov_tg'],
     ]);
-    $payment->setOperator('card');
 
     Http::fake([
         '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
@@ -98,26 +84,6 @@ it('n’envoie aucun mode au prestataire quand le payeur annonce la carte', func
 
     expect($corps)->not->toBeNull('aucune transaction créée');
     expect($corps)->not->toHaveKey('mode');
-});
-
-/** Un opérateur mobile money, lui, EST transmis : c'est tout son intérêt. */
-it('transmet l’opérateur mobile money choisi', function () {
-    configureFedapay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create([
-        'participant_id' => $participant->id, 'amount' => 15000,
-        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
-    ]);
-    $payment->setOperator('moov_tg');
-
-    Http::fake([
-        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
-        '*/transactions' => Http::response(['v1/transaction' => ['id' => 43]], 201),
-    ]);
-
-    (new FedaPayGateway)->initiate($payment);
-
-    expect(corpsDeCreation()['mode'] ?? null)->toBe('moov_tg');
 });
 
 /**
@@ -141,32 +107,25 @@ it('ne propose que des codes opérateur documentés par le prestataire', functio
 });
 
 /**
- * ⚠️ **C'est le compte marchand qui accepte la carte, pas nous.** Elle demande
- * une couverture accordée sur demande ; sans elle, l'annoncer enverrait le
- * payeur sur une page qui ne la propose pas. D'où le réglage.
+ * ⚠️⚠️ **LA PASSERELLE CHOISIE EST LE MOYEN DE PAIEMENT.** La page offrait en
+ * plus une liste d'opérateurs - et la carte, pour qu'on sache qu'elle était
+ * acceptée. C'était un second choix pour la même chose : prendre « en ligne »,
+ * c'est aller sur la page du prestataire, qui propose tout ce que le compte
+ * marchand accepte. Le libellé de la passerelle le dit déjà.
  */
-it('retire la carte des moyens proposés quand le réglage la ferme', function () {
-    configureFedapay();
-    config(['services.fedapay.card' => false]);
-
-    $moyens = (new FedaPayGateway)->paymentMethods();
-
-    expect($moyens)->not->toHaveKey('card');
-    expect($moyens)->toHaveKey('togocel'); // le mobile money n'est pas touché
-});
-
-/** La page de paiement du participant doit la MONTRER, pas seulement l'accepter. */
-it('offre la carte sur la page de paiement du participant', function () {
+it('ne fait plus choisir d’opérateur sur la page de paiement', function () {
     configureFedapay();
     [$event, $account, $participant] = onlineSetup();
 
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event->id))
         ->assertOk()
-        ->assertSee('Carte bancaire (Visa / Mastercard)')
-        // ⚠️ Le choix n'est pas obligatoire, et l'intitulé doit le dire : « Choisir
-        // mon opérateur » laissait croire le contraire.
-        ->assertSee('Je choisis sur la page de paiement')
+        // Les deux passerelles restent, elles : en ligne, ou au guichet.
+        ->assertSee('Mobile money / carte bancaire')
+        ->assertSee('Paiement sur place / virement')
+        // Et rien d'autre à trancher ici.
+        ->assertDontSee('name="operator"', false)
+        ->assertDontSee('Je choisis sur la page de paiement')
         ->assertDontSee('Choisir mon opérateur');
 });
 
@@ -509,10 +468,6 @@ it('compte la vérification de paiement par personne, pas par adresse', function
  * choisi « sur place », puis revenait régler en ligne, repartait sur une ligne
  * restée `manual`. Constaté sur un vrai paiement, et trois défauts d'un coup :
  *
- * - `setOperator()` interroge la passerelle **enregistrée** : la passerelle hors
- *   ligne ne connaît aucun opérateur, donc tout code était rejeté - le moyen
- *   choisi n'atteignait **jamais** le prestataire, et c'est ce qui faisait
- *   revenir le formulaire sur son opérateur par défaut ;
  * - `payments:reconcile` ne repasse que par la passerelle enregistrée : le
  *   filet de sécurité ne couvrait pas cette ligne ;
  * - la comptabilité annonçait un encaissement au guichet pour un règlement en
@@ -537,16 +492,13 @@ it('réaligne la passerelle d’un paiement en attente ouvert ailleurs', functio
     $this->actingAs($account, 'account')
         ->from(route('account.payment', $event->id))
         ->followingRedirects()
-        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay', 'operator' => 'togocel'])
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay'])
         ->assertOk();
 
     $payment->refresh();
 
     expect($payment->gateway)->toBe('fedapay');
     expect($payment->method)->toBe('fedapay');
-    // Ce qui manquait : l'opérateur survit, et il part bien dans la requête.
-    expect($payment->meta['operator'] ?? null)->toBe('togocel');
-    expect(corpsDeCreation()['mode'] ?? null)->toBe('togocel');
     // ⚠️ L'ancienne référence appartenait à l'autre prestataire : la garder
     // reviendrait à lui demander des nouvelles d'une transaction étrangère.
     expect($payment->gateway_ref)->toBe('59');
@@ -563,11 +515,10 @@ it('réaligne la passerelle d’un paiement en attente ouvert ailleurs', functio
  * construction : deux assemblages se décaleraient, et le formulaire
  * contredirait la transaction qu'il règle.
  */
-it('donne au formulaire embarqué le pays du payeur et l’opérateur choisi', function () {
+it('donne au formulaire embarqué le pays du payeur', function () {
     configureFedapayEmbarque();
     [$event, $account, $participant] = onlineSetup();
     $payment = paiementEnAttente($event, $participant);
-    $payment->setOperator('togocel');
 
     Http::fake([
         '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
@@ -579,46 +530,25 @@ it('donne au formulaire embarqué le pays du payeur et l’opérateur choisi', f
     // Le participant de `onlineSetup()` porte un numéro togolais.
     expect($resultat['customer']['phone_number']['country'])->toBe('tg');
     expect($resultat['customer']['phone_number']['number'])->toBe('+22890000000');
-    expect($resultat['mode'])->toBe('togocel');
 
     // ⚠️ Et c'est bien le même bloc que celui envoyé à la CRÉATION : le
     // formulaire ne doit pas contredire la transaction qu'il règle.
     expect(corpsDeCreation()['customer'])->toBe($resultat['customer']);
-    expect(corpsDeCreation()['mode'])->toBe('togocel');
-});
 
-/**
- * ⚠️ **« Je choisis sur la page de paiement » reste un choix du PAYEUR.** Il a
- * dit qu'il trancherait là-bas : lui imposer quand même l'opérateur déduit de
- * son numéro lui retirerait la main, et la portabilité peut avoir démenti cette
- * déduction. Le **pays**, lui, part toujours - il ne décide de rien, il évite
- * seulement qu'on propose le Bénin à un Togolais.
- */
-it('n’impose aucun opérateur quand le payeur a voulu choisir sur place', function () {
-    configureFedapayEmbarque();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = paiementEnAttente($event, $participant);
-
-    Http::fake([
-        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
-        '*/transactions' => Http::response(['v1/transaction' => ['id' => 57]], 201),
-    ]);
-
-    $resultat = (new FedaPayGateway)->initiate($payment);
-
-    expect($resultat['mode'])->toBe('');
+    // ⚠️ L'opérateur, lui, ne part NI sur la transaction NI au formulaire : le
+    // moyen de paiement se choisit sur la page du prestataire.
+    expect($resultat)->not->toHaveKey('mode');
     expect(corpsDeCreation())->not->toHaveKey('mode');
-    expect($resultat['customer']['phone_number']['country'])->toBe('tg');
 });
 
 /**
  * Ce que le serveur sait doit ATTEINDRE le formulaire : la charge voyage dans
  * `data-pay-embed`, et c'est elle que le script relit.
  *
- * ⚠️ Un `mode` **vide** ne part pas : il vaudrait peut-être, chez le
- * prestataire, « aucun opérateur acceptable ».
+ * ⚠️ Le pays, et lui seul : il ne décide de rien, il évite seulement qu'on
+ * propose le Bénin à un Togolais.
  */
-it('porte le pays et l’opérateur jusque dans la page', function () {
+it('porte le pays jusque dans la page', function () {
     configureFedapayEmbarque();
     [$event, $account, $participant] = onlineSetup();
 
@@ -630,16 +560,18 @@ it('porte le pays et l’opérateur jusque dans la page', function () {
     $this->actingAs($account, 'account')
         ->from(route('account.payment', $event->id))
         ->followingRedirects()
-        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay', 'operator' => 'togocel'])
+        ->post(route('account.payment.pay', $event), ['gateway' => 'fedapay'])
         ->assertOk()
         // ⚠️ Blade échappe les guillemets du JSON dans l'attribut.
         ->assertSee('&quot;country&quot;:&quot;tg&quot;', false)
-        ->assertSee('&quot;mode&quot;:&quot;togocel&quot;', false);
+        ->assertDontSee('&quot;mode&quot;', false);
 
     $js = (string) file_get_contents(resource_path('js/app.js'));
 
     expect($js)->toContain('{ customer: cfg.customer }');
-    expect($js)->toContain('...(cfg.mode ? { mode: cfg.mode } : {})');
+    // ⚠️ L'aiguille porte « mode: » : `cfg.mode` seul mordrait sur `cfg.moderator`,
+    // qui appartient à la salle de visio et n'a rien à voir ici.
+    expect($js)->not->toContain('mode: cfg.mode');
 });
 
 /**

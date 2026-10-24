@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
+use App\Listeners\BroadcastStoredNotification;
 use App\Models\Event;
 use App\Models\User;
-use App\Listeners\BroadcastStoredNotification;
 use App\Support\PilotMailCopy;
 use App\Support\Settings;
 use App\Support\StaffRolePermissions;
@@ -280,12 +280,6 @@ class AppServiceProvider extends ServiceProvider
                 Config::set("services.fedapay.$k", $set("fedapay.$k"));
             }
         }
-        // ⚠️ Une case à cocher ne passe PAS par `filled()` : décochée, elle vaut
-        // `false`, que `filled()` rejette - le réglage « ne pas proposer la carte »
-        // n'aurait alors jamais été appliqué. On regarde si la clé EXISTE.
-        if ($set('fedapay.card') !== null) {
-            Config::set('services.fedapay.card', (bool) $set('fedapay.card'));
-        }
 
         // Turnstile : la clé publique est éditable ; le secret est chiffré en
         // base et n'est jamais renvoyé au formulaire de réglages.
@@ -305,7 +299,7 @@ class AppServiceProvider extends ServiceProvider
         // Bandeau d'information sur les cookies : c'est le réglage en base qui
         // décide, pas le `.env`. ⚠️ Une case à cocher ne passe PAS par `filled()` -
         // décochée elle vaut `false`, que `filled()` rejette, et « ne pas afficher le
-        // bandeau » ne serait jamais appliqué (même piège que `fedapay.card`).
+        // bandeau » ne serait jamais appliqué. On regarde si la clé EXISTE.
         if (array_key_exists('cookies.notice_enabled', $s)) {
             Config::set('cookies.notice_enabled', (bool) $set('cookies.notice_enabled'));
         }

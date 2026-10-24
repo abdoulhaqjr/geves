@@ -283,12 +283,6 @@
                             <input type="text" id="fedapay_public_key" name="fedapay_public_key" value="{{ $v('fedapay_public_key') }}" autocomplete="off" placeholder="pk_live_… / pk_sandbox_…">
                             <span class="hint">Renseignée, le formulaire de paiement s’ouvre <strong>sur la page du participant</strong> au lieu de l’envoyer ailleurs. Laissée vide, le règlement se fait par redirection. ⚠️ C’est la clé <strong>publique</strong> : elle part dans le navigateur, et ce n’est pas la clé secrète ci-dessus.</span>
                         </div>
-                        <div class="ukc-field full">
-                            <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;font-weight:400;">
-                                <input type="checkbox" name="fedapay_card" value="1" @checked(old('fedapay_card', $values['fedapay_card']))> Proposer la carte bancaire (Visa / Mastercard)
-                            </label>
-                            <span class="hint">C’est le compte marchand qui décide vraiment : la carte demande une couverture (UEMOA ou monde) accordée sur demande. Décochez si elle n’est pas ouverte - sinon la plateforme annonce un moyen que la page de paiement ne proposera pas.</span>
-                        </div>
                     </div>
                 </div>
             </div>

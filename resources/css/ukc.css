@@ -1540,12 +1540,6 @@ body.ukc-overlay-open { overflow: hidden; }
   .ukc-shell .tdb-ag__row .a { align-self: flex-start; }
 }
 
-/* Un opérateur pré-sélectionné sans un mot se lit comme une obligation. */
-.ukc-pay-method__hint {
-  display: block; margin-top: 5px; color: var(--ukc-light);
-  font-size: 11.5px; line-height: 1.4;
-}
-
 /* ---- Formulaire de paiement embarqué (prestataire en ligne) ----
    ⚠️ Rang 100 : c'est une surface MODALE, au-dessus du chatbot (55) et des
    slideovers (60). Un formulaire de paiement à moitié recouvert, c'est un

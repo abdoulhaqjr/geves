@@ -206,7 +206,12 @@
                             @endforeach
                         </div>
                     </fieldset>
-                    <x-ukc.pay-method :gateways="$gateways" :phone="$participant?->phone" gateway-expr="gw" id="operator" class="ukc-field" wrapper-style="max-width:340px;margin-top:14px;" style="width:100%;" />
+                    {{-- ⚠️ **AUCUN choix d'opérateur ici.** La passerelle choisie
+                         ci-dessus EST le moyen de paiement : qui prend « en ligne »
+                         finit sur la page du prestataire, qui propose tout ce que le
+                         compte marchand accepte - opérateurs mobile money et carte.
+                         Le lui faire choisir chez nous d'abord, c'était un écran de
+                         plus pour un choix qu'il refait ensuite. --}}
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--ukc-border);padding-top:18px;margin-top:20px;">
                         <p style="display:inline-flex;align-items:center;gap:7px;margin:0;color:var(--ukc-muted);font-size:12px;"><x-ukc.icon name="shield" :size="16" /> Vous serez guidé jusqu’à la confirmation du règlement.</p>
                         <button type="submit" class="ukc-btn ukc-btn--green">Continuer pour régler <strong>&nbsp;{{ number_format((float) $amount, 0, ',', ' ') }} FCFA</strong></button>

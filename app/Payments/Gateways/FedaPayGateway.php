@@ -4,7 +4,6 @@ namespace App\Payments\Gateways;
 
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
-use App\Support\MobileNetwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -20,13 +19,6 @@ use Illuminate\Support\Facades\Http;
  */
 class FedaPayGateway implements OnlineGateway
 {
-    /**
-     * Le payeur annonce qu'il règlera par carte. ⚠️ **Ce code ne quitte jamais la
-     * plateforme** : aucun code carte n'est documenté côté prestataire, le champ
-     * `mode` ne désignant que des opérateurs mobile money. Voir `initiate()`.
-     */
-    public const CARD = 'card';
-
     public function key(): string
     {
         return 'fedapay';
@@ -39,8 +31,11 @@ class FedaPayGateway implements OnlineGateway
     }
 
     /**
-     * Opérateurs mobile money ciblables (codes `mode` du prestataire). Sélectionner
-     * l'opérateur ici évite au payeur de le rechercher sur la page suivante.
+     * Le lexique des opérateurs mobile money du prestataire (ses codes `mode`).
+     *
+     * ⚠️ **Il sert à LIRE, plus à choisir** : le payeur désigne son opérateur sur
+     * la page du prestataire, et cette liste ne traduit plus que le `mode` qu'il
+     * RAPPORTE sur un encaissement abouti ({@see self::details()}).
      *
      * ⚠️⚠️ **CETTE LISTE EST CELLE DU PRESTATAIRE, PAS LA NÔTRE.** Elle portait
      * `mtn_open_ci` pour MTN Côte d'Ivoire - le code documenté est **`mtn_ci`** -
@@ -68,56 +63,6 @@ class FedaPayGateway implements OnlineGateway
             'free_sn' => 'Free (Sénégal)',
             'airtel_ne' => 'Airtel (Niger)',
         ];
-    }
-
-    /**
-     * Mobile money **et carte bancaire**, quand le compte marchand l'accepte
-     * (réglage `services.fedapay.card`).
-     *
-     * ⚠️ La carte est en TÊTE : c'est le seul moyen qui ne se devine pas depuis un
-     * numéro de téléphone, et il était jusqu'ici invisible - la liste ne portait
-     * que des opérateurs, si bien qu'on croyait devoir en choisir un.
-     *
-     * @return array<string, string>
-     */
-    public function paymentMethods(): array
-    {
-        $carte = config('services.fedapay.card', true)
-            ? [self::CARD => 'Carte bancaire (Visa / Mastercard)']
-            : [];
-
-        return $carte + $this->mobileOperators();
-    }
-
-    /**
-     * L'opérateur déduit du numéro, traduit dans le vocabulaire du prestataire.
-     *
-     * ⚠️ **Deux vocabulaires, une traduction explicite.** `MobileNetwork` nomme
-     * les réseaux comme le font les régulateurs ; le prestataire a ses propres
-     * codes `mode`, et n'en a pas pour tout le monde - ni Orange Côte d'Ivoire,
-     * ni Orange Sénégal, ni Moov Niger. Ce qu'il ne sait pas cibler ne se déduit
-     * pas : le payeur choisit, comme avant.
-     *
-     * ⚠️ **Et jamais un code qu'on n'offre plus.** Le dernier filtre tient la
-     * promesse de `mobileOperators()`, seule liste qui part dans la requête :
-     * sans lui, retirer un opérateur de la liste laisserait son code se glisser
-     * dans `mode` par cette porte.
-     */
-    public function operatorFromPhone(?string $phone): ?string
-    {
-        $code = match (MobileNetwork::fromPhone($phone)) {
-            'togocom' => 'togocel',
-            'moov-tg' => 'moov_tg',
-            'mtn-bj' => 'mtn_open',
-            'moov-bj' => 'moov',
-            'celtiis-bj' => 'sbin',
-            'mtn-ci' => 'mtn_ci',
-            'free-sn' => 'free_sn',
-            'airtel-ne' => 'airtel_ne',
-            default => null,
-        };
-
-        return $code !== null && array_key_exists($code, $this->mobileOperators()) ? $code : null;
     }
 
     public function isAvailable(): bool
@@ -170,22 +115,14 @@ class FedaPayGateway implements OnlineGateway
             'customer' => $customer,
         ];
 
-        // Moyen choisi chez nous : la page du prestataire arrive pré-sélectionnée.
-        //
-        // ⚠️ **La CARTE ne se transmet PAS en `mode`.** Ce champ ne désigne que des
-        // opérateurs mobile money ; aucun code carte n'est documenté. Omis, il laisse
-        // la page hébergée proposer tout ce que le compte marchand accepte - carte
-        // comprise, ce qui est précisément ce qu'on veut. Inventer un code ferait
-        // échouer la création de la transaction, donc le paiement ENTIER.
-        //
-        // ⚠️ Le filtre porte sur `mobileOperators()`, pas sur `paymentMethods()` :
-        // c'est la liste de ce qui est TRANSMISSIBLE. Les confondre enverrait
-        // « card » au prestataire.
-        $operator = (string) ($payment->meta['operator'] ?? '');
-        if ($operator !== '' && array_key_exists($operator, $this->mobileOperators())) {
-            $body['mode'] = $operator;
-        }
-
+        // ⚠️⚠️ **AUCUN `mode` N'EST TRANSMIS, ET C'EST VOULU.** Le moyen de paiement
+        // se choisit sur la page du prestataire, qui propose tout ce que le compte
+        // marchand accepte - opérateurs mobile money ET carte. Le champ `mode` ne
+        // désignait d'ailleurs que du mobile money (aucun code carte n'est
+        // documenté), et mesuré en conditions réelles, **il ne pré-sélectionnait
+        // rien** : la page affichait son propre sélecteur quand même. Le remettre
+        // ne ferait que risquer un code refusé, donc la création de la transaction
+        // - donc le paiement ENTIER.
         $create = $this->http()->post($this->baseUrl().'/transactions', $body)->throw()->json();
 
         $id = $this->unwrap($create)['id'] ?? null;
@@ -217,14 +154,6 @@ class FedaPayGateway implements OnlineGateway
             // seconde construction : deux assemblages se décaleraient, et le
             // formulaire contredirait la transaction qu'il règle.
             'customer' => $customer,
-            // ⚠️ Et l'opérateur, quand le payeur en a choisi un. Il est déjà sur
-            // la **transaction** (`$body['mode']`), mais rien ne dit que le
-            // formulaire embarqué la relise jusque-là : on le lui donne aussi en
-            // clair. `checkout.js` transmet toutes ses options au formulaire, et
-            // `mode` est le nom que le prestataire emploie lui-même pour cela.
-            // ⚠️ Ce second canal n'est pas documenté : s'il est ignoré, rien ne
-            // change - la transaction, elle, porte toujours le choix.
-            'mode' => (string) ($body['mode'] ?? ''),
             'environment' => config('services.fedapay.mode') === 'live' ? 'live' : 'sandbox',
             'transaction_id' => (string) $id,
             // ⚠️ **La page hébergée reste accessible**, et ce n'est pas un luxe : si

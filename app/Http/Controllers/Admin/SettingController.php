@@ -146,7 +146,6 @@ class SettingController extends Controller
             'payments_default' => $g('payments.default', (string) config('payments.default', 'manual')),
             'fedapay_secret' => $g('fedapay.secret'),
             'fedapay_mode' => $g('fedapay.mode', 'test'),
-            'fedapay_card' => (bool) Settings::get('fedapay.card', (bool) config('services.fedapay.card', true)),
             'fedapay_webhook_secret' => $g('fedapay.webhook_secret'),
             'fedapay_public_key' => $g('fedapay.public_key', (string) config('services.fedapay.public_key')),
             'turnstile_site_key' => $g('turnstile.site_key', (string) config('services.turnstile.site_key')),
@@ -269,7 +268,6 @@ class SettingController extends Controller
         }
         $payload['hal.enabled'] = $request->boolean('hal_enabled');
         $payload['cookies.notice_enabled'] = $request->boolean('cookies_notice_enabled');
-        $payload['fedapay.card'] = $request->boolean('fedapay_card');
         $payload['realtime.enabled'] = $request->boolean('realtime_enabled');
         $payload['mail.pilot_copy_enabled'] = $request->boolean('mail_pilot_copy_enabled');
         $payload['docspace.file_links_enabled'] = $request->boolean('docspace_file_links_enabled');
