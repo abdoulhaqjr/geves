@@ -88,7 +88,11 @@
                                 <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
                             </a>
                         @endif
-                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('S’inscrire') }}</a>
+                        @if ($e->registrationIsOpen())
+                            <a href="{{ route('account.payment', $e) }}" class="ukc-btn ukc-btn--ghost">
+                                <x-ukc.icon name="user-plus" :size="18" /> {{ __('S’inscrire') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
 

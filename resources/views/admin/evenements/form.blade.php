@@ -374,6 +374,32 @@
 
                     {{-- ===== SOUMISSIONS & TARIFS ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='submissions' }">
+                        {{-- ⚠️⚠️ **LES INSCRIPTIONS ONT LEUR PROPRE FENÊTRE.** L'appel
+                             à communications ferme des mois avant l'événement ;
+                             les inscriptions, elles, courent jusqu'au jour même -
+                             on s'inscrit sur place le matin. Les adosser à
+                             `submission_open` les fermerait bien trop tôt. --}}
+                        <div class="ukc-card">
+                            <h2>Inscriptions</h2>
+                            {{-- ⚠️ Le champ caché est obligatoire : sans lui, décocher
+                                 n'envoie RIEN et on ne distingue plus « fermé » de
+                                 « champ absent du formulaire ». --}}
+                            <input type="hidden" name="registration_open" value="0">
+                            <label class="ukc-check">
+                                <input type="checkbox" name="registration_open" value="1" @checked($v('registration_open'))>
+                                Ouvrir les inscriptions (participants simples compris)
+                            </label>
+                            <p class="ukc-hint">Permet à toute personne ayant un compte de s’inscrire à l’événement depuis « Inscription &amp; paiement », qu’elle présente une communication ou non. L’archivage de l’événement ferme les inscriptions de toute façon.</p>
+                            <div class="ukc-form-grid" style="margin-top:8px;">
+                                <div class="ukc-form-row">
+                                    <label for="registration_deadline">Date limite d’inscription</label>
+                                    <input type="date" id="registration_deadline" name="registration_deadline" value="{{ $v('registration_deadline') }}">
+                                    <span class="ukc-hint">Laissez vide pour garder les inscriptions ouvertes jusqu’à l’archivage.</span>
+                                    @error('registration_deadline') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="ukc-card">
                             <h2>Soumissions</h2>
                             <label class="ukc-check"><input type="checkbox" name="submission_open" value="1" x-model="f.submission_open" :disabled="deadlineExpired()"> Ouvrir les soumissions de résumés</label>

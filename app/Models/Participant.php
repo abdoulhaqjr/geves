@@ -283,6 +283,38 @@ class Participant extends Model
             ->exists();
     }
 
+    /**
+     * ⚠️⚠️ **QUI DOIT DES FRAIS ? LA QUESTION N'EST PAS « A-T-IL UNE
+     * COMMUNICATION ACCEPTÉE ».** Le paiement était gardé par
+     * {@see hasAcceptedSubmission()} seul : un **participant simple** - celui
+     * qui vient écouter - ne pouvait donc rien régler, et la page lui disait de
+     * « contacter l'organisation ». Le rôle « Participant simple » existait
+     * pourtant déjà dans {@see ROLES}, et la page publique promettait de
+     * pouvoir s'inscrire ainsi.
+     *
+     * Deux populations, un seul invariant : **on doit des frais quand on s'est
+     * inscrit, ou quand une communication a été retenue.**
+     */
+    public function owesParticipationFees(): bool
+    {
+        return $this->isRegisteredAttendee() || $this->hasAcceptedSubmission();
+    }
+
+    /**
+     * S'est-il inscrit lui-même à l'événement ?
+     *
+     * ⚠️ **C'est une DATE, pas le rôle.** Un participant simple qui dépose
+     * ensuite un résumé passe en `author` ({@see UpsertParticipantForAccount}) :
+     * lu sur le rôle, il perdrait d'un coup le droit de régler l'inscription
+     * qu'il venait de prendre, et jusqu'à l'acceptation de son résumé. Une
+     * inscription est un fait daté ; elle ne se défait pas parce qu'on a changé
+     * de casquette.
+     */
+    public function isRegisteredAttendee(): bool
+    {
+        return filled($this->meta['registered_at'] ?? null);
+    }
+
     /** Le participant a déjà un paiement réglé (garde anti-double-paiement). */
     public function hasPaid(): bool
     {

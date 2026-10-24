@@ -1204,5 +1204,13 @@
     "Attestation de participation à l’organisation": "Organising support certificate",
     "Attestation du comité d’organisation": "Organising committee certificate",
     "Attestation d’instruction de résumés": "Abstract reviewing certificate",
-    "Attestation d’animation de formation": "Training delivery certificate"
+    "Attestation d’animation de formation": "Training delivery certificate",
+    "M’inscrire à cet événement": "Register for this event",
+    "Inscrivez-vous pour assister à l’événement, que vous présentiez une communication ou non. Vos frais s’afficheront ensuite ici.": "Register to attend the event, whether or not you are presenting a paper. Your fees will then appear here.",
+    "Ma catégorie": "My category",
+    "Choisir ma catégorie…": "Choose my category…",
+    "C’est elle qui détermine le montant de vos frais.": "It determines the amount of your fees.",
+    "M’inscrire": "Register",
+    "Les inscriptions sont fermées": "Registration is closed",
+    "Vous n’êtes pas inscrit à cet événement et les inscriptions ne sont plus ouvertes. Si votre dossier doit être régularisé, contactez le secrétariat de l’événement.": "You are not registered for this event and registration is no longer open. If your file needs to be sorted out, contact the event secretariat."
 }

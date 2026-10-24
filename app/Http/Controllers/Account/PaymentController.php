@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Actions\RegisterAttendee;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Participant;
@@ -10,12 +11,14 @@ use App\Payments\GatewayRegistry;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
 use App\Support\Fees;
+use App\Support\ParticipantTypes;
 use App\Support\PaymentEmbed;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -58,11 +61,58 @@ class PaymentController extends Controller
             'amount' => $amount,
             'tiers' => Fees::grid($event),
             'applicableLabel' => $applicableLabel,
-            'eligible' => $participant && $participant->hasAcceptedSubmission(),
+            // ⚠️ « Éligible » = IL Y A DES FRAIS À RÉGLER, pas « il a une
+            // communication acceptée » : le participant simple en doit aussi.
+            'eligible' => $participant && $participant->owesParticipationFees(),
+            // Inscription possible : aucune fiche sur cet événement, et la
+            // fenêtre d'inscription est ouverte.
+            'canRegister' => ! $participant && $event->registrationIsOpen(),
+            'grades' => ParticipantTypes::all(),
+            'accountGrade' => $account?->grade,
+            'accountAffiliation' => $account?->affiliation,
             'paid' => $participant && $participant->hasPaid(),
             'paidReceipt' => $participant?->participationPayments()->where('status', 'paid')->latest('id')->first(),
             'gateways' => app(GatewayRegistry::class)->available(),
         ]);
+    }
+
+    /**
+     * **S'inscrire à l'événement sans déposer de communication.**
+     *
+     * ⚠️ **Le grade est le seul champ qui décide de quelque chose** : c'est lui
+     * qui résout le tarif ({@see Fees::resolveAmount()}). L'affiliation et le
+     * mode de participation sont du confort, pré-remplis depuis le profil.
+     *
+     * ⚠️ **Pas de garde `hasPaid()` ici** : on ne paie pas en s'inscrivant, et
+     * quelqu'un qui a déjà une fiche n'arrive pas sur ce formulaire. La garde
+     * qui compte est celle de la FENÊTRE - une inscription hors délai doit être
+     * refusée même si le bouton traîne encore dans une page ouverte.
+     */
+    public function register(Request $request, Event $event, RegisterAttendee $register): RedirectResponse
+    {
+        EventLock::guard($event);
+        abort_unless($event->registrationIsOpen(), 403);
+
+        $account = Auth::guard('account')->user();
+
+        $data = $request->validate([
+            'grade' => ['required', 'string', Rule::in(ParticipantTypes::all())],
+            'affiliation' => ['nullable', 'string', 'max:200'],
+            'participation_mode' => ['nullable', Rule::in(array_keys((new SubmissionFormConfig($event))->participationModes()))],
+        ], [
+            'grade.required' => 'Choisissez votre catégorie : c’est elle qui détermine votre tarif.',
+        ]);
+
+        $register->handle(
+            $event,
+            $account,
+            $data['grade'],
+            $data['affiliation'] ?? null,
+            $data['participation_mode'] ?? null,
+        );
+
+        return redirect()->route('account.payment', $event)
+            ->with('ukc_status', 'Votre inscription est enregistrée. Il vous reste à régler vos frais.');
     }
 
     public function pay(Request $request, Event $event, GatewayRegistry $registry): RedirectResponse
@@ -78,7 +128,7 @@ class PaymentController extends Controller
             ? (Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event))
             : null;
 
-        if (! $participant || ! $participant->hasAcceptedSubmission() || $participant->hasPaid() || ! $amount) {
+        if (! $participant || ! $participant->owesParticipationFees() || $participant->hasPaid() || ! $amount) {
             return back()->withErrors(['pay' => 'Paiement indisponible.']);
         }
 

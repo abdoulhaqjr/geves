@@ -558,6 +558,68 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   unique** d'application d'un statut vérifié (retour navigateur, webhook, réconciliation).
   Bouton **« Revérifier »** sur un paiement en ligne en attente (`admin.payments.recheck`).
 
+### S'inscrire sans présenter de communication (2026-10-24)
+
+**Le participant simple a enfin une porte.** On ne devenait `Participant` qu'en
+déposant un résumé, en étant rapproché comme co-auteur, en s'inscrivant à une
+formation, ou en étant saisi au guichet (`/admin/paiements/creer`, qui crée déjà
+la fiche en `role => 'attendee'`). Celui qui vient **seulement écouter** n'avait
+aucun chemin - et `PaymentController::pay()` exigeait de toute façon une
+**communication acceptée**, donc il n'aurait rien pu régler. Le rôle
+« Participant simple » existait pourtant déjà dans `Participant::ROLES`, et la
+page publique promettait noir sur blanc de pouvoir « s'inscrire comme
+participant simple » pendant que la page d'inscription renvoyait vers
+« contactez l'organisation ».
+
+- **OÙ** : sur la page **« Inscription & paiement »** qui existait déjà
+  (`/compte/paiement/{event}`), là où le montant s'affiche ensuite.
+  ⚠️ **Pas de second formulaire ailleurs** : ce serait un second chemin de
+  création de participant, et c'est exactement ce qui avait produit **deux
+  fiches pour une même personne** sur le parcours co-auteur. Le bouton
+  « S'inscrire » de la page publique y mène directement ; un visiteur non
+  connecté est ramené par `auth:account` puis `redirect()->intended()`.
+- **QUAND** : `Event::registrationIsOpen()`, une fenêtre **propre aux
+  inscriptions** (`settings.registration_open` + `registration_deadline`, carte
+  « Inscriptions » de l'onglet Soumissions & tarifs).
+  ⚠️ **Surtout pas `submission_open`** : l'appel à communications ferme des mois
+  avant l'événement, les inscriptions courent jusqu'au jour même - on s'inscrit
+  sur place le matin. C'est l'**archivage** qui ferme, pas l'horloge.
+  ⚠️ **Ouvert par DÉFAUT** : le réglage n'existait pas, et tous les événements
+  déjà en base ont un `settings` sans cette clé - lu à faux, tout naîtrait éteint.
+  ⚠️ La case porte un `<input type="hidden" value="0">` devant elle : sans lui,
+  décocher n'envoie rien et on ne distingue plus « fermé » de « champ absent ».
+- **COMMENT** : `App\Actions\RegisterAttendee`, qui **délègue la création** à
+  `UpsertParticipantForAccount` - seul endroit qui fabrique une fiche, et qui
+  **ne rétrograde pas un rôle fort** (un évaluateur qui s'inscrit reste
+  évaluateur). Le formulaire ne demande que trois choses, dont une seule décide :
+  le **grade**, qui résout le tarif (`Fees::resolveAmount()`) ; l'affiliation et
+  le mode de participation sont pré-remplis depuis le profil.
+
+⚠️⚠️ **QUI DOIT DES FRAIS ? PAS « QUI A UNE COMMUNICATION ACCEPTÉE ».** Le
+paiement était gardé par `hasAcceptedSubmission()` seul. L'invariant est
+**`Participant::owesParticipationFees()`** : on doit des frais quand on **s'est
+inscrit**, ou quand une **communication a été retenue**.
+
+⚠️⚠️ **ET L'INSCRIPTION EST UNE DATE, PAS UN RÔLE** (`meta['registered_at']`,
+`isRegisteredAttendee()`). Un participant simple qui dépose ensuite un résumé
+passe en `author` : lu sur le rôle, il perdrait d'un coup le droit de régler
+l'inscription qu'il venait de prendre, et jusqu'à l'acceptation de son résumé.
+Une inscription est un fait daté ; elle ne se défait pas parce qu'on a changé de
+casquette. Et la date **ne se repousse pas** à une seconde inscription.
+
+⚠️ **Piège de test mesuré ici** : `toIso8601String()` est précis à la SECONDE.
+Enchaînés, deux appels tombent dans la même seconde, et une écriture
+systématique rend **exactement la même chaîne** qu'une écriture unique - le cas
+« ne repousse pas la date » restait VERT avec le `??=` remplacé par une
+affectation sèche. Il fait désormais voyager l'horloge (`$this->travel(2)->days()`).
+
+⚠️ **Resté en dehors, et à faire si le besoin se confirme** : le rôle `trainee`
+posé par l'inscription à une formation n'a **aucun libellé** dans
+`Participant::ROLES` et n'est pas dans `PARTICIPATION_ROLES` - un compte venu par
+une formation s'affiche « Trainee » et manque au registre des participants.
+
+Gardes : `InscriptionParticipantSimpleTest` (16 cas, **6 sabotages vérifiés**).
+
 ### Tableau de bord participant = il BASCULE sur les dates
 
 `/compte` ne montre pas la même chose du début à la fin du colloque.

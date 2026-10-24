@@ -553,6 +553,11 @@ class EventFormController extends Controller
             'submission_open' => (bool) ($event?->submission_open ?? false)
                 && ($event->submission_deadline === null || $event->submission_deadline->isFuture()),
             'submission_deadline' => $event?->submission_deadline?->format('Y-m-d\TH:i') ?? '',
+            // ⚠️ Ouvert par DÉFAUT : le réglage n'existait pas, et tous les
+            // événements déjà en base ont un `settings` sans cette clé. Lue à
+            // faux, la fonctionnalité naîtrait éteinte partout.
+            'registration_open' => (bool) ($s['registration_open'] ?? true),
+            'registration_deadline' => (string) ($s['registration_deadline'] ?? ''),
             'max_communications' => (int) ($s['max_communications'] ?? 3),
             'intro' => (string) ($s['intro'] ?? ''),
             'tracks' => implode("\n", $s['tracks'] ?? []),

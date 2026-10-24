@@ -212,6 +212,37 @@ class Event extends Model
                 ->orWhere('submission_deadline', '>', now()));
     }
 
+    /**
+     * ⚠️⚠️ **LES INSCRIPTIONS ONT LEUR PROPRE FENÊTRE, PAS CELLE DES DÉPÔTS.**
+     * Un appel à communications ferme des mois avant l'événement - celui de
+     * l'eau fermait le 15 octobre pour des journées en novembre. S'appuyer sur
+     * `submissionsAreOpen()` fermerait donc les inscriptions bien trop tôt,
+     * alors que c'est précisément là qu'elles arrivent.
+     *
+     * ⚠️ **Ouvert par DÉFAUT** : le réglage n'existait pas, et tous les
+     * événements déjà en base ont un `settings` sans cette clé. Fermé par
+     * défaut, la fonctionnalité naîtrait éteinte partout.
+     *
+     * ⚠️ **Et ouvert PENDANT l'événement** : on s'inscrit sur place le matin
+     * même. C'est l'ARCHIVAGE qui ferme (`status`), pas l'horloge - la même
+     * décision explicite que celle qui gèle le dossier ({@see EventLock}).
+     */
+    public function registrationIsOpen(): bool
+    {
+        if (! in_array($this->status, ['open', 'closed'], true)) {
+            return false;
+        }
+
+        $settings = $this->settings ?? [];
+        if (array_key_exists('registration_open', $settings) && ! $settings['registration_open']) {
+            return false;
+        }
+
+        $deadline = $settings['registration_deadline'] ?? null;
+
+        return blank($deadline) || Carbon::parse((string) $deadline)->endOfDay()->isFuture();
+    }
+
     /** Le module Formations est-il activé pour cet événement ? (réglage du formulaire d'événement). */
     public function formationEnabled(): bool
     {

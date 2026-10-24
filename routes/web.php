@@ -299,6 +299,11 @@ Route::middleware(['auth:account,web', SyncStaffParticipantSession::class, Stamp
 
     // Paiement des frais
     Route::get('/compte/paiement/{event}', [AccountPaymentController::class, 'show'])->name('account.payment');
+    // ⚠️ L'inscription vit SUR la page « Inscription & paiement » : un second
+    // formulaire ailleurs ferait un second chemin de création de participant -
+    // c'est ce qui avait produit deux fiches pour une même personne sur le
+    // parcours co-auteur.
+    Route::post('/compte/paiement/{event}/inscription', [AccountPaymentController::class, 'register'])->name('account.registration.store');
     Route::post('/compte/paiement/{event}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
     Route::get('/formations', [AccountFormationController::class, 'index'])->name('account.formations');
     Route::post('/formations/{formation}/inscription', [AccountFormationController::class, 'enroll'])->name('account.formations.enroll');

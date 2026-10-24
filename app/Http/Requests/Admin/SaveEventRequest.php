@@ -42,6 +42,10 @@ class SaveEventRequest extends FormRequest
             'slug' => ['nullable', 'string', 'max:220'],
             'submission_open' => ['boolean'],
             'submission_deadline' => ['nullable', 'date'],
+            // ⚠️ Fenêtre PROPRE aux inscriptions : l'appel à communications ferme
+            // des mois avant l'événement, les inscriptions non.
+            'registration_open' => ['boolean'],
+            'registration_deadline' => ['nullable', 'date'],
             'max_communications' => ['required', 'integer', 'min:1', 'max:10'],
             'intro' => ['nullable', 'string', 'max:5000'],
             'short_name' => ['nullable', 'string', 'max:120'],
@@ -168,7 +172,7 @@ class SaveEventRequest extends FormRequest
     {
         return match (true) {
             str_starts_with($field, 'keyDates') => 'general',
-            in_array($field, ['submission_open', 'submission_deadline', 'max_communications', 'ref_prefix', 'ref_prefix_mode', 'attestation_max', 'coauthors_max', 'gen_participation', 'gen_communication'], true),
+            in_array($field, ['submission_open', 'submission_deadline', 'registration_open', 'registration_deadline', 'max_communications', 'ref_prefix', 'ref_prefix_mode', 'attestation_max', 'coauthors_max', 'gen_participation', 'gen_communication'], true),
             str_starts_with($field, 'fees'), str_starts_with($field, 'ref_axes') => 'submissions',
             str_starts_with($field, 'committees') => 'committees',
             str_starts_with($field, 'partners') => 'partners',

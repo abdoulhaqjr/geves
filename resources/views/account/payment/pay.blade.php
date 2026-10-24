@@ -59,17 +59,74 @@
     @endif
 
     {{-- ===== Étape courante ===== --}}
-    @if (! $participant && ! $frozen)
-        <div class="payment-state">
-            <span class="payment-state__icon" aria-hidden="true"><x-ukc.icon name="file" :size="24" /></span>
-            <div class="payment-state__body">
-                <h2>Aucune participation liée à cet événement</h2>
-                <p>Vos frais apparaîtront ici lorsque votre participation sera enregistrée. Si vous avez déposé un résumé, consultez son suivi dans vos communications. Pour assister sans présenter de communication, contactez l’organisation.</p>
-                <div class="payment-state__actions">
-                    <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">Voir mes communications</a>
+    {{-- ⚠️⚠️ **ICI, ON S'INSCRIT.** Ce bloc était une impasse : « Pour assister
+         sans présenter de communication, contactez l'organisation. » On ne
+         devenait participant qu'en déposant un résumé, alors que le rôle
+         « Participant simple » existait déjà et que la page publique promettait
+         de pouvoir s'inscrire ainsi. --}}
+    @if (! $participant && $canRegister)
+        <section class="ukc-card payment-register" id="inscription" aria-labelledby="payment-register-title">
+            <h2 id="payment-register-title"><x-ukc.icon name="user-plus" :size="20" /> {{ __('M’inscrire à cet événement') }}</h2>
+            <p class="payment-register__intro">
+                {{ __('Inscrivez-vous pour assister à l’événement, que vous présentiez une communication ou non. Vos frais s’afficheront ensuite ici.') }}
+            </p>
+
+            <form method="POST" action="{{ route('account.registration.store', $event) }}" class="ukc-form-grid">
+                @csrf
+                {{-- ⚠️ Le GRADE est le seul champ qui décide de quelque chose :
+                     c'est lui qui résout le tarif (Fees::resolveAmount). --}}
+                <div class="ukc-field full">
+                    <label for="grade">{{ __('Ma catégorie') }} <span class="req">*</span></label>
+                    <select id="grade" name="grade" required>
+                        <option value="">{{ __('Choisir ma catégorie…') }}</option>
+                        @foreach ($grades as $g)
+                            <option value="{{ $g }}" @selected(old('grade', $accountGrade) === $g)>{{ $g }}</option>
+                        @endforeach
+                    </select>
+                    <span class="hint">{{ __('C’est elle qui détermine le montant de vos frais.') }}</span>
+                    @error('grade') <span class="error">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="ukc-field full">
+                    <label for="reg-affiliation">{{ __('Affiliation') }}</label>
+                    <input type="text" id="reg-affiliation" name="affiliation" list="ukc-affiliations"
+                           value="{{ old('affiliation', $accountAffiliation) }}" autocomplete="off">
+                    @error('affiliation') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <datalist id="ukc-affiliations"></datalist>
+
+                @if (count($participationModes) > 1)
+                    <div class="ukc-field full">
+                        <label for="reg-mode">{{ __('Mode de participation') }}</label>
+                        <select id="reg-mode" name="participation_mode">
+                            <option value="">{{ __('Choisir un mode') }}</option>
+                            @foreach ($participationModes as $value => $label)
+                                <option value="{{ $value }}" @selected(old('participation_mode') === $value)>{{ __($label) }}</option>
+                            @endforeach
+                        </select>
+                        @error('participation_mode') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                @endif
+
+                <div class="ukc-field full">
+                    <button type="submit" class="ukc-btn ukc-btn--blue">
+                        <x-ukc.icon name="check" :size="16" /> {{ __('M’inscrire') }}
+                    </button>
                     @if ($event->submissionsAreOpen() && $event->slug)
-                        <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--outline">Déposer un résumé</a>
+                        <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--ghost">{{ __('Déposer un résumé') }}</a>
                     @endif
+                </div>
+            </form>
+        </section>
+    @elseif (! $participant && ! $frozen)
+        {{-- Inscriptions fermées : on le DIT, au lieu de laisser croire à un oubli. --}}
+        <div class="payment-state">
+            <span class="payment-state__icon" aria-hidden="true"><x-ukc.icon name="clock" :size="24" /></span>
+            <div class="payment-state__body">
+                <h2>{{ __('Les inscriptions sont fermées') }}</h2>
+                <p>{{ __('Vous n’êtes pas inscrit à cet événement et les inscriptions ne sont plus ouvertes. Si votre dossier doit être régularisé, contactez le secrétariat de l’événement.') }}</p>
+                <div class="payment-state__actions">
+                    <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">{{ __('Voir mes communications') }}</a>
                 </div>
             </div>
         </div>

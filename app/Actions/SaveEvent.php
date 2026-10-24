@@ -184,6 +184,12 @@ class SaveEvent
                 'info_cards' => $infoCards,
                 'fees' => $fees,
                 'max_communications' => $data['max_communications'],
+                // ⚠️ La case porte un `<input type="hidden" value="0">` devant
+                // elle dans le formulaire : sans lui, décocher n'enverrait RIEN
+                // et `boolean()` rendrait false pour la mauvaise raison - on ne
+                // saurait pas distinguer « fermé » de « champ absent ».
+                'registration_open' => $request->boolean('registration_open'),
+                'registration_deadline' => ($data['registration_deadline'] ?? null) ?: null,
                 'ref_prefix_mode' => ($data['ref_prefix_mode'] ?? null) ?: 'global',
                 'ref_prefix' => ($data['ref_prefix'] ?? null) ?: null,
                 'ref_prefix_axes' => $refAxes,
