@@ -181,7 +181,7 @@
 
                     <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">{{ __('Mots-clés') }}</h3>
                     @if ($kw->isNotEmpty())
-                        <div class="keywords">@foreach ($kw as $k)<span>{{ $k }}</span>@endforeach</div>
+                        <div class="ukc-keywords">@foreach ($kw as $k)<span>{{ $k }}</span>@endforeach</div>
                     @else
                         <p class="hint" style="margin:0;">{{ __('Aucun mot-clé renseigné.') }}</p>
                     @endif

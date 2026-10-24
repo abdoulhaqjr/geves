@@ -110,7 +110,7 @@
                     <h3>Résumé</h3>
                     <div class="abstract-box ukc-rte">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '-' !!}</div>
                     @if ($s->keywords)
-                        <div class="keywords">
+                        <div class="ukc-keywords">
                             @foreach (\App\Support\SubmissionKeywords::parse($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()) as $kw)
                                 <span>{{ $kw }}</span>
                             @endforeach

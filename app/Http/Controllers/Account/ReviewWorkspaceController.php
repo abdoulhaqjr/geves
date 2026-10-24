@@ -11,6 +11,8 @@ use App\Support\EventLock;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\ReviewGrid;
+use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,6 +75,9 @@ class ReviewWorkspaceController extends Controller
         $reviewsData = $shown->map(function (Review $r) {
             $sub = $r->submission;
             $criteria = ReviewGrid::criteria($sub?->event);
+            // Le séparateur est réglé PAR ÉVÉNEMENT : sans événement en contexte
+            // (jamais en pratique), on retombe sur le défaut de `SubmissionKeywords`.
+            $separateur = $sub?->event ? (new SubmissionFormConfig($sub->event))->keywordSeparator() : 'comma';
 
             return [
                 'id' => (int) $r->id,
@@ -80,8 +85,18 @@ class ReviewWorkspaceController extends Controller
                 'title' => $sub?->title ?: 'Communication',
                 'track' => $sub?->track,
                 'type' => $sub?->type === 'poster' ? 'Poster' : 'Oral',
-                'abstract' => Html::render($sub?->abstract),
-                'keywords' => $sub?->keywords,
+                // ⚠️⚠️ **`Html::render()` REND UN `HtmlString`, PAS UNE CHAÎNE** -
+                // et cette liste part en JSON dans Alpine. L'objet s'y sérialisait
+                // en `{}`, que `x-html` affichait « [object Object] » : l'évaluateur
+                // notait une communication DONT IL NE VOYAIT PAS LE RÉSUMÉ. Rien ne
+                // tombe, rien ne prévient - en Blade le même appel se rend
+                // parfaitement, parce que `{!! !!}` le convertit en chaîne.
+                'abstract' => (string) Html::render($sub?->abstract),
+                // ⚠️ Les mots-clés partent en LISTE, pas en chaîne stockée : la
+                // modale en fait des badges, comme la fiche de la communication.
+                // Collés par leur séparateur, ils se lisaient d'un bloc
+                // (« qualité de l’eau;eau de boisson;cantines scolaires »).
+                'keywords' => $sub ? SubmissionKeywords::parse($sub->keywords, $separateur) : [],
                 'fileUrl' => $sub?->file_url,
                 'event' => $sub?->event?->title ?: (string) $sub?->event?->year,
                 'completed' => $r->isCompleted(),

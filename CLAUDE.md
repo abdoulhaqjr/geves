@@ -859,6 +859,37 @@ d'écriture, le flyer, le déplacement, le rejeu, l'adresse laissée intacte qua
 le fichier manque, et le dossier orphelin qu'aucune ligne ne réclame) - 7
 sabotages vérifiés, dont celui qui déplace les répertoires par leur nom.
 
+### ⚠️⚠️ `Html::render()` rend un `HtmlString`, et Alpine n'en fait rien
+
+**Mesuré sur la modale d'évaluation** (2026-10-23) : `ReviewWorkspaceController`
+passait `'abstract' => Html::render($sub?->abstract)` dans la liste sérialisée en
+JSON pour Alpine. Un `HtmlString` s'y encode en **`{}`**, que `x-html` affiche
+**« [object Object] »** : l'évaluateur notait une communication **dont il ne
+voyait pas le résumé**.
+
+⚠️ **Rien ne tombe, rien ne prévient.** En Blade, le même appel se rend
+parfaitement - `{!! !!}` convertit l'objet en chaîne. Le défaut n'existe qu'au
+passage par JSON. **Toute valeur qui part dans `@js()` se caste en `string`.**
+
+⚠️ **Deux autres défauts du même bloc, de la même famille - une donnée qui n'est
+pas ce que la vue croit :**
+
+- la vue lisait **`cur.edition`**, une clé qui n'existe plus depuis le renommage
+  « événements typés » (le contrôleur fournit `event`). Elle rendait une
+  **pastille grise vide** à côté du type : un `x-text` sur une clé absente
+  n'avertit de rien.
+- les **mots-clés** partaient en chaîne stockée, séparateur compris, et se
+  lisaient d'un bloc (« qualité de l’eau;eau de boisson;cantines scolaires »).
+  Ils partent en **liste**, et la modale en fait des badges.
+
+⚠️ **Les badges de mots-clés sont le composant partagé `.ukc-keywords`**
+(`ukc.css`). La même pastille était recopiée dans `ukc.css` (fiche du
+participant) et dans `admin.css` (fiche du back-office), et les deux divergeaient
+déjà d'une graisse et de deux pixels de marge ; la modale en aurait fait une
+troisième. Une définition, trois surfaces.
+
+Garde : `ReviewLifecycleTest` (1 cas, **4 sabotages vérifiés**).
+
 ### Corriger & renvoyer une communication = une PAGE, pas un bloc de fiche
 
 `/communications/{submission}/corriger` (`account.submissions.revise`). Le POST qui

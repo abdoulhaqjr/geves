@@ -453,8 +453,8 @@
 
 .admin-submission-detail .abstract-box { background: #f8fafc; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 16px; font-size: 14px; line-height: 1.65; color: var(--ukc-text); max-height: none; overflow: visible; white-space: normal; text-align: justify; }
 .admin-submission-detail .abstract-box > :last-child { margin-bottom: 0; }
-.admin-submission-detail .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.admin-submission-detail .keywords span { font-size: 12px; font-weight: 600; background: #eef2ff; color: #3730a3; padding: 4px 10px; border-radius: 50px; }
+/* ⚠️ Les badges de mots-clés sont le composant partagé `.ukc-keywords`
+   (`ukc.css`) : la règle vivait ici en double, à une graisse près. */
 
 .admin-submission-detail .file-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; font-size: 13.5px; }
 .admin-submission-detail .file-row .ico { width: 36px; height: 36px; border-radius: 8px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }

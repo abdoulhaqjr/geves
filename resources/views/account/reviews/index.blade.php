@@ -274,11 +274,20 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <template x-if="cur.track"><span class="ukc-pill ukc-pill--info" x-text="cur.track"></span></template>
                 <span class="ukc-pill ukc-pill--muted" x-text="cur.type"></span>
-                <span class="ukc-pill ukc-pill--muted" x-text="cur.edition"></span>
+                {{-- ⚠️ `cur.edition` n'existe pas : la clé s'appelle `event` depuis
+                     le renommage « événements typés », et la vue ne l'avait pas
+                     suivi. Elle rendait une pastille grise VIDE à côté du type -
+                     un `x-text` sur une clé absente n'avertit de rien. --}}
+                <template x-if="cur.event"><span class="ukc-pill ukc-pill--muted" x-text="cur.event"></span></template>
             </div>
             <div class="ukc-rte" style="font-size:13.5px;" x-html="cur.abstract"></div>
-            <template x-if="cur.keywords">
-                <p style="margin-top:8px;font-size:12.5px;color:var(--ukc-muted);"><strong>{{ __('Mots-clés') }} :</strong> <span x-text="cur.keywords"></span></p>
+            {{-- ⚠️ Des BADGES, comme sur la fiche de la communication : collés par
+                 leur séparateur, les mots-clés se lisaient d'un bloc
+                 (« qualité de l’eau;eau de boisson;cantines scolaires »). --}}
+            <template x-if="(cur.keywords || []).length">
+                <div class="ukc-keywords">
+                    <template x-for="k in cur.keywords" :key="k"><span x-text="k"></span></template>
+                </div>
             </template>
             <template x-if="cur.fileUrl">
                 <a :href="cur.fileUrl" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:10px;"><x-ukc.icon name="file" :size="15" /> {{ __('Fichier joint') }}</a>

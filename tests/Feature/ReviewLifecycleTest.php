@@ -56,6 +56,50 @@ it('applique le délai d’évaluation réglé sur l’événement', function ()
     expect(now()->startOfDay()->diffInDays($review->due_at->startOfDay()))->toBe(7.0);
 });
 
+/**
+ * **Ce que l'évaluateur a sous les yeux quand il note.**
+ *
+ * ⚠️⚠️ **`Html::render()` REND UN `HtmlString`, PAS UNE CHAÎNE**, et cette liste
+ * part en JSON dans Alpine : l'objet s'y sérialisait en `{}`, que `x-html`
+ * affichait **« [object Object] »**. L'évaluateur notait donc une communication
+ * dont il ne voyait pas le résumé. Rien ne tombe, rien ne prévient - en Blade le
+ * même appel se rend parfaitement, parce que `{!! !!}` le convertit en chaîne.
+ *
+ * ⚠️ Les **mots-clés** partent en LISTE : la modale en fait des badges, comme la
+ * fiche. Collés par leur séparateur, ils se lisaient d'un bloc.
+ *
+ * ⚠️ Et la vue lisait **`cur.edition`**, une clé qui n'existe plus depuis le
+ * renommage « événements typés » - elle rendait une pastille grise VIDE à côté
+ * du type. Un `x-text` sur une clé absente n'avertit de rien.
+ */
+it('sert à l’évaluateur un résumé lisible et des mots-clés en liste', function () {
+    $submission = seededSubmission();
+    $submission->update([
+        'abstract' => '<p>Contexte <strong>et</strong> objectifs.</p>',
+        'keywords' => 'qualité de l’eau, eau de boisson, cantines scolaires',
+    ]);
+    $reviewer = reviewerFor($submission);
+    Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'accepted']);
+
+    $reponse = $this->actingAs($reviewer->user, 'account')->get(route('account.reviews'))->assertOk();
+    $donnees = collect($reponse->viewData('reviewsData'))->firstOrFail();
+
+    // Le résumé est une CHAÎNE : sérialisé en objet, il s'affichait « [object Object] ».
+    expect($donnees['abstract'])->toBeString()->toContain('<strong>');
+
+    // Les mots-clés sont une LISTE, prête à devenir des badges.
+    expect($donnees['keywords'])->toBe(['qualité de l’eau', 'eau de boisson', 'cantines scolaires']);
+
+    // La pastille lit la clé que le contrôleur fournit vraiment.
+    $html = $reponse->getContent();
+    expect($html)
+        ->toContain('x-text="cur.event"')
+        ->not->toContain('cur.edition')
+        // Des badges, pas une chaîne collée.
+        ->toContain('class="ukc-keywords"')
+        ->not->toContain('x-text="cur.keywords"');
+});
+
 it('laisse le relecteur accepter sa relecture depuis « Mes relectures »', function () {
     $submission = seededSubmission();
     $reviewer = reviewerFor($submission);
