@@ -1197,5 +1197,12 @@
     "Rappel": "Reminder",
     "Version": "Version",
     "L’axe, le type de communication et les auteurs ne se modifient pas par ce formulaire : écrivez-le au comité dans votre résumé ou contactez le secrétariat.": "The track, the paper type and the authors cannot be changed from this form: tell the committee in your abstract, or contact the secretariat.",
-    "Votre communication": "Your paper"
+    "Votre communication": "Your paper",
+    "Mes fonctions sur cet événement": "My roles at this event",
+    "Attestation de modération": "Session chairing certificate",
+    "Attestation de rapporteur": "Session rapporteur certificate",
+    "Attestation de participation à l’organisation": "Organising support certificate",
+    "Attestation du comité d’organisation": "Organising committee certificate",
+    "Attestation d’instruction de résumés": "Abstract reviewing certificate",
+    "Attestation d’animation de formation": "Training delivery certificate"
 }

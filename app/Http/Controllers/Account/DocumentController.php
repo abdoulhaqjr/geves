@@ -94,6 +94,23 @@ class DocumentController extends Controller
             ->sortBy(fn (Attestation $a) => $a->type.'-'.$a->formationTitle())
             ->values();
 
+        // ⚠️⚠️ **UNE PERSONNE CUMULE LES FONCTIONS, ET SES ATTESTATIONS AVEC.**
+        // La page ne rendait que `participation` : modération, rapport, comité
+        // d'organisation, appui à l'organisation et instruction de résumés
+        // étaient bien CHARGÉES ici - elles tombaient dans `$atts` - mais
+        // aucune ligne ne les affichait. Un modérateur ne pouvait ni voir ni
+        // retirer l'attestation qu'on lui avait pourtant délivrée.
+        //
+        // ⚠️ **On part des attestations ÉMISES, pas d'une liste de types** : la
+        // règle couvre ainsi tout type délivré, y compris ceux qui ne sont plus
+        // offerts d'office (« soumission », « acceptation », encore en base) et
+        // ceux qu'on ajoutera. Les quatre types déjà rendus par leurs propres
+        // sections sont écartés, sinon ils s'afficheraient deux fois.
+        $attsFonctions = $attestations
+            ->whereNotIn('type', ['participation', 'communication', 'formation', 'formation_animation'])
+            ->sortBy(fn (Attestation $a) => $a->title())
+            ->values();
+
         $hasBooklet = $event->submissions()
             ->where('revision_of', 0)->where('status', 'accepted')->exists();
 
@@ -135,6 +152,7 @@ class DocumentController extends Controller
             'atts' => $atts,
             'attsParCommunication' => $attsParCommunication,
             'attsFormation' => $attsFormation,
+            'attsFonctions' => $attsFonctions,
             // Délivrance physique : le participant VOIT son attestation et peut la
             // vérifier, mais l'exemplaire qui fait foi lui est remis en main propre.
             'papier' => AttestationPolicy::isPaper($event),

@@ -4056,8 +4056,32 @@ ajoutée par la vue, elle ne se saisit pas.
     et la ligne de « Mes documents » dit si l'exemplaire a été remis ou reste à
     retirer.
 - **« Mes documents » montre TOUTES les attestations de l'édition** : une par
-  communication (`keyBy('submission_id')`) et une par formation suivie **ou
-  animée**, avec son intitulé.
+  communication (`keyBy('submission_id')`), une par formation suivie **ou
+  animée**, et **une par FONCTION exercée** - modération, rapport, comité
+  d'organisation, appui à l'organisation, instruction de résumés.
+  - ⚠️⚠️ **Une personne cumule les fonctions, et ses attestations avec.** La
+    page ne rendait que `participation` : les autres types étaient bien
+    **chargés** par le contrôleur - ils tombaient dans `$atts` - mais **aucune
+    ligne ne les affichait**. Un modérateur ne pouvait ni voir ni retirer
+    l'attestation qu'on lui avait pourtant délivrée. Section « Mes fonctions sur
+    cet événement ».
+  - ⚠️ **La liste part des attestations ÉMISES, pas d'une énumération de types**
+    (`whereNotIn` sur les quatre déjà rendus par leurs propres sections) : elle
+    couvre ainsi tout ce qui est délivré, y compris les types retirés des menus
+    mais encore en base (« soumission », « acceptation ») et ceux qu'on
+    ajoutera. Énumérer les types, c'est s'engager à penser au suivant.
+  - ⚠️ **Elle n'annonce AUCUNE attestation à venir** : sans document délivré,
+    pas de ligne. Pour une ligne « Après le colloque » comme en porte la
+    participation, il faudrait les règles d'éligibilité du hub
+    (`sessionRoleTargets`, `teamRoleTargets`, `reviewerTargets`) dans une source
+    partagée - elles sont aujourd'hui privées, côté back-office. **À faire** si
+    le besoin se confirme ; les recopier serait la divergence assurée.
+  - ⚠️ **L'intitulé complet a UNE source : `Attestation::titles()`.** Le hub du
+    back-office dressait sa propre liste (`$typeMeta`) et l'espace participant
+    allait en inventer une seconde - elles divergeaient déjà sur l'animation de
+    formation (« Attestation d'animation » contre « … de formation »).
+    `Attestation::TYPES` reste le libellé COURT, celui des filtres et des
+    pastilles : les deux ne se remplacent pas.
   - ⚠️ **Défauts gelés par des cas** : indexées par *type*, l'attestation de la
     dernière communication s'affichait en face de **toutes** les autres (deux
     communications, un seul document) ; et la page ne montrait qu'**une** ligne

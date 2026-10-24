@@ -62,18 +62,23 @@ class DocumentHubController extends Controller
         // ⚠️ Modération / rapporteur = UNE par personne et par événement : le
         // bénéficiaire est une personne qui a modéré (resp. rapporté) AU MOINS une
         // séance, pas une attestation par séance (cf. targetsFor + idempotence).
+        // ⚠️ Les intitulés viennent d'`Attestation::titles()`, pas d'ici : « Mes
+        // documents » les affiche aussi, et deux listes recopiées divergent -
+        // celle-ci disait « Attestation d'animation » quand l'espace participant
+        // disait « … d'animation de formation ».
+        $titres = Attestation::titles();
         $typeMeta = [
-            'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
-            'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
-            'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Modérateurs de séance', 'scope' => 'Une par modérateur'],
-            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par rapporteur'],
-            'organisation' => ['title' => 'Attestation de participation à l’organisation', 'sub' => 'Équipe d’appui au comité d’organisation', 'scope' => 'Hors comités'],
-            'comite_organisation' => ['title' => 'Attestation du comité d’organisation', 'sub' => 'Membres du comité d’organisation', 'scope' => 'Comité d’organisation'],
-            'instruction_resumes' => ['title' => 'Attestation d’instruction de résumés', 'sub' => 'Évaluateurs de résumés', 'scope' => 'Une par évaluateur'],
+            'communication' => ['title' => $titres['communication'], 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
+            'participation' => ['title' => $titres['participation'], 'sub' => 'Une par participant', 'scope' => 'Participant'],
+            'moderation' => ['title' => $titres['moderation'], 'sub' => 'Modérateurs de séance', 'scope' => 'Une par modérateur'],
+            'rapporteur' => ['title' => $titres['rapporteur'], 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par rapporteur'],
+            'organisation' => ['title' => $titres['organisation'], 'sub' => 'Équipe d’appui au comité d’organisation', 'scope' => 'Hors comités'],
+            'comite_organisation' => ['title' => $titres['comite_organisation'], 'sub' => 'Membres du comité d’organisation', 'scope' => 'Comité d’organisation'],
+            'instruction_resumes' => ['title' => $titres['instruction_resumes'], 'sub' => 'Évaluateurs de résumés', 'scope' => 'Une par évaluateur'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
-            'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
-            'formation_animation' => ['title' => 'Attestation d’animation', 'sub' => 'Formateurs', 'scope' => 'Par formation'],
+            'formation' => ['title' => $titres['formation'], 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
+            'formation_animation' => ['title' => $titres['formation_animation'], 'sub' => 'Formateurs', 'scope' => 'Par formation'],
         ];
 
         // ⚠️ LA LISTE PROPOSÉE EST CELLE DE $typeMeta, PAS `Attestation::TYPES`.
@@ -545,7 +550,10 @@ class DocumentHubController extends Controller
             ]);
         } catch (\Throwable $error) {
             if ($fileId !== null) {
-                try { $docspace->deleteFile($fileId); } catch (\Throwable) {}
+                try {
+                    $docspace->deleteFile($fileId);
+                } catch (\Throwable) {
+                }
             }
 
             return back()->with('ukc_error', $error->getMessage());

@@ -68,6 +68,25 @@
                 </ul>
             @endif
 
+            {{-- ⚠️⚠️ **LES ATTESTATIONS LIÉES À UNE FONCTION.** Une même personne
+                 modère une séance, siège au comité d'organisation et instruit des
+                 résumés : ses attestations étaient délivrées, mais la page n'en
+                 affichait aucune - elle ne rendait que « participation ». Le
+                 titre vient d'`Attestation::title()`, la source que partage le
+                 hub du back-office. --}}
+            @if ($attsFonctions->isNotEmpty())
+                <div class="ukc-doc-section">{{ __('Mes fonctions sur cet événement') }}</div>
+                <ul class="ukc-doc-list">
+                    @foreach ($attsFonctions as $a)
+                        @include('account._doc-row', [
+                            'name' => __($a->title()),
+                            'sub' => __('Délivrée le :date', ['date' => $a->issued_at?->translatedFormat('d F Y') ?: '-']),
+                            'att' => $a,
+                        ])
+                    @endforeach
+                </ul>
+            @endif
+
             <div class="ukc-doc-section">{{ __('Commun au participant') }}</div>
             <ul class="ukc-doc-list">
                 @include('account._doc-row', [

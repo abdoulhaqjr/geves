@@ -39,6 +39,49 @@ class Attestation extends Model
         'instruction_resumes' => 'Instruction de résumés',
     ];
 
+    /**
+     * Intitulé COMPLET d'une attestation, tel qu'il se lit sur un écran.
+     *
+     * ⚠️ **Une seule source.** Le hub des documents du back-office dressait cette
+     * liste pour lui seul (`DocumentHubController::$typeMeta`), et « Mes
+     * documents » allait en inventer une seconde - elles divergeaient déjà sur
+     * l'animation de formation (« Attestation d'animation » d'un côté,
+     * « … de formation » de l'autre). C'est le libellé long qui est retenu : il
+     * dit de quoi il s'agit sans contexte, et une page de participant n'a pas
+     * d'en-tête de colonne pour le préciser.
+     *
+     * ⚠️ `TYPES` reste le libellé COURT (« Modération »), celui des filtres et
+     * des pastilles ; les deux ne se remplacent pas.
+     *
+     * @return array<string, string> type => intitulé
+     */
+    public static function titles(): array
+    {
+        return [
+            'communication' => 'Attestation de communication',
+            'participation' => 'Attestation de participation',
+            'moderation' => 'Attestation de modération',
+            'rapporteur' => 'Attestation de rapporteur',
+            'organisation' => 'Attestation de participation à l’organisation',
+            'comite_organisation' => 'Attestation du comité d’organisation',
+            'instruction_resumes' => 'Attestation d’instruction de résumés',
+            'formation' => 'Attestation de formation',
+            'formation_animation' => 'Attestation d’animation de formation',
+        ];
+    }
+
+    /**
+     * Intitulé complet de CETTE attestation.
+     *
+     * ⚠️ Repli sur le libellé court : « soumission » et « acceptation » ne sont
+     * plus offerts mais restent en base, et une attestation délivrée autrefois
+     * doit continuer de s'afficher avec un nom.
+     */
+    public function title(): string
+    {
+        return self::titles()[$this->type] ?? ('Attestation - '.$this->typeLabel());
+    }
+
     public function typeLabel(): string
     {
         return self::TYPES[$this->type] ?? ucfirst((string) $this->type);

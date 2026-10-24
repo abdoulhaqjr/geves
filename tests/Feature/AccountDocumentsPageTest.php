@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Formation;
 use App\Models\User;
@@ -100,6 +101,71 @@ it('rend l’aperçu du badge à partir du modèle admin, avec les vraies donné
  * autres perdus. L'animation y figure aussi - le formateur est, lui aussi,
  * attestataire de cet événement.
  */
+/**
+ * ⚠️⚠️ **UNE PERSONNE CUMULE LES FONCTIONS, ET SES ATTESTATIONS AVEC.** La page
+ * ne rendait que « participation » : modération, rapport, comité d'organisation,
+ * appui à l'organisation et instruction de résumés étaient bien CHARGÉES par le
+ * contrôleur - elles tombaient dans `$atts` - mais aucune ligne ne les
+ * affichait. Un modérateur ne pouvait ni voir ni retirer l'attestation qu'on lui
+ * avait pourtant délivrée.
+ *
+ * ⚠️ La liste part des attestations ÉMISES, pas d'une énumération de types : la
+ * règle couvre ainsi tout ce qui est délivré, y compris les types qu'on
+ * ajoutera. Les cinq sont éprouvés d'un coup - en vérifier deux laisserait les
+ * trois autres se refermer.
+ */
+it('montre les attestations des fonctions exercées, pas la seule participation', function () {
+    $event = openEdition();
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $types = ['moderation', 'rapporteur', 'organisation', 'comite_organisation', 'instruction_resumes'];
+    foreach ($types as $type) {
+        (new IssueAttestation)->handle($participant, $type);
+    }
+
+    $reponse = $this->actingAs($account, 'account')->get(route('account.documents'))->assertOk();
+
+    $reponse->assertSee('Mes fonctions sur cet événement');
+    foreach ($types as $type) {
+        $reponse->assertSee(Attestation::titles()[$type], false);
+    }
+
+    // ⚠️ Et elles se TÉLÉCHARGENT : l'intitulé seul ne sert à rien.
+    $html = $reponse->getContent();
+    foreach (Attestation::whereIn('type', $types)->pluck('uuid') as $uuid) {
+        expect($html)->toContain(route('attestation.document', $uuid));
+    }
+});
+
+/** ⚠️ Rien ne s'invente : sans attestation délivrée, pas de section. */
+it('n’affiche pas la section des fonctions sans attestation', function () {
+    $event = openEdition();
+    $account = verifiedAccount();
+    $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
+        ->assertDontSee('Mes fonctions sur cet événement');
+});
+
+/**
+ * ⚠️ **Les intitulés ont UNE source.** Le hub du back-office dressait sa propre
+ * liste, et les deux divergeaient déjà sur l'animation de formation.
+ */
+it('partage les intitulés d’attestation avec le back-office', function () {
+    $source = (string) file_get_contents(app_path('Http/Controllers/Admin/DocumentHubController.php'));
+
+    expect($source)
+        ->toContain('$titres = Attestation::titles();')
+        ->not->toContain("'title' => 'Attestation de modération'");
+});
+
 it('liste chaque attestation de formation et d’animation, avec son intitulé', function () {
     $event = openEdition();
     $account = verifiedAccount();
