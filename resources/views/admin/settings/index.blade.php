@@ -257,12 +257,12 @@
                     <h2><span><x-ukc.icon name="card" :size="20" /> Paiement</span></h2>
                     <div class="ukc-form-grid">
                         <div class="ukc-field full">
-                            <label for="payments_default">Passerelle par défaut</label>
+                            <label for="payments_default">Passerelle de paiement</label>
                             <select id="payments_default" name="payments_default">
                                 <option value="manual" @selected($v('payments_default') === 'manual')>Paiement sur place / virement (manuel)</option>
                                 <option value="fedapay" @selected($v('payments_default') === 'fedapay')>FedaPay</option>
                             </select>
-                            <span class="hint">Une passerelle n’est proposée que si ses identifiants sont renseignés.</span>
+                            <span class="hint">C’est la <strong>seule</strong> que le participant verra : choisir FedaPay, c’est n’encaisser qu’en ligne ; choisir le manuel, c’est n’encaisser qu’au guichet. Un événement peut la remplacer par la sienne. ⚠️ Sans identifiants renseignés, FedaPay retombe sur le manuel - une clé oubliée ne doit pas fermer la caisse.</span>
                             @error('payments_default') <span class="error">{{ $message }}</span> @enderror
                         </div>
                     </div>

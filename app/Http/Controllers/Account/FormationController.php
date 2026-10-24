@@ -35,6 +35,12 @@ class FormationController extends Controller
         $event = CurrentEvent::current($user);
         abort_unless(Formation::offeredIn($event), 404);
 
+        // ⚠️ **La configuration de l'événement vaut DÈS L'AFFICHAGE**, pas
+        // seulement à l'inscription : c'est elle qui dit quelle passerelle est
+        // proposée. Sans cet appel, la page annonçait la passerelle de la
+        // plateforme et `enroll()` en employait une autre.
+        EventPaymentConfig::apply($event);
+
         $formations = Formation::with('trainers')
             ->publishedIn($event)
             ->orderByRaw('starts_at is null, starts_at')
@@ -48,7 +54,7 @@ class FormationController extends Controller
             'event' => $event,
             'formations' => $formations,
             'enrollments' => $enrollments,
-            'gateways' => $registry->available(),
+            'gateways' => $registry->offered(),
         ]);
     }
 
@@ -114,8 +120,10 @@ class FormationController extends Controller
         }
 
         // Formation payante : règlement via une passerelle.
+        // ⚠️ Même règle que les frais de participation : la passerelle réglée
+        // pour l'événement est la seule acceptée, pas seulement la seule affichée.
         $gateway = $registry->get((string) $request->input('gateway'));
-        if (! $gateway || ! $gateway->isAvailable()) {
+        if (! $gateway || ! $registry->offers($gateway->key())) {
             return $back->withErrors(['pay' => 'Ce moyen de paiement n’est pas disponible.']);
         }
 

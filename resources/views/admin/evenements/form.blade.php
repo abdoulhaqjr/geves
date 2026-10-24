@@ -875,12 +875,13 @@
                             <form method="POST" action="{{ route('admin.evenements.payment', $event) }}" class="ukc-form-grid">
                                 @csrf
                                 <div class="ukc-field full">
-                                    <label for="pay-gateway">Passerelle par défaut de l’événement</label>
+                                    <label for="pay-gateway">Passerelle de paiement de l’événement</label>
                                     <select id="pay-gateway" name="gateway">
-                                        <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
+                                        <option value="">- Utiliser la passerelle de la plateforme -</option>
                                         <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
                                         <option value="fedapay" @selected(($pay['gateway'] ?? '') === 'fedapay')>FedaPay</option>
                                     </select>
+                                    <p class="ukc-hint">C’est la <strong>seule</strong> que le participant verra sur cet événement : FedaPay, c’est n’encaisser qu’en ligne ; le manuel, c’est n’encaisser qu’au guichet. Le secrétariat garde dans tous les cas la saisie d’un règlement depuis <strong>Paiements</strong>.</p>
                                 </div>
 
                                 <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">FedaPay</h3></div>

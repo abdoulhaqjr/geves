@@ -12,7 +12,12 @@
                 @endforeach
             </select>
         @else
+            {{-- ⚠️ **On NOMME le moyen, même quand il n'y a pas à choisir.** Un
+                 champ caché seul envoyait le participant chez le prestataire sans
+                 qu'un mot de la page le lui ait annoncé : « S'inscrire » ne dit
+                 pas qu'on va régler en ligne. --}}
             <input type="hidden" name="gateway" value="{{ $gateways[0]->key() }}">
+            <span style="font-size:12.5px;color:var(--ukc-muted);">{{ $gateways[0]->label() }}</span>
         @endif
         {{-- ⚠️ Pas de choix d'opérateur : le moyen se choisit sur la page du
              prestataire (même règle que la page de paiement des frais). --}}

@@ -80,7 +80,9 @@ class PaymentController extends Controller
             'accountAffiliation' => $account?->affiliation,
             'paid' => $participant && $participant->hasPaid(),
             'paidReceipt' => $participant?->participationPayments()->where('status', 'paid')->latest('id')->first(),
-            'gateways' => app(GatewayRegistry::class)->available(),
+            // ⚠️ La passerelle RÉGLÉE pour l'événement, et elle seule : qui
+            // encaisse en ligne ne propose pas le guichet (cf. `offered()`).
+            'gateways' => app(GatewayRegistry::class)->offered(),
         ]);
     }
 
@@ -140,8 +142,10 @@ class PaymentController extends Controller
             return back()->withErrors(['pay' => 'Paiement indisponible.']);
         }
 
+        // ⚠️ On ferme la porte, pas seulement le formulaire : une clé postée à
+        // la main ne doit pas contourner la passerelle réglée pour l'événement.
         $gateway = $registry->get((string) $request->input('gateway'));
-        if (! $gateway || ! $gateway->isAvailable()) {
+        if (! $gateway || ! $registry->offers($gateway->key())) {
             return back()->withErrors(['pay' => 'Ce moyen de paiement n’est pas disponible.']);
         }
 

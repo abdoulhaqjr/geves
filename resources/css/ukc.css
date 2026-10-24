@@ -728,7 +728,13 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-tariff-card.selected { border-color: var(--ukc-blue) !important; box-shadow: var(--ukc-shadow); }
 .ukc-pay-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--ukc-bg); border: 1px solid var(--ukc-border); margin-bottom: 18px; font-size: 14px; }
 .ukc-pay-summary .amount { font-size: 1.35rem; font-weight: 900; color: var(--ukc-blue); }
-.ukc-mm-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+/* ⚠️ **LA PISTE A UN PLAFOND, SINON UNE SEULE CARTE PREND TOUTE LA LARGEUR.**
+   `minmax(140px, 1fr)` laisse `1fr` absorber la ligne entière : depuis que
+   l'événement règle SA passerelle et qu'on n'en propose plus qu'une, la carte
+   s'étirait sur 1480px pour un pictogramme et deux mots, centrés au milieu d'un
+   désert. Bornée et calée à gauche, elle garde la même allure à une comme à
+   deux. (Même famille que l'`auto-fit` du barème et des ateliers.) */
+.ukc-mm-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 300px)); justify-content: start; gap: 12px; margin-bottom: 18px; }
 .ukc-mm-method { position: relative; border: 1.5px solid var(--ukc-border); border-radius: 12px; padding: 14px 12px; text-align: center; cursor: pointer; background: #fff; transition: border-color .2s, box-shadow .2s; font-size: 13px; font-weight: 600; color: var(--ukc-text); display: block; }
 .ukc-mm-method.selected { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34,62,164,.12); background: rgba(34,62,164,.03); }
 .ukc-mm-method input { position: absolute; opacity: 0; pointer-events: none; }

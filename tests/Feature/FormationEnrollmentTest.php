@@ -4,6 +4,7 @@ use App\Actions\ConfirmPayment;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Payment;
+use App\Payments\GatewayRegistry;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
@@ -130,4 +131,57 @@ it('conserve la garde anti-double sur les frais de participation', function () {
     ]);
 
     expect(fn () => app(ConfirmPayment::class)->handle($second))->toThrow(DomainException::class);
+});
+
+/* ------------- La passerelle de l'événement vaut dès l'affichage ----------- */
+
+/**
+ * ⚠️⚠️ **LA CONFIGURATION DE L'ÉVÉNEMENT VAUT DÈS L'AFFICHAGE**, pas seulement
+ * à l'inscription. `index()` ne l'appliquait pas : la page annonçait la
+ * passerelle de la **plateforme** pendant qu'`enroll()` en employait une autre -
+ * on cliquait « sur place » et on partait régler en ligne.
+ *
+ * ⚠️ Et c'est la passerelle RÉGLÉE, elle seule : un événement qui encaisse en
+ * ligne ne propose pas le guichet ({@see GatewayRegistry::offered()}).
+ */
+it('propose à la formation la passerelle de l’événement, pas celle de la plateforme', function () {
+    config([
+        'payments.default' => 'manual',
+        'services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec'],
+    ]);
+
+    $event = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $event->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    publishedFormation($event, 10000);
+    $event->update(['settings' => [...$event->settings, 'payment' => ['gateway' => 'fedapay']]]);
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))
+        ->assertOk()
+        ->assertSee('Mobile money / carte bancaire')
+        ->assertDontSee('Paiement sur place / virement');
+});
+
+/** ⚠️ On ferme la porte, pas seulement le formulaire. */
+it('refuse à la formation une passerelle qui n’est pas celle de l’événement', function () {
+    config([
+        'payments.default' => 'fedapay',
+        'services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec'],
+    ]);
+
+    $event = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $event->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    $formation = publishedFormation($event, 10000);
+
+    $this->actingAs($user, 'account')
+        ->from(route('account.formations'))
+        ->post(route('account.formations.enroll', $formation), ['gateway' => 'manual'])
+        ->assertSessionHasErrors('pay');
+
+    expect(Payment::count())->toBe(0);
 });

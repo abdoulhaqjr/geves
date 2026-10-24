@@ -4,12 +4,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Passerelle de paiement par défaut
+    | Passerelle de paiement
     |--------------------------------------------------------------------------
     |
-    | Clé de la passerelle proposée en priorité au participant. Repli automatique
-    | sur « manual » (paiement sur place / virement) si la passerelle choisie
-    | n'est pas configurée. Passerelles : fedapay, manual.
+    | Clé de la SEULE passerelle proposée au participant : choisir « fedapay »,
+    | c'est n'encaisser qu'en ligne ; choisir « manual », c'est n'encaisser qu'au
+    | guichet. Un événement peut la remplacer par la sienne
+    | (App\Support\EventPaymentConfig). Repli automatique sur « manual » si la
+    | passerelle choisie n'est pas configurée - une clé oubliée ne doit pas
+    | fermer la caisse. Passerelles : fedapay, manual.
     |
     */
 

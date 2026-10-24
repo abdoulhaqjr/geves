@@ -175,7 +175,12 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:18px;">
                 <div style="min-width:0;">
                     <h2 style="margin:0 0 6px;">Finaliser mon inscription</h2>
-                    <p style="color:var(--ukc-muted);margin:0;max-width:520px;">Choisissez un moyen de paiement. Votre reçu sera disponible dans Documents après confirmation.</p>
+                    {{-- ⚠️ **ON N'INVITE À CHOISIR QUE S'IL Y A UN CHOIX.** La phrase
+                         ouvrait sur « Choisissez un moyen de paiement » alors que
+                         l'événement règle SA passerelle et qu'on n'en propose plus
+                         qu'une : elle annonçait une décision qui n'existe pas, et
+                         ses 94 caractères retombaient à la ligne sur un mot seul. --}}
+                    <p style="color:var(--ukc-muted);margin:0;max-width:520px;">@if (count($gateways) > 1){{ __('Choisissez un moyen de paiement.') }} @endif{{ __('Votre reçu sera disponible dans Documents après confirmation.') }}</p>
                 </div>
                 <div style="flex:none;min-width:210px;padding:14px 18px;border-radius:12px;background:#f1f4ff;border:1px solid #dbe3ff;">
                     <span style="display:block;color:var(--ukc-muted);font-size:12px;">Montant à régler</span>
@@ -193,7 +198,9 @@
                 <form method="POST" action="{{ route('account.payment.pay', $event) }}">
                     @csrf
                     <fieldset class="payment-methods">
-                        <legend>Choisir un moyen de paiement</legend>
+                        {{-- ⚠️ On ne dit « choisir » que s'il y a un choix : l'événement
+                             règle sa passerelle, et le payeur n'en voit qu'une. --}}
+                        <legend>{{ count($gateways) > 1 ? __('Choisir un moyen de paiement') : __('Moyen de paiement') }}</legend>
                         <div class="ukc-mm-methods">
                             @foreach ($gateways as $gateway)
                                 @php($key = $gateway->key())

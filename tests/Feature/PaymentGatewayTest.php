@@ -22,9 +22,18 @@ function onlineSetup(): array
     return [$event, $account, $participant];
 }
 
+/**
+ * ⚠️ **On règle la passerelle EN PLUS de ses identifiants.** Depuis que la
+ * passerelle choisie est la seule proposée ({@see GatewayRegistry::offered()}),
+ * renseigner les clés FedaPay sans la sélectionner laisse l'événement au
+ * guichet - ce qui est précisément le réglage qu'on veut pouvoir éprouver.
+ */
 function configureFedapay(): void
 {
-    config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec']]);
+    config([
+        'payments.default' => 'fedapay',
+        'services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec'],
+    ]);
 }
 
 /* ------------------------- Moyens de paiement ----------------------------- */
@@ -120,13 +129,122 @@ it('ne fait plus choisir d’opérateur sur la page de paiement', function () {
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event->id))
         ->assertOk()
-        // Les deux passerelles restent, elles : en ligne, ou au guichet.
         ->assertSee('Mobile money / carte bancaire')
-        ->assertSee('Paiement sur place / virement')
-        // Et rien d'autre à trancher ici.
+        // Rien d'autre à trancher ici.
         ->assertDontSee('name="operator"', false)
         ->assertDontSee('Je choisis sur la page de paiement')
         ->assertDontSee('Choisir mon opérateur');
+});
+
+/* ------------------- La passerelle réglée est la SEULE ------------------- */
+
+/**
+ * ⚠️⚠️ **LA PASSERELLE RÉGLÉE EST LA SEULE PROPOSÉE.** La page partait
+ * d'`available()`, c'est-à-dire de tout ce qui est utilisable - donc
+ * **toujours** le paiement manuel, qui ne demande aucun identifiant. Un
+ * événement réglé sur FedaPay offrait quand même « sur place / virement », et
+ * récoltait des règlements que personne n'attendait au guichet : le réglage
+ * disait une chose, la page en proposait deux.
+ */
+it('ne propose que la passerelle réglée pour l’événement', function () {
+    configureFedapay(); // = FedaPay sélectionnée, identifiants renseignés
+    [$event, $account, $participant] = onlineSetup();
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event->id))
+        ->assertOk()
+        ->assertSee('Mobile money / carte bancaire')
+        ->assertDontSee('Paiement sur place / virement')
+        // ⚠️ Un seul moyen : on n'invite plus à choisir, ni dans la légende du
+        // groupe ni dans la phrase d'accroche - elle annonçait une décision qui
+        // n'existe pas, et ses 94 caractères retombaient sur un mot seul.
+        ->assertDontSee('Choisir un moyen de paiement')
+        ->assertDontSee('Choisissez un moyen de paiement');
+});
+
+/**
+ * ⚠️⚠️ **UNE PISTE `1fr` ABSORBE LA LIGNE ENTIÈRE.** Avec une seule passerelle,
+ * `repeat(auto-fit, minmax(140px, 1fr))` étirait la carte du moyen de paiement
+ * sur toute la largeur - **1298px mesurés** pour un pictogramme et deux mots,
+ * centrés au milieu d'un désert. Bornée, elle en fait 270. Même famille que
+ * l'`auto-fit` du barème et des ateliers de la page publique.
+ *
+ * ⚠️ La feuille est lue **commentaires retirés** : elle documente la règle en
+ * citant le motif, et un commentaire ne doit pas faire tomber la garde (même
+ * esprit que `DegradeHerosTest`).
+ */
+it('ne laisse pas une carte de moyen de paiement prendre toute la largeur', function () {
+    $css = (string) file_get_contents(resource_path('css/ukc.css'));
+    $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
+
+    expect($css)->toMatch('/\.ukc-mm-methods\s*\{[^}]*minmax\(\s*\d+px\s*,\s*\d+px\s*\)/');
+    expect($css)->not->toMatch('/\.ukc-mm-methods\s*\{[^}]*minmax\([^)]*1fr\s*\)/');
+});
+
+/** Et dans l'autre sens : réglé sur le guichet, le paiement en ligne disparaît. */
+it('ne propose que le guichet quand c’est lui qui est réglé', function () {
+    configureFedapay();
+    config(['payments.default' => 'manual']);
+    [$event, $account, $participant] = onlineSetup();
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event->id))
+        ->assertOk()
+        ->assertSee('Paiement sur place / virement')
+        ->assertDontSee('Mobile money / carte bancaire');
+});
+
+/**
+ * ⚠️ **Une clé oubliée ne doit pas fermer la caisse.** FedaPay sélectionnée mais
+ * sans identifiants, on retombe sur le guichet - jamais sur une page qui
+ * n'offre aucun moyen de régler.
+ */
+it('retombe sur le guichet quand la passerelle réglée n’est pas configurée', function () {
+    config(['payments.default' => 'fedapay', 'services.fedapay' => ['secret' => null]]);
+    [$event, $account, $participant] = onlineSetup();
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event->id))
+        ->assertOk()
+        ->assertSee('Paiement sur place / virement');
+});
+
+/**
+ * ⚠️ **Le réglage de l'ÉVÉNEMENT l'emporte sur celui de la plateforme** : c'est
+ * tout l'intérêt de l'onglet Intégrations - un événement encaisse en ligne
+ * pendant que la plateforme reste au guichet.
+ */
+it('suit la passerelle propre à l’événement, pas celle de la plateforme', function () {
+    config([
+        'payments.default' => 'manual',
+        'services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec'],
+    ]);
+    [$event, $account, $participant] = onlineSetup();
+    $event->update(['settings' => [...$event->settings, 'payment' => ['gateway' => 'fedapay']]]);
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.payment', $event->id))
+        ->assertOk()
+        ->assertSee('Mobile money / carte bancaire')
+        ->assertDontSee('Paiement sur place / virement');
+});
+
+/**
+ * ⚠️⚠️ **ON FERME LA PORTE, PAS SEULEMENT LE FORMULAIRE.** Ne plus afficher une
+ * carte n'empêche pas d'en poster la clé : sans cette garde, on enregistrerait
+ * un règlement au guichet sur un événement qui n'encaisse qu'en ligne, et
+ * personne ne saurait d'où il vient.
+ */
+it('refuse une passerelle qui n’est pas celle de l’événement', function () {
+    configureFedapay(); // FedaPay réglée
+    [$event, $account, $participant] = onlineSetup();
+
+    $this->actingAs($account, 'account')
+        ->from(route('account.payment', $event->id))
+        ->post(route('account.payment.pay', $event), ['gateway' => 'manual'])
+        ->assertSessionHasErrors('pay');
+
+    expect($event->payments()->count())->toBe(0);
 });
 
 /* ---------------------- Formulaire embarqué (sans redirection) ------------- */

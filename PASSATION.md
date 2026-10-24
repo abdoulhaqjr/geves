@@ -13,6 +13,79 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### La passerelle réglée est la SEULE proposée (2026-10-24)
+
+⚠️⚠️ **LE RÉGLAGE DISAIT UNE CHOSE, LA PAGE EN PROPOSAIT DEUX.** Les écrans de
+paiement partaient de `GatewayRegistry::available()`, c'est-à-dire de **tout ce
+qui est utilisable** - donc toujours le paiement manuel, qui ne demande aucun
+identifiant. Un événement réglé sur FedaPay offrait quand même « Paiement sur
+place / virement » au participant, et récoltait des règlements que **personne
+n'attendait au guichet**.
+
+Source unique : **`GatewayRegistry::offered()`** - la passerelle réglée, en
+liste (les écrans en font des cartes) - et **`offers($key)`** pour la garde
+d'écriture. Choisir FedaPay, c'est n'encaisser qu'en ligne ; choisir le manuel,
+c'est n'encaisser qu'au guichet.
+
+- ⚠️ **Le repli vit dans `default()`**, et il est essentiel : une passerelle
+  choisie mais **pas configurée** retombe sur le manuel. On ne laisse jamais le
+  payeur devant zéro moyen de régler - **une clé oubliée ne doit pas fermer la
+  caisse**.
+- ⚠️ **On ferme la porte, pas seulement le formulaire** : `pay()` et `enroll()`
+  refusent une passerelle qui n'est pas celle de l'événement. Ne plus afficher
+  une carte n'empêche pas d'en poster la clé, et on enregistrerait un règlement
+  au guichet sur un événement qui n'encaisse qu'en ligne, sans que personne ne
+  sache d'où il vient. Même doctrine que le retrait du choix d'opérateur.
+- ⚠️⚠️ **LA CONFIGURATION DE L'ÉVÉNEMENT VAUT DÈS L'AFFICHAGE.**
+  `FormationController::index()` n'appelait **pas** `EventPaymentConfig::apply()` :
+  la page annonçait la passerelle de la **plateforme** pendant qu'`enroll()` en
+  employait une autre. Inoffensif tant que les deux étaient proposées ; décisif
+  dès lors que le réglage décide.
+- ⚠️ **On ne dit « choisir » que s'il y a un choix** : la légende du groupe passe
+  à « Moyen de paiement » avec une seule passerelle, et la page de formation
+  **nomme** le moyen à côté du bouton - un champ caché seul envoyait le
+  participant chez le prestataire sans qu'un mot l'ait annoncé.
+- ⚠️ **Le guichet n'est pas fermé pour autant** : le secrétariat saisit toujours
+  un règlement depuis `/admin/paiements/creer`. Ce qui disparaît, c'est le
+  **participant** qui s'annonce payeur au guichet d'un événement qui n'en veut
+  pas.
+- ⚠️ **Les libellés d'écran suivent** : « Passerelle **par défaut** » devenait
+  faux - ce n'est plus un défaut qu'on peut contredire, c'est la passerelle.
+  Réglages › Paiement et l'onglet Intégrations d'un événement disent désormais
+  ce que le participant verra.
+
+⚠️⚠️ **ET L'ÉCRAN A SUIVI, PARCE QU'UNE SEULE CARTE NE SE PRÉSENTE PAS COMME
+DEUX.** Deux travers, tous deux **mesurés** sur un harnais isolé à 1600px :
+
+- **`repeat(auto-fit, minmax(140px, 1fr))` étirait la carte du moyen de paiement
+  sur toute la largeur** - **1298px** pour un pictogramme et deux mots, centrés
+  au milieu d'un désert. La piste est **bornée** (`minmax(180px, 300px)`) et
+  calée à gauche : **270px** mesurés, même allure à une comme à deux cartes.
+  C'est la famille de piège déjà payée sur le barème et les ateliers de la page
+  publique - `auto-fit` ne sait pas combien d'éléments il reste.
+- **La phrase d'accroche annonçait une décision qui n'existe pas** :
+  « Choisissez un moyen de paiement. Votre reçu sera disponible… » ouvrait sur un
+  choix retiré, et ses **94 caractères** retombaient à la ligne sur le mot
+  « confirmation. » tout seul. La première phrase ne sort plus qu'à partir de
+  deux passerelles ; le reste tient sur **une ligne (348px dans une boîte de
+  520)**.
+
+⚠️ **Mesuré sur la VRAIE police** : `.account-payment` impose
+`font-family: var(--ukc-font)` à 13.5px, donc **Jost** - pas le Public Sans du
+reste du `.ukc-shell`. Un harnais qui chargerait l'autre fonte donnerait un autre
+chiffre.
+
+⚠️ **Piège de test** : `configureFedapay()` ne posait que les identifiants.
+Depuis que la passerelle se **règle** en plus, des clés sans sélection laissent
+l'événement au guichet - c'est le réglage même qu'on veut éprouver. L'aide pose
+donc `payments.default` avec.
+
+Gardes : `PaymentGatewayTest` (37 cas) et `FormationEnrollmentTest` (10 cas),
+**7 sabotages vérifiés** - `offered()` rendu à `available()`, la garde d'écriture
+retirée des deux parcours, la légende figée sur « Choisir »,
+`EventPaymentConfig` retiré de l'affichage des formations, la piste rendue à
+`1fr`, et la phrase d'accroche remise à « Choisissez… ».
+
 ### Le choix de l'opérateur a été retiré (2026-10-24)
 
 **La passerelle choisie EST le moyen de paiement.** Prendre « Mobile money /

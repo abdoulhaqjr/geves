@@ -148,7 +148,12 @@ it('ne fait plus choisir d’opérateur au payeur', function () {
     ]);
     $formation = publishedFormation($event, 10000);
 
-    config(['services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec']]);
+    // ⚠️ La passerelle se RÈGLE en plus de ses identifiants : depuis qu'elle est
+    // la seule proposée, des clés sans sélection laissent l'événement au guichet.
+    config([
+        'payments.default' => 'fedapay',
+        'services.fedapay' => ['secret' => 'sk_test', 'mode' => 'test', 'webhook_secret' => 'whsec'],
+    ]);
     Http::fake([
         '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
         '*/transactions' => Http::response(['v1/transaction' => ['id' => 77]], 201),
