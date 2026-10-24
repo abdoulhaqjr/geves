@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Documents\AttestationVars;
 use App\Observers\ParticipantObserver;
 use App\Support\EventNameFormat;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -34,7 +35,22 @@ class Participant extends Model
 
     protected $guarded = ['id'];
 
-    /** Libellés des rôles. */
+    /**
+     * Libellés des rôles.
+     *
+     * ⚠️⚠️ **UN RÔLE SANS LIBELLÉ SE RETOURNE EN ANGLAIS, SANS RIEN CASSER.**
+     * {@see roleLabel()} retombe sur `ucfirst($role)` : `trainee` et `trainer`,
+     * posés par l'inscription à une formation et par l'ajout d'un formateur,
+     * s'affichaient donc **« Trainee »** et **« Trainer »** - dans la fiche d'un
+     * participant, dans l'export CSV du registre, dans la répartition par rôle
+     * des rapports, et jusque dans le jeton `{role}` d'une **attestation**
+     * ({@see AttestationVars}). Aucune erreur, aucun test rouge :
+     * juste de l'anglais au milieu d'un document officiel en français.
+     *
+     * ⚠️ **Tout rôle que le code attribue doit avoir sa ligne ici.** Un cas de
+     * `RolesDeParticipantTest` balaie `app/` et échoue si un `role:` nouveau
+     * apparaît sans libellé.
+     */
     public const ROLES = [
         'author' => 'Communicant',
         'coauthor' => 'Co-auteur',
@@ -44,6 +60,12 @@ class Participant extends Model
         'moderator' => 'Modérateur',
         'rapporteur' => 'Rapporteur',
         'attendee' => 'Participant simple',
+        // ⚠️ Ces deux-là viennent du module Formation, et ne disent RIEN de la
+        // participation à l'événement : on peut suivre un atelier sans s'être
+        // inscrit au colloque, et un paiement de formation n'ouvre aucun droit
+        // ({@see participationPayments()}).
+        'trainee' => 'Inscrit à une formation',
+        'trainer' => 'Formateur',
     ];
 
     protected function casts(): array

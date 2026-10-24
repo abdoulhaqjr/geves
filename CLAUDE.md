@@ -674,10 +674,31 @@ systématique rend **exactement la même chaîne** qu'une écriture unique - le 
 « ne repousse pas la date » restait VERT avec le `??=` remplacé par une
 affectation sèche. Il fait désormais voyager l'horloge (`$this->travel(2)->days()`).
 
-⚠️ **Resté en dehors, et à faire si le besoin se confirme** : le rôle `trainee`
-posé par l'inscription à une formation n'a **aucun libellé** dans
-`Participant::ROLES` et n'est pas dans `PARTICIPATION_ROLES` - un compte venu par
-une formation s'affiche « Trainee » et manque au registre des participants.
+⚠️⚠️ **UN RÔLE SANS LIBELLÉ SE RETOURNE EN ANGLAIS, SANS RIEN CASSER**
+(corrigé le 2026-10-24). `Participant::roleLabel()` retombe sur
+`ucfirst($role)` : `trainee` et `trainer` - posés par l'inscription à une
+formation et par l'ajout d'un formateur - s'affichaient **« Trainee »** et
+**« Trainer »**, dans la fiche d'un participant, dans l'export CSV du registre,
+dans la répartition par rôle des rapports, et **jusque dans le jeton `{role}`
+d'une attestation** ({@see App\Documents\AttestationVars}). Aucune erreur, aucun
+test rouge : de l'anglais au milieu d'un document officiel en français.
+
+- ⚠️ **Tout rôle que le code attribue doit avoir sa ligne dans
+  `Participant::ROLES`.** `RolesDeParticipantTest` balaie `app/` à la recherche
+  de l'argument nommé `role: '…'` - le seul employé pour attribuer un rôle de
+  participant, ce qui évite les faux positifs des autres tables qui ont aussi
+  une colonne `role` (`event_user`, `submission_authors`, les comités).
+- ⚠️ **Le repli `ucfirst()` RESTE** : d'anciennes lignes peuvent porter un rôle
+  retiré depuis, et mieux vaut un mot approximatif qu'une colonne vide.
+- ⚠️ Ces deux rôles ne disent **rien de la participation à l'événement** : on
+  suit un atelier sans s'être inscrit au colloque, et un paiement de formation
+  n'ouvre aucun droit ({@see App\Models\Participant::participationPayments()}).
+
+⚠️ **À TRANCHER** : `Participant::PARTICIPATION_ROLES` (`author`, `coauthor`,
+`attendee`) est **déclarée et lue nulle part**. Elle a suffi à faire croire -
+dans cette documentation même - qu'un rôle absent de la liste disparaissait du
+registre des participants, ce qui est faux. Soit elle sert à quelque chose et il
+faut l'employer, soit elle part.
 
 Gardes : `InscriptionParticipantSimpleTest` (19 cas, **10 sabotages vérifiés**).
 
