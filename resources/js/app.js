@@ -1007,30 +1007,29 @@ document.addEventListener('alpine:init', () => {
                 this.scheduleRefresh();
             }).catch(() => {});
         },
-        // Rejoint le canal de présence et annonce le nombre de connectés à la
-        // page. La cloche n'en fait rien : elle le PORTE, parce qu'elle est le
-        // seul composant présent sur toutes les pages authentifiées et qu'elle
-        // tient déjà la connexion. L'écran des utilisateurs écoute l'évènement.
+        // Rejoint le canal de présence et SIGNALE à la page que la salle a
+        // changé. La cloche n'en fait rien : elle le PORTE, parce qu'elle est
+        // le seul composant présent sur toutes les pages authentifiées et
+        // qu'elle tient déjà la connexion.
         //
-        // ⚠️ Le compte vient de `members.count`, que le service tient à jour :
-        // on ne le dérive pas des arrivées et des départs qu'on a VUS, sinon
-        // une reconnexion repartirait d'un chiffre faux.
+        // ⚠️⚠️ **CE N'EST QU'UN SIGNAL, PAS UNE DONNÉE À AFFICHER.** Le canal
+        // ne connaît que des empreintes - sa liste de membres est lue par tous
+        // les participants - donc il sait COMBIEN, jamais QUI. L'écran des
+        // utilisateurs a besoin des deux et les redemande au serveur d'une
+        // seule requête : afficher ce compte-ci en face de pastilles calculées
+        // autrement ferait dire deux choses au même écran.
         suivrePresence(canal) {
             if (!canal) return;
 
-            const annonce = (nombre) => {
-                if (typeof nombre !== 'number') return;
-                window.ukcEnLigne = nombre;
-                window.dispatchEvent(new CustomEvent('ukc-en-ligne', { detail: nombre }));
-            };
+            const signale = () => window.dispatchEvent(new CustomEvent('ukc-en-ligne'));
 
             try {
                 const presence = this.pusher.subscribe(`presence-${canal}`);
-                presence.bind('pusher:subscription_succeeded', (membres) => annonce(membres?.count));
-                presence.bind('pusher:member_added', () => annonce(presence.members?.count));
-                presence.bind('pusher:member_removed', () => annonce(presence.members?.count));
+                presence.bind('pusher:subscription_succeeded', signale);
+                presence.bind('pusher:member_added', signale);
+                presence.bind('pusher:member_removed', signale);
             } catch {
-                // Un canal refusé laisse la page sur son comptage serveur.
+                // Un canal refusé laisse la page sur son sondage serveur.
             }
         },
         scheduleRefresh() {

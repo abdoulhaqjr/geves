@@ -6,33 +6,49 @@
         </a>
     </x-slot:actions>
 
-    {{-- ⚠️ Deux sources pour UN seul compteur, et elles ne mesurent pas la même
-         chose : le canal de présence dit qui tient une page ouverte à l'instant,
-         le sondage dit quels comptes ont été actifs dans les cinq dernières
-         minutes. Le direct l'emporte dès qu'il répond - et le sondage s'arrête
-         alors, sinon il écraserait toutes les 30 secondes un chiffre plus juste
-         par un chiffre plus vieux. Sans service temps réel, rien ne change. --}}
+    {{-- ⚠️⚠️ LE CANAL DE PRÉSENCE NE DONNE QU'UN NOMBRE, JAMAIS DES IDENTITÉS :
+         sa liste de membres est lue par tous les participants, donc on n'y publie
+         que des empreintes. Il sert ici de SIGNAL - « quelqu'un vient d'arriver ou
+         de partir, redemande au serveur » - et c'est le serveur qui dit la carte
+         ET les pastilles, d'une seule requête. Afficher son compte à lui en face de
+         pastilles calculées autrement ferait dire deux choses au même écran.
+         ⚠️ Le signal est freiné : une arrivée groupée émet en rafale. --}}
     <div class="admin-page admin-users"
          x-data="{
             tab: new URLSearchParams(window.location.search).get('tab') || 'list',
             onlineCount: @js($stats['online']),
-            direct: false,
             sondage: null,
+            frein: null,
             delOpen: false, delConfirm: '', delUser: { url: '', name: '' },
-            enDirect(nombre) {
-                this.direct = true;
-                this.onlineCount = nombre;
-                if (this.sondage) { clearInterval(this.sondage); this.sondage = null; }
+            async rafraichir() {
+                try {
+                    const r = await fetch(@js(route('admin.users.online')), { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    this.onlineCount = data.count;
+                    this.peindre(data.ids);
+                } catch {
+                    // La page servie au chargement reste juste : on retentera.
+                }
+            },
+            peindre(ids) {
+                if (!Array.isArray(ids)) return;
+                const presents = new Set(ids.map(Number));
+                document.querySelectorAll('[data-online-for]').forEach(el => {
+                    const la = presents.has(Number(el.dataset.onlineFor));
+                    el.classList.toggle('ukc-pill--ok', la);
+                    el.classList.toggle('ukc-pill--muted', !la);
+                    el.textContent = la ? @js(__('En ligne')) : @js(__('Hors ligne'));
+                });
             },
             init() {
-                window.addEventListener('ukc-en-ligne', (e) => this.enDirect(e.detail));
-                if (typeof window.ukcEnLigne === 'number') this.enDirect(window.ukcEnLigne);
+                window.addEventListener('ukc-en-ligne', () => {
+                    clearTimeout(this.frein);
+                    this.frein = setTimeout(() => this.rafraichir(), 400);
+                });
                 this.sondage = setInterval(() => {
                     if (document.visibilityState !== 'visible' || this.tab !== 'list') return;
-                    fetch(@js(route('admin.users.online')), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-                        .then(r => r.ok ? r.json() : null)
-                        .then(data => { if (data && !this.direct) this.onlineCount = data.count; })
-                        .catch(() => {});
+                    this.rafraichir();
                 }, 30000);
             },
          }">
@@ -46,9 +62,18 @@
 
         {{-- ===== LISTE ===== --}}
         <div x-show="tab==='list'">
-            <div class="ukc-stats">
+            {{-- ⚠️ Région échangée : les chiffres ne bougent pas avec les filtres
+                 (ce sont des repères sur tout le périmètre), mais le LIEN de la
+                 carte « En ligne » les emporte. Hors région, il resterait pointé
+                 sur les filtres précédents après un filtrage en AJAX. --}}
+            <div class="ukc-stats" data-filter-part="users-kpis">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Utilisateurs</div><div class="val blue">{{ $stats['total'] }}</div></div>
-                <div class="ukc-stat-card tw-stat" :title="direct ? @js(__('Personnes ayant une page ouverte en ce moment ; le compte se met à jour à chaque arrivée et à chaque départ')) : @js(__('Comptes distincts ayant utilisé le site durant les 5 dernières minutes ; actualisation toutes les 30 secondes'))"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl" x-text="direct ? @js(__('En ligne maintenant')) : @js(__('En ligne (5 min)'))">{{ __('En ligne (5 min)') }}</div><div class="val green" x-text="onlineCount === null ? '-' : onlineCount">{{ $stats['online'] ?? '-' }}</div></div>
+                {{-- ⚠️ Ce nombre est la TAILLE de la liste qui peint les pastilles : même requête, même définition.
+                     ⚠️ Et la carte est CLIQUABLE : avec 72 comptes sur quatre pages, « 1 en ligne » au-dessus
+                     d'une page où tout le monde est hors ligne se lit comme une panne - le chiffre doit mener
+                     aux personnes qu'il compte. Le sélecteur nomme l'élément (`a.ukc-stat-card.is-on`) : à
+                     spécificité égale, Tailwise gagnerait et l'état allumé ne se verrait jamais. --}}
+                <a href="{{ $lienPresence }}" class="ukc-stat-card tw-stat {{ $presence === 'online' ? 'is-on' : '' }}" title="{{ __('Comptes distincts ayant utilisé le site durant les 5 dernières minutes ; actualisé à chaque arrivée ou départ, et toutes les 30 secondes') }}"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">{{ __('En ligne (5 min)') }}</div><div class="val green" x-text="onlineCount === null ? '-' : onlineCount">{{ $stats['online'] ?? '-' }}</div></a>
                 <div class="ukc-stat-card tw-stat" title="Comptes visibles ayant un niveau administrateur ou les droits effectifs de super administrateur"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="shield" :size="20" /></div><div class="lbl">Admins</div><div class="val">{{ $stats['admins'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes ayant une fiche évaluateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val">{{ $stats['reviewers'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes affectées comme organisateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Organisateurs</div><div class="val">{{ $stats['organizers'] }}</div></div>
@@ -69,11 +94,15 @@
                     <option value="inactive" @selected($status === 'inactive')>Inactif</option>
                 </select>
                 <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, IP…" style="min-width:220px;">
+                {{-- ⚠️ La barre poste TOUT le formulaire : sans ce champ caché,
+                     taper une recherche reperdrait la présence posée par la carte
+                     et la liste se réélargirait sous les doigts. --}}
+                <input type="hidden" name="presence" value="{{ $presence }}">
                 {{-- ⚠️ Le lien de réinitialisation apparaît selon les filtres : il
                      vit donc dans sa propre région échangée. Le formulaire, lui,
                      n'est jamais remplacé - il porte le curseur de qui tape. --}}
                 <span data-filter-part="users-reset">
-                    @if ($role !== '' || $status !== '' || $search !== '')
+                    @if ($role !== '' || $status !== '' || $search !== '' || $presence !== '')
                         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
                     @endif
                 </span>
@@ -87,6 +116,11 @@
                                 <x-ukc.th sort="name" :current="$sort" :dir="$dir">Utilisateur</x-ukc.th>
                                 <x-ukc.th sort="email" :current="$sort" :dir="$dir">E-mail vérifié</x-ukc.th>
                                 <x-ukc.th sort="last_login_at" :current="$sort" :dir="$dir">Dernière connexion</x-ukc.th>
+                                {{-- ⚠️ « Présence » et non « État » : la colonne voisine s'appelle
+                                     déjà « Statut » et dit tout autre chose (compte actif ou
+                                     désactivé). Deux intitulés voisins pour deux notions
+                                     différentes se confondent à la lecture. --}}
+                                <th>Présence</th>
                                 <th>IP</th>
                                 <th>Pays (IP)</th>
                                 <x-ukc.th sort="is_active" :current="$sort" :dir="$dir">Statut</x-ukc.th>
@@ -115,6 +149,18 @@
                                         @endif
                                     </td>
                                     <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y - H:i') ?? 'Jamais' }}</td>
+                                    {{-- ⚠️ Sans sessions en base on ne SAIT PAS : on se tait, au lieu
+                                         d'annoncer tout le monde hors ligne. Le repeint en direct vise
+                                         `data-online-for`. --}}
+                                    <td>
+                                        @if ($enLigneSet === null)
+                                            <span class="ukc-pill ukc-pill--muted" title="{{ __('Les sessions ne sont pas enregistrées en base : la présence ne peut pas être connue.') }}">-</span>
+                                        @else
+                                            <span class="ukc-pill {{ isset($enLigneSet[$u->id]) ? 'ukc-pill--ok' : 'ukc-pill--muted' }}"
+                                                  data-online-for="{{ $u->id }}"
+                                                  title="{{ __('Activité sur le site durant les 5 dernières minutes') }}">{{ isset($enLigneSet[$u->id]) ? __('En ligne') : __('Hors ligne') }}</span>
+                                        @endif
+                                    </td>
                                     <td><span class="ip-cell">{{ $u->last_login_ip ?: '-' }}</span></td>
                                     {{-- Une IP privée n'a pas de pays, et ce n'est pas une panne : on le dit, plutôt que de rendre le même tiret que pour une plage inconnue. --}}
                                     <td>{{ $countriesByIp[$u->last_login_ip] ?? ($u->last_login_ip && ! \App\Support\IpCountry::isPublic($u->last_login_ip) ? __('Réseau local') : '-') }}</td>
@@ -163,7 +209,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--ukc-muted);">Aucun utilisateur ne correspond aux filtres.</td></tr>
+                                <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ukc-muted);">Aucun utilisateur ne correspond aux filtres.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

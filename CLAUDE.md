@@ -115,8 +115,23 @@ la vraie question, et la carte se renomme alors **« En ligne maintenant »**.
   portent) : le canal se greffe sur cette connexion-là. Un service hébergé
   facture les **connexions**, pas les canaux - en ouvrir un second doublerait la
   note pour le même chiffre. C'est pourquoi l'abonnement vit dans
-  `ukcNotificationBell` : elle ne s'en sert pas, elle le **porte**, et annonce le
-  compte par l'évènement `ukc-en-ligne`.
+  `ukcNotificationBell` : elle ne s'en sert pas, elle le **porte**, et émet
+  l'évènement `ukc-en-ligne`.
+- ⚠️⚠️ **CE CANAL EST UN SIGNAL, PAS UNE SOURCE DE CHIFFRE** (corrigé le
+  2026-10-26, quelques heures après l'avoir posé autrement - et la correction
+  est venue d'une demande d'écran, pas d'une relecture). Il sait **combien** de
+  personnes tiennent une page ouverte, jamais **lesquelles**, puisqu'on n'y
+  publie que des empreintes. Or la page des utilisateurs a maintenant besoin des
+  **deux** : un compteur ET une pastille par ligne. Afficher le compte du canal
+  au-dessus de pastilles calculées depuis les sessions ferait dire **deux choses
+  au même écran**, pour deux mesures qui diffèrent vraiment - un onglet ouvert
+  mais inactif depuis dix minutes compte pour le canal, pas pour les sessions.
+  Le canal dit donc seulement « quelqu'un vient d'arriver ou de partir,
+  redemande au serveur » (freiné à 400 ms, une arrivée groupée émettant en
+  rafale), et **une seule requête** rend le nombre ET la liste.
+  ⚠️ **Contrepartie assumée** : fermer un onglet ne fait pas passer la pastille
+  à « Hors ligne » tout de suite - la session court encore jusqu'à cinq minutes.
+  On préfère un écran cohérent à un écran plus prompt mais qui se contredit.
 - ⚠️⚠️ **LA LISTE DES MEMBRES EST LUE PAR TOUS LES AUTRES MEMBRES**, et sur ce
   canal-là ils sont l'ensemble des personnes connectées à la plateforme. D'où
   **`User::getAuthIdentifierForBroadcasting()`**, qui rend une **empreinte**
@@ -126,19 +141,39 @@ la vraie question, et la carte se renomme alors **« En ligne maintenant »**.
   par personne**, ce qui fait que deux onglets comptent pour **une** personne.
   ⚠️ Elle vaut pour **tous** les canaux de présence, le canal de document
   compris : son cas de `DocumentDeTacheTest` a été repris en conséquence.
-- ⚠️ **Le direct l'emporte, et le sondage S'ARRÊTE alors** : les deux ne mesurent
-  pas la même chose, et laisser le sondage écraser toutes les 30 secondes un
-  chiffre plus juste par un chiffre plus vieux ferait osciller le compteur sous
-  les yeux. **Sans service temps réel réglé, rien ne change** : la page compte
-  comme avant, et le libellé garde son « (5 min) ».
+- ⚠️⚠️ **UNE SEULE DÉFINITION POUR LE COMPTEUR ET POUR LA COLONNE**
+  (`UserController::enLigne()`) : le nombre de la carte est la **taille** de la
+  liste qui peint les pastilles. Calculés chacun de leur côté, ils finiraient
+  par se contredire, et une carte qui annonce un chiffre que le tableau ne
+  confirme pas se lit comme une panne. Le sondage de 30 s reste comme filet
+  quand le temps réel n'est pas réglé.
+- ⚠️⚠️ **LA COLONNE S'APPELLE « PRÉSENCE », PAS « ÉTAT »** : la colonne voisine
+  s'appelle déjà **Statut** et dit tout autre chose (compte actif ou désactivé).
+  Deux intitulés voisins pour deux notions différentes se confondent à la
+  lecture.
+- ⚠️ **`null` ne veut pas dire « personne », mais « on ne sait pas »** : hors
+  sessions en base, il n'existe aucune source par personne. La colonne affiche
+  alors un tiret et le dit en infobulle, au lieu d'annoncer tout le monde hors
+  ligne - ce serait une affirmation fausse.
+- ⚠️⚠️ **LA CARTE EST CLIQUABLE, ET CE N'EST PAS UN ORNEMENT.** Avec 72 comptes
+  sur quatre pages, « 1 en ligne » au-dessus d'une page où tout le monde est
+  hors ligne se lit comme une panne : le chiffre doit mener aux personnes qu'il
+  compte (`?presence=online`). Même grammaire que les indicateurs de Soumissions
+  - le lien **bascule**, il **emporte les autres filtres** (sinon on perd l'axe
+  ou la recherche en cours), la rangée est une **région échangée**
+  (`users-kpis`, sans quoi le lien resterait pointé sur les filtres précédents
+  après un filtrage en AJAX), et un **champ caché** porte la présence dans la
+  barre - sinon taper une recherche la reperdrait. Une valeur inconnue est
+  **ignorée**. Et le sélecteur nomme l'élément (`a.ukc-stat-card.is-on`) : à
+  spécificité égale Tailwise gagnerait, et l'état allumé ne se verrait jamais.
 - ⚠️ **Un tableau VIDE serait un refus** : le socle n'autorise un canal que sur
   une valeur vraie, et `[]` est faux en PHP. On rend donc l'empreinte.
 - Les identifiants PieSocket/Pusher se règlent dans **Réglages › Intégrations**
   (déjà en place) : ce canal est le **second consommateur** réel de la couche
   temps réel, après la cloche.
 
-Gardes : `PaysParIpTest` (14 cas) et `PresenceEnLigneTest` (7 cas),
-**13 sabotages vérifiés**.
+Gardes : `PaysParIpTest` (14 cas) et `PresenceEnLigneTest` (12 cas),
+**19 sabotages vérifiés**.
 ⚠️ **Piège rencontré ici** : `php.bat` ne transmet pas les arguments
 **multi-lignes** (cmd les aplatit) - un motif de sabotage doit tenir sur une
 ligne, sinon la substitution échoue et on croit la garde en cause.

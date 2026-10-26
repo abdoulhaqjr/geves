@@ -65,11 +65,15 @@ final class Realtime
     /**
      * Le canal de présence de la plateforme : qui a GEVES ouvert, maintenant.
      *
-     * ⚠️⚠️ **CE N'EST PAS LA MÊME MESURE QUE « ACTIF DEPUIS 5 MINUTES ».** La
-     * table des sessions dit qui a envoyé une requête récemment ; ce canal dit
-     * qui tient une page ouverte à l'instant. C'est la question qu'on pose
-     * devant un compteur « en ligne », et elle ne peut venir que du navigateur -
-     * aucun comptage côté serveur ne sait qu'un onglet vient de se fermer.
+     * ⚠️⚠️ **IL SERT DE SIGNAL, PAS DE SOURCE DE CHIFFRE.** Il sait COMBIEN de
+     * personnes tiennent une page ouverte, jamais LESQUELLES : sa liste de
+     * membres est lue par tous les participants, donc on n'y publie que des
+     * empreintes ({@see self::presenceMemberId()}). L'écran des utilisateurs a
+     * besoin des deux - un compteur ET une pastille par ligne - et les
+     * redemande donc au serveur dès que ce canal bouge. Afficher le compte du
+     * canal en face de pastilles calculées depuis les sessions ferait dire
+     * deux choses au même écran, pour deux mesures qui diffèrent vraiment :
+     * un onglet ouvert mais inactif depuis dix minutes compte ici, pas là.
      *
      * ⚠️ **Il ne coûte AUCUNE connexion de plus.** La cloche de notifications
      * ouvre déjà un WebSocket sur chaque page authentifiée ({@see

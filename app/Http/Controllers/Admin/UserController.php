@@ -12,6 +12,7 @@ use App\Support\StaffRoles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -44,8 +45,21 @@ class UserController extends Controller
         // l'existence.
         $moi = $this->moi();
 
+        // ⚠️ Calculée AVANT la liste : elle filtre la liste autant qu'elle la
+        // peint, et le compteur en est la taille. Une seule requête pour les
+        // trois emplois.
+        $enLigne = $this->enLigne($moi);
+
+        // ⚠️ Une valeur inconnue est IGNORÉE : appliquée, elle viderait la liste
+        // et ferait apparaître « Réinitialiser » pour un filtre que la barre ne
+        // montre nulle part - l'écran dirait deux choses contraires.
+        $presence = $request->query('presence') === 'online' ? 'online' : '';
+
         $users = User::query()
             ->visiblesPar($moi)
+            // ⚠️ Sans sessions en base on ne sait rien : on ne filtre pas sur
+            // une ignorance, sinon la liste se viderait sans raison visible.
+            ->when($presence === 'online' && $enLigne !== null, fn ($q) => $q->whereIn('users.id', $enLigne))
             ->when($role !== '', function ($q) use ($role) {
                 if ($role === 'administrator') {
                     $q->whereHas('roles', fn ($r) => $r->where('name', $role));
@@ -132,9 +146,26 @@ class UserController extends Controller
         $visibleIds = User::query()->visiblesPar($moi)->select('users.id');
         $eventUsers = DB::table('event_user')->whereIn('user_id', $visibleIds);
 
+        // Retourné pour une recherche en O(1) par ligne : le tableau est paginé,
+        // mais la liste des connectés ne l'est pas.
+        $enLigneSet = $enLigne === null ? null : array_flip($enLigne->all());
+
+        // Le lien de la carte « En ligne » : il BASCULE, et il emporte les
+        // autres filtres - une carte change la présence, elle ne défait pas le
+        // travail de qui l'a cliquée.
+        $lienPresence = route('admin.users.index', array_filter([
+            'role' => $role,
+            'status' => $status,
+            'search' => $search,
+            'presence' => $presence === 'online' ? null : 'online',
+        ], fn ($v) => $v !== null && $v !== ''));
+
         return view('admin.users.index', [
             'users' => $users,
             'countriesByIp' => $countriesByIp,
+            'enLigneSet' => $enLigneSet,
+            'presence' => $presence,
+            'lienPresence' => $lienPresence,
             'geoip' => $geoip,
             'role' => $role,
             'status' => $status,
@@ -149,7 +180,7 @@ class UserController extends Controller
             'rolePermissions' => $rolePermissions,
             'stats' => [
                 'total' => User::query()->visiblesPar($moi)->count(),
-                'online' => $this->onlineCount($moi),
+                'online' => $enLigne?->count(),
                 'admins' => User::query()->visiblesPar($moi)
                     ->where(fn ($q) => $q->where('access_level', User::ACCESS_COLLOQUE_ADMIN)
                         ->orWhereIn('users.id', User::query()->superAdministrateurs()->select('users.id')))
@@ -161,8 +192,22 @@ class UserController extends Controller
         ]);
     }
 
-    /** Personnes distinctes dont une session authentifiée a été active récemment. */
-    private function onlineCount(?User $viewer): ?int
+    /**
+     * Les comptes dont une session authentifiée a été active récemment.
+     *
+     * ⚠️⚠️ **UNE SEULE DÉFINITION POUR LE COMPTEUR ET POUR LA COLONNE.** Les
+     * deux disent « en ligne » sur le même écran : s'ils se calculaient chacun
+     * de leur côté, la carte annoncerait un nombre que les pastilles du tableau
+     * ne confirmeraient pas - et c'est le genre d'écart qu'on lit comme une
+     * panne. Le compteur est désormais la TAILLE de cette liste.
+     *
+     * ⚠️ **`null` ne veut pas dire « personne », mais « on ne sait pas »** :
+     * hors sessions en base, il n'y a aucune source. L'écran doit alors se
+     * taire plutôt que d'afficher tout le monde hors ligne.
+     *
+     * @return Collection<int, int>|null
+     */
+    private function enLigne(?User $viewer): ?Collection
     {
         if (config('session.driver') !== 'database') {
             return null;
@@ -177,13 +222,24 @@ class UserController extends Controller
                 ->where('last_activity', '>=', now()->timestamp - $window)
                 ->whereNotNull('user_id')
                 ->select('user_id'))
-            ->count();
+            ->pluck('users.id');
     }
 
-    /** Rafraîchissement du compteur sans recharger les filtres du tableau. */
+    /**
+     * Rafraîchissement de la présence sans recharger les filtres du tableau.
+     *
+     * ⚠️ Rend la LISTE autant que le nombre : la page repeint ses pastilles
+     * avec, et le compteur est la taille de cette même liste - une page qui
+     * recevrait les deux séparément pourrait les afficher en désaccord.
+     */
     public function online(): JsonResponse
     {
-        return response()->json(['count' => $this->onlineCount($this->moi())]);
+        $enLigne = $this->enLigne($this->moi());
+
+        return response()->json([
+            'count' => $enLigne?->count(),
+            'ids' => $enLigne?->all(),
+        ]);
     }
 
     /**

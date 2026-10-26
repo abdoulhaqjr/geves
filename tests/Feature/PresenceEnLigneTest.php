@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Support\Realtime;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,13 +111,128 @@ it('garde le sondage serveur quand aucun service temps réel n’est réglé', f
         ->assertSee('En ligne (5 min)');
 });
 
-it('laisse le direct l’emporter sur le sondage', function () {
-    // ⚠️ Les deux ne mesurent pas la même chose : laisser le sondage écraser
-    // toutes les 30 secondes un chiffre plus juste par un chiffre plus vieux
-    // ferait osciller le compteur sous les yeux.
-    $vue = (string) file_get_contents(resource_path('views/admin/users/index.blade.php'));
+/** Une session authentifiée, vue par la table des sessions. */
+function sessionActive(User $user, int $ilYaSecondes = 0): void
+{
+    DB::table(config('session.table', 'sessions'))->insert([
+        'id' => bin2hex(random_bytes(16)),
+        'user_id' => $user->id,
+        'ip_address' => '41.207.185.10',
+        'user_agent' => 'test',
+        'payload' => '',
+        'last_activity' => now()->timestamp - $ilYaSecondes,
+    ]);
+}
 
-    expect($vue)->toContain('clearInterval(this.sondage)')
-        ->and($vue)->toContain('!this.direct')
-        ->and($vue)->toContain('En ligne maintenant');
+it('le canal ne sert QUE de signal, jamais de chiffre à afficher', function () {
+    // ⚠️⚠️ Il sait combien, jamais qui - ses membres sont des empreintes.
+    // L'écran a besoin des deux, donc il redemande tout au serveur quand le
+    // canal bouge. Afficher le compte du canal en face de pastilles calculées
+    // depuis les sessions ferait dire deux choses au même écran.
+    $vue = (string) file_get_contents(resource_path('views/admin/users/index.blade.php'));
+    $js = (string) file_get_contents(resource_path('js/app.js'));
+
+    expect($vue)->toContain("window.addEventListener('ukc-en-ligne'")
+        ->and($vue)->toContain('this.rafraichir()')
+        // Le compteur ne se pose jamais depuis la charge de l'évènement.
+        ->and($vue)->not->toContain('onlineCount = e.detail')
+        ->and($js)->toContain("new CustomEvent('ukc-en-ligne')");
+});
+
+it('dit la présence ligne par ligne, et la carte compte EXACTEMENT ces lignes', function () {
+    // ⚠️⚠️ La garde qui tient tout le reste : une carte qui annonce un nombre
+    // que les pastilles ne confirment pas se lit comme une panne.
+    // ⚠️ Les sessions en base sont la SEULE source par personne ; la suite de
+    // tests tourne sur le pilote « array », où il n'y a rien à lire.
+    config(['session.driver' => 'database']);
+
+    $admin = usersAdmin();
+    $present = User::factory()->create(['name' => 'Awa Presente', 'is_active' => true]);
+    $autre = User::factory()->create(['name' => 'Bea Presente', 'is_active' => true]);
+    $parti = User::factory()->create(['name' => 'Cyr Absent', 'is_active' => true]);
+
+    sessionActive($present);
+    sessionActive($autre, 60);
+    sessionActive($parti, 3600); // Au-delà de la fenêtre de 5 minutes.
+
+    $html = $this->actingAs($admin, 'web')->get(route('admin.users.index'))
+        ->assertOk()
+        ->assertSee('Présence')
+        ->assertSee('Hors ligne')
+        ->getContent();
+
+    expect(substr_count((string) $html, '>En ligne</span>'))->toBe(2)
+        // La carte lit la MÊME liste : son chiffre est la taille de celle-ci.
+        ->and((string) $html)->toContain('<div class="val green" x-text="onlineCount === null ? \'-\' : onlineCount">2</div>');
+});
+
+it('mène de la carte aux personnes qu’elle compte, et emporte les autres filtres', function () {
+    // ⚠️ « 1 en ligne » au-dessus d'une page où tout le monde est hors ligne se
+    // lit comme une panne : le chiffre doit mener à qui il compte.
+    config(['session.driver' => 'database']);
+
+    // ⚠️ On éprouve l'e-mail, pas le nom : `User::saving()` recompose `name`
+    // depuis prénom/nom dès que la fabrique les pose, donc un `name` passé à
+    // la création ne survit pas - et l'assertion porterait à côté.
+    $admin = usersAdmin();
+    $present = User::factory()->create(['email' => 'presente@example.tg', 'is_active' => true]);
+    User::factory()->create(['email' => 'absente@example.tg', 'is_active' => true]);
+    sessionActive($present);
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.index', ['presence' => 'online']))
+        ->assertOk()
+        ->assertSee('presente@example.tg')
+        ->assertDontSee('absente@example.tg');
+
+    // Le lien de la carte garde la recherche en cours, et il BASCULE.
+    $html = (string) $this->actingAs($admin, 'web')
+        ->get(route('admin.users.index', ['search' => 'Awa']))->getContent();
+    expect($html)->toContain('search=Awa&amp;presence=online');
+
+    $html = (string) $this->actingAs($admin, 'web')
+        ->get(route('admin.users.index', ['presence' => 'online', 'search' => 'Awa']))->getContent();
+    expect($html)->toContain('is-on')
+        ->and($html)->not->toContain('presence=online"');
+});
+
+it('ignore une valeur de présence inconnue', function () {
+    // Appliquée, elle viderait la liste et ferait apparaître « Réinitialiser »
+    // pour un filtre que la barre ne montre nulle part.
+    config(['session.driver' => 'database']);
+
+    $admin = usersAdmin();
+    User::factory()->create(['email' => 'absente@example.tg', 'is_active' => true]);
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.index', ['presence' => 'nimporte']))
+        ->assertOk()
+        ->assertSee('absente@example.tg')
+        ->assertDontSee('Réinitialiser');
+});
+
+it('rend la liste des connectés en même temps que leur nombre', function () {
+    // Les deux sortent d'une seule requête : servis séparément, la page
+    // pourrait les afficher en désaccord.
+    config(['session.driver' => 'database']);
+
+    $admin = usersAdmin();
+    $present = User::factory()->create(['is_active' => true]);
+    sessionActive($present);
+
+    $charge = $this->actingAs($admin, 'web')->getJson(route('admin.users.online'))
+        ->assertOk()->json();
+
+    expect($charge['count'])->toBe(1)
+        ->and($charge['ids'])->toBe([$present->id]);
+});
+
+it('se tait sur la présence quand les sessions ne sont pas en base', function () {
+    // ⚠️ « On ne sait pas » n'est pas « personne » : annoncer tout le monde
+    // hors ligne serait une affirmation fausse.
+    config(['session.driver' => 'file']);
+    $admin = usersAdmin();
+
+    $this->actingAs($admin, 'web')->get(route('admin.users.index'))
+        ->assertOk()
+        ->assertDontSee('>En ligne</span>', false)
+        ->assertDontSee('>Hors ligne</span>', false);
 });
