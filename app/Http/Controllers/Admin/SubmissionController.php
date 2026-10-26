@@ -7,15 +7,17 @@ use App\Actions\AutoAssignReviewers;
 use App\Actions\DeleteSubmission;
 use App\Actions\LinkSubmissionAuthors;
 use App\Actions\RegisterEventReviewer;
+use App\Actions\UpdateSubmissionAuthors;
 use App\Actions\UpsertParticipantForAccount;
 use App\Events\SubmissionStatusChanged;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateSubmissionAuthorsRequest;
 use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
 use App\Mail\ReviewerRegistrationMail;
-use App\Models\Event;
 use App\Models\Attestation;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerApplication;
@@ -465,6 +467,32 @@ class SubmissionController extends Controller
         return view('admin.submissions.show', [
             'submission' => $submission,
             'authorLinks' => $submission->authorLinks()->with('user')->orderBy('author_index')->get(),
+            // ⚠️ Masquer le bouton ne ferme aucune porte - la route porte la
+            // même capacité. C'est pour ne pas montrer un geste que l'évaluateur
+            // ou le secrétariat ne peuvent pas faire.
+            'peutEcrireAuteurs' => (bool) $request->user()?->canOnEdition('editions_write', $submission->event_id),
+            // ⚠️ Préparé ICI, pas dans la vue : cet écran emploie la forme EN
+            // LIGNE de la directive PHP de Blade, et y ouvrir un bloc ferait
+            // avaler tout ce qui suit par le compilateur.
+            // `origine` est la place ACTUELLE de l'auteur : c'est elle qui
+            // rattache la ligne du formulaire à son lien de compte.
+            // ⚠️ Beaucoup d'auteurs n'ont que `name` (imports, anciens dépôts) :
+            // sans cette séparation, le formulaire s'ouvrirait avec des champs
+            // « Nom » vides et obligatoires, et il faudrait retaper chaque nom
+            // pour ajouter un seul co-auteur.
+            'auteursPourEdition' => collect($submission->authors ?? [])->map(function ($a, $i) {
+                [$prenom, $nom] = EventNameFormat::decouper($a);
+
+                return [
+                    'origine' => $i,
+                    'first_name' => $prenom,
+                    'last_name' => $nom,
+                    'email' => (string) ($a['email'] ?? ''),
+                    'phone' => (string) ($a['phone'] ?? ''),
+                    'affiliation' => (string) ($a['affiliation'] ?? ''),
+                    'grade' => (string) ($a['grade'] ?? ''),
+                ];
+            })->values()->all(),
             'actions' => self::ACTIONS,
             'reviews' => $reviews,
             'recommendations' => Review::RECOMMENDATIONS,
@@ -547,6 +575,33 @@ class SubmissionController extends Controller
         $link->update(['user_id' => null, 'status' => 'unmatched', 'match_type' => null]);
 
         return back()->with('ukc_status', 'Compte détaché de cet auteur.');
+    }
+
+    /**
+     * Corrige la liste des auteurs (omission, faute de frappe, ordre).
+     *
+     * Les auteurs ne sont pas rééditables par le participant : sa page de
+     * correction ne reprend que titre, résumé, mots-clés et fichier. C'est donc
+     * au gestionnaire qu'on demande d'ajouter le co-auteur oublié.
+     */
+    public function updateAuthors(
+        UpdateSubmissionAuthorsRequest $request,
+        Submission $submission,
+        UpdateSubmissionAuthors $action,
+    ): RedirectResponse {
+        $bilan = $action->handle($submission, (array) $request->validated('auteurs'), $request->user());
+
+        $dit = [];
+        if ($bilan['ajoutes'] > 0) {
+            // On annonce la notification, parce qu'elle part VRAIMENT : un
+            // co-auteur ajouté reçoit le même message qu'au dépôt.
+            $dit[] = $bilan['ajoutes'].' '.($bilan['ajoutes'] > 1 ? 'co-auteurs ajoutés et prévenus' : 'co-auteur ajouté et prévenu');
+        }
+        if ($bilan['retires'] > 0) {
+            $dit[] = $bilan['retires'].' '.($bilan['retires'] > 1 ? 'auteurs retirés' : 'auteur retiré');
+        }
+
+        return back()->with('ukc_status', 'Liste des auteurs enregistrée'.($dit === [] ? '.' : ' - '.implode(', ', $dit).'.'));
     }
 
     /** Lance une vérification anti-plagiat web (à la demande) et met le résultat en cache. */
@@ -974,6 +1029,7 @@ class SubmissionController extends Controller
             route('account.dashboard'),
             'check-circle',
         );
+
         return $this->sendReviewerRegistrationMail($reviewer, fromApplication: true);
     }
 

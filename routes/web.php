@@ -439,6 +439,17 @@ Route::prefix('admin')->group(function () {
             Route::post('/soumissions/{submission}/relecteur', [App\Http\Controllers\Admin\SubmissionController::class, 'assignReviewer'])->name('admin.submissions.review.assign');
             Route::delete('/soumissions/{submission}/relecteur/{review}', [App\Http\Controllers\Admin\SubmissionController::class, 'removeReview'])->name('admin.submissions.review.remove');
             Route::post('/soumissions/{submission}/plagiat', [App\Http\Controllers\Admin\SubmissionController::class, 'checkPlagiarism'])->name('admin.submissions.plagiarism');
+        });
+
+        // ⚠️⚠️ **TOUCHER AUX AUTEURS EST UN GESTE DE GESTIONNAIRE**, d'où
+        // `editions_write` et non `submissions_list` : cette dernière ouvre la
+        // LISTE des soumissions, et elle est portée aussi par l'évaluateur, le
+        // secrétariat, la comptabilité, l'appui et l'accueil. Le rattachement
+        // manuel vivait sous cette capacité trop large - un évaluateur pouvait
+        // rattacher un auteur à un compte. La liste des auteurs est une donnée
+        // scientifique : elle sort dans le livret et dans les attestations.
+        Route::middleware('edition.cap:editions_write')->group(function () {
+            Route::post('/soumissions/{submission}/auteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'updateAuthors'])->name('admin.submissions.authors.update');
             // Rattachement manuel d'un auteur à un compte (correction d'un rapprochement).
             Route::post('/soumissions/{submission}/auteurs/{link}/rattacher', [App\Http\Controllers\Admin\SubmissionController::class, 'linkAuthor'])->name('admin.submissions.author.link');
             Route::post('/soumissions/{submission}/auteurs/{link}/detacher', [App\Http\Controllers\Admin\SubmissionController::class, 'detachAuthor'])->name('admin.submissions.author.detach');

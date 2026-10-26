@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Actions\UpdateSubmissionAuthors;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
@@ -101,6 +102,65 @@ class EventNameFormat
         }
 
         return self::author($event, $author);
+    }
+
+    /**
+     * Sépare un auteur en prénom / nom, pour le proposer à la correction.
+     *
+     * ⚠️⚠️ **BEAUCOUP D'AUTEURS N'ONT QUE `name`.** Les imports et les anciens
+     * dépôts n'ont jamais écrit `first_name`/`last_name` - c'est d'ailleurs
+     * pourquoi {@see self::submissionAuthor()} sait retomber sur le compte. Un
+     * formulaire qui exigerait ces deux champs sans les proposer obligerait à
+     * retaper chaque nom pour ajouter un co-auteur.
+     *
+     * ⚠️ **C'est une PROPOSITION, pas une vérité.** La règle du projet veut le
+     * nom de famille en capitales ; à défaut de bloc en capitales, on prend le
+     * dernier mot, qui est la convention la plus courante - et qui peut se
+     * tromper. C'est pourquoi l'appelant ne réécrit le nom enregistré que si
+     * quelqu'un l'a VRAIMENT modifié
+     * ({@see UpdateSubmissionAuthors}).
+     *
+     * @param  array<string, mixed>  $author
+     * @return array{0: string, 1: string} [prénom, nom]
+     */
+    public static function decouper(array $author): array
+    {
+        $first = trim((string) ($author['first_name'] ?? ''));
+        $last = trim((string) ($author['last_name'] ?? ''));
+        if ($first !== '' || $last !== '') {
+            return [$first, $last];
+        }
+
+        $name = trim(preg_replace('/\s+/u', ' ', (string) ($author['name'] ?? '')) ?? '');
+        $words = $name === '' ? [] : (preg_split('/\s+/u', $name) ?: []);
+        if (count($words) < 2) {
+            return ['', $name];
+        }
+
+        $estNom = static fn (string $w): bool => preg_match('/\p{L}/u', $w) === 1
+            && $w === mb_strtoupper($w, 'UTF-8');
+
+        // Bloc de capitales en fin (« Awa KODJO »), puis en tête (« KODJO Awa »).
+        $i = count($words);
+        while ($i > 0 && $estNom($words[$i - 1])) {
+            $i--;
+        }
+        if ($i > 0 && $i < count($words)) {
+            return [implode(' ', array_slice($words, 0, $i)), implode(' ', array_slice($words, $i))];
+        }
+
+        $j = 0;
+        while ($j < count($words) && $estNom($words[$j])) {
+            $j++;
+        }
+        if ($j > 0 && $j < count($words)) {
+            return [implode(' ', array_slice($words, $j)), implode(' ', array_slice($words, 0, $j))];
+        }
+
+        // Aucune capitale ne tranche : le dernier mot fait le nom de famille.
+        $nom = array_pop($words);
+
+        return [implode(' ', $words), (string) $nom];
     }
 
     /** Réordonne seulement les noms anciens dont le bloc de nom de famille en capitales est identifiable. */

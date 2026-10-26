@@ -1,5 +1,6 @@
 <x-layouts.admin :title="'Soumission '.$submission->ref_code" subtitle="Évaluation, décision & historique">
-    <div class="admin-page admin-submission-detail" data-ajax-root="submission">
+    <div class="admin-page admin-submission-detail" data-ajax-root="submission"
+         x-data="ukcAuteurs(@js($auteursPourEdition))">
         @php($s = $submission)
         @php($initials = fn ($name) => \Illuminate\Support\Str::of($name ?: '?')->explode(' ')->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?')
 
@@ -43,7 +44,17 @@
                         <span><strong>Événement :</strong> {{ $s->event?->title }}</span>
                     </div>
 
-                    <h3>Auteurs</h3>
+                    <h3>Auteurs
+                        @if ($peutEcrireAuteurs)
+                            {{-- Les auteurs ne sont pas rééditables par le participant (sa page de
+                                 correction ne reprend que titre, résumé, mots-clés et fichier) :
+                                 l'omission d'un co-auteur se corrige donc ici. --}}
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="margin-left:8px;font-weight:600;"
+                                    @click="auteursOpen = true">
+                                <x-ukc.icon name="pen" :size="13" /> Corriger les auteurs
+                            </button>
+                        @endif
+                    </h3>
                     @php($links = $authorLinks->keyBy('author_index'))
                     @php($matchLabels = ['email' => 'rapproché par e-mail', 'phone' => 'rapproché par téléphone', 'name' => 'rapproché par nom', 'manual' => 'rattaché manuellement'])
                     <ul class="authors-list">
@@ -489,5 +500,72 @@
                 </div>
             </div>
         </div>
+
+        @if ($peutEcrireAuteurs)
+            {{-- Corriger la liste des auteurs. ⚠️ Le formulaire est posté EN ENTIER :
+                 l'ordre des lignes EST l'ordre des auteurs, et le serveur réaligne les
+                 liens de compte dessus. --}}
+            <x-ukc.slideover open="auteursOpen" onClose="annuler()" width="560px" title="Corriger les auteurs">
+                <form id="auteursForm" method="POST" action="{{ route('admin.submissions.authors.update', $s) }}">
+                    @csrf
+                    <p class="desc" style="margin-top:0;">
+                        Les auteurs ne sont pas modifiables par le déposant : c’est ici qu’on répare une omission,
+                        une faute de frappe ou un ordre erroné. L’auteur correspondant reste en tête.
+                    </p>
+
+                    @error('auteurs')<p class="error" style="color:var(--ukc-red);font-size:.85rem;">{{ $message }}</p>@enderror
+                    @error('auteurs.0')<p class="error" style="color:var(--ukc-red);font-size:.85rem;">{{ $message }}</p>@enderror
+
+                    <template x-for="(ligne, i) in lignes" :key="i">
+                        <div class="ukc-card" style="padding:12px;margin-bottom:10px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                                <strong style="font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-muted);"
+                                        x-text="i === 0 ? 'Auteur correspondant' : 'Co-auteur ' + i"></strong>
+                                <span style="display:flex;gap:4px;" x-show="i > 0">
+                                    <button type="button" class="ukc-btn ukc-btn--icon" title="Monter" @click="monter(i)" x-show="i > 1">
+                                        <x-ukc.icon name="chevron" :size="13" style="transform:rotate(-90deg);" />
+                                    </button>
+                                    <button type="button" class="ukc-btn ukc-btn--icon" title="Descendre" @click="descendre(i)" x-show="i < lignes.length - 1">
+                                        <x-ukc.icon name="chevron" :size="13" style="transform:rotate(90deg);" />
+                                    </button>
+                                    <button type="button" class="ukc-btn ukc-btn--icon danger" title="Retirer cet auteur" @click="retirer(i)">
+                                        <x-ukc.icon name="trash" :size="13" />
+                                    </button>
+                                </span>
+                            </div>
+
+                            <input type="hidden" :name="'auteurs['+i+'][origine]'" :value="ligne.origine === null ? '' : ligne.origine">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                <label class="ukc-field"><span>Prénom</span>
+                                    <input type="text" :name="'auteurs['+i+'][first_name]'" x-model="ligne.first_name" maxlength="150"></label>
+                                <label class="ukc-field"><span>Nom <span style="color:var(--ukc-red);">*</span></span>
+                                    <input type="text" :name="'auteurs['+i+'][last_name]'" x-model="ligne.last_name" maxlength="150" required></label>
+                                <label class="ukc-field"><span>E-mail</span>
+                                    <input type="email" :name="'auteurs['+i+'][email]'" x-model="ligne.email" maxlength="200"></label>
+                                <label class="ukc-field"><span>Téléphone</span>
+                                    <input type="text" :name="'auteurs['+i+'][phone]'" x-model="ligne.phone" maxlength="50"></label>
+                                <label class="ukc-field" style="grid-column:1/-1;"><span>Affiliation</span>
+                                    <input type="text" :name="'auteurs['+i+'][affiliation]'" x-model="ligne.affiliation" maxlength="255"></label>
+                                <label class="ukc-field" style="grid-column:1/-1;"><span>Grade</span>
+                                    <input type="text" :name="'auteurs['+i+'][grade]'" x-model="ligne.grade" maxlength="100"></label>
+                            </div>
+                        </div>
+                    </template>
+
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="ajouter()">
+                        <x-ukc.icon name="user-plus" :size="14" /> Ajouter un co-auteur
+                    </button>
+                </form>
+
+                <x-slot:footer>
+                    {{-- ⚠️ On ANNONCE l'envoi : un co-auteur ajouté reçoit le même message
+                         qu'au dépôt, et c'est irréversible une fois parti. --}}
+                    <span style="font-size:.8rem;color:var(--ukc-muted);" x-show="nouveaux() > 0" x-cloak
+                          x-text="nouveaux() === 1 ? 'Le co-auteur ajouté sera prévenu par e-mail.' : nouveaux() + ' co-auteurs ajoutés seront prévenus par e-mail.'"></span>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="annuler()">Annuler</button>
+                    <button type="submit" form="auteursForm" class="ukc-btn ukc-btn--blue">Enregistrer</button>
+                </x-slot:footer>
+            </x-ukc.slideover>
+        @endif
     </div>
 </x-layouts.admin>

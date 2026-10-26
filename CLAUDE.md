@@ -43,6 +43,74 @@ Larastan **niveau 5**.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
+### Corriger les auteurs d'une communication (2026-10-26)
+
+⚠️⚠️ **LES AUTEURS NE SONT PAS RÉÉDITABLES PAR LE DÉPOSANT**, et c'est voulu :
+sa page « Corriger & renvoyer » ne reprend que titre, résumé, mots-clés et
+fichier. Or l'omission d'un co-auteur est la correction la PLUS demandée. Elle
+se répare donc au back-office : bouton **« Corriger les auteurs »** sur la fiche
+d'une soumission (`admin.submissions.authors.update`, action
+**`UpdateSubmissionAuthors`**) - ajouter, corriger une orthographe, réordonner,
+retirer.
+
+- ⚠️⚠️ **C'EST UN GESTE DE GESTIONNAIRE : `editions_write`, PAS
+  `submissions_list`.** Cette dernière ouvre la LISTE des soumissions et elle
+  est portée **aussi par l'évaluateur, le secrétariat, la comptabilité, l'appui
+  et l'accueil** - réécrire la paternité d'un travail scientifique n'est pas de
+  leur ressort. ⚠️ **Le rattachement manuel d'un auteur à un compte
+  (`author.link` / `author.detach`) vivait sous cette capacité trop large** : un
+  évaluateur pouvait rattacher un auteur au compte de son choix. Les trois
+  routes sont désormais sous `editions_write`.
+- ⚠️⚠️ **`author_index` EST UN POINTEUR, ET IL DOIT SUIVRE.** Chaque ligne de
+  `submission_authors` désigne sa place dans le JSON `authors` par ce nombre, et
+  `EventNameFormat::submissionAuthor()` s'en sert pour retomber sur le nom du
+  COMPTE quand le JSON n'a ni prénom ni nom. Un index laissé en arrière après un
+  retrait ou un déplacement **n'écrit aucune erreur** : il affiche le nom de
+  quelqu'un d'autre en face d'un auteur, dans le livret comme dans le programme.
+  D'où la mécanique `origine` (la place ACTUELLE, portée par le formulaire) →
+  nouvelle place, et le **retrait AVANT le replacement** (deux lignes sur la même
+  place, et `keyBy` n'en garderait qu'une à la relecture).
+- ⚠️⚠️ **UN NOM QUE PERSONNE N'A TOUCHÉ N'EST PAS RÉÉCRIT.** Beaucoup d'auteurs
+  n'ont **que `name`** (imports, anciens dépôts) : le formulaire doit donc
+  PROPOSER un découpage prénom/nom (`EventNameFormat::decouper()`, bloc de
+  capitales, sinon dernier mot), sinon il s'ouvrirait avec des champs « Nom »
+  vides et obligatoires et il faudrait retaper chaque nom pour ajouter un seul
+  co-auteur. Mais ce découpage **peut se tromper** sur un nom composé : sans
+  comparaison avec ce qui a été proposé, ouvrir le panneau et enregistrer
+  suffirait à passer en capitales - et parfois à réordonner - le nom de TOUS les
+  auteurs. On ne réécrit que ce qui a vraiment changé. **Mesuré en conditions
+  réelles** : « Pauline Invitée » et « Communicant1 Test » sont restés intacts
+  pendant que le co-auteur ajouté sortait en « Ama DOUMBIA ».
+- ⚠️ **L'auteur correspondant n'est ni retiré ni relégué ici.** Il est l'ancre de
+  la communication - `Submission::authorName()` et `authorEmail()` lisent
+  l'index 0, et c'est lui que l'organisation contacte. Le formulaire ne lui
+  donne ni flèche ni corbeille, **et le serveur refuse** : masquer un bouton n'a
+  jamais protégé personne. Le remplacer est un autre geste, qui touche au
+  participant et aux droits d'écriture.
+- ⚠️ **Un co-auteur ajouté reçoit EXACTEMENT ce qu'il aurait reçu au dépôt** :
+  `LinkSubmissionAuthors::rapprocher()` est le même chemin (rapprochement,
+  liaison, fiche participant, notification in-app, e-mail, SMS best-effort, ou
+  invitation à créer un compte). Recopier cette cascade aurait fait diverger ce
+  qu'on reçoit selon qu'on a été cité le premier jour ou ajouté après - et c'est
+  le même évènement pour l'intéressé. **Et l'écran l'annonce avant d'envoyer.**
+- ⚠️ **Corriger une orthographe ne renotifie personne** : ce n'est pas un
+  évènement pour l'intéressé. Seuls les auteurs **ajoutés** sont prévenus.
+- ⚠️ **Le rôle ne se saisit pas**, il se déduit de la place : confié au
+  formulaire, on se retrouverait avec deux correspondants, ou aucun.
+- ⚠️ **La correction laisse une trace** (`meta['authors_log']` : qui, quand,
+  combien d'ajouts et de retraits, 20 entrées au plus). Une liste d'auteurs sort
+  dans le **livret** et dans les **attestations** : une correction sans trace est
+  une correction que personne ne peut expliquer six mois plus tard.
+- ⚠️ **Conséquence à connaître** : un co-auteur ajouté devient éligible aux
+  attestations de communication (plafonné par `coauthors_max`, et sous réserve de
+  paiement) et la liste change le **livret**, qui lit `submission.authors`.
+  C'est l'effet recherché - on répare une omission - mais ce n'est pas anodin
+  après l'émission des documents.
+
+Gardes : `CorrigerLesAuteursTest` (15 cas, **4 sabotages vérifiés** : l'index
+figé, le correspondant relégué, un nom intact réécrit, et la capacité rouverte
+au secrétariat).
+
 ### Le pays d'une IP, et le nombre de connectés EN DIRECT (2026-10-26)
 
 Deux colonnes de `/admin/utilisateurs` ne disaient pas ce qu'on croyait.

@@ -135,6 +135,15 @@ le Bénin, quel que soit l'indicatif.
 
 **Garde** : `PaymentOperatorTest` (13 cas) et `PaymentGatewayTest` (31 cas),
 **cinq sabotages vérifiés**.
+### Corriger les auteurs d'une communication (2026-10-26)
+
+- Le gestionnaire et le co-gestionnaire peuvent **ajouter, corriger, réordonner et retirer** les co-auteurs d'une communication depuis sa fiche (`admin.submissions.authors.update`, action `UpdateSubmissionAuthors`). Les auteurs ne sont pas rééditables par le déposant - sa page de correction ne reprend que titre, résumé, mots-clés et fichier - et l'omission d'un co-auteur est la demande la plus fréquente.
+- ⚠️⚠️ **Capacité `editions_write`, pas `submissions_list`** : cette dernière est portée aussi par l'évaluateur, le secrétariat, la comptabilité, l'appui et l'accueil. Le **rattachement manuel d'un auteur à un compte vivait sous cette capacité trop large** (un évaluateur pouvait rattacher un auteur au compte de son choix) ; les trois routes sont passées sous `editions_write`.
+- ⚠️⚠️ **`author_index` est un pointeur vers le JSON `authors`** et `EventNameFormat::submissionAuthor()` s'en sert pour retomber sur le nom du compte. Laissé en arrière après un retrait ou un déplacement, il afficherait le nom de quelqu'un d'autre en face d'un auteur, sans la moindre erreur. Le formulaire porte donc `origine` (la place actuelle) et l'action retire avant de replacer.
+- ⚠️⚠️ **Un nom que personne n'a touché n'est pas réécrit.** Beaucoup d'auteurs n'ont que `name` : le formulaire propose un découpage (`EventNameFormat::decouper()`), mais ce découpage peut se tromper - sans comparaison avec ce qui a été proposé, ouvrir le panneau et enregistrer passerait en capitales le nom de tous les auteurs.
+- ⚠️ L'auteur correspondant n'est ni retiré ni relégué ici (ancre de la communication) ; le serveur le refuse en plus du formulaire. Un co-auteur ajouté reçoit exactement ce qu'il aurait reçu au dépôt (même chemin `LinkSubmissionAuthors::rapprocher()`), et l'écran l'annonce avant d'envoyer ; une simple correction d'orthographe ne renotifie personne. Chaque correction laisse une trace dans `meta['authors_log']`.
+- Gardes : `CorrigerLesAuteursTest` (15 cas, **4 sabotages vérifiés**). Suite complète : 1 637 tests.
+
 ### Pays par IP et présence en direct (2026-10-26)
 
 - **L'IP enregistrée doit être celle du visiteur.** `TrustProxies` n'était pas configuré : derrière le mandataire de l'hébergement, `$request->ip()` rend l'adresse du **proxy**, donc toutes les connexions s'enregistrent sous la même IP et sous le même pays. Réglage dans `config/trustedproxy.php` (clé `proxies`, variable `TRUSTED_PROXIES`), **vide par défaut**. ⚠️ Le nom du fichier et de la clé ne se choisissent pas : `TrustProxies` les relit à chaque requête, ce qui évite d'y toucher dans `bootstrap/app.php` où la configuration n'est pas encore chargée. ⚠️ `*` ne vaut que derrière un vrai mandataire : `X-Forwarded-For` est écrit par le client.

@@ -89,6 +89,46 @@ class LinkSubmissionAuthors
         }
     }
 
+    /**
+     * Rapproche UN auteur ajouté APRÈS le dépôt (correction par le gestionnaire).
+     *
+     * ⚠️ **Le même chemin que le dépôt, volontairement** : rapprochement,
+     * liaison, invitation et notifications sortent d'ici. Recopier cette
+     * cascade dans l'action de correction aurait fait diverger ce qu'un
+     * co-auteur reçoit selon qu'il a été cité le premier jour ou ajouté après -
+     * et c'est précisément le même évènement pour lui.
+     *
+     * ⚠️ **Pas de cas « déposant » ici** : il n'existe qu'à la création, où le
+     * compte qui dépose est connu. Un auteur ajouté plus tard est forcément
+     * quelqu'un d'autre - et s'il se trouve que c'est le déposant, le
+     * rapprochement par e-mail le retrouve.
+     *
+     * @param  array<string, mixed>  $author
+     */
+    public function rapprocher(Submission $submission, SubmissionAuthor $link, array $author): void
+    {
+        $event = $submission->event;
+        if (! $event) {
+            $link->save();
+
+            return;
+        }
+
+        // ⚠️ Un seul appel : rapprocher deux fois coûte deux requêtes et, le
+        // jour où le moteur départage deux candidats, rendrait deux réponses.
+        $match = $this->matcher->match($author);
+        $user = $match['user'];
+
+        if ($user) {
+            $this->linkUser($submission, $event, $link, $user, $link->role, (string) ($match['type'] ?? 'email'));
+        } elseif ($link->email) {
+            $this->invite($submission, $event, $link, $link->role);
+        } else {
+            // Ni compte ni adresse : on garde la trace, sans rien promettre.
+            $link->save();
+        }
+    }
+
     /** Lie un compte existant : participant + notification + e-mail (+ SMS). */
     protected function linkUser(Submission $submission, $event, SubmissionAuthor $link, User $user, string $role, string $type): void
     {

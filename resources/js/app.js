@@ -960,6 +960,46 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Correction de la liste des auteurs d'une communication (back-office).
+    //
+    // ⚠️ `origine` est la place ACTUELLE d'un auteur, et c'est elle qui
+    // rattache la ligne du formulaire à son lien de compte côté serveur. Une
+    // ligne neuve la laisse à null : c'est ainsi que le serveur sait qui
+    // rapprocher et prévenir. Ne jamais la recalculer depuis la position
+    // affichée - après un déplacement, les deux ne coïncident plus.
+    window.Alpine.data('ukcAuteurs', (initiales = []) => ({
+        auteursOpen: false,
+        lignes: [],
+        copie() {
+            return initiales.map((l) => ({ ...l }));
+        },
+        init() {
+            this.lignes = this.copie();
+        },
+        ajouter() {
+            this.lignes.push({ origine: null, first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '' });
+        },
+        // ⚠️ La place 0 est celle de l'auteur correspondant : il ne se retire
+        // pas et rien ne passe devant lui. Le serveur le refuse aussi - masquer
+        // un bouton n'a jamais protégé personne.
+        retirer(i) {
+            if (i > 0) this.lignes.splice(i, 1);
+        },
+        monter(i) {
+            if (i > 1) this.lignes.splice(i - 1, 0, this.lignes.splice(i, 1)[0]);
+        },
+        descendre(i) {
+            if (i > 0 && i < this.lignes.length - 1) this.lignes.splice(i + 1, 0, this.lignes.splice(i, 1)[0]);
+        },
+        nouveaux() {
+            return this.lignes.filter((l) => l.origine === null && (l.last_name || '').trim() !== '').length;
+        },
+        annuler() {
+            this.lignes = this.copie();
+            this.auteursOpen = false;
+        },
+    }));
+
     // Le WebSocket ne transporte qu'un signal. La cloche relit toujours ses
     // notifications depuis GEVES, sur la session du destinataire authentifié.
     window.Alpine.data('ukcNotificationBell', (config = {}) => ({
