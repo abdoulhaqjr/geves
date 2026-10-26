@@ -198,10 +198,23 @@ class IpCountry
         return (bool) config('geoip.fallback.enabled', false);
     }
 
+    /**
+     * La bibliothèque qui sait LIRE la base est-elle là ?
+     *
+     * ⚠️ Un fichier de base présent ne suffit pas : sans `geoip2/geoip2`, il
+     * n'est qu'un tas d'octets. Les deux manques donnent la même colonne vide
+     * et appellent deux gestes différents - l'un `geoip:update`, l'autre
+     * `composer install` -, d'où deux questions distinctes.
+     */
+    public static function readerAvailable(): bool
+    {
+        return class_exists(Reader::class);
+    }
+
     /** Y a-t-il seulement de quoi résoudre un pays ? */
     public static function resolvable(): bool
     {
-        return self::databaseInstalled() || self::fallbackEnabled();
+        return (self::databaseInstalled() && self::readerAvailable()) || self::fallbackEnabled();
     }
 
     private static function cacheKey(string $ip): string

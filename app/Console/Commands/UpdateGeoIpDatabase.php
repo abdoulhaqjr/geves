@@ -14,6 +14,18 @@ class UpdateGeoIpDatabase extends Command
 
     public function handle(): int
     {
+        // ⚠️ Sans la bibliothèque de lecture, la commande tombait sur une
+        // fatale « Class "GeoIp2\Database\Reader" not found » - un message qui
+        // accuse le code alors que la cause est un `composer install` qui n'a
+        // pas tourné depuis que la dépendance est arrivée (2026-10-23). On le
+        // dit, plutôt que de laisser chercher.
+        if (! class_exists(Reader::class)) {
+            $this->error('La bibliothèque de lecture GeoIP n’est pas installée (geoip2/geoip2).');
+            $this->line('Sur le serveur : composer install --no-dev --optimize-autoloader --no-interaction');
+
+            return self::FAILURE;
+        }
+
         $month = (string) ($this->option('month') ?: now('UTC')->format('Y-m'));
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             $this->error('Le mois doit être au format YYYY-MM.');

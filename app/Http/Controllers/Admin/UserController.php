@@ -80,6 +80,10 @@ class UserController extends Controller
         $geoip = [
             'resolvable' => IpCountry::resolvable(),
             'base' => IpCountry::databaseInstalled(),
+            // ⚠️ Deux manques, deux gestes : la base se télécharge, la
+            // bibliothèque s'installe. Un seul message enverrait la moitié des
+            // cas vers la mauvaise commande.
+            'reader' => IpCountry::readerAvailable(),
         ];
 
         // Comptes par rôle GLOBAL (pour les indicateurs + l'onglet Rôles).

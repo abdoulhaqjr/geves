@@ -154,6 +154,39 @@ versions différentes de celles qui ont été testées.
 **Si vous voyez `requires php >=8.4.1 ... your php version (8.3.x) does not
 satisfy`** : revenez à « Avant de commencer », point 2.
 
+⚠️⚠️ **CETTE LIGNE N'EST PAS RÉSERVÉE À LA PREMIÈRE INSTALLATION.** Une version
+qui ajoute une dépendance la rend obligatoire, et l'oublier donne une erreur qui
+accuse le code au lieu du déploiement : `php artisan geoip:update` répondait
+**`Class "GeoIp2\Database\Reader" not found`** parce que `geoip2/geoip2`, arrivé
+le 23/10/2026, n'avait jamais été installé en ligne. Même famille que
+`npm run build` plus bas : `git pull` rapporte le code, pas ce qu'il lui faut
+pour tourner.
+
+### B3. Installer la base de géolocalisation
+
+La colonne « Pays » de **Utilisateurs & rôles** déduit le pays de la dernière IP
+d'une base locale - l'adresse d'un participant n'est transmise à personne.
+
+```bash
+php artisan geoip:update
+```
+
+**Ce que vous devez voir** : `Base GeoIP 2026-XX installée : …mmdb`.
+
+⚠️ **Le fichier n'est pas dans le dépôt** (il pèse plusieurs mégaoctets et se
+périme) : sans cette commande, la colonne reste vide. Le planificateur la
+renouvelle ensuite **le 3 de chaque mois** - mais il ne rattrape pas une
+première installation, et on attendrait donc jusqu'à un mois sans rien voir.
+L'écran des utilisateurs le dit désormais en clair quand la base manque.
+
+⚠️ **Elle a besoin de la phase précédente** : sans `geoip2/geoip2`, la commande
+s'arrête en annonçant le `composer install` à lancer.
+
+⚠️ **Et elle ne sert à rien tant que les IP sont celles du mandataire** : voir
+`TRUSTED_PROXIES` dans `.env.production.example`. Derrière le proxy de
+l'hébergement, toutes les connexions s'enregistrent sinon sous la même adresse,
+donc sous le même pays.
+
 ---
 
 # Phase C. Brancher le sous-domaine

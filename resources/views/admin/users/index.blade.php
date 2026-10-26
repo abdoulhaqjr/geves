@@ -174,7 +174,11 @@
                 {{-- L'échec était MUET : sans base installée, la colonne rendait des tirets et rien ne disait qu'il manquait un fichier. --}}
                 <div class="ukc-alert ukc-alert--warn" style="margin-top:12px;">
                     <span class="ico"><x-ukc.icon name="alert-triangle" :size="18" /></span>
-                    <div>{{ __('La base de géolocalisation n’est pas installée : aucun pays ne peut être déduit, quelles que soient les adresses enregistrées. Sur le serveur :') }} <code>php artisan geoip:update</code></div>
+                    @if ($geoip['reader'])
+                        <div>{{ __('La base de géolocalisation n’est pas installée : aucun pays ne peut être déduit, quelles que soient les adresses enregistrées. Sur le serveur :') }} <code>php artisan geoip:update</code></div>
+                    @else
+                        <div>{{ __('La bibliothèque de lecture GeoIP n’est pas installée : aucun pays ne peut être déduit. Sur le serveur :') }} <code>composer install --no-dev --optimize-autoloader</code></div>
+                    @endif
                 </div>
             @endunless
             <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La date et l’IP sont enregistrées après chaque connexion réussie, dans l’espace participant ou le back-office. « En ligne » désigne une activité durant les cinq dernières minutes. Le pays est estimé depuis l’IP publique ; une IP locale ou inconnue n’a pas de pays. <a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>.</p>

@@ -71,6 +71,20 @@ rendait un tableau vide sans qu'aucun écran ne le signale, et il n'existait
     écrit par le client : servi en direct, tout visiteur choisirait l'adresse que
     GEVES enregistre sur sa connexion - la seule trace dont on dispose pour dire
     d'où quelqu'un s'est connecté. **Vide par défaut.**
+- ⚠️⚠️ **`composer install` N'EST PAS RÉSERVÉ À LA PREMIÈRE INSTALLATION**, et
+  c'est ce qui s'est payé en ligne le 26/10/2026 : `php artisan geoip:update`
+  répondait **`Class "GeoIp2\Database\Reader" not found`**. La dépendance
+  `geoip2/geoip2` est arrivée le 23/10 et le déploiement suivant n'avait fait
+  qu'un `git pull` - le message accuse le code, la cause est le déploiement.
+  Même famille que `npm run build` : le dépôt porte le code, pas ce qu'il lui
+  faut pour tourner. La commande **le dit maintenant** au lieu de tomber sur une
+  fatale, l'écran des utilisateurs distingue les **deux manques** (la base se
+  télécharge, la bibliothèque s'installe - deux gestes différents), et
+  `DEPLOIEMENT.md` porte enfin l'étape d'installation de la base, qui n'y
+  figurait nulle part.
+  ⚠️ **Et un cas tient la dépendance en `require`** : déplacée en `require-dev`,
+  elle ne s'installerait jamais en production (`--no-dev`) et la colonne
+  resterait vide pour toujours.
 - ⚠️ **En développement, la colonne ne montrera JAMAIS rien**, et ce n'est pas
   une panne : la seule IP de la base est `127.0.0.1`. Installer la base en local
   n'y changerait rien - une adresse de bouclage n'a pas de pays. La page affiche
@@ -123,8 +137,8 @@ la vraie question, et la carte se renomme alors **« En ligne maintenant »**.
   (déjà en place) : ce canal est le **second consommateur** réel de la couche
   temps réel, après la cloche.
 
-Gardes : `PaysParIpTest` (12 cas) et `PresenceEnLigneTest` (7 cas),
-**11 sabotages vérifiés**.
+Gardes : `PaysParIpTest` (14 cas) et `PresenceEnLigneTest` (7 cas),
+**13 sabotages vérifiés**.
 ⚠️ **Piège rencontré ici** : `php.bat` ne transmet pas les arguments
 **multi-lignes** (cmd les aplatit) - un motif de sabotage doit tenir sur une
 ligne, sinon la substitution échoue et on croit la garde en cause.

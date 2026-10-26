@@ -39,6 +39,30 @@ it('rend l’adresse du visiteur quand un mandataire est déclaré', function ()
         ->assertSee('41.207.185.10');
 });
 
+it('garde la bibliothèque de lecture en dépendance de PRODUCTION', function () {
+    // ⚠️⚠️ C'est exactement ce qui a manqué en ligne : `geoip2/geoip2` est
+    // arrivé le 2026-10-23, et un déploiement sans `composer install` a laissé
+    // la commande tomber sur « Class GeoIp2\Database\Reader not found ».
+    // Déplacée en `require-dev`, elle ne s'installerait JAMAIS en production
+    // (`--no-dev`), et la colonne « Pays » resterait vide pour toujours.
+    $composer = json_decode((string) file_get_contents(base_path('composer.json')), true);
+    $lock = json_decode((string) file_get_contents(base_path('composer.lock')), true);
+
+    expect($composer['require'])->toHaveKey('geoip2/geoip2')
+        ->and($composer['require-dev'] ?? [])->not->toHaveKey('geoip2/geoip2')
+        ->and(collect($lock['packages'])->pluck('name'))->toContain('geoip2/geoip2');
+});
+
+it('reste utilisable quand la bibliothèque est bien là', function () {
+    // La garde ajoutée en tête de la commande ne doit pas barrer la route au
+    // cas normal : on doit atteindre la validation du mois.
+    expect(IpCountry::readerAvailable())->toBeTrue();
+
+    $this->artisan('geoip:update', ['--month' => 'pas-un-mois'])
+        ->expectsOutputToContain('Le mois doit être au format YYYY-MM.')
+        ->assertExitCode(1);
+});
+
 it('déclare les mandataires sous la clé que le socle relit', function () {
     // ⚠️ Le nom du fichier et celui de la clé ne se choisissent pas :
     // `TrustProxies` lit `config('trustedproxy.proxies')` à chaque requête
