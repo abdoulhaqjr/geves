@@ -12,6 +12,10 @@
         'unreadCount' => $unreadCount,
         'previewUrl' => route('notifications.preview'),
         'realtime' => \App\Support\Realtime::clientConfig(),
+        {{-- La cloche porte la seule connexion WebSocket de la page : le canal
+             de présence s'y greffe plutôt que d'en ouvrir une seconde. Le nom
+             vient du serveur, jamais recopié côté client. --}}
+        'presenceChannel' => \App\Support\Realtime::presenceChannel(),
     ]))" @click.outside="open = false" style="position:relative;">
     <button type="button" @click="open = !open" class="ukc-bell" aria-label="{{ __('Notifications') }}"
             style="position:relative;background:none;border:none;cursor:pointer;color:var(--ukc-text);

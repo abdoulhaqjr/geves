@@ -32,7 +32,7 @@ Larastan **niveau 5**.
 - Retirer un évaluateur révoque son attestation `instruction_resumes` et l'exclut des statistiques d'évaluation actives. Une réinscription ou réattribution peut rétablir l'attestation révoquée par ce retrait si une évaluation terminée existe ; une révocation manuelle reste manuelle.
 - Les onglets de `/admin/rapports` utilisent `?event_id=…&tab=…` et le composant `.ukc-nav-docs`. Dans cette vue, déclarer les tableaux PHP avec `@php … @endphp` : la forme courte `@php(...)` a déjà absorbé le bloc suivant à la compilation Blade.
 - La couverture DocSpace du livret est propre à l'événement et facultative. Le PDF fusionné utilise `pdf-lib` via `scripts/merge-livret-cover.mjs` et le binaire `LIVRET_PDF_NODE_BINARY` (défaut `node`). Sans couverture DocSpace active, la couverture automatique reste utilisée.
-- La page Utilisateurs lit le pays de la dernière IP depuis la base locale DB-IP Country Lite (`storage/app/geoip/dbip-country-lite.mmdb`) ; ce fichier est ignoré par Git. L'installer après déploiement avec `php artisan geoip:update` ; le planificateur le renouvelle le 3 de chaque mois. La page porte l'attribution DB-IP exigée par la licence.
+- La page Utilisateurs lit le pays de la dernière IP depuis la base locale DB-IP Country Lite (`storage/app/geoip/dbip-country-lite.mmdb`) ; ce fichier est ignoré par Git. L'installer après déploiement avec `php artisan geoip:update` ; le planificateur le renouvelle le 3 de chaque mois. La page porte l'attribution DB-IP exigée par la licence. Voir « Le pays d'une IP » ci-dessous pour les trois causes d'une colonne vide.
 - Les exemples Office transmis au repli IA OpenRouter sont lus localement ; l'extracteur refuse les archives dépassant 32 Mo après décompression. Les clés API restent dans les réglages chiffrés ou l'environnement.
 
 ### Comptes et droits (2026-10-20)
@@ -42,6 +42,95 @@ Larastan **niveau 5**.
 - Seul un super administrateur peut attribuer `access_level=super_admin` ou modifier la matrice des permissions. La visibilité des super administrateurs couvre aussi les anciens rôles `administrator` et la permission `manage_colloques`, y compris avant une usurpation de compte.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
+
+### Le pays d'une IP, et le nombre de connectés EN DIRECT (2026-10-26)
+
+Deux colonnes de `/admin/utilisateurs` ne disaient pas ce qu'on croyait.
+
+**1. « Pays (IP) » restait vide, et TROIS causes se confondaient** derrière le
+même tiret : la base locale pas installée, une adresse privée, ou une plage
+inconnue de l'édition gratuite. L'échec était **muet** - `IpCountry::namesFor()`
+rendait un tableau vide sans qu'aucun écran ne le signale, et il n'existait
+**aucun test** sur ce chemin.
+
+- ⚠️⚠️ **LA CAUSE DE PRODUCTION EST AILLEURS : L'IP ENREGISTRÉE EST CELLE DU
+  MANDATAIRE.** `TrustProxies` n'était pas configuré. Derrière le proxy de
+  l'hébergement, `$request->ip()` rend l'adresse du **proxy** : toutes les
+  connexions s'enregistrent sous la même IP, donc sous le même pays - une
+  colonne qui dit la même chose pour tout le monde est pire qu'une colonne vide.
+  Réglage : **`config/trustedproxy.php`**, clé `proxies` (`TRUSTED_PROXIES`).
+  - ⚠️ **Le nom du fichier et celui de la clé ne se choisissent pas** :
+    `TrustProxies`, déjà dans la pile globale, lit `config('trustedproxy.proxies')`
+    **à chaque requête** quand aucun mandataire ne lui a été fixé. C'est ce qui
+    permet de ne pas y toucher dans `bootstrap/app.php`, où la configuration
+    n'est **pas encore chargée** quand la pile se compose - et où `env()` est de
+    toute façon proscrit (`EnvHorsConfigTest`). Un cas éprouve le branchement de
+    bout en bout **et** la présence de la clé dans le fichier : renommer l'un ou
+    l'autre couperait le fil sans rien casser.
+  - ⚠️⚠️ **`*` NE VAUT QUE DERRIÈRE UN VRAI MANDATAIRE.** `X-Forwarded-For` est
+    écrit par le client : servi en direct, tout visiteur choisirait l'adresse que
+    GEVES enregistre sur sa connexion - la seule trace dont on dispose pour dire
+    d'où quelqu'un s'est connecté. **Vide par défaut.**
+- ⚠️ **En développement, la colonne ne montrera JAMAIS rien**, et ce n'est pas
+  une panne : la seule IP de la base est `127.0.0.1`. Installer la base en local
+  n'y changerait rien - une adresse de bouclage n'a pas de pays. La page affiche
+  donc **« Réseau local »** plutôt qu'un tiret, qui se lisait comme un échec.
+- ⚠️ **La base absente se DIT** (bandeau d'alerte citant `php artisan
+  geoip:update`), au lieu de laisser croire que personne n'est localisable.
+- **Repli hébergé, à la manière de Bizzcart** (dont le pilote par défaut est un
+  service HTTP sans clé, ce qui explique qu'il « marche tout de suite ») :
+  `geoip.fallback`, un seul fournisseur (ipapi.co, HTTPS, sans clé), consulté
+  **uniquement** pour les adresses que la base locale n'a pas su lire.
+  - ⚠️⚠️ **IL EST ÉTEINT PAR DÉFAUT, ET CE N'EST PAS UN OUBLI.** Le docblock
+    d'origine d'`IpCountry` promettait « sans transmettre les IP à un tiers » :
+    allumer ce repli envoie l'adresse des participants chez quelqu'un d'autre.
+    C'est une décision qui engage leurs données, pas un réglage de confort.
+  - ⚠️ **Plafonné par affichage** (10) et **mis en cache** (30 j pour un pays
+    trouvé, 1 j pour une absence) : une liste de vingt comptes ne doit pas
+    devenir vingt appels sortants au rendu d'une page. Un échec du service
+    n'empêche jamais la liste de s'afficher.
+
+**2. « En ligne » comptait autre chose que ce qu'on lui demandait.** Le chiffre
+venait de la table des sessions, par un sondage toutes les 30 s : il disait quels
+comptes avaient été **actifs dans les cinq dernières minutes**, pas qui était là.
+Un **canal de présence** (`Realtime::presenceChannel()`, `ukc.enligne`) répond à
+la vraie question, et la carte se renomme alors **« En ligne maintenant »**.
+
+- ⚠️⚠️ **IL NE COÛTE AUCUNE CONNEXION DE PLUS.** La cloche de notifications
+  ouvre **déjà** un WebSocket sur chaque page authentifiée (les deux layouts la
+  portent) : le canal se greffe sur cette connexion-là. Un service hébergé
+  facture les **connexions**, pas les canaux - en ouvrir un second doublerait la
+  note pour le même chiffre. C'est pourquoi l'abonnement vit dans
+  `ukcNotificationBell` : elle ne s'en sert pas, elle le **porte**, et annonce le
+  compte par l'évènement `ukc-en-ligne`.
+- ⚠️⚠️ **LA LISTE DES MEMBRES EST LUE PAR TOUS LES AUTRES MEMBRES**, et sur ce
+  canal-là ils sont l'ensemble des personnes connectées à la plateforme. D'où
+  **`User::getAuthIdentifierForBroadcasting()`**, qui rend une **empreinte**
+  (`Realtime::presenceMemberId()`) et non la clé primaire : publier l'identifiant
+  donnerait à chaque participant la liste de qui est en ligne - sur un site qui
+  organise des évaluations en aveugle, ce n'est pas un détail. Elle est **stable
+  par personne**, ce qui fait que deux onglets comptent pour **une** personne.
+  ⚠️ Elle vaut pour **tous** les canaux de présence, le canal de document
+  compris : son cas de `DocumentDeTacheTest` a été repris en conséquence.
+- ⚠️ **Le direct l'emporte, et le sondage S'ARRÊTE alors** : les deux ne mesurent
+  pas la même chose, et laisser le sondage écraser toutes les 30 secondes un
+  chiffre plus juste par un chiffre plus vieux ferait osciller le compteur sous
+  les yeux. **Sans service temps réel réglé, rien ne change** : la page compte
+  comme avant, et le libellé garde son « (5 min) ».
+- ⚠️ **Un tableau VIDE serait un refus** : le socle n'autorise un canal que sur
+  une valeur vraie, et `[]` est faux en PHP. On rend donc l'empreinte.
+- Les identifiants PieSocket/Pusher se règlent dans **Réglages › Intégrations**
+  (déjà en place) : ce canal est le **second consommateur** réel de la couche
+  temps réel, après la cloche.
+
+Gardes : `PaysParIpTest` (12 cas) et `PresenceEnLigneTest` (7 cas),
+**11 sabotages vérifiés**.
+⚠️ **Piège rencontré ici** : `php.bat` ne transmet pas les arguments
+**multi-lignes** (cmd les aplatit) - un motif de sabotage doit tenir sur une
+ligne, sinon la substitution échoue et on croit la garde en cause.
+⚠️ **Et un sabotage de la configuration ne mord que si le cas lit le FICHIER** :
+poser `config(['trustedproxy.proxies' => …])` dans un cas éprouve le socle, pas
+notre déclaration - il a fallu un second cas pour couvrir celle-ci.
 
 ### Cookies : un bandeau qui INFORME, parce qu'il n'y a rien à refuser
 

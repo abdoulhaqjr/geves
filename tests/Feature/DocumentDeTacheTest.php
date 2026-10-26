@@ -360,9 +360,13 @@ describe('autorisation du canal temps reel', function () {
             ->and($charge['auth'])->toMatch('/^cle:[0-9a-f]{64}$/');
 
         $donnees = json_decode((string) $charge['channel_data'], true);
-        // ⚠️ Le protocole sérialise `user_id` en CHAÎNE : le comparer à un
-        // entier échouerait sur un détail de transport, pas sur la règle.
-        expect((int) $donnees['user_id'])->toBe($redacteur->id)
+        // ⚠️ `user_id` n'est plus la clé primaire mais l'EMPREINTE du compte
+        // ({@see User::getAuthIdentifierForBroadcasting()}) : la liste des
+        // membres d'un canal de présence est lue par tous les autres membres,
+        // et le canal des connectés les réunit tous. Ce qui compte ici est
+        // qu'elle désigne bien CE rédacteur, et lui seul.
+        expect($donnees['user_id'])->toBe(Realtime::presenceMemberId($redacteur->id))
+            ->and($donnees['user_id'])->not->toBe((string) $redacteur->id)
             ->and($donnees['user_info']['canWrite'])->toBeTrue();
 
         $vu = $this->actingAs($lecteur, 'web')

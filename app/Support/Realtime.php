@@ -63,6 +63,45 @@ final class Realtime
     }
 
     /**
+     * Le canal de présence de la plateforme : qui a GEVES ouvert, maintenant.
+     *
+     * ⚠️⚠️ **CE N'EST PAS LA MÊME MESURE QUE « ACTIF DEPUIS 5 MINUTES ».** La
+     * table des sessions dit qui a envoyé une requête récemment ; ce canal dit
+     * qui tient une page ouverte à l'instant. C'est la question qu'on pose
+     * devant un compteur « en ligne », et elle ne peut venir que du navigateur -
+     * aucun comptage côté serveur ne sait qu'un onglet vient de se fermer.
+     *
+     * ⚠️ **Il ne coûte AUCUNE connexion de plus.** La cloche de notifications
+     * ouvre déjà un WebSocket sur chaque page authentifiée ({@see
+     * resources/js/app.js}) : le canal s'ajoute à cette connexion-là. Un
+     * service hébergé facture les connexions, pas les canaux - ouvrir un
+     * second socket doublerait la note pour le même chiffre.
+     */
+    public static function presenceChannel(): string
+    {
+        return 'ukc.enligne';
+    }
+
+    /**
+     * L'identité d'un membre sur un canal de présence.
+     *
+     * ⚠️⚠️ **LA LISTE DES MEMBRES EST LUE PAR TOUS LES AUTRES MEMBRES.** C'est
+     * le protocole : qui rejoint un canal de présence reçoit la liste entière,
+     * et chaque participant connecté y est. Publier l'identifiant du compte
+     * reviendrait donc à donner à toute la plateforme la liste de QUI est en
+     * ligne - sur un site qui organise des évaluations en aveugle, ce n'est pas
+     * un détail. On publie une empreinte, qui ne se remonte pas.
+     *
+     * ⚠️ **Elle est STABLE par personne** : c'est ce qui fait que deux onglets
+     * ouverts comptent pour une personne et non pour deux. Le service
+     * dédoublonne les membres sur cette valeur.
+     */
+    public static function presenceMemberId(int|string $userId): string
+    {
+        return substr(hash_hmac('sha256', (string) $userId, (string) config('app.key')), 0, 32);
+    }
+
+    /**
      * Nom du canal de présence d'un document.
      *
      * ⚠️ **Une seule définition.** Le nom est écrit à trois endroits - la page,

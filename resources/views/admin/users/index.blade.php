@@ -6,9 +6,36 @@
         </a>
     </x-slot:actions>
 
+    {{-- ⚠️ Deux sources pour UN seul compteur, et elles ne mesurent pas la même
+         chose : le canal de présence dit qui tient une page ouverte à l'instant,
+         le sondage dit quels comptes ont été actifs dans les cinq dernières
+         minutes. Le direct l'emporte dès qu'il répond - et le sondage s'arrête
+         alors, sinon il écraserait toutes les 30 secondes un chiffre plus juste
+         par un chiffre plus vieux. Sans service temps réel, rien ne change. --}}
     <div class="admin-page admin-users"
-         x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || 'list', onlineCount: @js($stats['online']), delOpen: false, delConfirm: '', delUser: { url: '', name: '' } }"
-         x-init="setInterval(() => { if (document.visibilityState === 'visible' && tab === 'list') fetch(@js(route('admin.users.online')), { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : null).then(data => { if (data) onlineCount = data.count; }).catch(() => {}); }, 30000)">
+         x-data="{
+            tab: new URLSearchParams(window.location.search).get('tab') || 'list',
+            onlineCount: @js($stats['online']),
+            direct: false,
+            sondage: null,
+            delOpen: false, delConfirm: '', delUser: { url: '', name: '' },
+            enDirect(nombre) {
+                this.direct = true;
+                this.onlineCount = nombre;
+                if (this.sondage) { clearInterval(this.sondage); this.sondage = null; }
+            },
+            init() {
+                window.addEventListener('ukc-en-ligne', (e) => this.enDirect(e.detail));
+                if (typeof window.ukcEnLigne === 'number') this.enDirect(window.ukcEnLigne);
+                this.sondage = setInterval(() => {
+                    if (document.visibilityState !== 'visible' || this.tab !== 'list') return;
+                    fetch(@js(route('admin.users.online')), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => { if (data && !this.direct) this.onlineCount = data.count; })
+                        .catch(() => {});
+                }, 30000);
+            },
+         }">
         <div class="ukc-nav-docs">
             <button type="button" @click="tab='list'" :class="{ active: tab==='list' }">Liste des utilisateurs</button>
             <button type="button" @click="tab='roles'" :class="{ active: tab==='roles' }">Rôles</button>
@@ -21,7 +48,7 @@
         <div x-show="tab==='list'">
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Utilisateurs</div><div class="val blue">{{ $stats['total'] }}</div></div>
-                <div class="ukc-stat-card tw-stat" title="Comptes distincts ayant utilisé le site durant les 5 dernières minutes ; actualisation toutes les 30 secondes"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">En ligne (5 min)</div><div class="val green" x-text="onlineCount === null ? '-' : onlineCount">{{ $stats['online'] ?? '-' }}</div></div>
+                <div class="ukc-stat-card tw-stat" :title="direct ? @js(__('Personnes ayant une page ouverte en ce moment ; le compte se met à jour à chaque arrivée et à chaque départ')) : @js(__('Comptes distincts ayant utilisé le site durant les 5 dernières minutes ; actualisation toutes les 30 secondes'))"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl" x-text="direct ? @js(__('En ligne maintenant')) : @js(__('En ligne (5 min)'))">{{ __('En ligne (5 min)') }}</div><div class="val green" x-text="onlineCount === null ? '-' : onlineCount">{{ $stats['online'] ?? '-' }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Comptes visibles ayant un niveau administrateur ou les droits effectifs de super administrateur"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="shield" :size="20" /></div><div class="lbl">Admins</div><div class="val">{{ $stats['admins'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes ayant une fiche évaluateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Évaluateurs</div><div class="val">{{ $stats['reviewers'] }}</div></div>
                 <div class="ukc-stat-card tw-stat" title="Personnes distinctes affectées comme organisateur sur au moins un événement"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Organisateurs</div><div class="val">{{ $stats['organizers'] }}</div></div>
@@ -89,7 +116,8 @@
                                     </td>
                                     <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y - H:i') ?? 'Jamais' }}</td>
                                     <td><span class="ip-cell">{{ $u->last_login_ip ?: '-' }}</span></td>
-                                    <td>{{ $countriesByIp[$u->last_login_ip] ?? '-' }}</td>
+                                    {{-- Une IP privée n'a pas de pays, et ce n'est pas une panne : on le dit, plutôt que de rendre le même tiret que pour une plage inconnue. --}}
+                                    <td>{{ $countriesByIp[$u->last_login_ip] ?? ($u->last_login_ip && ! \App\Support\IpCountry::isPublic($u->last_login_ip) ? __('Réseau local') : '-') }}</td>
                                     <td>
                                         @if ($u->is_active)<span class="ukc-pill ukc-pill--ok">Actif</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Inactif</span>@endif
@@ -142,6 +170,13 @@
                 </div>
             </div>
             <div style="margin-top:12px;" data-filter-part="users-foot">{{ $users->links() }}</div>
+            @unless ($geoip['resolvable'])
+                {{-- L'échec était MUET : sans base installée, la colonne rendait des tirets et rien ne disait qu'il manquait un fichier. --}}
+                <div class="ukc-alert ukc-alert--warn" style="margin-top:12px;">
+                    <span class="ico"><x-ukc.icon name="alert-triangle" :size="18" /></span>
+                    <div>{{ __('La base de géolocalisation n’est pas installée : aucun pays ne peut être déduit, quelles que soient les adresses enregistrées. Sur le serveur :') }} <code>php artisan geoip:update</code></div>
+                </div>
+            @endunless
             <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La date et l’IP sont enregistrées après chaque connexion réussie, dans l’espace participant ou le back-office. « En ligne » désigne une activité durant les cinq dernières minutes. Le pays est estimé depuis l’IP publique ; une IP locale ou inconnue n’a pas de pays. <a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a>.</p>
         </div>
 

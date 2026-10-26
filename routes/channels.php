@@ -2,6 +2,7 @@
 
 use App\Models\ProjectTaskDocument;
 use App\Models\User;
+use App\Support\Realtime;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -39,6 +40,24 @@ Broadcast::channel('ukc.doc.{document}', function (User $user, int $document) {
         'canWrite' => $doc->isEditableBy($user),
     ];
 });
+
+/*
+ * Qui a GEVES ouvert, maintenant. Tout compte connecté y entre - c'est le
+ * principe même d'un compteur de connectés - et les deux espaces y entrent
+ * donc par leur guard respectif.
+ *
+ * ⚠️⚠️ **ON N'Y MET RIEN QUI DÉSIGNE QUELQU'UN.** Le tableau rendu ici est
+ * diffusé à TOUS les autres membres, et ici ils sont l'ensemble des personnes
+ * connectées à la plateforme : un nom, une adresse ou un rôle donnerait à
+ * chaque participant la liste de qui est en ligne. On ne publie que
+ * l'empreinte qui sert déjà d'identité de membre, et qui ne se remonte pas.
+ *
+ * ⚠️ **Un tableau VIDE serait un refus** : le socle n'autorise le canal que
+ * sur une valeur vraie, et `[]` est faux en PHP.
+ */
+Broadcast::channel(Realtime::presenceChannel(), function (User $user) {
+    return ['id' => $user->getAuthIdentifierForBroadcasting()];
+}, ['guards' => ['account', 'web']]);
 
 // Une notification ne peut être annoncée qu'au compte qui la possède. Les deux
 // espaces utilisent le même modèle User, mais chacun a son propre guard.

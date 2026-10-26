@@ -73,6 +73,15 @@ class UserController extends Controller
 
         $countriesByIp = $ipCountry->namesFor($users->getCollection()->pluck('last_login_ip'));
 
+        // ⚠️ Un pays absent a TROIS causes, et la page n'en distinguait aucune :
+        // la base locale n'est pas installée, l'adresse est privée (poste de
+        // développement, mandataire non déclaré), ou la plage est inconnue de
+        // l'édition gratuite. Des tirets partout se lisaient comme une panne.
+        $geoip = [
+            'resolvable' => IpCountry::resolvable(),
+            'base' => IpCountry::databaseInstalled(),
+        ];
+
         // Comptes par rôle GLOBAL (pour les indicateurs + l'onglet Rôles).
         // whereHas plutôt que le scope role() de spatie : renvoie 0 sans lever
         // RoleDoesNotExist si le rôle n'a pas encore été créé (install fraîche).
@@ -122,6 +131,7 @@ class UserController extends Controller
         return view('admin.users.index', [
             'users' => $users,
             'countriesByIp' => $countriesByIp,
+            'geoip' => $geoip,
             'role' => $role,
             'status' => $status,
             'search' => $search,

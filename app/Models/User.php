@@ -9,6 +9,7 @@ use App\Notifications\AccountVerifyEmail;
 use App\Notifications\StaffVerifyEmail;
 use App\Support\Locales;
 use App\Support\Phone;
+use App\Support\Realtime;
 use App\Support\StaffRoles;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -100,6 +101,21 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'last_login_at' => now(),
             'last_login_ip' => $ip,
         ])->save();
+    }
+
+    /**
+     * Ce que les AUTRES membres d'un canal de présence voient de ce compte.
+     *
+     * ⚠️⚠️ **LAISSÉ AU DÉFAUT, C'EST LA CLÉ PRIMAIRE QUI CIRCULE.** Le
+     * protocole diffuse la liste des membres à chacun d'eux : sur le canal qui
+     * compte les connectés, tout participant recevrait donc les identifiants
+     * de tous les autres. On rend une empreinte stable
+     * ({@see Realtime::presenceMemberId()}) - stable, donc deux
+     * onglets comptent toujours pour une personne.
+     */
+    public function getAuthIdentifierForBroadcasting(): string
+    {
+        return Realtime::presenceMemberId($this->getKey());
     }
 
     /**

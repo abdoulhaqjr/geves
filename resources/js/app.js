@@ -1003,8 +1003,35 @@ document.addEventListener('alpine:init', () => {
                 this.pusher = new Pusher(rt.key, options);
                 this.pusher.subscribe(`private-ukc.notifications.${config.userId}`)
                     .bind('notification.arrived', () => this.scheduleRefresh());
+                this.suivrePresence(config.presenceChannel);
                 this.scheduleRefresh();
             }).catch(() => {});
+        },
+        // Rejoint le canal de présence et annonce le nombre de connectés à la
+        // page. La cloche n'en fait rien : elle le PORTE, parce qu'elle est le
+        // seul composant présent sur toutes les pages authentifiées et qu'elle
+        // tient déjà la connexion. L'écran des utilisateurs écoute l'évènement.
+        //
+        // ⚠️ Le compte vient de `members.count`, que le service tient à jour :
+        // on ne le dérive pas des arrivées et des départs qu'on a VUS, sinon
+        // une reconnexion repartirait d'un chiffre faux.
+        suivrePresence(canal) {
+            if (!canal) return;
+
+            const annonce = (nombre) => {
+                if (typeof nombre !== 'number') return;
+                window.ukcEnLigne = nombre;
+                window.dispatchEvent(new CustomEvent('ukc-en-ligne', { detail: nombre }));
+            };
+
+            try {
+                const presence = this.pusher.subscribe(`presence-${canal}`);
+                presence.bind('pusher:subscription_succeeded', (membres) => annonce(membres?.count));
+                presence.bind('pusher:member_added', () => annonce(presence.members?.count));
+                presence.bind('pusher:member_removed', () => annonce(presence.members?.count));
+            } catch {
+                // Un canal refusé laisse la page sur son comptage serveur.
+            }
         },
         scheduleRefresh() {
             if (this.refreshTimer) clearTimeout(this.refreshTimer);

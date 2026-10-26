@@ -28,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['web']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // ⚠️ Les mandataires de confiance se règlent dans `config/trustedproxy.php`,
+        // et surtout PAS ici : la configuration n'est pas encore chargée quand
+        // cette pile se compose, et `env()` ne vaut rien hors de `config/` une
+        // fois `config:cache` passé. `TrustProxies` relit ce fichier à chaque
+        // requête. Sans lui, `$request->ip()` rend l'adresse du proxy.
+
         // Page de connexion unique (participants + staff) : tous les invités y sont menés.
         $middleware->redirectGuestsTo(fn () => route('account.login'));
 
