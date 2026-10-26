@@ -4,13 +4,14 @@ namespace App\Support;
 
 use App\Models\Participant;
 use App\Models\Submission;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /** Une personne par événement, classée d'après ses communications réelles. */
 class EventParticipantRoster
 {
     /**
-     * @return Collection<int, array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: mixed, name: string, email: string, userId: int|null}>
+     * @return Collection<int, array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: Carbon|null, name: string, email: string, userId: int|null}>
      */
     public function forEvent(string $eventId): Collection
     {
@@ -108,38 +109,86 @@ class EventParticipantRoster
             }
         }
 
-        return collect($groups)->map(function (array $group) {
-            $rows = collect($group['rows']);
-            $paid = $rows->contains(fn (Participant $p) => $p->participationPayments->contains('status', 'paid'));
-            // Un déposant non auteur entre comme auditeur seulement s'il a payé.
-            // Les inscriptions simples sans dépôt gardent leur statut habituel.
-            if (! $group['corresponding'] && ! $group['coauthor'] && ! $paid
-                && (! $rows->contains('role', 'attendee') || $group['deposited'])) {
-                return null;
+        // On assemble un tableau, puis on l'enveloppe : une ligne du registre se
+        // lit mieux dans une méthode nommée que dans une fermeture de cinquante
+        // lignes, et le `null` d'une personne écartée se voit au point d'appel.
+        // ⚠️⚠️ **CE N'EST PAS LE REMÈDE À L'ERREUR PHPSTAN DE `forEvent()`**,
+        // et il ne faut pas le croire : elle PERSISTE. `Collection` n'est pas
+        // covariante, le message affiche DEUX TYPES IDENTIQUES, et ni ce
+        // passage par tableau ni le typage de `createdAt` ci-dessous ne l'ont
+        // levée - les deux ont été essayés et mesurés. La cause est ailleurs,
+        // probablement dans la déclaration de `forEvent()` elle-même.
+        $lignes = [];
+
+        foreach ($groups as $group) {
+            $ligne = $this->ligne($group);
+            if ($ligne !== null) {
+                $lignes[] = $ligne;
             }
+        }
 
-            $role = $group['corresponding'] ? 'author' : ($group['coauthor'] ? 'coauthor' : 'attendee');
-            $representative = $rows->sortByDesc(fn (Participant $p) => (int) ($p->role === $role) * 8
-                + (int) filled($p->user_id) * 4
-                + (int) $p->participationPayments->contains('status', 'paid') * 2
-                + (int) filled($p->email))->first();
-            $modeParticipant = in_array($representative->participation_mode, ['online', 'onsite'], true)
-                ? $representative
-                : $rows->first(fn (Participant $p) => in_array($p->participation_mode, ['online', 'onsite'], true));
+        return collect($lignes);
+    }
 
-            return [
-                'participant' => $representative,
-                'role' => $role,
-                'participationMode' => $modeParticipant?->participation_mode,
-                'participationModeLabel' => $modeParticipant?->participationModeLabel(),
-                'paid' => $paid,
-                'invited' => $rows->contains(fn (Participant $p) => $p->isInvited()),
-                'createdAt' => $rows->min('created_at'),
-                'name' => $representative->full_name,
-                'email' => (string) $representative->email,
-                'userId' => $group['userId'],
-            ];
-        })->filter()->values();
+    /**
+     * Une personne du registre, ou `null` si rien ne l'y fait entrer.
+     *
+     * ⚠️ La forme annoncée est EXACTEMENT celle de `forEvent()`, et les deux
+     * doivent rester d'accord - c'est ce qui rend la méthode relisible. ⚠️ Cela
+     * n'a PAS levé l'erreur de covariance de `forEvent()` : voir le commentaire
+     * de son assemblage.
+     *
+     * @param  array<string, mixed>  $group
+     * @return array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: Carbon|null, name: string, email: string, userId: int|null}|null
+     */
+    private function ligne(array $group): ?array
+    {
+        $rows = collect($group['rows']);
+        $paid = $rows->contains(fn (Participant $p) => $p->participationPayments->contains('status', 'paid'));
+        // Un déposant non auteur entre comme auditeur seulement s'il a payé.
+        // Les inscriptions simples sans dépôt gardent leur statut habituel.
+        if (! $group['corresponding'] && ! $group['coauthor'] && ! $paid
+            && (! $rows->contains('role', 'attendee') || $group['deposited'])) {
+            return null;
+        }
+
+        $role = $group['corresponding'] ? 'author' : ($group['coauthor'] ? 'coauthor' : 'attendee');
+        $representative = $rows->sortByDesc(fn (Participant $p) => (int) ($p->role === $role) * 8
+            + (int) filled($p->user_id) * 4
+            + (int) $p->participationPayments->contains('status', 'paid') * 2
+            + (int) filled($p->email))->first();
+
+        // ⚠️ Un groupe naît TOUJOURS d'au moins une inscription (il est créé
+        // en parcourant les participants), donc `first()` rend quelqu'un.
+        // Mais l'analyse ne peut pas le savoir, et tout ce qui suit
+        // déréférence ce représentant : on nomme l'invariant au lieu de le
+        // supposer - sans quoi un groupe vide ferait tomber la page entière.
+        if (! $representative) {
+            return null;
+        }
+
+        $modeParticipant = in_array($representative->participation_mode, ['online', 'onsite'], true)
+            ? $representative
+            : $rows->first(fn (Participant $p) => in_array($p->participation_mode, ['online', 'onsite'], true));
+
+        return [
+            'participant' => $representative,
+            'role' => $role,
+            'participationMode' => $modeParticipant?->participation_mode,
+            'participationModeLabel' => $modeParticipant?->participationModeLabel(),
+            'paid' => $paid,
+            'invited' => $rows->contains(fn (Participant $p) => $p->isInvited()),
+            // `$rows->min('created_at')` ne se type pas : il rend `mixed`. On
+            // nomme donc la date (d'où `@property Carbon|null $created_at` sur le
+            // modèle, la convention du projet) - même valeur, type connu.
+            // ⚠️ Posé pour lever l'erreur de covariance de `forEvent()`, ce
+            // typage ne l'a PAS levée : il reste bon pour lui-même, pas comme
+            // explication de cette erreur.
+            'createdAt' => $rows->map(fn (Participant $p) => $p->created_at)->filter()->sort()->first(),
+            'name' => $representative->full_name,
+            'email' => (string) $representative->email,
+            'userId' => $group['userId'],
+        ];
     }
 
     private function email(?string $email): string

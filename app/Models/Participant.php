@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
  *
  * @property int|null $account_id
  * @property int|null $user_id
+ * @property Carbon|null $created_at
  * @property Carbon|null $checked_in_at
  * @property array<string, mixed>|null $meta
  * @property Event|null $event
