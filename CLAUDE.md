@@ -337,6 +337,43 @@ consentement qui ne gouvernerait rien.
     appariements déjà établis).
   - Gardes : `EauTogoComplementTest` (8 cas, **5 sabotages vérifiés**) - il
     exécute le seeder de base **puis** le complément, comme la production.
+- ⚠️⚠️ **LES CO-AUTEURS SE COMPLÈTENT APRÈS COUP, ET C'EST UN SEEDER À PART**
+  (`ColloqueEauTogoCoauthorsSeeder`). Les deux imports stockaient le texte libre
+  de la colonne « Les autres auteurs et affiliations » dans
+  `submission.meta['coauthors_raw']` mais ne le transformaient **jamais** en
+  auteurs : `submission.authors` ne portait que l'auteur correspondant. Ce seeder
+  le complète. Lancement, **après** base + complément :
+  `php artisan db:seed --class=ColloqueEauTogoCoauthorsSeeder` (jamais depuis
+  `DatabaseSeeder`).
+  - ⚠️⚠️ **LE TEXTE EST 100% LIBRE, ET IL A ÉTÉ RELU À LA MAIN.** Noms et
+    affiliations mêlés, listes numérotées, « Néant/Aucun/RAS », parfois des
+    mots-clés collés par erreur, le déposant qui se re-liste, une coquille de
+    source (« Mozimwè AN » pour ANI). Un parseur automatique en abîme ~1 sur 8
+    (initiale mangée, noms collés, titre coupé) - **inacceptable sur un livret
+    officiel**. La liste embarquée (`CURATED_JSON`, 40 communications,
+    127 co-auteurs) a donc été extraite **puis corrigée et relue**, cas par cas,
+    et c'est elle qui fait foi : elle se lit dans le diff. Ne pas la régénérer
+    par regex sans relire.
+  - ⚠️ **Appariement par `sha256(meta.coauthors_raw)`** : autonome (pas besoin du
+    xlsx à l'exécution), et il couvre les **deux** imports d'un coup - les textes
+    co-auteurs des exports 18/10 et 26/10 coïncident au octet près (couverture
+    **40/40** vérifiée avant livraison). Une cellule dont le texte aurait été
+    modifié après la relecture ne s'apparierait plus : on ne devine rien, on
+    passe.
+  - ⚠️ **On ne touche QUE `submission.authors`** (affichage : livret, programme,
+    fiche). **Aucune** ligne `submission_authors`, **aucun** compte, **aucune**
+    notification : un co-auteur libre sans e-mail fiable n'est pas provisionné
+    comme compte (la règle d'origine du colloque). L'auteur correspondant
+    (`authors[0]`) n'est **jamais** modifié.
+  - ⚠️ **Le déposant re-listé en co-auteur est dédoublonné par ENSEMBLE DE MOTS**
+    (accents, casse et ordre ignorés) : « Abba Amba BRAHIM » ne s'ajoute pas
+    derrière le correspondant « ABBA AMBA BRAHIM ». Conséquence : **39**
+    communications gagnent un co-auteur, pas 40 - la 40e (KUEVIAKOE) ne « listait »
+    que le déposant lui-même, et garde donc son seul auteur correspondant.
+  - **Idempotent** : il RECONSTRUIT `authors` = correspondant + co-auteurs relus
+    et n'écrit que si ça change ; un second passage ne touche rien.
+  - Gardes : `EauTogoCoauthorsTest` (5 cas) - il exécute base + complément + ce
+    seeder, comme la production.
 - Le séparateur des mots-clés est réglable par événement dans le champ « Mots-clés » du formulaire de soumission : virgule, point-virgule ou les deux. `SubmissionKeywords` centralise le découpage des badges, de l'export et des documents ; le seeder Eau au Togo choisit les deux, car les réponses sources mélangent les séparateurs. Le nom court de cet événement est « Colloque Eau au Togo ».
 - Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches et la date confirmée par l'organisateur indiquent **11-13 novembre 2026**. Ces affiches portrait restent des documents de l'événement ; le format de bannière publique recadrerait leur texte.
 
