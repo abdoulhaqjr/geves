@@ -2,6 +2,7 @@
 
 use App\Actions\NotifyCoauthorsForPayment;
 use App\Mail\CoauthorPaymentInvitationMail;
+use App\Mail\SubmissionStatusMail;
 use App\Models\Attestation;
 use App\Models\Email;
 use App\Models\Event;
@@ -226,4 +227,52 @@ it('porte la présentation des autres pages publiques', function () {
         ->assertSee('ukc-info-bar', false)   // pied de page DU COLLOQUE
         ->assertSee($event->title)         // de quel colloque il s'agit
         ->assertSee(route('public.colloque', $event->slug), false); // comment en sortir
+});
+
+it('⚠️ n’annonce PAS « envoyé » tant que rien n’est parti', function () {
+    Mail::fake();
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event);
+
+    app(NotifyCoauthorsForPayment::class)->handle($submission);
+
+    // L'e-mail est une tâche de fond : à cet instant il est EMPILÉ, pas transmis.
+    // Le journal l'annonçait « sent », horodaté - le back-office couvrait donc une
+    // file à l'arrêt au lieu de la montrer.
+    $log = Email::where('template', 'coauthor_payment')->where('recipient', 'co@example.tg')->firstOrFail();
+
+    expect($log->status)->toBe('queued')
+        ->and($log->sent_at)->toBeNull();
+});
+
+it('⚠️ le journal passe à « envoyé » quand le TRANSPORT a eu lieu', function () {
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event);
+
+    // Pas de Mail::fake() : on laisse le mailable traverser le transport (array
+    // en test), seul moment où la ligne a le droit de dire « envoyé ».
+    app(NotifyCoauthorsForPayment::class)->handle($submission);
+
+    $log = Email::where('template', 'coauthor_payment')->where('recipient', 'co@example.tg')->firstOrFail();
+
+    expect($log->status)->toBe('sent')->and($log->sent_at)->not->toBeNull();
+});
+
+it('⚠️ une communication acceptée écrit à l’auteur ET à chaque co-auteur', function () {
+    Mail::fake();
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event, status: 'submitted');
+
+    // Un second co-auteur, pour que « chaque » veuille dire quelque chose.
+    $auteurs = $submission->authors;
+    $auteurs[] = ['name' => 'Autre CO', 'email' => 'co2@example.tg', 'corresponding' => false];
+    $submission->update(['authors' => $auteurs]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.submissions.status', $submission), ['status' => 'accepted'])
+        ->assertRedirect();
+
+    Mail::assertQueued(SubmissionStatusMail::class, fn ($m) => $m->hasTo($submission->correspondingAuthorEmail()));
+    Mail::assertQueued(CoauthorPaymentInvitationMail::class, fn ($m) => $m->hasTo('co@example.tg'));
+    Mail::assertQueued(CoauthorPaymentInvitationMail::class, fn ($m) => $m->hasTo('co2@example.tg'));
 });

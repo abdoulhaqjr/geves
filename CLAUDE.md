@@ -873,7 +873,33 @@ dans **`.env.production.example`**. Les pièges qui se paient en ligne :
   passe « password » : en production il lit désormais `ADMIN_EMAIL` /
   `ADMIN_PASSWORD` et **échoue** si le second est vide. Il ne retouche jamais
   un mot de passe déjà changé. Tenu par `SuperAdminSeedTest`.
-- ⚠️ **Les e-mails sont des jobs** : sans `queue:work`, rien ne part.
+- ⚠️⚠️ **LES E-MAILS SONT DES JOBS : sans `queue:work`, rien ne part.** Dix des
+  onze types d'e-mail sont des tâches de fond (`ShouldQueue`) : l'application
+  les écrit en base et considère son travail fini. Le mode opératoire du
+  travailleur est en **§F2 de `DEPLOIEMENT.md`** (cron d'une minute,
+  `--stop-when-empty`). Pour trancher en trente secondes quand « le mail ne part
+  pas » : `DB::table('jobs')->count()` qui monte sans redescendre désigne le
+  travailleur ; `php artisan queue:failed` désigne le transport (SMTP, domaine
+  d'envoi).
+  - ⚠️⚠️ **ET LE JOURNAL `emails` NE DOIT JAMAIS ANNONCER L'ENVOI AVANT LE
+    TRANSPORT.** `Mail::to()->send()` sur un mailable `ShouldQueue` ne fait
+    qu'**empiler** : `NotifyCoauthorsForPayment` écrivait pourtant sa ligne à
+    `sent`, horodatée, dans la foulée - donc le back-office affirmait « envoyé »
+    alors que rien n'était parti, **et il le maintenait quand le travailleur
+    échouait ensuite**. C'est le pire des deux mondes : l'écran COUVRAIT la
+    panne au lieu de la montrer, et c'est ainsi qu'une file à l'arrêt reste
+    invisible pendant des semaines. La ligne naît **`queued`** et c'est le
+    transport qui la fait passer à `sent` ou `failed`, par `send()` et
+    `failed()` sur le mailable (la grammaire que `SubmissionStatusMail` suivait
+    déjà). ⚠️ Une panne du **journal** ne doit pas faire échouer un e-mail déjà
+    transmis : l'écriture est sous `try` et se contente d'un avertissement.
+  - ⚠️ **Une acceptation écrit à TOUT LE MONDE, et c'est vérifié** :
+    `SubmissionStatusChanged` déclenche `NotifyAuthorOfStatus` (auteur
+    correspondant, `SubmissionStatusMail`) **et** `InviteCoauthorsOnAcceptance`
+    (chaque co-auteur, `CoauthorPaymentInvitationMail` - y compris ceux qui
+    n'ont pas de compte). Mesuré sur une communication à quatre auteurs : quatre
+    e-mails en file. Gardes dans `CoauthorPaymentTest` (3 sabotages vérifiés,
+    dont « un seul co-auteur prévenu »).
 - ⚠️ **`config/app.php` fixe le fuseau à `UTC` EN DUR** : une `APP_TIMEZONE`
   dans le `.env` ne serait pas lue.
 

@@ -49,20 +49,25 @@ class NotifyCoauthorsForPayment
             $seen[$key] = true;
 
             $url = route('public.coauthor', ['slug' => $slug, 'email' => $email]);
-            $mail = new CoauthorPaymentInvitationMail($submission, EventNameFormat::author($event, $author), $url);
 
-            Mail::to($email)->send($mail);
-
-            Email::create([
+            // ⚠️ La ligne du journal naît AVANT l'envoi, et à « queued » : cet
+            // e-mail est une tâche de fond, donc `send()` ne fait que l'empiler
+            // (cf. CoauthorPaymentInvitationMail). Écrite « sent » ici, elle
+            // affirmait un envoi que personne n'avait encore effectué - et elle
+            // le maintenait quand le travailleur échouait.
+            $log = Email::create([
                 'event_id' => $submission->event_id,
                 'participant_id' => null,
                 'template' => 'coauthor_payment',
                 'recipient' => $email,
                 'subject' => 'Communication acceptée - réglez vos frais de co-auteur',
                 'body' => 'Communication '.$submission->ref_code.' acceptée.',
-                'sent_at' => now(),
-                'status' => 'sent',
+                'status' => 'queued',
             ]);
+
+            Mail::to($email)->send(new CoauthorPaymentInvitationMail(
+                $submission, EventNameFormat::author($event, $author), $url, $log->id
+            ));
 
             $count++;
         }

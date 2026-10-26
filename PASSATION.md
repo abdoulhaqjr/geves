@@ -3193,3 +3193,43 @@ Gardes : `tests/Feature/FileDuComiteTest.php` (21 cas, 12 sabotages vérifiés).
 extrayaient une région par `Str::after('data-filter-part=…')`, qui rend la
 **chaîne entière** quand l'aiguille manque - retirer la région laissait donc le
 cas au vert. On exige la présence de l'attribut avant d'en lire le contenu.
+
+## 2026-10-26 - « Le mail d'acceptation ne part pas » : la file, et un journal qui mentait
+
+Signalé : l'auteur et ses co-auteurs devraient être prévenus dès qu'une
+communication est acceptée, « mais réellement le mail ne part pas ».
+
+**La chaîne existe, et elle est complète.** Déclenchée sur une vraie
+communication à quatre auteurs (`UK-2025-001`), la plateforme met bien **quatre
+e-mails en file** : `SubmissionStatusMail` à l'auteur correspondant
+(`NotifyAuthorOfStatus`) et `CoauthorPaymentInvitationMail` à chacun des trois
+co-auteurs (`InviteCoauthorsOnAcceptance` → `NotifyCoauthorsForPayment`), y
+compris celui qui n'a pas de compte. Rien à ajouter côté fonctionnalité.
+
+**La cause de « ça ne part pas » est la file**, et elle est déjà écrite en
+**§F2 de `DEPLOIEMENT.md`** : `QUEUE_CONNECTION=database`, dix des onze types
+d'e-mail sont des `ShouldQueue`, donc sans le cron `queue:work` rien ne quitte
+jamais le serveur. ⚠️ **Je n'ai pas pu l'établir sur la production depuis le
+poste** - c'est l'hypothèse la plus probable, pas un constat. Deux commandes
+tranchent : `DB::table('jobs')->count()` qui monte sans redescendre désigne le
+travailleur, `php artisan queue:failed` désigne le transport.
+
+⚠️⚠️ **Mais un vrai défaut a été trouvé en chemin, et c'est lui qui rendait la
+panne invisible.** `NotifyCoauthorsForPayment` écrivait sa ligne du journal
+`emails` à **`sent`, horodatée, juste après `Mail::to()->send()`** - alors que ce
+`send()` ne fait qu'**empiler** un mailable `ShouldQueue`. Le back-office
+affirmait donc « envoyé » pour les co-auteurs sans que rien ne soit parti, **et
+il le maintenait quand le travailleur échouait ensuite** (aucun `failed()` ne
+repassait sur cette ligne). Mesuré : trois lignes `coauthor_payment` à `sent`
+alors que `Mail::fake()` n'avait rien transmis. L'écran **couvrait** la panne au
+lieu de la montrer - c'est ainsi qu'une file à l'arrêt reste invisible
+longtemps. L'e-mail à l'auteur, lui, suivait déjà la bonne grammaire
+(`queued` → `sent`/`failed` via `send()` et `failed()` sur le mailable) :
+l'invitation co-auteur y est alignée. ⚠️ L'écriture du journal reste sous `try`
+- une panne du journal ne doit pas relancer un e-mail déjà transmis.
+
+**3 cas Pest ajoutés** à `CoauthorPaymentTest` (15 cas au total), **3 sabotages
+vérifiés** : le journal qui redit « sent » avant tout envoi, le transport qui ne
+met plus la ligne à jour, et un seul co-auteur prévenu sur deux. ⚠️ Le second
+cas tourne **sans `Mail::fake()`** : c'est le seul moyen d'éprouver que la ligne
+passe à « envoyé » **quand le transport a eu lieu**, et pas avant.
