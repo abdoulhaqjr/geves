@@ -194,7 +194,7 @@
                                             'title' => $s->title,
                                             'coauthors' => collect($s->authors ?? [])->filter(fn ($a) => empty($a['corresponding']))
                                                 ->map(fn ($a) => \App\Support\EventNameFormat::author($s->event, $a))->filter()->values()->all(),
-                                            'keywords' => \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()) ?? '',
+                                            'keywords' => \App\Support\SubmissionKeywords::parse($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()),
                                             'abstract' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))),
                                             'url' => route('admin.submissions.show', $s),
                                         ];
@@ -225,7 +225,7 @@
         <div style="margin-top:12px;" data-filter-part="submissions-foot">{{ $submissions->links() }}</div>
 
         {{-- Aperçu de la soumission (panneau latéral Tailwise) --}}
-        <x-ukc.slideover open="pv" onClose="pv = null" width="460px">
+        <x-ukc.slideover open="pv" onClose="pv = null" width="560px">
             <x-slot:header><span x-text="pv?.ref"></span> - Aperçu</x-slot:header>
             <div class="detail-grid">
                 <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
@@ -248,9 +248,11 @@
                     <template x-for="(c, i) in (pv?.coauthors || [])" :key="i"><div x-text="c"></div></template>
                 </div>
             </div>
-            <div class="ukc-form-row" x-show="pv?.keywords">
+            <div class="ukc-form-row" x-show="pv?.keywords && pv.keywords.length" x-cloak>
                 <label>Mots-clés</label>
-                <div style="font-size:13px;color:var(--ukc-muted);" x-text="pv?.keywords"></div>
+                <div class="ukc-keywords">
+                    <template x-for="(kw, i) in (pv?.keywords || [])" :key="i"><span x-text="kw"></span></template>
+                </div>
             </div>
             <div class="ukc-form-row">
                 <label>Résumé</label>
