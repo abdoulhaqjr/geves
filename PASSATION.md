@@ -3233,3 +3233,71 @@ vérifiés** : le journal qui redit « sent » avant tout envoi, le transport qu
 met plus la ligne à jour, et un seul co-auteur prévenu sur deux. ⚠️ Le second
 cas tourne **sans `Mail::fake()`** : c'est le seul moyen d'éprouver que la ligne
 passe à « envoyé » **quand le transport a eu lieu**, et pas avant.
+
+## 2026-10-26 - Colloque Eau au Togo : un COMPLÉMENT, pas un réimport
+
+Deuxième export du formulaire (26/10/2026) : **56 réponses contre 46**, et
+**62 pièces Word contre 49**. Demande : ajouter les nouvelles soumissions en
+production, à la prochaine migration.
+
+**Le delta n'est pas « dix lignes de plus ».** Dix lignes sont bien neuves
+(L48-L57), mais une **onzième a été MODIFIÉE** : L31 (Samuel KPATCHA) revient
+avec une autre adresse, une affiliation retouchée, le titre de son premier
+résumé reformulé, et **un second résumé**. D'où **13 résumés neufs pour 11
+réponses concernées**, confirmés par l'archive : 62 fichiers dont exactement 49
+déjà importés, aucune pièce orpheline.
+
+**Pourquoi un complément et non la régénération du seeder d'origine.** Le mode
+d'emploi disait « régénérer `RESPONSES_JSON` + `ARCHIVE_BASE64` et ajuster les
+compteurs ». Appliqué ici, cela ferait repasser un import sur **49
+communications déjà en production**, avec leurs comptes, que le comité
+scientifique a pu toucher. `ColloqueEauTogoComplementSeeder` ne connaît que le
+delta, n'écrit que des lignes neuves et ne modifie rien d'existant.
+
+⚠️⚠️ **LE DÉFAUT QUI SERAIT PASSÉ EN SILENCE : LE CHANGEMENT D'ADRESSE.**
+Chercher KPATCHA par son nouvel e-mail aurait créé un **second compte** pour
+quelqu'un que la plateforme connaît déjà - et l'insertion serait de toute façon
+tombée sur l'unicité de `users.phone`, exactement le piège que ce document
+décrit pour les seeders de démonstration. La personne se résout donc par
+**compte, puis adresse, puis téléphone normalisé**, pour le `User` comme pour le
+`Participant`. ⚠️ Le repli sur le `Participant` n'est pas décoratif : le
+secrétariat ouvre des fiches **sans compte** au guichet, et une telle personne
+déposant ensuite depuis le formulaire avec une autre adresse se dédoublerait.
+Un cas l'éprouve avec **un autre format du même numéro**, pour que ce soit la
+normalisation qui rapproche les deux fiches et non une égalité de chaînes.
+
+⚠️⚠️ **LA NUMÉROTATION SE CALCULE.** La production porte déjà **`26-050`** - et
+ce n'est pas un `EAU26-###` tronqué : c'est une communication **saisie au
+back-office**, donc numérotée par `SubmissionObserver` au format `AA-NNN`
+(préfixe = deux derniers chiffres de l'année). Écrire `EAU26-050` en dur aurait
+pu heurter une référence posée à la main. Le complément repart du plus grand
+`EAU26-###` **trouvé en base**.
+
+⚠️ **L'appariement résumé→Word se fait par le CONTENU** : le ZIP ne porte aucun
+identifiant Drive, et son ordre n'explique rien (vérifié contre les 49
+appariements déjà établis - la corrélation n'est pas monotone). Le titre est
+cherché **accents compris** dans le texte du .docx, puis sans accents en repli.
+⚠️ Les **deux titres jumeaux de L49 ne se séparent QUE par leurs accents** :
+normaliser d'abord, comme le faisait ma première version, les confondait.
+
+**Deux constats laissés à l'équipe, délibérément :**
+
+- ⚠️ **L49 a soumis deux fois le même travail** (même axe, mêmes mots-clés ; le
+  champ « Contenu du résumé » du second ne porte que son titre, et ses deux
+  Word sont deux versions d'un même texte). Les deux sont importés
+  **fidèlement** : un seeder importe, il n'arbitre pas - et une communication se
+  refuse d'un clic alors qu'elle ne se recrée pas. Le comité a un doublon à
+  fusionner.
+- ⚠️ **Les corrections de L31 ne sont PAS appliquées** (adresse, affiliation,
+  titre du premier résumé). Changer une adresse, c'est changer un identifiant de
+  connexion : geste de back-office, pas de migration.
+
+⚠️ **Hors périmètre mais à savoir** : ces 13 résumés sont arrivés du **21 au 26
+octobre**, alors que l'échéance enregistrée est le **15 octobre**. Le formulaire
+Google est resté ouvert après la clôture annoncée dans GEVES.
+
+**8 cas Pest**, **5 sabotages vérifiés** (le téléphone retiré de la résolution
+du compte puis de la fiche, la numérotation écrite en dur, le rejeu qui
+réimporte, et le complément qui recrée un colloque absent au lieu de refuser).
+⚠️ Le test exécute le seeder de BASE puis le complément : c'est la situation de
+la production, et un complément éprouvé sur une base vide ne prouverait rien.

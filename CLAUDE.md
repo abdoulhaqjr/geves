@@ -149,6 +149,56 @@ consentement qui ne gouvernerait rien.
 
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : **46 réponses Google Forms, 49 résumés et les 49 Word** intégrés au même fichier (export du 18/10/2026). Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles). ⚠️ **Mise à jour = régénérer `RESPONSES_JSON` + `ARCHIVE_BASE64`/`ARCHIVE_SHA256` depuis le nouvel export** (Excel + ZIP des Word), et ajuster les compteurs durs de `run()`/`validateDocuments` (46, 49, `range(1, 49)`). Le mapping réponse→Word se fait par l'**identifiant Drive stable** de la colonne « Version électronique » (repris de l'ancien `drive_url`→`file_sha256`), pas par le nom de fichier. ⚠️ L'export « File responses » peut **manquer** un Word (un déposant avait fourni le sien à part, réintégré à l'archive) : chaque résumé doit garder sa pièce, sinon relâcher la contrainte 1-Word-par-résumé. Garde end-to-end : `EauTogoEquipeTest` (il **exécute le seeder**, deux fois pour l'idempotence).
 - Le seeder conserve les réponses libres de co-auteurs et les préférences de paiement en `meta`. Il crée ou retrouve le compte global de chacun des 44 auteurs répondants, relie leur fiche et leurs soumissions, avec mot de passe aléatoire et réinitialisation obligatoire. Une adresse source invalide reçoit un compte réservé `@geves.invalid` à corriger manuellement avant accès ; aucun e-mail de vérification n'est envoyé par l'import. Les co-auteurs libres ne sont pas provisionnés sans identité fiable. Aucun paiement ni décision n'est créé. `colloques:reseed` efface tout le domaine des événements, y compris ce colloque : ne pas l'utiliser pour actualiser cet import.
+- ⚠️⚠️ **UN SECOND EXPORT NE SE RÉIMPORTE PAS, IL SE COMPLÈTE**
+  (`ColloqueEauTogoComplementSeeder`, export du 26/10/2026 : **13 résumés**
+  arrivés après celui du 18/10). Régénérer `RESPONSES_JSON` + `ARCHIVE_BASE64`
+  du seeder d'origine ferait repasser un import sur 49 communications **déjà en
+  production**, que le comité scientifique a pu toucher. Le complément ne
+  connaît que le DELTA, n'écrit que des lignes neuves, et **ne modifie rien
+  d'existant**. Lancement : `php artisan db:seed
+  --class=ColloqueEauTogoComplementSeeder` (jamais depuis `DatabaseSeeder`).
+  - ⚠️⚠️ **UNE PERSONNE CHANGE D'ADRESSE ENTRE DEUX EXPORTS, ET C'EST ARRIVÉ.**
+    La ligne 31 revient avec un e-mail neuf, le **même téléphone** et un second
+    résumé. La chercher par la seule adresse aurait créé un **second compte**
+    pour quelqu'un que la plateforme connaît déjà - et l'insertion serait de
+    toute façon tombée sur l'unicité de `users.phone`, le piège documenté plus
+    bas. La personne se résout donc par **compte, puis adresse, puis téléphone
+    normalisé**, pour le `User` comme pour le `Participant`.
+  - ⚠️ **La fiche sans compte compte aussi** : le secrétariat en ouvre au
+    guichet (`/admin/paiements/creer`), sans `user_id`. Si cette personne dépose
+    ensuite depuis le formulaire avec une autre adresse, seul le téléphone les
+    rapproche - d'où le repli par téléphone **sur le `Participant`**, et pas
+    seulement sur le compte.
+  - ⚠️⚠️ **LA NUMÉROTATION SE CALCULE, ELLE N'EST PAS ÉCRITE EN DUR.** La
+    production porte déjà `26-050` - une communication saisie au **back-office**,
+    donc numérotée par `SubmissionObserver` au format `AA-NNN`, à ne pas
+    confondre avec les `EAU26-###` de l'import. Le complément repart du plus
+    grand `EAU26-###` trouvé en base : il ne peut écraser aucune référence, ni
+    les siennes ni celles d'un humain.
+  - ⚠️ **L'idempotence tient à l'empreinte du Word** (`meta.file_sha256`), pas à
+    la référence : un rejeu reconnaît un résumé déjà importé et passe. ⚠️ Lue
+    **en PHP**, jamais en SQL - les fonctions de chemin JSON diffèrent entre
+    MySQL et SQLite, et le défaut se découvrirait en ligne.
+  - ⚠️ **Les axes se lisent sur l'ÉVÉNEMENT** (`settings['tracks']`), jamais
+    d'une liste recopiée : deux listes divergeraient, et un axe inventé
+    passerait inaperçu.
+  - ⚠️ **Ce que le complément n'applique PAS, délibérément** : la ligne 31 a
+    aussi changé d'adresse, d'affiliation et reformulé le titre de son premier
+    résumé. Changer une adresse, c'est changer un identifiant de connexion -
+    c'est un geste de back-office, pas de migration.
+  - ⚠️ **L49 a soumis DEUX FOIS le même travail** (même axe, mêmes mots-clés, le
+    champ résumé du second ne contenant que son titre). Les deux sont importés
+    **fidèlement** : un seeder importe, il n'arbitre pas, et une communication
+    se refuse d'un clic alors qu'elle ne se recrée pas. Le comité a donc un
+    doublon à fusionner.
+  - ⚠️ **L'appariement résumé→Word se fait par le CONTENU**, le ZIP ne portant
+    aucun identifiant Drive : le titre est cherché **accents compris** dans le
+    texte du .docx, puis sans accents en repli. Deux titres jumeaux de L49 ne se
+    séparaient QUE par leurs accents - une normalisation trop zélée les aurait
+    confondus. L'ordre du ZIP, lui, n'explique rien (vérifié contre les 49
+    appariements déjà établis).
+  - Gardes : `EauTogoComplementTest` (8 cas, **5 sabotages vérifiés**) - il
+    exécute le seeder de base **puis** le complément, comme la production.
 - Le séparateur des mots-clés est réglable par événement dans le champ « Mots-clés » du formulaire de soumission : virgule, point-virgule ou les deux. `SubmissionKeywords` centralise le découpage des badges, de l'export et des documents ; le seeder Eau au Togo choisit les deux, car les réponses sources mélangent les séparateurs. Le nom court de cet événement est « Colloque Eau au Togo ».
 - Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches et la date confirmée par l'organisateur indiquent **11-13 novembre 2026**. Ces affiches portrait restent des documents de l'événement ; le format de bannière publique recadrerait leur texte.
 
