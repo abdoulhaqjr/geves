@@ -70,6 +70,16 @@ function tolereesTypographie(): array
             'caracteres' => null,
         ],
 
+        // Même matière, même raison : les 13 résumés arrivés après le premier
+        // export. « Jean [demi-cadratin] Michel VOUILLAMOZ » est le nom tel que
+        // son auteur l'a tapé, dans un co-auteur libre - le réécrire
+        // falsifierait une soumission. ⚠️ Borné au heredoc : le reste du
+        // seeder est notre code, et il reste tenu par la règle.
+        'database/seeders/ColloqueEauTogoComplementSeeder.php' => [
+            'heredoc' => 'RESPONSES_JSON',
+            'caracteres' => null,
+        ],
+
         // La CLÉ de la table de correspondance transcrit le texte DÉJÀ EN BASE
         // qu'il faut retrouver pour le corriger - sa valeur, elle, porte bien un
         // tiret simple. Changer la clé désactiverait silencieusement la
