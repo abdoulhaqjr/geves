@@ -2459,7 +2459,18 @@ document.addEventListener('alpine:init', () => {
         infoCards: Array.isArray(init.infoCards) ? init.infoCards : [],
         stats: Array.isArray(init.stats) ? init.stats : [],
         refAxes: Array.isArray(init.refAxes) ? init.refAxes : [],
-        addFee() { this.fees.push({ label: '', amount: '', grades: [], default: false }); },
+        // ⚠️ `key` vide sur une catégorie neuve : le serveur la dérive du
+        // libellé et la PERSISTE. C'est elle que le choix d'un participant
+        // enregistre - rapprochée sur le libellé, un renommage ferait retomber
+        // tout le monde sur son grade, donc sur un autre montant.
+        addFee() { this.fees.push({ key: '', label: '', amount: '', grades: [], default: false, selectable: false }); },
+        // Une catégorie hors grade ne couvre aucun grade et n'est jamais le
+        // tarif par défaut. On le fait ici AUSSI pour que l'écran dise la même
+        // chose que le serveur, qui l'impose de son côté.
+        basculeHorsGrade(i, coche) {
+            this.fees[i].selectable = coche;
+            if (coche) { this.fees[i].grades = []; this.fees[i].default = false; }
+        },
         removeFee(i) { this.fees.splice(i, 1); },
         // Grades couverts par une catégorie tarifaire : c'est ce rattachement
         // explicite qui permet de retrouver le tarif d'un participant, l'intitulé

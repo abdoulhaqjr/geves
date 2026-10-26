@@ -434,7 +434,11 @@
                             <li class="ukc-fee">
                                 <div class="ukc-fee__who">
                                     <h3>{{ $fee['label'] }}</h3>
-                                    @if ($gradesCouverts !== [])
+                                    {{-- ⚠️ Une catégorie hors grade ne liste AUCUN grade : l'écrire serait
+                                         faux, et son intitulé (« ONG & associations », « Entreprises »)
+                                         dit déjà qui elle concerne. Elle se déclare à l'inscription.
+                                         ⚠️ Et toujours pas d'appel à l'action ici : cette page RENSEIGNE. --}}
+                                    @if (! ($fee['selectable'] ?? false) && $gradesCouverts !== [])
                                         <p class="ukc-fee__grades">
                                             <span class="k">{{ __('Grades concernés') }}</span>
                                             <span class="v">{{ implode(', ', $gradesCouverts) }}</span>

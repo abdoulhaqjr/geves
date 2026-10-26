@@ -271,20 +271,14 @@ class GescoController extends Controller
                 continue;
             }
 
-            // Même résolution que la page de paiement : grade → tarif, repli sur le
-            // tarif le plus élevé si le grade n'est couvert par aucune catégorie.
-            $amount = Fees::resolveAmount($p->event, $p->title) ?? Fees::highestAmount($p->event);
+            // Même résolution que la page de paiement : catégorie déclarée, sinon
+            // grade → tarif, repli sur le tarif le plus élevé si rien ne couvre.
+            $amount = Fees::forParticipant($p) ?? Fees::highestAmount($p->event);
             if (! $amount) {
                 continue;
             }
 
-            $label = null;
-            foreach (Fees::grid($p->event) as $tier) {
-                if ((float) ($tier['amount'] ?? 0) === (float) $amount) {
-                    $label = $tier['label'] ?? null;
-                    break;
-                }
-            }
+            $label = Fees::labelForParticipant($p);
 
             $deadline = $p->event->date_start?->translatedFormat('d/m/Y');
             $lines[] = 'Montant dû pour « '.($p->event->title ?: $p->event->year).' » : '

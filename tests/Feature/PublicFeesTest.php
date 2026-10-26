@@ -46,9 +46,20 @@ it('normalise la grille tarifaire en ignorant les entrées invalides', function 
         ['amount' => 9000],                      // pas de libellé -> ignoré
         ['label' => 'Enseignant', 'amount' => '35000'], // montant en chaîne -> float
     ]))->toBe([
-        ['label' => 'Doctorant', 'amount' => 15000.0, 'grades' => [], 'default' => false],
-        ['label' => 'Enseignant', 'amount' => 35000.0, 'grades' => [], 'default' => false],
+        // ⚠️ `key` est dérivée du libellé quand elle manque (grilles d'avant ce
+        // champ) et `selectable` naît à faux : une grille existante reste donc
+        // entièrement liée au grade, comme avant.
+        ['key' => 'doctorant', 'label' => 'Doctorant', 'amount' => 15000.0, 'grades' => [], 'default' => false, 'selectable' => false],
+        ['key' => 'enseignant', 'label' => 'Enseignant', 'amount' => 35000.0, 'grades' => [], 'default' => false, 'selectable' => false],
     ]);
+
+    // Deux libellés identiques ne se partagent pas une clé : le choix d'un
+    // participant doit désigner UNE catégorie.
+    $cles = array_column(Fees::normalize([
+        ['label' => 'ONG', 'amount' => 1000],
+        ['label' => 'ONG', 'amount' => 2000],
+    ]), 'key');
+    expect($cles)->toBe(['ong', 'ong-2']);
 
     expect(Fees::normalize(null))->toBe([]);
     expect(Fees::normalize('cassé'))->toBe([]);

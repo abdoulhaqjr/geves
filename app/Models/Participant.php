@@ -354,4 +354,36 @@ class Participant extends Model
     {
         return $this->participationPayments()->where('status', 'paid')->exists();
     }
+
+    /**
+     * La catégorie tarifaire HORS GRADE déclarée pour cet événement.
+     *
+     * ⚠️ **C'est la CLÉ de la catégorie, pas son libellé** : celui-ci se
+     * réécrit librement, et un rapprochement par libellé ferait retomber sur
+     * le grade - donc sur un autre montant - au premier renommage.
+     *
+     * ⚠️ **Par événement, comme le grade** (`participants.title`) : une même
+     * personne vient en entreprise à un colloque et en doctorante à un autre.
+     */
+    public function feeCategoryKey(): ?string
+    {
+        $cle = trim((string) ($this->meta['fee_category'] ?? ''));
+
+        return $cle !== '' ? $cle : null;
+    }
+
+    /** Déclare (ou retire, avec `null`) la catégorie hors grade. */
+    public function setFeeCategory(?string $key): void
+    {
+        $meta = $this->meta ?? [];
+        $key = trim((string) $key);
+
+        if ($key === '') {
+            unset($meta['fee_category']);
+        } else {
+            $meta['fee_category'] = $key;
+        }
+
+        $this->meta = $meta;
+    }
 }

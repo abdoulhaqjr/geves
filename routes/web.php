@@ -5,6 +5,7 @@ use App\Http\Controllers\Account\AuthorLookupController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\EventContextController;
+use App\Http\Controllers\Account\FeeCategoryController;
 use App\Http\Controllers\Account\FormationController as AccountFormationController;
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
@@ -235,6 +236,8 @@ Route::middleware(['auth:account,web', SyncStaffParticipantSession::class, Stamp
     Route::get('/compte/profil', [ProfileController::class, 'edit'])->name('account.profile');
     Route::put('/compte/profil', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::put('/compte/participation/{event}/mode', ParticipationModeController::class)->name('account.participation.mode.update');
+    // Catégorie tarifaire hors grade (ONG, entreprise…), déclarée par le participant.
+    Route::put('/compte/participation/{event}/categorie', FeeCategoryController::class)->name('account.participation.fee-category.update');
     Route::get('/compte/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');

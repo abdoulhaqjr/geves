@@ -53,6 +53,10 @@ class SaveEvent
         $fees = collect($data['fees'] ?? [])
             ->filter(fn ($f) => is_array($f) && trim((string) ($f['label'] ?? '')) !== '')
             ->map(fn ($f) => [
+                // ⚠️ La clé est PERSISTÉE, et c'est ce qui la rend stable : le
+                // choix d'un participant s'y rattache, et renommer le libellé
+                // ne doit pas faire retomber tout le monde sur son grade.
+                'key' => trim((string) ($f['key'] ?? '')) ?: Str::slug((string) $f['label']),
                 'label' => (string) $f['label'],
                 'amount' => (float) ($f['amount'] ?? 0),
                 // Grades couverts : c'est ce rattachement qui permet de retrouver
@@ -60,6 +64,8 @@ class SaveEvent
                 'grades' => collect(is_array($f['grades'] ?? null) ? $f['grades'] : [])
                     ->map(fn ($g) => trim((string) $g))->filter()->unique()->values()->all(),
                 'default' => (bool) ($f['default'] ?? false),
+                // Catégorie hors grade : déclarée par le participant, jamais déduite.
+                'selectable' => (bool) ($f['selectable'] ?? false),
             ])->values()->all();
 
         // ⚠️ **Le slug est résolu AVANT l'habillage**, car c'est lui qui nomme le

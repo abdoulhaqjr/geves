@@ -466,9 +466,23 @@
                                         <input type="number" :name="'fees['+i+'][amount]'" x-model="fee.amount" placeholder="Montant" min="0">
                                         <button type="button" class="ukc-btn--icon" @click="removeFee(i)" aria-label="Retirer">&times;</button>
                                     </div>
+                                    <input type="hidden" :name="'fees['+i+'][key]'" :value="fee.key || ''">
+                                    {{-- ⚠️⚠️ Une catégorie HORS GRADE (ONG, entreprise, association…) ne se
+                                         déduit d'aucun grade : aucune valeur de ParticipantTypes ne la désigne.
+                                         C'est le participant qui la déclare - la seule exception à la règle
+                                         « le tarif ne se choisit pas ». Elle ne couvre donc aucun grade et
+                                         n'est jamais le tarif par défaut. --}}
+                                    <div style="margin-top:8px;padding-left:2px;">
+                                        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;">
+                                            <input type="hidden" :name="'fees['+i+'][selectable]'" value="0">
+                                            <input type="checkbox" :name="'fees['+i+'][selectable]'" value="1"
+                                                   :checked="!!fee.selectable" @change="basculeHorsGrade(i, $event.target.checked)">
+                                            Catégorie hors grade (déclarée par le participant)
+                                        </label>
+                                    </div>
                                     {{-- ⚠️ L'intitulé est libre : c'est ce rattachement qui permet de
                                          retrouver le tarif d'un participant à partir de son grade. --}}
-                                    <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:8px;padding-left:2px;">
+                                    <div x-show="!fee.selectable" style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:8px;padding-left:2px;">
                                         <span style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ukc-light);">Grades concernés</span>
                                         @foreach (\App\Support\ParticipantTypes::all() as $gradeOption)
                                             <label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;">
@@ -485,9 +499,12 @@
                                             Tarif par défaut
                                         </label>
                                     </div>
-                                    <p x-show="fee.label && !(fee.grades || []).length && !fee.default" x-cloak
+                                    <p x-show="fee.label && !fee.selectable && !(fee.grades || []).length && !fee.default" x-cloak
                                        style="font-size:12px;color:#b45309;margin:6px 0 0;">
                                         Cette catégorie ne couvre aucun grade : elle ne sera jamais appliquée automatiquement.
+                                    </p>
+                                    <p x-show="fee.selectable" x-cloak style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">
+                                        Proposée au participant sur sa page d’inscription &amp; paiement. Tant qu’il ne la déclare pas, son tarif suit son grade.
                                     </p>
                                 </div>
                             </template>
@@ -1423,7 +1440,11 @@
                     const s = this.aiSuggestions || {};
                     ['title','event_label','subtitle','theme','year','date_start','date_end','submission_deadline','location','intro'].forEach(k => { if (this.aiSelection[k] && s[k] !== undefined && s[k] !== '') this.f[k] = s[k]; });
                     if (this.aiSelection.tracks && Array.isArray(s.tracks)) this.axes = s.tracks.map(t => ({ label: t }));
-                    if (this.aiSelection.fees && Array.isArray(s.fees)) this.fees = s.fees.map(x => ({ label:x.label||'', amount:x.amount||'', grades:Array.isArray(x.grades)?x.grades:[], default:!!x.default }));
+                    {{-- ⚠️ `key` et `selectable` font partie de la forme : une grille
+                         appliquée depuis l'IA qui les perdrait rendrait toutes les
+                         catégories « liées au grade », et détacherait le choix des
+                         participants déjà déclarés. --}}
+                    if (this.aiSelection.fees && Array.isArray(s.fees)) this.fees = s.fees.map(x => ({ key:x.key||'', label:x.label||'', amount:x.amount||'', grades:Array.isArray(x.grades)?x.grades:[], default:!!x.default, selectable:!!x.selectable }));
                     if (this.aiSelection.committees && Array.isArray(s.committees)) {
                         this.comOrg = s.committees.filter(c => (c.role || 'organisation') === 'organisation');
                         this.comSci = s.committees.filter(c => c.role === 'scientifique');

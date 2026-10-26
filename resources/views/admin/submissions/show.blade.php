@@ -508,46 +508,47 @@
             <x-ukc.slideover open="auteursOpen" onClose="annuler()" width="560px" title="Corriger les auteurs">
                 <form id="auteursForm" method="POST" action="{{ route('admin.submissions.authors.update', $s) }}">
                     @csrf
-                    <p class="desc" style="margin-top:0;">
-                        Les auteurs ne sont pas modifiables par le déposant : c’est ici qu’on répare une omission,
-                        une faute de frappe ou un ordre erroné. L’auteur correspondant reste en tête.
-                    </p>
-
                     @error('auteurs')<p class="error" style="color:var(--ukc-red);font-size:.85rem;">{{ $message }}</p>@enderror
                     @error('auteurs.0')<p class="error" style="color:var(--ukc-red);font-size:.85rem;">{{ $message }}</p>@enderror
 
+                    {{-- ⚠️ `.ukc-form-row` et non `.ukc-field` : c'est la primitive des
+                         panneaux du back-office (libellé 12px, champ 13px), celle
+                         qu'emploient les slideovers du Programme. `.ukc-field` est la
+                         grammaire de l'espace participant - plus grande d'un cran - et
+                         ce panneau y détonnait. Séparation des auteurs par un filet,
+                         comme les répéteurs de la fiche d'événement. --}}
                     <template x-for="(ligne, i) in lignes" :key="i">
-                        <div class="ukc-card" style="padding:12px;margin-bottom:10px;">
+                        <div style="border-bottom:1px solid var(--ukc-border,#f1f1f1);padding-bottom:10px;margin-bottom:12px;">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                                <strong style="font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-muted);"
-                                        x-text="i === 0 ? 'Auteur correspondant' : 'Co-auteur ' + i"></strong>
+                                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--ukc-light);"
+                                      x-text="i === 0 ? 'Auteur correspondant' : 'Co-auteur ' + i"></span>
                                 <span style="display:flex;gap:4px;" x-show="i > 0">
-                                    <button type="button" class="ukc-btn ukc-btn--icon" title="Monter" @click="monter(i)" x-show="i > 1">
+                                    <button type="button" class="ukc-btn--icon" title="Monter" @click="monter(i)" x-show="i > 1">
                                         <x-ukc.icon name="chevron" :size="13" style="transform:rotate(-90deg);" />
                                     </button>
-                                    <button type="button" class="ukc-btn ukc-btn--icon" title="Descendre" @click="descendre(i)" x-show="i < lignes.length - 1">
+                                    <button type="button" class="ukc-btn--icon" title="Descendre" @click="descendre(i)" x-show="i < lignes.length - 1">
                                         <x-ukc.icon name="chevron" :size="13" style="transform:rotate(90deg);" />
                                     </button>
-                                    <button type="button" class="ukc-btn ukc-btn--icon danger" title="Retirer cet auteur" @click="retirer(i)">
+                                    <button type="button" class="ukc-btn--icon danger" title="Retirer cet auteur" @click="retirer(i)">
                                         <x-ukc.icon name="trash" :size="13" />
                                     </button>
                                 </span>
                             </div>
 
                             <input type="hidden" :name="'auteurs['+i+'][origine]'" :value="ligne.origine === null ? '' : ligne.origine">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                                <label class="ukc-field"><span>Prénom</span>
-                                    <input type="text" :name="'auteurs['+i+'][first_name]'" x-model="ligne.first_name" maxlength="150"></label>
-                                <label class="ukc-field"><span>Nom <span style="color:var(--ukc-red);">*</span></span>
-                                    <input type="text" :name="'auteurs['+i+'][last_name]'" x-model="ligne.last_name" maxlength="150" required></label>
-                                <label class="ukc-field"><span>E-mail</span>
-                                    <input type="email" :name="'auteurs['+i+'][email]'" x-model="ligne.email" maxlength="200"></label>
-                                <label class="ukc-field"><span>Téléphone</span>
-                                    <input type="text" :name="'auteurs['+i+'][phone]'" x-model="ligne.phone" maxlength="50"></label>
-                                <label class="ukc-field" style="grid-column:1/-1;"><span>Affiliation</span>
-                                    <input type="text" :name="'auteurs['+i+'][affiliation]'" x-model="ligne.affiliation" maxlength="255"></label>
-                                <label class="ukc-field" style="grid-column:1/-1;"><span>Grade</span>
-                                    <input type="text" :name="'auteurs['+i+'][grade]'" x-model="ligne.grade" maxlength="100"></label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px;">
+                                <div class="ukc-form-row"><label>Prénom</label>
+                                    <input type="text" :name="'auteurs['+i+'][first_name]'" x-model="ligne.first_name" maxlength="150"></div>
+                                <div class="ukc-form-row"><label>Nom *</label>
+                                    <input type="text" :name="'auteurs['+i+'][last_name]'" x-model="ligne.last_name" maxlength="150" required></div>
+                                <div class="ukc-form-row"><label>E-mail</label>
+                                    <input type="email" :name="'auteurs['+i+'][email]'" x-model="ligne.email" maxlength="200"></div>
+                                <div class="ukc-form-row"><label>Téléphone</label>
+                                    <input type="text" :name="'auteurs['+i+'][phone]'" x-model="ligne.phone" maxlength="50"></div>
+                                <div class="ukc-form-row" style="grid-column:1/-1;"><label>Affiliation</label>
+                                    <input type="text" :name="'auteurs['+i+'][affiliation]'" x-model="ligne.affiliation" maxlength="255"></div>
+                                <div class="ukc-form-row" style="grid-column:1/-1;"><label>Grade</label>
+                                    <input type="text" :name="'auteurs['+i+'][grade]'" x-model="ligne.grade" maxlength="100"></div>
                             </div>
                         </div>
                     </template>

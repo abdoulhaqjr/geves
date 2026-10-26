@@ -65,7 +65,7 @@ class SendPaymentReminders implements CopilotAction
                 continue;
             }
 
-            $amount = Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event);
+            $amount = Fees::forParticipant($participant) ?? Fees::highestAmount($event);
             $payUrl = route('account.payment', $event);
 
             Mail::to($participant->email)->send(new PaymentReminderMail($participant, $event, $payUrl, $amount));

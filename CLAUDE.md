@@ -43,6 +43,64 @@ Larastan **niveau 5**.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
+### Catégories tarifaires HORS GRADE (2026-10-26)
+
+ONG, entreprise, association : **aucun grade ne les désigne**. Il n'existe
+aucune valeur de `ParticipantTypes` qui permette de les déduire - donc rien à
+déduire, et c'est l'intéressé qui l'annonce. C'est la **seule exception** à la
+règle ci-dessus, et tout ce qui suit sert à la borner.
+
+- **Une catégorie porte `selectable: true`** (case « Catégorie hors grade » dans
+  le répéteur des tarifs de la fiche d'événement). Elle est alors proposée au
+  participant sur sa page **Inscription & paiement**, à l'inscription comme
+  ensuite tant qu'il n'a pas réglé.
+- ⚠️⚠️ **ELLE NE COUVRE AUCUN GRADE ET N'EST JAMAIS LE DÉFAUT**, et
+  `Fees::normalize()` le **force** plutôt que de s'en remettre au formulaire :
+  les deux se contrediraient un jour, et la cascade automatique appliquerait
+  « ONG » à quelqu'un qui ne l'a jamais déclaré. Elle est aussi écartée de la
+  correspondance « libellé = grade ».
+- ⚠️⚠️ **ET DU REPLI `highestAmount()`.** Ce repli frappe qui n'a rien déclaré
+  et dont le grade n'est couvert par rien : lui appliquer le tarif
+  « Entreprises » parce qu'il se trouve être le plus cher de la grille
+  facturerait un tarif d'entreprise à un doctorant.
+- ⚠️⚠️ **UN SEUL POINT DE RÉSOLUTION : `Fees::forParticipant()`** (catégorie
+  déclarée d'abord, grade ensuite). Le montant **affiché** et le montant
+  **facturé** doivent sortir du même calcul : un appelant resté sur
+  `resolveAmount($event, $participant->title)` afficherait un tarif que le
+  règlement ne reprendrait pas, et **personne ne le verrait avant la caisse**.
+  Les cinq appelants (page de paiement, `pay()`, guichet admin, relances du
+  copilote, assistante publique) y sont passés, et **un cas de garde balaie
+  `app/`** pour que le motif ne revienne pas.
+- ⚠️⚠️ **LE CHOIX SE RATTACHE À LA CLÉ, JAMAIS AU LIBELLÉ** (`fees[].key`,
+  **persistée** par `SaveEvent`). Rapproché sur le libellé, renommer
+  « Entreprises » en « Entreprises & industries » ferait **silencieusement**
+  retomber tous ceux qui l'avaient déclarée sur leur grade - donc sur un autre
+  montant. Même leçon que les axes d'expertise, comparés par clé. Les grilles
+  d'avant ce champ en reçoivent une dérivée du libellé, et deux libellés
+  identiques ne la partagent pas.
+- ⚠️ **Le choix vit sur le participant, par événement**
+  (`participants.meta['fee_category']`, `Participant::feeCategoryKey()`) -
+  comme le grade : on vient en entreprise à un colloque et en doctorante à un
+  autre.
+- ⚠️ **Le grade reste exigé** même quand une catégorie est déclarée : il sert au
+  badge, au registre et aux attestations, et **il reprend la main** si
+  l'organisation retire la catégorie - on retombe alors sur le grade plutôt que
+  de facturer un montant que la grille n'annonce plus. Le choix, lui, reste
+  enregistré : la catégorie peut être rétablie.
+- ⚠️ **La déclaration se ferme une fois réglé** : le tarif est acquis, et la
+  laisser changer ferait diverger la somme encaissée et la catégorie du reçu.
+- ⚠️ **On ne choisit pas parmi TOUTE la grille** : seules les catégories
+  `selectable` sont proposées, et le serveur refuse les autres - déclarer
+  « Doctorants » reviendrait à choisir son tarif.
+- ⚠️ **Côté public, la ligne ne liste AUCUN grade** (l'écrire serait faux) et
+  n'ouvre **aucun appel à l'action** : son intitulé dit déjà qui elle concerne,
+  et cette page renseigne, elle ne vend pas.
+- ⚠️ Le champ d'inscription s'appelle désormais **« Mon grade »** et non « Ma
+  catégorie » : deux choses différentes ne peuvent pas porter le même mot sur
+  le même écran.
+
+Gardes : `CategoriesHorsGradeTest` (12 cas, **8 sabotages vérifiés**).
+
 ### Corriger les auteurs d'une communication (2026-10-26)
 
 ⚠️⚠️ **LES AUTEURS NE SONT PAS RÉÉDITABLES PAR LE DÉPOSANT**, et c'est voulu :
@@ -6270,7 +6328,9 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 ### ⚠️ Le tarif NE SE CHOISIT PAS, il se déduit du grade
 
 C'est la règle du logiciel (`Fees::resolveAmount`) ; trois écrans disaient
-l'inverse et ont été repris :
+l'inverse et ont été repris. ⚠️ **Elle souffre UNE exception, bornée : les
+catégories HORS GRADE** (voir la section suivante) - et seulement celles que
+l'organisation a marquées comme telles.
 
 - **Page publique, barème des tarifs** : un bouton « Choisir » par carte et une
   pastille « Recommandé » posée sur la carte du MILIEU - un index, pas un

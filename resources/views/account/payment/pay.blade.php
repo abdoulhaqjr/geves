@@ -56,6 +56,40 @@
                 </div>
             </form>
         </section>
+
+        {{-- ⚠️⚠️ **LA SEULE EXCEPTION À « LE TARIF NE SE CHOISIT PAS ».** Partout
+             ailleurs le montant se déduit du grade. Mais aucune valeur de grade ne
+             désigne une ONG, une entreprise ou une association : il n'y a rien à
+             déduire, donc l'intéressé le déclare. Le bloc ne s'affiche que si
+             l'organisation a défini de telles catégories, et il disparaît une fois
+             le règlement effectué - le tarif est alors acquis. --}}
+        @if ($categoriesDeclarables !== [] && ! $participant->hasPaid())
+            <section class="payment-mode" id="categorie-tarifaire" aria-labelledby="payment-cat-title">
+                <div class="payment-mode__intro">
+                    <h2 id="payment-cat-title"><x-ukc.icon name="users" :size="20" /> {{ __('Catégorie tarifaire') }}</h2>
+                    <p>{{ __('Si vous participez au titre d’une organisation (ONG, entreprise, association…), déclarez-le ici : votre tarif suivra cette catégorie plutôt que votre grade.') }}</p>
+                </div>
+                <form method="POST" action="{{ route('account.participation.fee-category.update', $event) }}" class="payment-mode__form">
+                    @csrf
+                    @method('PUT')
+                    <div class="ukc-field">
+                        <label for="fee_category">{{ __('Je participe en tant que') }}</label>
+                        <div class="payment-mode__controls">
+                            <select id="fee_category" name="fee_category">
+                                <option value="">{{ __('Selon mon grade').($participant->title ? ' ('.$participant->title.')' : '') }}</option>
+                                @foreach ($categoriesDeclarables as $cat)
+                                    <option value="{{ $cat['key'] }}" @selected(old('fee_category', $participant->feeCategoryKey()) === $cat['key'])>
+                                        {{ $cat['label'] }} - {{ \App\Support\Money::format($cat['amount']) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="ukc-btn ukc-btn--blue">{{ __('Enregistrer') }}</button>
+                        </div>
+                        @error('fee_category') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                </form>
+            </section>
+        @endif
     @endif
 
     {{-- ===== Étape courante ===== --}}
@@ -81,19 +115,38 @@
 
             <form method="POST" action="{{ route('account.registration.store', $event) }}" class="ukc-form-grid">
                 @csrf
-                {{-- ⚠️ Le GRADE est le seul champ qui décide de quelque chose :
-                     c'est lui qui résout le tarif (Fees::resolveAmount). --}}
+                {{-- ⚠️ Le GRADE décide du tarif (Fees::resolveAmount) - sauf si une
+                     catégorie hors grade est déclarée juste en dessous, qui passe
+                     devant. Il reste exigé dans les deux cas : il sert au badge, au
+                     registre et aux attestations, et il reprend la main si
+                     l'organisation retire la catégorie. --}}
                 <div class="ukc-field full">
-                    <label for="grade">{{ __('Ma catégorie') }} <span class="req">*</span></label>
+                    <label for="grade">{{ __('Mon grade') }} <span class="req">*</span></label>
                     <select id="grade" name="grade" required>
-                        <option value="">{{ __('Choisir ma catégorie…') }}</option>
+                        <option value="">{{ __('Choisir mon grade…') }}</option>
                         @foreach ($grades as $g)
                             <option value="{{ $g }}" @selected(old('grade', $accountGrade) === $g)>{{ $g }}</option>
                         @endforeach
                     </select>
-                    <span class="hint">{{ __('C’est elle qui détermine le montant de vos frais.') }}</span>
+                    <span class="hint">{{ $categoriesDeclarables === [] ? __('C’est lui qui détermine le montant de vos frais.') : __('Il détermine vos frais, sauf si vous déclarez une catégorie ci-dessous.') }}</span>
                     @error('grade') <span class="error">{{ $message }}</span> @enderror
                 </div>
+
+                @if ($categoriesDeclarables !== [])
+                    <div class="ukc-field full">
+                        <label for="register_fee_category">{{ __('Je participe au titre d’une organisation') }}</label>
+                        <select id="register_fee_category" name="fee_category">
+                            <option value="">{{ __('Non - appliquer mon grade') }}</option>
+                            @foreach ($categoriesDeclarables as $cat)
+                                <option value="{{ $cat['key'] }}" @selected(old('fee_category') === $cat['key'])>
+                                    {{ $cat['label'] }} - {{ \App\Support\Money::format($cat['amount']) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="hint">{{ __('ONG, entreprise, association… Cette catégorie remplace alors votre grade pour le calcul des frais.') }}</span>
+                        @error('fee_category') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                @endif
 
                 <div class="ukc-field full">
                     <label for="reg-affiliation">{{ __('Affiliation') }}</label>

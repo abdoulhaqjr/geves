@@ -135,6 +135,15 @@ le Bénin, quel que soit l'indicatif.
 
 **Garde** : `PaymentOperatorTest` (13 cas) et `PaymentGatewayTest` (31 cas),
 **cinq sabotages vérifiés**.
+### Catégories tarifaires hors grade (2026-10-26)
+
+- Une catégorie de la grille peut être marquée **hors grade** (`fees[].selectable`, case dans le répéteur des tarifs) : ONG, entreprise, association. Aucun grade ne les désigne, donc rien à déduire - le participant les **déclare** sur sa page Inscription & paiement. C'est la seule exception à « le tarif ne se choisit pas ».
+- ⚠️⚠️ Une catégorie hors grade **ne couvre aucun grade, n'est jamais le défaut et est exclue du repli `highestAmount()`** - sans quoi un doctorant dont le grade n'est couvert par rien se verrait facturer le tarif « Entreprises » parce qu'il est le plus cher de la grille. `Fees::normalize()` le force plutôt que de s'en remettre au formulaire.
+- ⚠️⚠️ **Un seul point de résolution : `Fees::forParticipant()`** (catégorie déclarée d'abord, grade ensuite). Les cinq appelants y sont passés et un cas de garde balaie `app/` : un appelant resté sur le seul grade afficherait un tarif que le règlement ne reprendrait pas, et personne ne le verrait avant la caisse.
+- ⚠️⚠️ **Le choix se rattache à la CLÉ** (`fees[].key`, persistée par `SaveEvent`), jamais au libellé : renommer une catégorie ferait sinon retomber silencieusement tous ceux qui l'avaient déclarée sur leur grade, donc sur un autre montant. Stocké dans `participants.meta['fee_category']`, par événement comme le grade.
+- ⚠️ Le grade reste exigé (badge, registre, attestations) et reprend la main si la catégorie disparaît de la grille. La déclaration se ferme une fois les frais réglés. Côté public, la ligne hors grade ne liste aucun grade et n'ouvre aucun appel à l'action.
+- Gardes : `CategoriesHorsGradeTest` (12 cas, **8 sabotages vérifiés**). Suite complète : 1 654 tests.
+
 ### Corriger les auteurs d'une communication (2026-10-26)
 
 - Le gestionnaire et le co-gestionnaire peuvent **ajouter, corriger, réordonner et retirer** les co-auteurs d'une communication depuis sa fiche (`admin.submissions.authors.update`, action `UpdateSubmissionAuthors`). Les auteurs ne sont pas rééditables par le déposant - sa page de correction ne reprend que titre, résumé, mots-clés et fichier - et l'omission d'un co-auteur est la demande la plus fréquente.

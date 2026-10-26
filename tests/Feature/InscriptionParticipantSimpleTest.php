@@ -107,7 +107,10 @@ it('montre le formulaire d’inscription à qui n’a pas de fiche', function ()
         ->get(route('account.payment', $event))
         ->assertOk()
         ->assertSee('M’inscrire à cet événement', false)
-        ->assertSee('Ma catégorie')
+        // ⚠️ Le champ s'appelle « Mon grade » et non « Ma catégorie » depuis
+        // l'arrivée des catégories tarifaires HORS GRADE : deux choses
+        // différentes ne peuvent pas porter le même mot sur le même écran.
+        ->assertSee('Mon grade')
         ->assertDontSee('contactez l’organisation', false);
 });
 

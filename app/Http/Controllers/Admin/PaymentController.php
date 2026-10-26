@@ -196,7 +196,7 @@ class PaymentController extends Controller
                 'name' => $p->full_name,
                 'email' => $p->email,
                 'event_id' => (string) $p->event_id,
-                'amount' => $p->event ? Fees::resolveAmount($p->event, $p->title) : null,
+                'amount' => Fees::forParticipant($p),
             ])->values();
 
         return view('admin.payments.record', [

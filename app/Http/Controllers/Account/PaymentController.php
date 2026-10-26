@@ -39,19 +39,12 @@ class PaymentController extends Controller
             ->where('user_id', $account->id)
             ->first();
 
-        $applicable = $participant ? Fees::resolveAmount($event, $participant->title) : null;
+        // ⚠️ `forParticipant` est LE point de résolution : il fait passer la
+        // catégorie hors grade déclarée devant le grade. Résoudre ici depuis le
+        // seul grade afficherait un montant que `pay()` ne facturerait pas.
+        $applicable = Fees::forParticipant($participant);
         $amount = $applicable ?? ($participant ? Fees::highestAmount($event) : null);
-
-        // Libellé du tarif applicable (rapproché du grade du participant).
-        $applicableLabel = null;
-        if ($applicable !== null) {
-            foreach (Fees::grid($event) as $tier) {
-                if ((float) ($tier['amount'] ?? 0) === (float) $applicable) {
-                    $applicableLabel = $tier['label'] ?? null;
-                    break;
-                }
-            }
-        }
+        $applicableLabel = $applicable !== null ? Fees::labelForParticipant($participant) : null;
 
         return view('account.payment.pay', [
             'event' => $event,
@@ -61,6 +54,8 @@ class PaymentController extends Controller
             'amount' => $amount,
             'tiers' => Fees::grid($event),
             'applicableLabel' => $applicableLabel,
+            // Catégories hors grade proposées à la déclaration (ONG, entreprise…).
+            'categoriesDeclarables' => Fees::selectable($event),
             // ⚠️ « Éligible » = IL Y A DES FRAIS À RÉGLER, pas « il a une
             // communication acceptée » : le participant simple en doit aussi.
             'eligible' => $participant && $participant->owesParticipationFees(),
@@ -105,21 +100,32 @@ class PaymentController extends Controller
 
         $account = Auth::guard('account')->user();
 
+        // ⚠️ Le grade reste EXIGÉ même quand une catégorie hors grade est
+        // déclarée : il sert ailleurs (badge, registre, attestations) et c'est
+        // lui qui reprendra la main si l'organisation retire la catégorie.
+        $declarables = array_column(Fees::selectable($event), 'key');
         $data = $request->validate([
             'grade' => ['required', 'string', Rule::in(ParticipantTypes::all())],
             'affiliation' => ['nullable', 'string', 'max:200'],
             'participation_mode' => ['nullable', Rule::in(array_keys((new SubmissionFormConfig($event))->participationModes()))],
+            'fee_category' => ['nullable', Rule::in(array_merge([''], $declarables))],
         ], [
             'grade.required' => 'Choisissez votre catégorie : c’est elle qui détermine votre tarif.',
+            'fee_category.in' => 'Cette catégorie n’est pas proposée pour cet événement.',
         ]);
 
-        $register->handle(
+        $participant = $register->handle(
             $event,
             $account,
             $data['grade'],
             $data['affiliation'] ?? null,
             $data['participation_mode'] ?? null,
         );
+
+        if (filled($data['fee_category'] ?? null)) {
+            $participant->setFeeCategory($data['fee_category']);
+            $participant->save();
+        }
 
         return redirect()->route('account.payment', $event)
             ->with('ukc_status', 'Votre inscription est enregistrée. Il vous reste à régler vos frais.');
@@ -135,7 +141,7 @@ class PaymentController extends Controller
             ->first();
 
         $amount = $participant
-            ? (Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event))
+            ? (Fees::forParticipant($participant) ?? Fees::highestAmount($event))
             : null;
 
         if (! $participant || ! $participant->owesParticipationFees() || $participant->hasPaid() || ! $amount) {
