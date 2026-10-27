@@ -367,6 +367,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/reclamations/{claim}/statut', [ClaimController::class, 'updateStatus'])->name('admin.claims.status');
         Route::post('/reclamations/{claim}/assigner', [ClaimController::class, 'assign'])->name('admin.claims.assign');
         Route::post('/reclamations/{claim}/analyser', [ClaimController::class, 'analyze'])->name('admin.claims.analyze');
+        Route::post('/reclamations/{claim}/transferer', [ClaimController::class, 'transfer'])->name('admin.claims.transfer');
         Route::post('/secretariat/assistant', [SecretariatController::class, 'generate'])->name('admin.secretariat.assist');
         Route::get('/secretariat/assistant/{event}/{id}/telecharger', [SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');

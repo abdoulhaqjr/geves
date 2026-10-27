@@ -1,9 +1,12 @@
 <?php
 
+use App\Actions\NotifyClaimRecipients;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\Models\Claim;
 use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 
 // bindFakeAi(), fakeAiProvider() -> GenerateReportTest ; adminStaff() -> helpers ; openEdition(), verifiedAccount() -> tests/Pest.php
 
@@ -214,4 +217,83 @@ it('met à jour le statut (résolue) et assigne un traitant', function () {
         ->post(route('admin.claims.assign', $claim), ['assigned_to' => $staff->id])
         ->assertRedirect();
     expect($claim->fresh()->assigned_to)->toBe($staff->id);
+});
+
+// ─── Notification des gestionnaires / admin + transfert ──────────────────────
+
+it('une réclamation d’événement notifie ses gestionnaires, pas les admins non affectés', function () {
+    Notification::fake();
+    $event = openEdition();
+    $gerant = User::factory()->create();
+    $coGerant = User::factory()->create();
+    $gerant->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+    $coGerant->assignedEditions()->attach($event->id, ['role' => 'co_gerant']);
+    $adminNonAffecte = adminStaff();
+
+    app(NotifyClaimRecipients::class)->handle(seedClaim(['event_id' => $event->id]));
+
+    Notification::assertSentTo($gerant, SystemNotification::class, fn ($n) => $n->kind === 'claim_new');
+    Notification::assertSentTo($coGerant, SystemNotification::class, fn ($n) => $n->kind === 'claim_new');
+    Notification::assertNotSentTo($adminNonAffecte, SystemNotification::class);
+});
+
+it('une réclamation générale (sans événement) notifie les administrateurs', function () {
+    Notification::fake();
+    $admin = adminStaff();
+    $event = openEdition();
+    $gerant = User::factory()->create();
+    $gerant->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+
+    app(NotifyClaimRecipients::class)->handle(seedClaim(['event_id' => null]));
+
+    Notification::assertSentTo($admin, SystemNotification::class, fn ($n) => $n->kind === 'claim_new');
+    Notification::assertNotSentTo($gerant, SystemNotification::class);
+});
+
+it('un événement sans gestionnaire retombe sur les administrateurs', function () {
+    Notification::fake();
+    $admin = adminStaff();
+    $event = openEdition(); // aucun gérant attaché
+
+    app(NotifyClaimRecipients::class)->handle(seedClaim(['event_id' => $event->id]));
+
+    Notification::assertSentTo($admin, SystemNotification::class, fn ($n) => $n->kind === 'claim_new');
+});
+
+it('le gestionnaire peut couper l’e-mail des réclamations, pas l’in-app', function () {
+    $gerant = User::factory()->create();
+    // Par défaut : in-app ET e-mail générique.
+    expect($gerant->notificationChannels('claim_new'))->toContain('database')->toContain('mail');
+
+    $gerant->saveNotificationPreferences(['claim_new' => ['inapp' => true, 'email' => false]], 'staff');
+
+    expect($gerant->fresh()->notificationChannels('claim_new'))
+        ->toContain('database')->not->toContain('mail');
+});
+
+it('l’admin transfère une réclamation générale vers un événement, les gestionnaires sont notifiés', function () {
+    Notification::fake();
+    $admin = adminStaff();
+    $event = openEdition();
+    $gerant = User::factory()->create();
+    $gerant->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+    $claim = seedClaim(['event_id' => null]);
+
+    $this->actingAs($admin, 'web')
+        ->post(route('admin.claims.transfer', $claim), ['event_id' => $event->id])
+        ->assertRedirect();
+
+    expect($claim->fresh()->event_id)->toBe($event->id);
+    Notification::assertSentTo($gerant, SystemNotification::class, fn ($n) => $n->kind === 'claim_new');
+});
+
+it('un gestionnaire ne peut pas transférer une réclamation (réservé à l’admin)', function () {
+    $event = openEdition();
+    $gerant = User::factory()->create();
+    $gerant->assignedEditions()->attach($event->id, ['role' => 'gerant']);
+    $claim = seedClaim(['event_id' => $event->id]);
+
+    $this->actingAs($gerant, 'web')
+        ->post(route('admin.claims.transfer', $claim), ['event_id' => $event->id])
+        ->assertForbidden();
 });

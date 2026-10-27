@@ -58,6 +58,32 @@
                         </form>
                     </div>
                 </div>
+
+                @if (auth()->user()->isColloqueAdmin())
+                    <div class="ukc-card">
+                        <h3>Rattachement</h3>
+                        <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">
+                            @if ($claim->event)
+                                Rattachée à <strong>{{ $claim->event->series?->name ? $claim->event->series->name.' - ' : '' }}{{ $claim->event->title ?: $claim->event->year }}</strong> : ses gestionnaires sont notifiés.
+                            @else
+                                Réclamation <strong>générale</strong> (sans événement) : les administrateurs sont notifiés. Transférez-la à un événement pour en alerter les gestionnaires.
+                            @endif
+                        </p>
+                        <form method="POST" action="{{ route('admin.claims.transfer', $claim) }}">
+                            @csrf
+                            <div class="ukc-field"><label>Transférer vers l’événement</label>
+                                <select name="event_id">
+                                    <option value="">- Choisir un événement -</option>
+                                    @foreach ($events as $e)
+                                        <option value="{{ $e->id }}" @selected($claim->event_id === $e->id)>{{ $e->series?->name ? $e->series->name.' - ' : '' }}{{ $e->title ?: $e->year }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="external" :size="15" /> Transférer</button>
+                            <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Les gestionnaires et co-gestionnaires de l’événement d’arrivée recevront une notification et un e-mail.</p>
+                        </form>
+                    </div>
+                @endif
             </div>
 
             {{-- ===== Analyse IA ===== --}}

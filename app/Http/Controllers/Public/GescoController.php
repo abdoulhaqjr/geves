@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Actions\AskGesco;
+use App\Actions\NotifyClaimRecipients;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\Claim;
@@ -17,7 +18,6 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
 use App\Support\Fees;
-use App\Support\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -191,13 +191,10 @@ class GescoController extends Controller
             'conversation' => $conversationId,
         ]);
 
-        Notifier::staff(
-            kind: 'contact',
-            title: 'Nouvelle '.mb_strtolower($record->typeLabel()),
-            body: $record->subject.' - '.($record->name ?: $record->email),
-            url: route('admin.claims.show', $record),
-            icon: 'inbox',
-        );
+        // Ciblé : gestionnaires de l'événement concerné, ou administrateurs pour
+        // une réclamation générale (in-app + e-mail décochable). Pas de diffusion
+        // à tout le back-office.
+        app(NotifyClaimRecipients::class)->handle($record);
 
         return ['reference' => $record->reference, 'updated' => false];
     }

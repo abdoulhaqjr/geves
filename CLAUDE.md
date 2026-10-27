@@ -5814,6 +5814,37 @@ déjà son adresse, et la rendre aussi à l'entrée ferait deux URL pour le mêm
   (prompt/modèle joint), conservée pour les documents non standard. Presets
   `SecretariatController::PRESETS`.
 
+### Réclamations : notification CIBLÉE + transfert (2026-10-26)
+
+Une réclamation (ou incident) ne diffuse plus à tout le back-office : elle
+remonte à qui la traite. Source unique : **`App\Actions\NotifyClaimRecipients`**.
+
+- ⚠️ **Rattachée à un événement → gestionnaire + co-gestionnaire de CET
+  événement** (`event_user.role` ∈ `gerant`, `co_gerant`), eux seuls. **Sans
+  événement (réclamation générale) → les administrateurs** (`User::administrateurs()`,
+  pas la seule colonne `access_level`). ⚠️ **Filet** : un événement sans aucun
+  gestionnaire retombe sur les administrateurs - sinon la réclamation n'aurait
+  aucun destinataire.
+- **Type de notification `claim_new`** (`NotificationKinds`) : audience `staff`,
+  `inapp => true`, `email => true`, **`hasMail => false`**. Donc **in-app TOUJOURS +
+  e-mail générique**, et le destinataire peut **décocher l'e-mail** dans ses
+  préférences (apparaît dans l'écran des préférences staff). ⚠️ Posé à
+  `hasMail => true`, la notification supprimerait son propre e-mail en attendant un
+  Mailable qui n'existe pas, et personne ne serait prévenu.
+- **Création** : la diffusion `Notifier::staff(kind: 'contact', …)` de
+  `GescoController` est remplacée par `NotifyClaimRecipients::handle($record)`. Le
+  kind `contact` reste pour le formulaire de contact de l'accueil, pas pour les
+  réclamations.
+- **Transfert** : `admin.claims.transfer` (`ClaimController::transfer`), **réservé à
+  l'administrateur** (`abort_unless(isColloqueAdmin)`). Rattache la réclamation à un
+  événement et **notifie les gestionnaires de l'événement d'arrivée**
+  (`handle(..., transferred: true)`). Carte « Rattachement » sur la fiche
+  (`admin/claims/show.blade.php`), visible des seuls admins ; `show()` ne charge la
+  liste des événements que pour eux.
+- Gardes : `ClaimsTest` (6 cas ajoutés : ciblage gestionnaires vs admins, repli sans
+  gérant, coupure de l'e-mail sans toucher l'in-app, transfert admin + notification,
+  transfert refusé au gestionnaire).
+
 ### Documents de tâche : un DOCX ou un XLSX, rédigé à plusieurs
 
 Une tâche du module Projet porte **un responsable ET des personnes associées**

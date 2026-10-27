@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\AnalyzeClaim;
+use App\Actions\NotifyClaimRecipients;
 use App\Http\Controllers\Controller;
 use App\Mail\ClaimUpdateMail;
 use App\Models\Claim;
+use App\Models\Event;
 use App\Models\User;
 use App\Support\StaffRoles;
 use Illuminate\Http\RedirectResponse;
@@ -74,7 +76,33 @@ class ClaimController extends Controller
             'claim' => $claim,
             'statuses' => Claim::statuses(),
             'assignees' => $this->assigneePool($claim),
+            // Seul l'administrateur transfère une réclamation vers un événement.
+            'events' => $request->user()->isColloqueAdmin()
+                ? Event::query()->with('series')->orderByDesc('year')->orderBy('title')->get()
+                : collect(),
         ]);
+    }
+
+    /**
+     * Rattacher une réclamation à un événement (réservé à l'administrateur).
+     * Les gestionnaires de l'événement d'arrivée sont alors notifiés.
+     */
+    public function transfer(Request $request, Claim $claim, NotifyClaimRecipients $notifier): RedirectResponse
+    {
+        abort_unless($request->user()->isColloqueAdmin(), 403);
+
+        $data = $request->validate([
+            'event_id' => ['required', 'integer', 'exists:events,id'],
+        ]);
+
+        if ((int) $claim->event_id === (int) $data['event_id']) {
+            return back()->with('ukc_status', 'La réclamation est déjà rattachée à cet événement.');
+        }
+
+        $claim->update(['event_id' => (int) $data['event_id']]);
+        $notifier->handle($claim, transferred: true);
+
+        return back()->with('ukc_status', 'Réclamation transférée. Les gestionnaires de l’événement ont été notifiés.');
     }
 
     public function updateStatus(Request $request, Claim $claim): RedirectResponse
@@ -169,7 +197,7 @@ class ClaimController extends Controller
 
         try {
             $analysis = $action->handle($claim);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return back()->with('ukc_error', $e->getMessage());
         }
 

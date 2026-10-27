@@ -39,6 +39,12 @@ class NotificationKinds
             'submission_new' => ['label' => 'Nouvelles communications', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'review_response' => ['label' => 'Réponses des évaluateurs (acceptation / refus)', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'contact' => ['label' => 'Messages de contact', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
+            // ⚠️ `email => true` et `hasMail => false` : le destinataire (gestionnaire,
+            // co-gestionnaire ou admin) reçoit l'e-mail GÉNÉRIQUE en plus de l'in-app,
+            // et peut le décocher dans ses préférences. Posé à `hasMail => true`, la
+            // notification supprimerait son propre envoi en attendant un Mailable qui
+            // n'existe pas, et personne ne serait prévenu par e-mail.
+            'claim_new' => ['label' => 'Réclamations & incidents signalés', 'audience' => 'staff', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'testimonial' => ['label' => 'Témoignages déposés', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
         ];
     }
