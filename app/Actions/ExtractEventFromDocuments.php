@@ -60,10 +60,23 @@ class ExtractEventFromDocuments
           "intro": string,               // argumentaire / présentation
           "tracks": [string],            // axes thématiques
           "fees": [{"label": string, "amount": number}],
-          "committees": [{"role": "organisation|scientifique|supervision", "person_name": string, "person_title": string, "institution": string}],
+          "committees": [{"role": "organisation|scientifique|supervision", "person_name": string, "person_title": string, "qualite": string, "institution": string, "phone": string, "email": string}],
           "partners": [{"name": string, "url": string, "level": string}],
           "faq": [{"question": string, "answer": string}]
         }
+
+        Pour chaque membre de comité :
+        - "person_name" = le nom et prénom SEULS, sans civilité (M., Monsieur, Mme) ni grade.
+        - "person_title" = le GRADE / titre académique : « Professeur », « Pr », « Maître de
+          conférences », « MC », « MCA », « Maître-assistant », « MA », « Dr »… souvent entre
+          parenthèses après le nom (« … (MC) »).
+        - "qualite" = la FONCTION DANS LE COMITÉ, à ne pas confondre avec le grade :
+          « Président », « 1er Vice-président », « 2ème Vice-président », « 1er Rapporteur »,
+          « Rapporteur », « Secrétaire », « Trésorier », « Membre »… Elle est le plus souvent
+          écrite juste après le nom (« …, Président »), OU donnée par un intitulé de section :
+          toutes les personnes listées sous un titre « Membres » ont la qualité « Membre ».
+          Laisse vide si vraiment aucune fonction n'est indiquée.
+        - "phone" et "email" = coordonnées du membre si elles figurent.
         TXT;
     }
 
@@ -107,7 +120,14 @@ class ExtractEventFromDocuments
                 'role' => in_array($c['role'] ?? '', ['organisation', 'scientifique', 'supervision'], true) ? $c['role'] : 'organisation',
                 'person_name' => (string) $c['person_name'],
                 'person_title' => (string) ($c['person_title'] ?? ''),
+                // ⚠️ La qualité (fonction dans le comité : Président, Rapporteur,
+                // Membre…) est DISTINCTE du grade, et n'était pas extraite - les
+                // champs Qualité / Téléphone / E-mail du comité d'organisation
+                // restaient vides. Le formulaire les lie pour `comOrg`.
+                'qualite' => (string) ($c['qualite'] ?? ''),
                 'institution' => (string) ($c['institution'] ?? ''),
+                'phone' => (string) ($c['phone'] ?? ''),
+                'email' => (string) ($c['email'] ?? ''),
                 'photo_url' => '',
             ])->values()->all();
         if ($committees) {

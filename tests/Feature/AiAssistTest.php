@@ -44,7 +44,10 @@ function fakeAiManager(): AiManager
                 'location' => 'Kara, Togo',
                 'tracks' => ['Axe 1', 'Axe 2'],
                 'fees' => [['label' => 'Doctorant', 'amount' => 10000]],
-                'committees' => [['role' => 'scientifique', 'person_name' => 'Pr X', 'person_title' => 'Professeur', 'institution' => 'UK']],
+                'committees' => [
+                    ['role' => 'scientifique', 'person_name' => 'Pr X', 'person_title' => 'Professeur', 'institution' => 'UK'],
+                    ['role' => 'organisation', 'person_name' => 'ALFA-SIKA MANDE Seyf-Laye', 'person_title' => 'Professeur', 'qualite' => 'Président', 'institution' => 'UK - FaST', 'phone' => '+22890000000', 'email' => 'pr@uk.tg'],
+                ],
                 'partners' => [['name' => 'UNESCO', 'url' => 'https://unesco.org', 'level' => 'or']],
                 'faq' => [['question' => 'Q ?', 'answer' => 'R.']],
             ];
@@ -126,6 +129,14 @@ it('normalise les métadonnées extraites', function () {
     expect($out['tracks'])->toBe(['Axe 1', 'Axe 2']);
     expect($out['fees'][0]['amount'])->toBe(10000.0);
     expect($out['committees'][0]['role'])->toBe('scientifique');
+
+    // La QUALITÉ (fonction dans le comité) et les coordonnées du comité
+    // d'organisation sont extraites, distinctes du grade.
+    $org = $out['committees'][1];
+    expect($org['person_title'])->toBe('Professeur');
+    expect($org['qualite'])->toBe('Président');
+    expect($org['phone'])->toBe('+22890000000');
+    expect($org['email'])->toBe('pr@uk.tg');
 });
 
 /* --------------------------- Form (pré-remplissage) ----------------------- */
