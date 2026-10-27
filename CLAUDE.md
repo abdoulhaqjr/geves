@@ -101,6 +101,41 @@ règle ci-dessus, et tout ce qui suit sert à la borner.
 
 Gardes : `CategoriesHorsGradeTest` (12 cas, **8 sabotages vérifiés**).
 
+### Le grade se rapproche d'un tarif PAR CLÉ, jamais par chaîne brute (2026-10-27)
+
+⚠️⚠️ **UN ENSEIGNANT-CHERCHEUR FACTURÉ AU TARIF ENTREPRISE.** Constaté en
+production : un « Enseignant-Chercheur » voyait **100 000 FCFA** (le tarif le plus
+cher de la grille) au lieu des 35 000 de sa catégorie. Le grade vit en **DEUX**
+endroits qui doivent s'accorder : la **liste éditable des grades**
+(`ParticipantTypes`, Réglages) que porte le participant, et le `grades` de chaque
+catégorie tarifaire - une **COPIE** du libellé choisie par l'organisation dans
+l'éditeur de tarifs. Quelqu'un avait renommé le grade dans les Réglages
+(« Enseignant / Chercheur » -> « Enseignant-Chercheur ») : la grille gardait
+l'ancien texte, `Fees::resolveAmount()` comparait les deux **à la chaîne** (casse
+insensible seulement), plus aucune correspondance, et le participant retombait
+**EN SILENCE** sur le repli (catégorie par défaut, ou `highestAmount()`).
+
+- ⚠️ **Même famille de piège que les axes d'expertise** (`ReviewerExpertise::axisKey()`)
+  et que la clé des catégories (`fees[].key`) : un rapprochement par **libellé libre**
+  casse au premier renommage, sans rien signaler. La règle du projet « le tarif se
+  déduit du grade » suppose que les deux listes s'accordent, et rien ne le garantit.
+- **Remède : `Fees::gradeKey($g)` = `Str::slug($g, '')`** - plie la casse,
+  translittère les accents (« Maître » saisi « Maitre » se rapproche) et retire
+  tiret/barre oblique/espaces. « Enseignant-Chercheur », « Enseignant / Chercheur »
+  et « enseignant chercheur » donnent la **même clé** ; « Enseignant » (grade
+  distinct) garde la sienne. Employé dans `resolveAmount()` pour les **deux** boucles
+  (grades couverts ET libellé = grade des grilles anciennes).
+- ⚠️ **Les accents divergent AUSSI** : un grade stocké « Maitre de Conférences »
+  (sans circonflexe) ne tombait pas sur « Maître de conférences » de la grille.
+  `Str::slug` les plie tous deux - inclus dans le remède.
+- ⚠️ **Effet de bord à connaître sur l'ÉDITEUR** (non corrigé ici, à surveiller) :
+  les cases de grade de la fiche d'événement cochent `ParticipantTypes::all()` ; un
+  `grades` stocké sur un libellé **disparu** de la liste n'y est plus coché, et
+  ré-enregistrer la grille **sans le re-cocher** perdrait le rattachement. La
+  normalisation couvre la **facturation** (lecture), pas ce ménage de l'éditeur.
+- Gardes : `FeesGradeMatchingTest` (4 cas : séparateur, accents, grades distincts non
+  confondus, et la clé elle-même).
+
 ### Corriger les auteurs d'une communication (2026-10-26)
 
 ⚠️⚠️ **LES AUTEURS NE SONT PAS RÉÉDITABLES PAR LE DÉPOSANT**, et c'est voulu :

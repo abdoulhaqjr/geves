@@ -181,13 +181,13 @@ class Fees
      */
     public static function resolveAmount(Event $event, ?string $grade): ?float
     {
-        $grade = trim(mb_strtolower((string) $grade));
+        $gradeKey = self::gradeKey((string) $grade);
         $grid = self::grid($event);
 
-        if ($grade !== '') {
+        if ($gradeKey !== '') {
             foreach ($grid as $fee) {
                 foreach ($fee['grades'] as $covered) {
-                    if (mb_strtolower($covered) === $grade) {
+                    if (self::gradeKey($covered) === $gradeKey) {
                         return $fee['amount'];
                     }
                 }
@@ -196,7 +196,7 @@ class Fees
             foreach ($grid as $fee) {
                 // ⚠️ Une catégorie hors grade ne s'attrape JAMAIS par déduction,
                 // même si son libellé tombe sur un grade : elle se déclare.
-                if (! $fee['selectable'] && trim(mb_strtolower($fee['label'])) === $grade) {
+                if (! $fee['selectable'] && self::gradeKey($fee['label']) === $gradeKey) {
                     return $fee['amount'];
                 }
             }
@@ -209,6 +209,30 @@ class Fees
         }
 
         return null;
+    }
+
+    /**
+     * Clé de rapprochement d'un grade - casse, accents ET séparateurs normalisés.
+     *
+     * ⚠️⚠️ **LE GRADE SE COMPARE PAR CLÉ, JAMAIS PAR CHAÎNE BRUTE.** Le grade vit
+     * en DEUX endroits qui doivent s'accorder : la liste éditable des grades
+     * (`ParticipantTypes`, Réglages) que porte le participant, et le `grades` de
+     * chaque catégorie tarifaire - une COPIE du libellé choisie par
+     * l'organisation. Renommer un grade dans les Réglages (« Enseignant /
+     * Chercheur » devenu « Enseignant-Chercheur ») laissait la grille sur l'ancien
+     * texte : plus aucune correspondance, et le participant retombait **en
+     * silence** sur le repli (tarif par défaut, ou le plus élevé). Même famille de
+     * piège que les axes d'expertise, comparés par {@see ReviewerExpertise::axisKey()}.
+     *
+     * `Str::slug($g, '')` plie la casse, translittère les accents (« Maître »
+     * saisi « Maitre » se rapproche) et retire tiret, barre oblique et espaces :
+     * « Enseignant-Chercheur », « Enseignant / Chercheur » et « enseignant
+     * chercheur » donnent la même clé, pendant que « Enseignant » (grade distinct)
+     * garde la sienne.
+     */
+    public static function gradeKey(string $grade): string
+    {
+        return Str::slug($grade, '');
     }
 
     /**

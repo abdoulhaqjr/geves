@@ -22,8 +22,12 @@ class NotifySubmissionResubmitted
 {
     public function handle(Submission $submission): void
     {
-        $who = (string) ($submission->correspondingAuthorName()
-            ?: ($submission->participant?->full_name ?? ''));
+        // ⚠️ Branche explicite plutôt que `?->` sur `participant` : Larastan type
+        // la relation BelongsTo comme non-nulle et y verrait un nullsafe inutile.
+        $who = (string) $submission->correspondingAuthorName();
+        if ($who === '' && $submission->participant) {
+            $who = (string) $submission->participant->full_name;
+        }
 
         $title = 'Correction resoumise - '.$submission->ref_code;
         $body = '« '.$submission->title.' » - v'.$submission->version
