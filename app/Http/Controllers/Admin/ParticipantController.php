@@ -12,6 +12,7 @@ use App\Support\AccountActivity;
 use App\Support\EventParticipantRoster;
 use App\Support\ListSort;
 use App\Support\Notifier;
+use App\Support\RosterRow;
 use App\Support\Trend;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,22 +49,22 @@ class ParticipantController extends Controller
         $all = $roster->forEvent($editionId);
         $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
         $filtered = $all
-            ->filter(fn (array $person) => $role === '' || ($role === 'communicant'
-                ? $person['role'] !== 'attendee' : $person['role'] === $role))
-            ->filter(fn (array $person) => $participationMode === '' || $person['participationMode'] === $participationMode)
-            ->filter(fn (array $person) => $paid === '' || $person['paid'] === ($paid === '1'))
-            ->filter(fn (array $person) => $invited === '' || $person['invited'] === ($invited === '1'))
-            ->filter(fn (array $person) => $search === '' || str_contains(
-                mb_strtolower($person['name'].' '.$person['email']), mb_strtolower($search)
+            ->filter(fn (RosterRow $person) => $role === '' || ($role === 'communicant'
+                ? $person->role !== 'attendee' : $person->role === $role))
+            ->filter(fn (RosterRow $person) => $participationMode === '' || $person->participationMode === $participationMode)
+            ->filter(fn (RosterRow $person) => $paid === '' || $person->paid === ($paid === '1'))
+            ->filter(fn (RosterRow $person) => $invited === '' || $person->invited === ($invited === '1'))
+            ->filter(fn (RosterRow $person) => $search === '' || str_contains(
+                mb_strtolower($person->name.' '.$person->email), mb_strtolower($search)
             ));
-        $filtered = $filtered->sort(function (array $a, array $b) use ($sort) {
+        $filtered = $filtered->sort(function (RosterRow $a, RosterRow $b) use ($sort) {
             $comparison = match ($sort['sort']) {
-                'role' => strcmp($a['role'], $b['role']),
-                'created_at' => $a['createdAt'] <=> $b['createdAt'],
-                default => strcasecmp($a['name'], $b['name']),
+                'role' => strcmp($a->role, $b->role),
+                'created_at' => $a->createdAt <=> $b->createdAt,
+                default => strcasecmp($a->name, $b->name),
             };
 
-            return ($sort['dir'] === 'desc' ? -1 : 1) * ($comparison ?: ($b['participant']->id <=> $a['participant']->id));
+            return ($sort['dir'] === 'desc' ? -1 : 1) * ($comparison ?: ($b->participant->id <=> $a->participant->id));
         })->values();
         $page = max(1, LengthAwarePaginator::resolveCurrentPage());
         $participants = new LengthAwarePaginator(
@@ -82,8 +83,8 @@ class ParticipantController extends Controller
 
         // Tendance des inscriptions : 7 derniers jours vs les 7 précédents.
         $trendTotal = Trend::of(
-            $all->filter(fn (array $p) => $p['createdAt']?->between(now()->subDays(7), now()))->count(),
-            $all->filter(fn (array $p) => $p['createdAt']?->between(now()->subDays(14), now()->subDays(7)))->count(),
+            $all->filter(fn (RosterRow $p) => $p->createdAt?->between(now()->subDays(7), now()))->count(),
+            $all->filter(fn (RosterRow $p) => $p->createdAt?->between(now()->subDays(14), now()->subDays(7)))->count(),
         );
 
         return view('admin.participants.index', [
@@ -132,7 +133,7 @@ class ParticipantController extends Controller
     public function invite(Participant $participant, EventParticipantRoster $roster): RedirectResponse
     {
         abort_unless($roster->forEvent((string) $participant->event_id)
-            ->contains(fn (array $person) => $person['participant']->id === $participant->id), 404);
+            ->contains(fn (RosterRow $person) => $person->participant->id === $participant->id), 404);
 
         if (blank($participant->email)) {
             return back()->with('ukc_error', 'Ce participant n’a pas d’adresse e-mail.');
@@ -152,10 +153,10 @@ class ParticipantController extends Controller
         }
 
         $participants = $roster->forEvent($editionId)
-            ->filter(fn (array $p) => $p['paid'] && ! $p['invited'] && filled($p['email']));
+            ->filter(fn (RosterRow $p) => $p->paid && ! $p->invited && filled($p->email));
 
         foreach ($participants as $person) {
-            $this->sendInvitation($person['participant']);
+            $this->sendInvitation($person->participant);
         }
 
         return back()->with('ukc_status', $participants->count().' invitation(s) envoyée(s).');

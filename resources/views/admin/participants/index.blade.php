@@ -79,30 +79,30 @@
                         </thead>
                         <tbody>
                             @foreach ($participants as $person)
-                                @php($p = $person['participant'])
+                                @php($p = $person->participant)
                                 <tr>
                                     <td>
-                                        <div class="title">{{ $person['name'] }}</div>
-                                        <div class="meta">{{ $person['email'] }}</div>
+                                        <div class="title">{{ $person->name }}</div>
+                                        <div class="meta">{{ $person->email }}</div>
                                     </td>
                                     <td>
                                         <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                            <span class="ukc-pill ukc-pill--info">{{ $person['role'] === 'attendee' ? 'Participant simple' : 'Communicant' }}</span>
-                                            @if ($person['role'] !== 'attendee')
-                                                <span class="ukc-pill ukc-pill--muted">{{ $person['role'] === 'author' ? 'Auteur correspondant' : 'Co-auteur uniquement' }}</span>
+                                            <span class="ukc-pill ukc-pill--info">{{ $person->role === 'attendee' ? 'Participant simple' : 'Communicant' }}</span>
+                                            @if ($person->role !== 'attendee')
+                                                <span class="ukc-pill ukc-pill--muted">{{ $person->role === 'author' ? 'Auteur correspondant' : 'Co-auteur uniquement' }}</span>
                                             @endif
-                                            @foreach (($person['userId'] ? ($editionRoles[$person['userId']] ?? []) : []) as $r)
+                                            @foreach (($person->userId ? ($editionRoles[$person->userId] ?? []) : []) as $r)
                                                 <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r) }}">{{ \App\Support\StaffRoles::label($r) }}</span>
                                             @endforeach
                                         </div>
                                     </td>
-                                    <td style="white-space:nowrap;">{{ $person['participationModeLabel'] ?? 'Non renseigné' }}</td>
+                                    <td style="white-space:nowrap;">{{ $person->participationModeLabel ?? 'Non renseigné' }}</td>
                                     <td>
-                                        @if ($person['paid'])<span class="ukc-pill ukc-pill--ok">Réglé</span>
+                                        @if ($person->paid)<span class="ukc-pill ukc-pill--ok">Réglé</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
                                     </td>
                                     <td>
-                                        @if ($person['invited'])<span class="ukc-pill ukc-pill--ok">Oui</span>
+                                        @if ($person->invited)<span class="ukc-pill ukc-pill--ok">Oui</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
                                     </td>
                                     <td style="text-align:right;white-space:nowrap;">
@@ -114,8 +114,8 @@
                                             <form method="POST" action="{{ route('admin.participants.invite', $p) }}"
                                                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitation envoyée.">
                                                 @csrf
-                                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" @disabled(blank($person['email']))>
-                                                    <x-ukc.icon name="mail" :size="14" /> {{ $person['invited'] ? 'Relancer' : 'Inviter' }}
+                                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" @disabled(blank($person->email))>
+                                                    <x-ukc.icon name="mail" :size="14" /> {{ $person->invited ? 'Relancer' : 'Inviter' }}
                                                 </button>
                                             </form>
                                         </div>

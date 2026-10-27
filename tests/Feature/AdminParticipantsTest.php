@@ -1,7 +1,12 @@
 <?php
 
 use App\Mail\ParticipantInvitationMail;
+use App\Models\Event;
+use App\Models\Participant;
+use App\Models\Submission;
+use App\Support\EventParticipantRoster;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -58,7 +63,7 @@ it('invite en masse les payés non invités uniquement', function () {
 });
 
 /** Une communication déposée POUR UN TIERS : le déposant n'en est pas l'auteur. */
-function deposePourUnTiers(App\Models\Event $event, App\Models\Participant $deposant, string $ref, array $correspondant): App\Models\Submission
+function deposePourUnTiers(Event $event, Participant $deposant, string $ref, array $correspondant): Submission
 {
     $submission = $event->submissions()->create([
         'participant_id' => $deposant->id,
@@ -76,7 +81,7 @@ function deposePourUnTiers(App\Models\Event $event, App\Models\Participant $depo
         'author_index' => 0,
         'name' => $correspondant['name'],
         'email' => $correspondant['email'],
-        'token' => Illuminate\Support\Str::random(48),
+        'token' => Str::random(48),
         'status' => 'invited',
     ]);
 
@@ -96,7 +101,7 @@ it('n’inscrit pas le compte qui a seulement déposé pour un tiers', function 
         'name' => 'DANAME Marcelle', 'email' => 'marcelle@example.tg',
     ]);
 
-    $registre = app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id);
+    $registre = app(EventParticipantRoster::class)->forEvent((string) $event->id);
 
     expect($registre->pluck('email')->all())->not->toContain('devs@univkara.tg');
 
@@ -109,7 +114,7 @@ it('n’inscrit pas le compte qui a seulement déposé pour un tiers', function 
 
 it('inscrit le déposant quand il est co-auteur d’une autre communication', function () {
     $event = openEdition();
-    $registre = fn () => app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id);
+    $registre = fn () => app(EventParticipantRoster::class)->forEvent((string) $event->id);
 
     $deposant = $event->participants()->create([
         'first_name' => 'Admin', 'last_name' => 'UK', 'email' => 'devs@univkara.tg', 'role' => 'author',
@@ -122,11 +127,11 @@ it('inscrit le déposant quand il est co-auteur d’une autre communication', fu
         ->authorLinks()->create([
             'event_id' => $event->id, 'role' => 'coauthor', 'author_index' => 1,
             'name' => 'Admin UK', 'email' => 'devs@univkara.tg',
-            'token' => Illuminate\Support\Str::random(48), 'status' => 'linked',
+            'token' => Str::random(48), 'status' => 'linked',
         ]);
 
     expect($registre()->firstWhere('email', 'devs@univkara.tg'))->not->toBeNull()
-        ->and($registre()->firstWhere('email', 'devs@univkara.tg')['role'])->toBe('coauthor');
+        ->and($registre()->firstWhere('email', 'devs@univkara.tg')->role)->toBe('coauthor');
 });
 
 it('garde le déposant comme auteur correspondant quand la communication le dit', function () {
@@ -139,10 +144,10 @@ it('garde le déposant comme auteur correspondant quand la communication le dit'
     ]);
     deposePourUnTiers($event, $deposant, '26-052', ['name' => 'KODJO Awa', 'email' => 'awa@example.tg']);
 
-    $ligne = app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id)
+    $ligne = app(EventParticipantRoster::class)->forEvent((string) $event->id)
         ->firstWhere('email', 'awa@example.tg');
 
-    expect($ligne)->not->toBeNull()->and($ligne['role'])->toBe('author');
+    expect($ligne)->not->toBeNull()->and($ligne->role)->toBe('author');
 });
 
 it('ne transforme pas le déposant en auteur si la communication ne désigne personne', function () {
@@ -157,7 +162,7 @@ it('ne transforme pas le déposant en auteur si la communication ne désigne per
         'authors' => [['name' => 'KODJO Awa', 'is_submitter' => false]],
     ]);
 
-    $ligne = app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id)
+    $ligne = app(EventParticipantRoster::class)->forEvent((string) $event->id)
         ->firstWhere('email', 'awa@example.tg');
 
     expect($ligne)->toBeNull();
@@ -174,10 +179,10 @@ it('reconnaît un auteur correspondant explicitement marqué comme déposant mê
         'authors' => [['name' => 'KODJO Awa', 'is_submitter' => true, 'corresponding' => true]],
     ]);
 
-    $ligne = app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id)
+    $ligne = app(EventParticipantRoster::class)->forEvent((string) $event->id)
         ->firstWhere('email', 'awa@example.tg');
 
-    expect($ligne)->not->toBeNull()->and($ligne['role'])->toBe('author');
+    expect($ligne)->not->toBeNull()->and($ligne->role)->toBe('author');
 });
 
 it('inscrit le déposant comme auditeur simple seulement après un paiement de participation', function () {
@@ -189,7 +194,7 @@ it('inscrit le déposant comme auditeur simple seulement après un paiement de p
         'name' => 'DANAME Marcelle', 'email' => 'marcelle@example.tg',
     ]);
 
-    $registre = fn () => app(App\Support\EventParticipantRoster::class)->forEvent((string) $event->id);
+    $registre = fn () => app(EventParticipantRoster::class)->forEvent((string) $event->id);
     expect($registre()->firstWhere('email', 'devs@univkara.tg'))->toBeNull();
 
     $event->payments()->create([
@@ -197,6 +202,6 @@ it('inscrit le déposant comme auditeur simple seulement après un paiement de p
     ]);
 
     $ligne = $registre()->firstWhere('email', 'devs@univkara.tg');
-    expect($ligne)->not->toBeNull()->and($ligne['role'])->toBe('attendee')
-        ->and($ligne['paid'])->toBeTrue();
+    expect($ligne)->not->toBeNull()->and($ligne->role)->toBe('attendee')
+        ->and($ligne->paid)->toBeTrue();
 });

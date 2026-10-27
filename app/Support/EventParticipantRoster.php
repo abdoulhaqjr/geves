@@ -4,14 +4,13 @@ namespace App\Support;
 
 use App\Models\Participant;
 use App\Models\Submission;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /** Une personne par événement, classée d'après ses communications réelles. */
 class EventParticipantRoster
 {
     /**
-     * @return Collection<int, array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: Carbon|null, name: string, email: string, userId: int|null}>
+     * @return Collection<int, RosterRow>
      */
     public function forEvent(string $eventId): Collection
     {
@@ -109,15 +108,11 @@ class EventParticipantRoster
             }
         }
 
-        // On assemble un tableau, puis on l'enveloppe : une ligne du registre se
-        // lit mieux dans une méthode nommée que dans une fermeture de cinquante
-        // lignes, et le `null` d'une personne écartée se voit au point d'appel.
-        // ⚠️⚠️ **CE N'EST PAS LE REMÈDE À L'ERREUR PHPSTAN DE `forEvent()`**,
-        // et il ne faut pas le croire : elle PERSISTE. `Collection` n'est pas
-        // covariante, le message affiche DEUX TYPES IDENTIQUES, et ni ce
-        // passage par tableau ni le typage de `createdAt` ci-dessous ne l'ont
-        // levée - les deux ont été essayés et mesurés. La cause est ailleurs,
-        // probablement dans la déclaration de `forEvent()` elle-même.
+        // Chaque groupe devient un RosterRow (objet valeur) : un `TValue` à une
+        // seule identité rend la Collection invariante-compatible, là où une
+        // forme-tableau à champ union déclenchait le faux positif de covariance
+        // (voir le docblock de RosterRow). Le `null` d'une personne écartée se
+        // voit au point d'assemblage.
         $lignes = [];
 
         foreach ($groups as $group) {
@@ -133,15 +128,9 @@ class EventParticipantRoster
     /**
      * Une personne du registre, ou `null` si rien ne l'y fait entrer.
      *
-     * ⚠️ La forme annoncée est EXACTEMENT celle de `forEvent()`, et les deux
-     * doivent rester d'accord - c'est ce qui rend la méthode relisible. ⚠️ Cela
-     * n'a PAS levé l'erreur de covariance de `forEvent()` : voir le commentaire
-     * de son assemblage.
-     *
      * @param  array<string, mixed>  $group
-     * @return array{participant: Participant, role: string, participationMode: string|null, participationModeLabel: string|null, paid: bool, invited: bool, createdAt: Carbon|null, name: string, email: string, userId: int|null}|null
      */
-    private function ligne(array $group): ?array
+    private function ligne(array $group): ?RosterRow
     {
         $rows = collect($group['rows']);
         $paid = $rows->contains(fn (Participant $p) => $p->participationPayments->contains('status', 'paid'));
@@ -171,24 +160,21 @@ class EventParticipantRoster
             ? $representative
             : $rows->first(fn (Participant $p) => in_array($p->participation_mode, ['online', 'onsite'], true));
 
-        return [
-            'participant' => $representative,
-            'role' => $role,
-            'participationMode' => $modeParticipant?->participation_mode,
-            'participationModeLabel' => $modeParticipant?->participationModeLabel(),
-            'paid' => $paid,
-            'invited' => $rows->contains(fn (Participant $p) => $p->isInvited()),
+        return new RosterRow(
+            participant: $representative,
+            role: $role,
+            participationMode: $modeParticipant?->participation_mode,
+            participationModeLabel: $modeParticipant?->participationModeLabel(),
+            paid: $paid,
+            invited: $rows->contains(fn (Participant $p) => $p->isInvited()),
             // `$rows->min('created_at')` ne se type pas : il rend `mixed`. On
             // nomme donc la date (d'où `@property Carbon|null $created_at` sur le
             // modèle, la convention du projet) - même valeur, type connu.
-            // ⚠️ Posé pour lever l'erreur de covariance de `forEvent()`, ce
-            // typage ne l'a PAS levée : il reste bon pour lui-même, pas comme
-            // explication de cette erreur.
-            'createdAt' => $rows->map(fn (Participant $p) => $p->created_at)->filter()->sort()->first(),
-            'name' => $representative->full_name,
-            'email' => (string) $representative->email,
-            'userId' => $group['userId'],
-        ];
+            createdAt: $rows->map(fn (Participant $p) => $p->created_at)->filter()->sort()->first(),
+            name: $representative->full_name,
+            email: (string) $representative->email,
+            userId: $group['userId'],
+        );
     }
 
     private function email(?string $email): string

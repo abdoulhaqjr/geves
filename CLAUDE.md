@@ -6092,6 +6092,35 @@ vérifiés** : chiffrement du jeton, jeton refusé aux lecteurs, adresse de
 téléchargement bornée, aucun appel avant la garde des liens, et l'ordre
 vérification-puis-révocation, et le nom donné à l'éditeur).
 
+### Le registre des participants est une liste d'OBJETS VALEUR (2026-10-27)
+
+⚠️⚠️ **`EventParticipantRoster::forEvent()` rend `Collection<int, RosterRow>`,
+et c'est le remède à une erreur PHPStan tenace.** La forme d'avant - une
+`Collection` dont le `TValue` était un **tableau-forme à champ union**
+(`participationMode: string|null`…) - déclenchait un faux positif de covariance
+(`Collection` n'est pas covariante) : le message annonçait « devrait renvoyer X
+mais renvoie X », deux types identiques. Ni le passage par tableau nommé ni le
+typage de `createdAt` ne l'avaient levé. Une classe à **une seule identité** pour
+`TValue` écarte le problème à la racine.
+
+- ⚠️ **C'est l'INVERSE du choix fait pour les destinataires de badge**
+  (`BadgeCatalog`, plus haut), où le remède était des **tableaux** à champs tous
+  d'un type simple. Les deux soignent la même non-covariance : objet valeur quand
+  un champ est à type union (ici), tableau quand aucun ne l'est. Ne pas « aligner »
+  l'un sur l'autre.
+- **`App\Support\RosterRow`** = objet à propriétés publiques `readonly` typées.
+  Les propriétés gardent `Collection::where()` / `whereIn()` / `firstWhere()` /
+  `pluck()` opérants (ils lisent l'objet via `data_get`), donc les agrégats du
+  contrôleur (`$all->where('paid', true)`…) n'ont pas bougé.
+- ⚠️ **Les consommateurs lisent l'objet en PROPRIÉTÉ, jamais en tableau** :
+  `RosterRow` n'implémente **pas** `ArrayAccess` (ce serait une béquille). Les
+  fermetures du contrôleur sont typées `RosterRow` (plus `array`), la vue
+  `admin/participants/index.blade.php` écrit `$person->role`, et les cas
+  d'`AdminParticipantsTest` aussi. Un `firstWhere('email', …)` rend donc
+  `RosterRow|null`.
+- Gardes : `AdminParticipantsTest` (déjà en place) exerce le registre **et** le
+  rendu de la page d'index.
+
 ### Architecture & sécurité
 
 - **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`
