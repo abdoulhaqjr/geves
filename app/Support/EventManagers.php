@@ -31,7 +31,7 @@ class EventManagers
         // est administrateur pour le modèle, et serait pourtant écarté d'une
         // requête sur `access_level` seul.
         if ($eventId === null) {
-            return User::query()->administrateurs()->get();
+            return self::activeAdministrators();
         }
 
         $ids = DB::table('event_user')
@@ -41,8 +41,14 @@ class EventManagers
 
         $managers = $ids->isEmpty()
             ? new Collection
-            : User::query()->whereIn('id', $ids)->get();
+            : User::query()->whereIn('id', $ids)->where('is_active', true)->get();
 
-        return $managers->isNotEmpty() ? $managers : User::query()->administrateurs()->get();
+        return $managers->isNotEmpty() ? $managers : self::activeAdministrators();
+    }
+
+    /** Un compte désactivé ne peut pas traiter une alerte reçue. */
+    private static function activeAdministrators(): Collection
+    {
+        return User::query()->administrateurs()->where('is_active', true)->get();
     }
 }

@@ -633,6 +633,9 @@ async function ukcFiltreApplique(form, requestedUrl = null) {
     // afficherait le résultat d'un filtre déjà abandonné - avec, dans la barre,
     // le texte qui ne lui correspond pas.
     const jeton = (form.__ukcFiltreJeton = (form.__ukcFiltreJeton || 0) + 1);
+    const isPagination = requestedUrl !== null;
+    form.__ukcFiltreDirty = false;
+    form.__ukcFiltrePendingType = isPagination ? 'page' : 'filter';
     // Un clic sur la pagination fournit une URL qui contient `page`. La
     // reconstruire depuis le formulaire supprimerait ce paramètre et ramènerait
     // systématiquement la liste à la page 1.
@@ -646,6 +649,7 @@ async function ukcFiltreApplique(form, requestedUrl = null) {
         if (jeton !== form.__ukcFiltreJeton) return;
 
         const doc = new DOMParser().parseFromString(html, 'text/html');
+        let replaced = 0;
         regions.forEach((courante) => {
             const nom = courante.getAttribute('data-filter-part');
             const fraiche = doc.querySelector('[data-filter-part="' + nom + '"]');
@@ -653,7 +657,9 @@ async function ukcFiltreApplique(form, requestedUrl = null) {
             courante.innerHTML = fraiche.innerHTML;
             ukcDecodeCfEmails(courante);
             window.Alpine?.initTree?.(courante);
+            replaced++;
         });
+        if (replaced === 0) throw new Error('missing-filter-regions');
 
         // ⚠️ Les filtres vivent dans l'URL (convention du projet : une liste
         // filtrée se partage par lien). `replaceState` et non `pushState` : un
@@ -661,9 +667,18 @@ async function ukcFiltreApplique(form, requestedUrl = null) {
         // « précédent » inutilisable.
         window.history.replaceState({}, '', url);
     } catch (e) {
+        if (jeton !== form.__ukcFiltreJeton) return;
+        // Le lien reste utilisable même si le chargement AJAX échoue.
+        if (isPagination) {
+            window.location.assign(url.href);
+            return;
+        }
         ukcToast('Filtrage impossible.', 'err');
     } finally {
-        if (jeton === form.__ukcFiltreJeton) regions.forEach((r) => r.classList.remove('is-filtering'));
+        if (jeton === form.__ukcFiltreJeton) {
+            form.__ukcFiltrePendingType = null;
+            regions.forEach((r) => r.classList.remove('is-filtering'));
+        }
     }
 }
 
@@ -675,15 +690,21 @@ const ukcEstSaisie = (el) => el instanceof HTMLElement
 document.addEventListener('input', (e) => {
     const form = e.target?.closest?.('form[data-filter]');
     if (! form || ! ukcEstSaisie(e.target)) return;
+    form.__ukcFiltreDirty = true;
     clearTimeout(form.__ukcFiltreTimer);
-    form.__ukcFiltreTimer = setTimeout(() => ukcFiltreApplique(form), UKC_FILTRE_DELAI);
+    form.__ukcFiltreTimer = setTimeout(() => {
+        form.__ukcFiltreTimer = null;
+        ukcFiltreApplique(form);
+    }, UKC_FILTRE_DELAI);
 });
 
 document.addEventListener('change', (e) => {
     const form = e.target?.closest?.('form[data-filter]');
     if (! form || ukcEstSaisie(e.target)) return;
     if (e.target?.dataset?.filterInitializing === '1') return;
+    form.__ukcFiltreDirty = true;
     clearTimeout(form.__ukcFiltreTimer);
+    form.__ukcFiltreTimer = null;
     ukcFiltreApplique(form);
 });
 
@@ -693,7 +714,9 @@ document.addEventListener('submit', (e) => {
     const form = e.target;
     if (! (form instanceof HTMLFormElement) || ! form.hasAttribute('data-filter')) return;
     e.preventDefault();
+    form.__ukcFiltreDirty = true;
     clearTimeout(form.__ukcFiltreTimer);
+    form.__ukcFiltreTimer = null;
     ukcFiltreApplique(form);
 });
 
@@ -716,6 +739,11 @@ document.addEventListener('click', (e) => {
 
     e.preventDefault();
     clearTimeout(form.__ukcFiltreTimer);
+    form.__ukcFiltreTimer = null;
+    if (form.__ukcFiltreDirty || form.__ukcFiltrePendingType === 'filter') {
+        ukcFiltreApplique(form);
+        return;
+    }
     ukcFiltreApplique(form, url);
 });
 
