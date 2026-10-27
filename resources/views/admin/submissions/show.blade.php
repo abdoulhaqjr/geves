@@ -292,6 +292,11 @@
                             <li @class(['green' => $ev['done']])>
                                 <div class="when">{{ $ev['when']?->format('d/m/Y H:i') }}</div>
                                 <div class="what">{{ $ev['what'] }}</div>
+                                @if (isset($ev['archive']))
+                                    <div class="detail">
+                                        <a href="{{ route('admin.submissions.versions.show', [$s, $ev['archive']]) }}">Voir la version v{{ $ev['archive_version'] }} archivée</a>
+                                    </div>
+                                @endif
                             </li>
                         @endforeach
                     </ul>

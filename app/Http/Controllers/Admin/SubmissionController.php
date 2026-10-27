@@ -515,6 +515,19 @@ class SubmissionController extends Controller
         ]);
     }
 
+    /** Consultation en lecture seule d'une version archivée de cette communication. */
+    public function archivedVersion(Submission $submission, Submission $archive): View
+    {
+        abort_unless((int) $submission->revision_of === 0, 404);
+
+        // Le paramètre d'URL peut désigner n'importe quelle soumission : la
+        // relation garantit que l'archive appartient à la fiche ouverte.
+        $archive = $submission->versions()->whereKey($archive->id)->firstOrFail();
+        $submission->load('event');
+
+        return view('admin.submissions.version', compact('submission', 'archive'));
+    }
+
     /** Suppression explicite d'une communication depuis la liste. */
     public function destroy(Request $request, Submission $submission, DeleteSubmission $delete): RedirectResponse
     {
@@ -1180,7 +1193,7 @@ class SubmissionController extends Controller
     /**
      * Historique dérivé des vrais événements (dépôt, versions, évaluations).
      *
-     * @return array<int, array{when: Carbon|null, what: string, done: bool}>
+     * @return array<int, array{when: Carbon|null, what: string, done: bool, archive?: int, archive_version?: int}>
      */
     private function timeline(Submission $s, $reviews): array
     {
@@ -1193,7 +1206,13 @@ class SubmissionController extends Controller
         foreach ($s->versions()->get() as $v) {
             // L'archive de v1 est créée AU MOMENT où v2 arrive : l'événement
             // à cette date est donc le renvoi de v2, et non celui de v1.
-            $events[] = ['when' => $v->created_at, 'what' => 'Version '.((int) $v->version + 1).' resoumise', 'done' => false];
+            $events[] = [
+                'when' => $v->created_at,
+                'what' => 'Version '.((int) $v->version + 1).' resoumise',
+                'done' => false,
+                'archive' => $v->id,
+                'archive_version' => $v->version,
+            ];
         }
 
         foreach ($reviews as $review) {

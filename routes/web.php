@@ -438,6 +438,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/soumissions/relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'reviewers'])->name('admin.submissions.reviewers');
             Route::get('/soumissions/options', [App\Http\Controllers\Admin\SubmissionController::class, 'options'])->name('admin.submissions.options');
             Route::get('/soumissions/{submission}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('admin.submissions.show');
+            Route::get('/soumissions/{submission}/versions/{archive}', [App\Http\Controllers\Admin\SubmissionController::class, 'archivedVersion'])->name('admin.submissions.versions.show');
             Route::post('/soumissions/{submission}/statut', [App\Http\Controllers\Admin\SubmissionController::class, 'applyStatus'])->name('admin.submissions.status');
             Route::post('/soumissions/{submission}/reponse-relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'toggleRebuttal'])->name('admin.submissions.rebuttal.toggle');
             Route::post('/soumissions/{submission}/relecteur', [App\Http\Controllers\Admin\SubmissionController::class, 'assignReviewer'])->name('admin.submissions.review.assign');
