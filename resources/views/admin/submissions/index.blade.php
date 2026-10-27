@@ -99,6 +99,9 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
             </label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
+                <input type="checkbox" name="resubmitted" value="1" @checked($resubmitted)> Resoumises après correction
+            </label>
             {{-- ⚠️⚠️ **« RÉINITIALISER » A SA PROPRE RÉGION ÉCHANGÉE** : il
                  n'apparaît que selon les filtres, et il vivait HORS de toute
                  région - donc il ne se montrait qu'au prochain rechargement
@@ -163,7 +166,14 @@
                                 </td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
-                                <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
+                                <td>
+                                    <span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span>
+                                    @if ($s->isResubmitted())
+                                        {{-- Une correction resoumise repasse en « Soumise » : cette pastille
+                                             la distingue d'un dépôt neuf. --}}
+                                        <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Correction resoumise (version {{ $s->version }})">Corrigée v{{ $s->version }}</span>
+                                    @endif
+                                </td>
                                 {{-- Avancement de l’évaluation : rendues / demandées, et le retard
                                      éventuel. Sans cela, le comité devait ouvrir chaque fiche. --}}
                                 @php $rev = \App\Models\Review::progressOf($s->reviews); @endphp

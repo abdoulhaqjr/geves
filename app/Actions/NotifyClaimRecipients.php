@@ -4,9 +4,9 @@ namespace App\Actions;
 
 use App\Models\Claim;
 use App\Models\User;
+use App\Support\EventManagers;
 use App\Support\Notifier;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Prévient les bonnes personnes qu'une réclamation (ou un incident) arrive.
@@ -16,13 +16,11 @@ use Illuminate\Support\Facades\DB;
  * réclamation générale, sans événement, remonte aux **administrateurs**. On
  * n'inonde donc pas tout le back-office. Chaque destinataire reçoit l'in-app
  * ET l'e-mail générique (type `claim_new`), et peut couper l'e-mail dans ses
- * préférences. Appelé à la création et au transfert vers un événement.
+ * préférences. Appelé à la création et au transfert vers un événement. Le
+ * ciblage lui-même vit dans {@see EventManagers::forEvent()} (source unique).
  */
 class NotifyClaimRecipients
 {
-    /** Rôles d'équipe qui portent une réclamation d'événement. */
-    public const MANAGER_ROLES = ['gerant', 'co_gerant'];
-
     public function handle(Claim $claim, bool $transferred = false): void
     {
         $recipients = $this->recipients($claim);
@@ -43,28 +41,13 @@ class NotifyClaimRecipients
 
     /**
      * Destinataires selon le rattachement : gestionnaires de l'événement, ou
-     * administrateurs pour une réclamation générale.
+     * administrateurs pour une réclamation générale (et en repli d'un événement
+     * sans gestionnaire, sinon la réclamation n'aurait personne pour la voir).
      *
      * @return Collection<int, User>
      */
     public function recipients(Claim $claim): Collection
     {
-        if ($claim->event_id === null) {
-            return User::query()->administrateurs()->get();
-        }
-
-        $ids = DB::table('event_user')
-            ->where('event_id', $claim->event_id)
-            ->whereIn('role', self::MANAGER_ROLES)
-            ->pluck('user_id')->unique();
-
-        $managers = $ids->isEmpty()
-            ? new Collection
-            : User::query()->whereIn('id', $ids)->get();
-
-        // ⚠️ Filet : un événement sans gestionnaire ni co-gestionnaire laisserait
-        // la réclamation sans personne pour la voir - on prévient alors les
-        // administrateurs plutôt que de la perdre.
-        return $managers->isNotEmpty() ? $managers : User::query()->administrateurs()->get();
+        return EventManagers::forEvent($claim->event_id);
     }
 }

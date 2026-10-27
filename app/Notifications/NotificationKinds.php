@@ -37,6 +37,10 @@ class NotificationKinds
             'payment_open' => ['label' => 'Ouverture du règlement des frais', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'task_assigned' => ['label' => 'Tâches de projet qui me sont assignées', 'audience' => 'staff', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'submission_new' => ['label' => 'Nouvelles communications', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
+            // ⚠️ `email => true` et `hasMail => false` : le gestionnaire / co-gestionnaire
+            // ciblé reçoit l'e-mail GÉNÉRIQUE en plus de l'in-app, et peut le décocher.
+            // Une correction resoumise repasse en « Soumise » et se noierait sinon.
+            'submission_resubmitted' => ['label' => 'Corrections resoumises', 'audience' => 'staff', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'review_response' => ['label' => 'Réponses des évaluateurs (acceptation / refus)', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             'contact' => ['label' => 'Messages de contact', 'audience' => 'staff', 'inapp' => true, 'email' => false, 'hasMail' => false],
             // ⚠️ `email => true` et `hasMail => false` : le destinataire (gestionnaire,

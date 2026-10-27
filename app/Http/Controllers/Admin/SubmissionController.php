@@ -115,6 +115,7 @@ class SubmissionController extends Controller
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
             ->when(in_array($presentationMode, ['online', 'onsite'], true), fn ($q) => $q->where('submissions.presentation_mode', $presentationMode))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
+            ->when($request->boolean('resubmitted'), fn ($q) => $q->resubmitted())
             ->when($request->boolean('unlinked'), fn ($q) => $q->whereHas('authorLinks', self::liensNonRattaches()))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
@@ -151,6 +152,7 @@ class SubmissionController extends Controller
         $presentationMode = (string) $request->query('presentation_mode', '');
         $track = (string) $request->query('track', '');
         $unlinked = $request->boolean('unlinked');
+        $resubmitted = $request->boolean('resubmitted');
         $reviews = $this->etatDesEvaluations($request);
 
         // Un co-auteur « non rattaché » = lien invited/unmatched/declined (hors déposant).
@@ -229,6 +231,7 @@ class SubmissionController extends Controller
             'presentation_mode' => $presentationMode,
             'track' => $track,
             'unlinked' => $unlinked ? 1 : null,
+            'resubmitted' => $resubmitted ? 1 : null,
         ], fn ($v) => $v !== null && $v !== '');
 
         // ⚠️⚠️ **L'EXPORT PART DES MÊMES FILTRES, PAR LA MÊME CONSTRUCTION.** Le
@@ -267,6 +270,7 @@ class SubmissionController extends Controller
             'presentationMode' => $presentationMode,
             'track' => $track,
             'unlinked' => $unlinked,
+            'resubmitted' => $resubmitted,
             'events' => $accessible,
             'statuses' => Submission::statuses(),
             'reviewStates' => Submission::REVIEW_STATES,
@@ -1187,7 +1191,9 @@ class SubmissionController extends Controller
         ]];
 
         foreach ($s->versions()->get() as $v) {
-            $events[] = ['when' => $v->created_at, 'what' => 'Version '.$v->version.' resoumise', 'done' => false];
+            // L'archive de v1 est créée AU MOMENT où v2 arrive : l'événement
+            // à cette date est donc le renvoi de v2, et non celui de v1.
+            $events[] = ['when' => $v->created_at, 'what' => 'Version '.((int) $v->version + 1).' resoumise', 'done' => false];
         }
 
         foreach ($reviews as $review) {

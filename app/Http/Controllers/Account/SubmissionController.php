@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Actions\CreateSubmission;
+use App\Actions\NotifySubmissionResubmitted;
 use App\Actions\NotifySubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ResubmitSubmissionRequest;
@@ -328,7 +329,7 @@ class SubmissionController extends Controller
             ->with('ukc_status', 'Mode de présentation enregistré pour cette communication.');
     }
 
-    public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse
+    public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify, NotifySubmissionResubmitted $notifyStaff): RedirectResponse
     {
         $this->authorizeOwnership($submission);
         abort_unless($submission->canBeRevised(), 403);
@@ -378,7 +379,11 @@ class SubmissionController extends Controller
             'status' => 'submitted',
         ]);
 
-        $notify->handle($submission->fresh(), 'submitted');
+        // Le gestionnaire est alerté dès que la correction est enregistrée.
+        // L'envoi à l'auteur peut échouer indépendamment (transport SMTP).
+        $submission->refresh();
+        $notifyStaff->handle($submission);
+        $notify->handle($submission, 'submitted');
 
         return redirect()->route('account.submissions.show', $submission)
             ->with('ukc_status', 'Version corrigée envoyée. Votre communication est de nouveau en cours d’examen.');

@@ -346,6 +346,26 @@ class Submission extends Model
     }
 
     /**
+     * Communications RESOUMISES après une demande de correction : la
+     * resoumission archive l'ancienne version et porte la canonique à `v+1`.
+     * Une correction qui revient repasse en « Soumise » et se noierait sinon
+     * parmi les dépôts neufs - c'est ce qui la distingue dans la liste et le
+     * filtre « Resoumises ». Colonne qualifiée : le tri par auteur joint
+     * `participants`.
+     */
+    public function scopeResubmitted($query)
+    {
+        return $query->where('submissions.revision_of', 0)
+            ->where('submissions.version', '>', 1);
+    }
+
+    /** La même règle, sur une communication déjà chargée. */
+    public function isResubmitted(): bool
+    {
+        return (int) $this->revision_of === 0 && (int) $this->version > 1;
+    }
+
+    /**
      * L'auteur peut encore corriger librement sa communication (titre/résumé/
      * mots-clés) TANT QU'aucun évaluateur, membre du comité ou gestionnaire n'y a
      * touché : statut initial « déposée » et aucune évaluation créée. Après la
