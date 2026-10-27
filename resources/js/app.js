@@ -94,36 +94,46 @@ function initTomSelects(root = document) {
         if (isSingleFilter) plugins.push('clear_button');
         if (el.hasAttribute('data-tom-dropdown-search')) plugins.push('dropdown_input');
 
-        const ts = new TomSelect(el, {
-            create: tags,
-            delimiter: isInput ? delimiter : undefined,
-            splitOn: isInput ? splitOn : undefined,
-            createOnBlur: isInput,
-            persist: false,
-            allowEmptyOption: ! isInput && ! isSingleFilter,
-            // Un <select> simple doit rester à UN choix : sans maxItems, Tom Select
-            // bascule en mode multi et laisse accumuler des valeurs que le filtre
-            // ne sait pas envoyer (une seule est soumise).
-            maxItems: (isInput || isMulti) ? (Number.isFinite(max) && max > 0 ? max : null) : 1,
-            plugins,
-            // Le libellé de l'option « tout » sert de placeholder : en poser un
-            // second afficherait les deux l'un sur l'autre.
-            placeholder: emptyLabel || el.getAttribute('data-placeholder') || undefined,
-            hidePlaceholder: true,
-            // ⚠️ La liste est rendue dans <body>, pas dans le conteneur : une barre
-            // de filtres qui défile (overflow) découpait le menu déroulant, qui
-            // s'ouvrait sans être visible.
-            dropdownParent: 'body',
-            dropdownClass: el.hasAttribute('data-tom-dropdown-search') ? 'ts-dropdown ukc-track-dropdown' : 'ts-dropdown',
-            render: el.hasAttribute('data-tom-dropdown-search') ? {
-                item: (data, escape) => `<div title="${escape(data.text)}">${escape(data.text)}</div>`,
-            } : undefined,
-            onChange() {
-                if (autoSubmit && ready && el.form) {
-                    el.form.submit();
-                }
-            },
-        });
+        // Tom Select peut émettre `change` pendant sa construction. Le filtre
+        // AJAX global ne doit pas interpréter cet événement comme un choix de
+        // l'utilisateur, en particulier sur une URL déjà paginée.
+        const filterControl = !!el.closest('form[data-filter]');
+        if (filterControl) el.dataset.filterInitializing = '1';
+        let ts;
+        try {
+            ts = new TomSelect(el, {
+                create: tags,
+                delimiter: isInput ? delimiter : undefined,
+                splitOn: isInput ? splitOn : undefined,
+                createOnBlur: isInput,
+                persist: false,
+                allowEmptyOption: ! isInput && ! isSingleFilter,
+                // Un <select> simple doit rester à UN choix : sans maxItems, Tom Select
+                // bascule en mode multi et laisse accumuler des valeurs que le filtre
+                // ne sait pas envoyer (une seule est soumise).
+                maxItems: (isInput || isMulti) ? (Number.isFinite(max) && max > 0 ? max : null) : 1,
+                plugins,
+                // Le libellé de l'option « tout » sert de placeholder : en poser un
+                // second afficherait les deux l'un sur l'autre.
+                placeholder: emptyLabel || el.getAttribute('data-placeholder') || undefined,
+                hidePlaceholder: true,
+                // ⚠️ La liste est rendue dans <body>, pas dans le conteneur : une barre
+                // de filtres qui défile (overflow) découpait le menu déroulant, qui
+                // s'ouvrait sans être visible.
+                dropdownParent: 'body',
+                dropdownClass: el.hasAttribute('data-tom-dropdown-search') ? 'ts-dropdown ukc-track-dropdown' : 'ts-dropdown',
+                render: el.hasAttribute('data-tom-dropdown-search') ? {
+                    item: (data, escape) => `<div title="${escape(data.text)}">${escape(data.text)}</div>`,
+                } : undefined,
+                onChange() {
+                    if (autoSubmit && ready && el.form) {
+                        el.form.submit();
+                    }
+                },
+            });
+        } finally {
+            if (filterControl) delete el.dataset.filterInitializing;
+        }
         if (el.hasAttribute('data-tom-dropdown-search')) {
             ts.control_input.placeholder = 'Rechercher un axe…';
             ts.dropdown.style.position = 'fixed';
@@ -612,7 +622,7 @@ function ukcFiltreUrl(form) {
     return url;
 }
 
-async function ukcFiltreApplique(form) {
+async function ukcFiltreApplique(form, requestedUrl = null) {
     const prefixe = form.getAttribute('data-filter') || '';
     const regions = [...document.querySelectorAll('[data-filter-part]')]
         .filter((r) => ! prefixe || (r.getAttribute('data-filter-part') || '').startsWith(prefixe + '-'));
@@ -623,7 +633,10 @@ async function ukcFiltreApplique(form) {
     // afficherait le résultat d'un filtre déjà abandonné - avec, dans la barre,
     // le texte qui ne lui correspond pas.
     const jeton = (form.__ukcFiltreJeton = (form.__ukcFiltreJeton || 0) + 1);
-    const url = ukcFiltreUrl(form);
+    // Un clic sur la pagination fournit une URL qui contient `page`. La
+    // reconstruire depuis le formulaire supprimerait ce paramètre et ramènerait
+    // systématiquement la liste à la page 1.
+    const url = requestedUrl || ukcFiltreUrl(form);
 
     regions.forEach((r) => r.classList.add('is-filtering'));
     try {
@@ -669,6 +682,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
     const form = e.target?.closest?.('form[data-filter]');
     if (! form || ukcEstSaisie(e.target)) return;
+    if (e.target?.dataset?.filterInitializing === '1') return;
     clearTimeout(form.__ukcFiltreTimer);
     ukcFiltreApplique(form);
 });
@@ -681,6 +695,28 @@ document.addEventListener('submit', (e) => {
     e.preventDefault();
     clearTimeout(form.__ukcFiltreTimer);
     ukcFiltreApplique(form);
+});
+
+// La pagination fait partie du même chargement AJAX que les filtres. On suit
+// l'URL du lien (avec son numéro de page) et on échange tableau + pagination.
+document.addEventListener('click', (e) => {
+    const link = e.target?.closest?.('.ukc-pagination a[href]');
+    if (!link || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || link.target) return;
+
+    const part = link.closest('[data-filter-part]')?.getAttribute('data-filter-part') || '';
+    if (!part.endsWith('-foot')) return;
+
+    const prefix = part.slice(0, -'-foot'.length);
+    const form = [...document.querySelectorAll('form[data-filter]')]
+        .find((candidate) => candidate.getAttribute('data-filter') === prefix);
+    if (!form) return;
+
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin || url.pathname !== window.location.pathname) return;
+
+    e.preventDefault();
+    clearTimeout(form.__ukcFiltreTimer);
+    ukcFiltreApplique(form, url);
 });
 
 // Glisser-déposer du planning (onglet Programme > Planning) : on tire une
