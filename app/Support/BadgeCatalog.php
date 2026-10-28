@@ -40,6 +40,20 @@ class BadgeCatalog
         return self::label($type);
     }
 
+    /** Visibilité d'une catégorie dans l'espace participant, propre à l'événement. */
+    public static function visibleToParticipant(?Event $event, string $type): bool
+    {
+        if (! self::valid($type)) {
+            return false;
+        }
+
+        return (bool) EventSettings::get(
+            $event,
+            'badges.visible_to_participants.'.$type,
+            EventSettings::get($event, 'badges.visible_to_participants', true),
+        );
+    }
+
     /**
      * Badges d'un compte sur un événement. La participation figure même avant
      * paiement pour pouvoir afficher son aperçu verrouillé ; les fonctions sont
@@ -50,23 +64,26 @@ class BadgeCatalog
      */
     public static function forAccount(Event $event, User $account, Participant $participant): Collection
     {
-        $badges = collect([[
-            'type' => 'default',
-            'recipient' => [
-                // Identité figée si l'événement est archivé, sinon en direct.
-                'name' => $participant->displayName(),
-                'email' => (string) $participant->email,
-                'institution' => $participant->displayInstitution(),
-                'ref' => self::reference($event->id.'-'.$participant->id),
-            ],
-        ]]);
+        $badges = collect();
+        if (self::visibleToParticipant($event, 'default')) {
+            $badges->push([
+                'type' => 'default',
+                'recipient' => [
+                    // Identité figée si l'événement est archivé, sinon en direct.
+                    'name' => $participant->displayName(),
+                    'email' => (string) $participant->email,
+                    'institution' => $participant->displayInstitution(),
+                    'ref' => self::reference($event->id.'-'.$participant->id),
+                ],
+            ]);
+        }
 
         $emails = collect([$account->email, $participant->email])
             ->map(fn ($email) => mb_strtolower(trim((string) $email)))
             ->filter()->unique();
 
         foreach (array_keys(self::TYPES) as $type) {
-            if ($type === 'default') {
+            if ($type === 'default' || ! self::visibleToParticipant($event, $type)) {
                 continue;
             }
 

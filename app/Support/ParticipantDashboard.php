@@ -518,13 +518,15 @@ class ParticipantDashboard
             : null;
         if ($event !== null && $participant !== null) {
             $badgeCount = BadgeCatalog::forAccount($event, $this->account, $participant)->count();
-            $out[] = [
-                'libelle' => $badgeCount === 1 ? __('Mon badge') : __('Mes badges'),
-                'detail' => __('À présenter à l’accueil'),
-                'url' => route('account.documents').'#mon-badge',
-                'icone' => 'card',
-                'format' => __('Voir'),
-            ];
+            if ($badgeCount > 0) {
+                $out[] = [
+                    'libelle' => $badgeCount === 1 ? __('Mon badge') : __('Mes badges'),
+                    'detail' => __('À présenter à l’accueil'),
+                    'url' => route('account.documents').'#mon-badge',
+                    'icone' => 'card',
+                    'format' => __('Voir'),
+                ];
+            }
         }
 
         foreach ($this->attestations() as $attestation) {

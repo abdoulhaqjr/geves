@@ -262,10 +262,43 @@
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
                         Badges prêts <span class="nav-count">{{ $badgeReadyCount }}</span>
                     </a>
+                    <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'options']) }}" @class(['active' => $tab === 'badges' && $stab === 'options'])>Options</a>
                 </div>
 
                 @if ($tab === 'badges' && $stab === 'prets')
                     @include('admin.documents._badges-ready')
+                @endif
+
+                @if ($tab === 'badges' && $stab === 'options')
+                    <div class="ukc-card">
+                        <h2>Options des badges</h2>
+                        <p class="desc">Choisissez les catégories de badges visibles dans l’espace participant pour cet événement.</p>
+                        <form method="POST" action="{{ route('admin.documents.badges.options') }}">
+                            @csrf
+                            <input type="hidden" name="event_id" value="{{ $event->id }}">
+                            <div class="ukc-table-wrap" style="margin-bottom:16px;">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Catégorie de badge</th><th>Visibilité</th></tr></thead>
+                                    <tbody>
+                                        @foreach ($badgeRows as $b)
+                                            @php($visible = (string) old('badgeVisibility.'.$b['key'], $b['visibleToParticipant'] ? '1' : '0'))
+                                            <tr>
+                                                <td><strong>{{ $b['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $b['type'] }}</div></td>
+                                                <td>
+                                                    <select name="badgeVisibility[{{ $b['key'] }}]" aria-label="Visibilité du {{ $b['title'] }}" style="max-width:180px;">
+                                                        <option value="1" @selected($visible === '1')>Affiché</option>
+                                                        <option value="0" @selected($visible === '0')>Caché</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="desc">Seules les catégories affichées sont visibles dans « Mes documents ». Les badges restent disponibles pour le gestionnaire.</p>
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>
+                        </form>
+                    </div>
                 @endif
 
                 {{-- ⚠️ Pas de colonne « Aperçu » : une vignette de 86px n'apprend rien.

@@ -155,6 +155,7 @@ class DocumentHubController extends Controller
                     'key' => $type,
                     'type' => $meta['label'],
                     'title' => (string) $template->title,
+                    'visibleToParticipant' => BadgeCatalog::visibleToParticipant($event, $type),
                     'sub' => $meta['source'],
                     'format' => BadgeSheet::formatLabel((int) $layout['width'], (int) $layout['height']),
                     'perPage' => BadgeSheet::plan((int) $layout['width'], (int) $layout['height'])['perPage'],
@@ -190,7 +191,7 @@ class DocumentHubController extends Controller
         $tab = in_array($tab, ['attestations', 'badges', 'livre'], true) ? $tab : 'attestations';
 
         $allowed = match ($tab) {
-            'badges' => ['modeles', 'prets'],
+            'badges' => ['modeles', 'prets', 'options'],
             'attestations' => ['modeles', 'delivrees', 'options'],
             'livre' => ['main', 'couverture', 'modeles', 'apparence'],
         };
@@ -494,6 +495,32 @@ class DocumentHubController extends Controller
         ]);
 
         return back()->with('ukc_status', 'Options des attestations enregistrées.');
+    }
+
+    public function saveBadgeOptions(Request $request): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+
+        $rules = ['badgeVisibility' => ['required', 'array']];
+        foreach (array_keys(BadgeCatalog::TYPES) as $type) {
+            $rules['badgeVisibility.'.$type] = ['required', 'in:0,1'];
+        }
+        $data = $request->validate($rules);
+
+        $settings = [];
+        foreach (array_keys(BadgeCatalog::TYPES) as $type) {
+            $settings['badges.visible_to_participants.'.$type] = $data['badgeVisibility'][$type] === '1';
+        }
+        EventSettings::setMany($event, $settings);
+
+        return redirect()->route('admin.documents.attestations', [
+            'event_id' => $event->id,
+            'tab' => 'badges',
+            'stab' => 'options',
+        ])->with('ukc_status', 'Options des badges enregistrées.');
     }
 
     public function saveLivretOptions(Request $request): RedirectResponse

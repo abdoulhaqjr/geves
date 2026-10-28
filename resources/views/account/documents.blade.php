@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Mes documents')" :subtitle="__('Badge, attestations & reçus')">
+<x-layouts.participant :title="__('Mes documents')" :subtitle="$badgeVisible ? __('Badge, attestations & reçus') : __('Attestations & reçus')">
 {{-- L'aperçu du badge est une mise en page du concepteur : il lui faut ses polices. --}}
 @push('head')
     @include('documents._fonts')
@@ -8,14 +8,18 @@
         <div class="ukc-empty">
             <span class="ico"><x-ukc.icon name="folder" :size="28" /></span>
             <h3>{{ __('Aucun document pour le moment') }}</h3>
-            <p>{{ __('Vos badge, attestations et reçus apparaîtront ici au fil de votre participation.') }}</p>
+            <p>{{ __('Vos attestations et reçus apparaîtront ici au fil de votre participation.') }}</p>
         </div>
     @else
         {{-- ============ Mes documents ============ --}}
         <div class="ukc-card">
             <h3>{{ __('Mes documents') }}</h3>
             <p style="font-size:13.5px;color:var(--ukc-muted);margin:-6px 0 14px;">
-                {!! __('Une personne peut disposer d’<strong>une ou plusieurs attestations</strong> selon le nombre de communications. Le <strong>badge physique</strong> est imprimé par l’organisation (non téléchargeable ici).') !!}
+                @if ($badgeVisible)
+                    {!! __('Une personne peut disposer d’<strong>une ou plusieurs attestations</strong> selon le nombre de communications. Le <strong>badge physique</strong> est imprimé par l’organisation (non téléchargeable ici).') !!}
+                @else
+                    {!! __('Une personne peut disposer d’<strong>une ou plusieurs attestations</strong> selon le nombre de communications.') !!}
+                @endif
             </p>
 
             {{-- ⚠️ Dit UNE FOIS, en tête, pourquoi aucune attestation ne se télécharge
@@ -123,6 +127,7 @@
             </ul>
         </div>
 
+        @if ($badgeVisible)
         {{-- Ancre de la pastille du tableau de bord. --}}
         <div class="ukc-badge-wrap" id="mon-badge">
             <div class="ukc-card ukc-badge-card">
@@ -205,6 +210,7 @@
                 </div>
             </div>
         </div>
+        @endif
     @endif
 </div>
 </x-layouts.participant>

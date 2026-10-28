@@ -54,7 +54,7 @@ class DocumentController extends Controller
         $event = $participant?->event;
 
         if (! $event) {
-            return view('account.documents', ['event' => null]);
+            return view('account.documents', ['event' => null, 'badgeVisible' => false]);
         }
 
         $edParticipantIds = $participants->where('event_id', $event->id)->pluck('id');
@@ -118,10 +118,11 @@ class DocumentController extends Controller
         $event->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
 
         $didIssuer = (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
-
         // Le participant peut cumuler plusieurs fonctions. Chaque badge reprend
         // le type, le destinataire et la référence de la planche administrateur.
-        $badges = BadgeCatalog::forAccount($event, $account, $participant)
+        $eligibleBadges = BadgeCatalog::forAccount($event, $account, $participant);
+        $badgeVisible = $eligibleBadges->isNotEmpty();
+        $badges = $eligibleBadges
             ->map(function (array $entry) use ($event, $account, $participant, $paid) {
                 $type = $entry['type'];
                 $recipient = $entry['recipient'];
@@ -145,6 +146,7 @@ class DocumentController extends Controller
         return view('account.documents', [
             'account' => $account,
             'event' => $event,
+            'badgeVisible' => $badgeVisible,
             'participant' => $participant,
             'paid' => $paid,
             'payment' => $payment,
