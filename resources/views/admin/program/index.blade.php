@@ -349,7 +349,7 @@
                                         <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée ce jour. Ajoutez un début et une fin à une session pour la voir ici.</p></div>
                                     @else
                                         <div class="plan-scroll">
-                                            <div class="plan-board" style="grid-template-columns:60px repeat({{ $totalLanes }}, minmax(130px,1fr));grid-template-rows:36px repeat({{ $rowCount }}, 34px);">
+                                            <div class="plan-board" style="grid-template-columns:60px repeat({{ $totalLanes }}, minmax(130px,1fr));grid-template-rows:36px repeat({{ $rowCount }}, 68px);">
                                                 <div class="plan-head plan-head--time">Heure</div>
                                                 @foreach ($columns as $room)
                                                     <div class="plan-head" style="grid-column:{{ $roomColStart[$room] }} / span {{ $roomLanes[$room] }};grid-row:1;">{{ $room }}</div>
@@ -702,26 +702,6 @@
                     @endif
                 </div>
 
-                {{-- Lien avec le programme de l'événement (fidèle au mockup). --}}
-                @if ($event)
-                    <div class="ukc-card">
-                        <h2>Lien avec le programme de l’événement</h2>
-                        <div class="desc">
-                            Le planning et les sessions s’appuient sur le programme défini dans
-                            <a href="{{ route('admin.evenements.edit', $event) }}?tab=programme" style="color:var(--ukc-blue);font-weight:600;">Événement → Programme</a>
-                            (jours, horaires, type Session / Atelier, intitulés).
-                        </div>
-                        <div class="settings-box">
-                            <h3>Création automatique des sessions</h3>
-                            <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;line-height:1.45;">
-                                Le système lit les lignes du programme de type « Session » / « Atelier » dont l’axe ou l’intitulé correspond
-                                et génère les sessions (créneaux horaires) dans le planning. Les modérateurs et rapporteurs restent à compléter.
-                            </p>
-                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.edit', $event) }}?tab=programme">Ouvrir le programme de l’événement</a>
-                        </div>
-                        <p class="ukc-hint" style="font-size:12px;color:var(--ukc-light);margin-top:12px;">La gestion détaillée des salles (amphi, A/B/C, hall) se fait dans l’onglet <strong>Espaces</strong>.</p>
-                    </div>
-                @endif
             </div>
 
             {{-- ============================ SESSIONS ============================ --}}
