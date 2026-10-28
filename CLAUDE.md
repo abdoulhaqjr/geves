@@ -4500,6 +4500,51 @@ ajoutée par la vue, elle ne se saisit pas.
     compilé comme l'erreur de validation de Blade, ouvrant une condition jamais
     refermée. On écrit `x-on:error`.
 
+### Lettre d'invitation PDF (type de document `invitation`) (2026-10-28)
+
+L'e-mail d'invitation d'un participant (`ParticipantInvitationMail`, boutons
+individuel et groupé de **Participants**) porte désormais en **pièce jointe une
+lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur**.
+
+- ⚠️⚠️ **CE N'EST PAS UNE ATTESTATION.** C'est un **type de document à part**,
+  `invitation`, édité dans le concepteur (`?kind=attestation&type=invitation`)
+  comme les attestations, mais **jamais offert ni émis** comme attestation : il
+  n'est **pas** dans `Attestation::TYPES` ni dans le `$typeMeta` du hub. Il est
+  autorisé explicitement dans `TemplateDesignerController::kindType()` (allowlist
+  `ATTESTATION_TYPES` **+ `invitation`**). Pas de QR, pas d'identifiant, pas de
+  signature cryptographique : on **convie**, on n'atteste pas.
+- ⚠️⚠️ **MAQUETTE A4 PORTRAIT (794 × 1123)**, contrairement aux attestations
+  (paysage 900 × 636). La page du concepteur est landscape par défaut : la taille
+  portrait est posée par `loadTemplate('invitation')` **et round-trippée dans le
+  snapshot** (`pageW`/`pageH` dans `snapshot()`/`restoreSnapshot()` de
+  `template-designer.js`) - sans cela, rouvrir le modèle le ramenait au paysage et
+  l'enregistrement suivant l'écrasait.
+- ⚠️ **Twin PHP ↔ JS obligatoire** (règle du projet) : la maquette est décrite
+  DEUX fois à l'identique - `LayoutSanitizer::invitationLetter()` (défaut PHP,
+  utilisé pour le PDF délivré quand aucun modèle n'est enregistré) et
+  `loadTemplate('invitation')` dans `template-designer.js` (édition). Logos +
+  texte seulement (pas de `rect` : `createEl` impose au `line-h` un 3px noir, qui
+  divergerait du défaut). Toucher à l'un, c'est toucher à l'autre.
+- **Rendu** : `App\Documents\InvitationLetter::pdf(Participant)` - même pipeline
+  que `AttestationController::pdf` (`ensureFor('attestation','invitation')` →
+  `LayoutSanitizer::sanitize` → `LayoutRenderer::render(pdf:true)` → dompdf, page à
+  la taille du layout). Valeurs de fusion : `App\Documents\InvitationVars::for()`
+  (calqué sur `AttestationVars`, SANS verify/uuid/communication/formation ;
+  identité via `Participant::eventIdentity()`, signataire via `attestations.signatory*`).
+  Jetons `[espace.cle]` résolus par `DocumentVars::expand()` dans le renderer.
+- **Pièce jointe** : `ParticipantInvitationMail::attachments()` (le rendu dompdf
+  tourne sur le worker, le mailable est `ShouldQueue`). Le corps markdown de
+  l'e-mail est inchangé.
+- ⚠️ **Destinataires : TOUS les non-invités par défaut.** L'envoi groupé
+  (`ParticipantController::inviteBulk`) invitait seulement les **payés** ; il
+  invite désormais tout non-invité, **sauf** si l'événement a coché « n'inviter
+  que les payés » (`EventSettings`, clé **`invitation.restrict_paid`**, case sur la
+  page Participants, `saveInvitationOptions`). L'invitation individuelle reste
+  ouverte à tout participant.
+- Gardes : `InvitationLetterTest` (layout portrait sans QR, valeurs de fusion, PDF
+  `%PDF`, pièce jointe, périmètre par défaut vs. `restrict_paid`).
+  `AdminParticipantsTest` : le périmètre par défaut de l'envoi groupé a changé.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

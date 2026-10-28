@@ -499,6 +499,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware('edition.cap:participants')->group(function () {
             Route::get('/participants', [ParticipantController::class, 'index'])->name('admin.participants.index');
             Route::post('/participants/inviter-payes', [ParticipantController::class, 'inviteBulk'])->name('admin.participants.invite-bulk');
+            Route::post('/participants/options-invitation', [ParticipantController::class, 'saveInvitationOptions'])->name('admin.participants.invitation-options');
             Route::post('/participants/{participant}/inviter', [ParticipantController::class, 'invite'])->name('admin.participants.invite');
             Route::get('/participants/{participant}/apercu', [ParticipantController::class, 'preview'])->name('admin.participants.preview');
         });
@@ -643,6 +644,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/attestations/{attestation}/revoquer', [DocumentHubController::class, 'revoke'])->name('admin.documents.attestations.revoke');
             Route::post('/attestations/{attestation}/retablir', [DocumentHubController::class, 'restore'])->name('admin.documents.attestations.restore');
             Route::post('/attestations/options', [DocumentHubController::class, 'saveAttestationOptions'])->name('admin.documents.attestations.options');
+            Route::post('/badges/options', [DocumentHubController::class, 'saveBadgeOptions'])->name('admin.documents.badges.options');
             // Sortie PAPIER : le lot à imprimer, la liste d'émargement, et la trace
             // de ce qui a été remis. ⚠️ Ces exports portent sur les filtres de
             // l'écran (AttestationQuery) : on imprime ce qu'on regarde.

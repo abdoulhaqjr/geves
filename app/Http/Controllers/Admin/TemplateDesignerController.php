@@ -129,6 +129,7 @@ class TemplateDesignerController extends Controller
         'instruction_resumes' => 'Une par évaluateur',
         'formation' => 'Par formation',
         'formation_animation' => 'Par formation',
+        'invitation' => 'Participant',
     ];
 
     /** Formats de badge proposés à la création. */
@@ -303,7 +304,13 @@ class TemplateDesignerController extends Controller
             return [$kind, BadgeCatalog::valid((string) $type) ? (string) $type : 'default'];
         }
 
-        return [$kind, isset(self::ATTESTATION_TYPES[$type]) ? $type : 'participation'];
+        // `invitation` est un type à part : édité dans le concepteur comme une
+        // attestation, mais JAMAIS offert ni émis comme attestation (hors
+        // `Attestation::TYPES`, donc hors du hub Documents). On l'autorise ici
+        // explicitement, sinon `kindType` le ramènerait à « participation ».
+        $allowed = isset(self::ATTESTATION_TYPES[$type]) || $type === 'invitation';
+
+        return [$kind, $allowed ? (string) $type : 'participation'];
     }
 
     /** @return array<string, string|list<array{name?: string, src?: string}>> */

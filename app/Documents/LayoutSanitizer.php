@@ -186,6 +186,7 @@ class LayoutSanitizer
             'instruction_resumes' => self::attestationInstructionResumes(),
             'formation' => self::attestationFormation(),
             'formation_animation' => self::attestationFormationAnimation(),
+            'invitation' => self::invitationLetter(),
             default => self::defaultAttestation(),
         };
     }
@@ -691,6 +692,56 @@ class LayoutSanitizer
                 $t(['x' => 490, 'y' => 476, 'w' => 350, 'h' => 24, 'text' => 'Le [signatory.role]', 'size' => 15, 'weight' => 700]),
                 $t(['x' => 490, 'y' => 556, 'w' => 350, 'h' => 28, 'text' => '[signatory.name]', 'size' => 17, 'weight' => 700]),
                 $t(['x' => 30, 'y' => 592, 'w' => 430, 'h' => 20, 'text' => 'Identifiant de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
+            ],
+        ];
+    }
+
+    /**
+     * Lettre d'INVITATION personnalisée (jointe en PDF à l'e-mail d'invitation).
+     *
+     * ⚠️ Ce n'est PAS un certificat : pas de QR ni d'identifiant de vérification -
+     * on invite, on n'atteste pas. Format A4 PORTRAIT (794 × 1123 px à 96 dpi),
+     * contrairement aux attestations (paysage). En-tête officiel (logos UK +
+     * Parakou, comme les attestations), corps d'invitation citant l'événement,
+     * les dates, le lieu et le thème, puis le bloc signataire.
+     *
+     * ⚠️ Doit rester identique au modèle du concepteur (`loadTemplate('invitation')`
+     * dans `template-designer.js`) : toucher à l'un, c'est toucher à l'autre.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function invitationLetter(): array
+    {
+        $dark = '#1a2332';
+
+        $t = fn (array $e): array => $e + [
+            'type' => 'text', 'size' => 14, 'weight' => 500, 'color' => $dark,
+            'align' => 'left', 'font' => 'lato', 'italic' => false, 'leading' => 1.5,
+        ];
+
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
+        return [
+            'width' => 794, 'height' => 1123, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'elements' => [
+                // En-tête : deux logos officiels à la même hauteur, puis un filet.
+                ['type' => 'image', 'x' => 60, 'y' => 54, 'w' => 210, 'h' => 56, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 524, 'y' => 54, 'w' => 210, 'h' => 56, 'src' => '/img/attestations/logo-parakou.png'],
+                // Lieu et date (aligné à droite), rédigés comme une lettre.
+                $t(['x' => 394, 'y' => 156, 'w' => 340, 'h' => 22, 'text' => 'Fait à [edition.location], le [certificate.issued_on]', 'size' => 13, 'align' => 'right']),
+                // Titre.
+                $t(['x' => 60, 'y' => 214, 'w' => 674, 'h' => 44, 'text' => 'INVITATION', 'size' => 30, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                // Destinataire.
+                $t(['x' => 60, 'y' => 286, 'w' => 674, 'h' => 28, 'text' => '[recipient.civility] [recipient.name]', 'size' => 17, 'weight' => 800]),
+                $t(['x' => 60, 'y' => 318, 'w' => 674, 'h' => 24, 'text' => '[recipient.institution]', 'size' => 13, 'weight' => 500, 'color' => '#2b3340']),
+                // Corps de la lettre, en paragraphes.
+                $t(['x' => 60, 'y' => 372, 'w' => 674, 'h' => 24, 'text' => 'Madame, Monsieur,', 'size' => 14]),
+                $t(['x' => 60, 'y' => 410, 'w' => 674, 'h' => 70, 'text' => 'Au nom du comité d’organisation, nous avons l’honneur de vous convier au [edition.name], qui se tiendra [edition.dates], à [edition.location].', 'size' => 14]),
+                $t(['x' => 60, 'y' => 490, 'w' => 674, 'h' => 80, 'text' => 'Placé sous le thème « [edition.theme] », cet événement réunira chercheurs, enseignants et praticiens autour de communications scientifiques, d’ateliers et d’échanges.', 'size' => 14]),
+                $t(['x' => 60, 'y' => 584, 'w' => 674, 'h' => 110, 'text' => 'Votre présence contribuera à la réussite de cette rencontre. Dans cette attente, nous vous prions d’agréer, [recipient.civility] [recipient.name], l’expression de notre haute considération.', 'size' => 14]),
+                // Bloc signataire (à droite).
+                $t(['x' => 414, 'y' => 760, 'w' => 320, 'h' => 24, 'text' => 'Le [signatory.role],', 'size' => 14, 'weight' => 700]),
+                $t(['x' => 414, 'y' => 844, 'w' => 320, 'h' => 28, 'text' => '[signatory.name]', 'size' => 16, 'weight' => 700]),
             ],
         ];
     }

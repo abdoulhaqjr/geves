@@ -162,7 +162,12 @@
       els: els,
       groups: JSON.parse(JSON.stringify(groups)),
       bg: page.className,
-      bgImage: document.getElementById('pageBg').style.backgroundImage || ''
+      bgImage: document.getElementById('pageBg').style.backgroundImage || '',
+      // ⚠️ La taille de page (portrait de la lettre d'invitation) ne suit pas la
+      // classe : sans ces deux valeurs, rouvrir un modèle portrait le ramènerait
+      // au paysage par défaut, et le prochain enregistrement l'écraserait.
+      pageW: page.style.width || '',
+      pageH: page.style.height || ''
     };
   }
 
@@ -181,6 +186,8 @@
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });
     groups = JSON.parse(JSON.stringify(snap.groups || {}));
     page.className = snap.bg || 'ed-page';
+    page.style.width = snap.pageW || '';
+    page.style.height = snap.pageH || '';
     document.getElementById('pageBg').style.backgroundImage = snap.bgImage || '';
     (snap.els || []).forEach(function (s) {
       var el = document.createElement('div');
@@ -1889,6 +1896,32 @@
           { type: 'text', label: 'Identifiant', x: 30, y: 588, w: 430, text: 'Identifiant de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
         ];
       })(),
+      // Lettre d'INVITATION (jointe en PDF à l'e-mail d'invitation).
+      // ⚠️ Doit rester identique à LayoutSanitizer::invitationLetter() (PHP) :
+      // A4 PORTRAIT (794×1123), pas de QR ni d'identifiant (on invite, on n'atteste pas).
+      invitation: (function () {
+        var SERIF = "'Times New Roman', Times, serif";
+        var SANS = "'Lato', system-ui, sans-serif";
+        var DARK = '#1a2332';
+        var LOGOS = (window.UKC_EDITOR || {}).logos || {};
+        var imgHtml = function (src) {
+          return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        };
+        return [
+          { type: 'logo', label: 'Logo UK', x: 60, y: 54, w: 210, h: 56, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 524, y: 54, w: 210, h: 56, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
+          { type: 'text', label: 'Lieu / date', x: 394, y: 156, w: 340, text: 'Fait à [edition.location], le [certificate.issued_on]', font: SANS, size: 13, weight: 500, color: DARK, align: 'right', leading: 1.5 },
+          { type: 'text', label: 'Titre', x: 60, y: 214, w: 674, text: 'INVITATION', font: SERIF, size: 30, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Destinataire', x: 60, y: 286, w: 674, text: '[recipient.civility] [recipient.name]', font: SANS, size: 17, weight: 800, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Affiliation', x: 60, y: 318, w: 674, text: '[recipient.institution]', font: SANS, size: 13, weight: 500, color: '#2b3340', leading: 1.5 },
+          { type: 'text', label: 'Appel', x: 60, y: 372, w: 674, text: 'Madame, Monsieur,', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Paragraphe 1', x: 60, y: 410, w: 674, text: 'Au nom du comité d’organisation, nous avons l’honneur de vous convier au [edition.name], qui se tiendra [edition.dates], à [edition.location].', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Paragraphe 2', x: 60, y: 490, w: 674, text: 'Placé sous le thème « [edition.theme] », cet événement réunira chercheurs, enseignants et praticiens autour de communications scientifiques, d’ateliers et d’échanges.', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Paragraphe 3', x: 60, y: 584, w: 674, text: 'Votre présence contribuera à la réussite de cette rencontre. Dans cette attente, nous vous prions d’agréer, [recipient.civility] [recipient.name], l’expression de notre haute considération.', font: SANS, size: 14, weight: 500, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Fonction', x: 414, y: 760, w: 320, text: 'Le [signatory.role],', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.5 },
+          { type: 'text', label: 'Signataire', x: 414, y: 844, w: 320, text: '[signatory.name]', font: SANS, size: 16, weight: 700, color: DARK, leading: 1.5 }
+        ];
+      })(),
       'formation-csiuk': [
         { type: 'logo', label: 'Logo UK', x: 48, y: 32, w: 170, html: '<div class="mark">UK</div> UNIVERSITÉ DE KARA' },
         { type: 'logo', label: 'Logo UP', x: 680, y: 32, w: 180, html: 'UNIVERSITÉ DE PARAKOU' },
@@ -1925,7 +1958,18 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation' || key === 'comite_organisation' || key === 'instruction_resumes') {
+    // La lettre d'invitation est en PORTRAIT A4 ; tout autre modèle revient au
+    // paysage par défaut (sinon on resterait en portrait après un changement).
+    if (key === 'invitation') {
+      page.style.width = '794px'; page.style.height = '1123px'; page.style.background = '#ffffff';
+    } else {
+      page.style.width = ''; page.style.height = ''; page.style.background = '';
+    }
+    if (key === 'invitation') {
+      // Lettre sur papier blanc : aucun cadre décoratif.
+      page.classList.add('bg-none');
+      bgEl.style.backgroundImage = '';
+    } else if (key === 'communication' || key === 'participation' || key === 'moderation' || key === 'rapporteur' || key === 'organisation' || key === 'comite_organisation' || key === 'instruction_resumes') {
       // Cadre décoratif officiel (motifs kente, hélice ADN) partagé par ces modèles.
       bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
       bgEl.style.backgroundSize = '100% 100%';
@@ -2219,7 +2263,7 @@
       } catch (e) { /* retombe sur le template intégré du type si l'instantané est invalide */ }
     }
     // Aucun état enregistré : charge le template intégré correspondant au type.
-    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', instruction_resumes: 'instruction_resumes', formation: 'formation', formation_animation: 'formation_animation' };
+    var TPL_KEY = { participation: 'participation', communication: 'communication', moderation: 'moderation', rapporteur: 'rapporteur', organisation: 'organisation', comite_organisation: 'comite_organisation', instruction_resumes: 'instruction_resumes', formation: 'formation', formation_animation: 'formation_animation', invitation: 'invitation' };
     var key = TPL_KEY[cfg.type];
     if (cfg.kind !== 'badge' && key && typeof loadTemplate === 'function') {
       try {

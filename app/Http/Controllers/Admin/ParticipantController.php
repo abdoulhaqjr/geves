@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\ParticipantInvitationMail;
 use App\Models\Attestation;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\AccountActivity;
 use App\Support\EventParticipantRoster;
+use App\Support\EventSettings;
 use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\RosterRow;
@@ -106,6 +108,7 @@ class ParticipantController extends Controller
             'event_id' => $editionId,
             'role' => $role,
             'search' => $search,
+            'restrictPaid' => (bool) EventSettings::get($editionId !== '' ? Event::find($editionId) : null, 'invitation.restrict_paid', false),
             'stats' => [
                 'total' => $all->count(),
                 'paid' => $all->where('paid', true)->count(),
@@ -144,7 +147,11 @@ class ParticipantController extends Controller
         return back()->with('ukc_status', 'Invitation envoyée à '.$participant->full_name.'.');
     }
 
-    /** Invite les participants ayant payé mais pas encore invités. */
+    /**
+     * Invitation groupée : par défaut TOUS les participants non encore invités.
+     * Si l'événement a coché « n'inviter que les payés »
+     * (`invitation.restrict_paid`), on retombe sur le périmètre historique.
+     */
     public function inviteBulk(Request $request, EventParticipantRoster $roster): RedirectResponse
     {
         $editionId = (string) $request->input('event_id', '');
@@ -152,14 +159,30 @@ class ParticipantController extends Controller
             return back();
         }
 
+        $restrictPaid = (bool) EventSettings::get(Event::find($editionId), 'invitation.restrict_paid', false);
+
         $participants = $roster->forEvent($editionId)
-            ->filter(fn (RosterRow $p) => $p->paid && ! $p->invited && filled($p->email));
+            ->filter(fn (RosterRow $p) => ! $p->invited && filled($p->email) && (! $restrictPaid || $p->paid));
 
         foreach ($participants as $person) {
             $this->sendInvitation($person->participant);
         }
 
         return back()->with('ukc_status', $participants->count().' invitation(s) envoyée(s).');
+    }
+
+    /**
+     * Réglage du périmètre de l'invitation groupée (payés seulement, ou tous).
+     * Par événement, dans `settings['doc']['invitation.restrict_paid']`.
+     */
+    public function saveInvitationOptions(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['event_id' => ['required', 'exists:events,id']]);
+
+        $event = Event::findOrFail($data['event_id']);
+        EventSettings::set($event, 'invitation.restrict_paid', $request->boolean('restrict_paid'));
+
+        return back()->with('ukc_status', 'Préférence d’invitation enregistrée.');
     }
 
     /** Envoie l'e-mail d'invitation (si permis), marque invité et notifie le compte. */

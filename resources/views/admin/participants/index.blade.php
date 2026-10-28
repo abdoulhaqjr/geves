@@ -1,13 +1,18 @@
 <x-layouts.admin title="Participants" subtitle="Inscrits, rôles, paiements & invitations">
     <x-slot:actions>
         @if ($event_id !== '')
+            {{-- Modèle de la lettre PDF jointe à l'invitation (concepteur, type « invitation »). --}}
+            <a href="{{ route('admin.documents.templates', ['event_id' => $event_id, 'kind' => 'attestation', 'type' => 'invitation']) }}"
+               class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                <x-ukc.icon name="file" :size="16" /> Modèle de lettre d’invitation
+            </a>
             <form method="POST" action="{{ route('admin.participants.invite-bulk') }}"
                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitations envoyées."
-                  data-confirm="Envoyer une invitation à tous les payés non encore invités ?">
+                  data-confirm="{{ $restrictPaid ? 'Envoyer une invitation (avec lettre PDF) à tous les payés non encore invités ?' : 'Envoyer une invitation (avec lettre PDF) à tous les participants non encore invités ?' }}">
                 @csrf
                 <input type="hidden" name="event_id" value="{{ $event_id }}">
                 <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
-                    <x-ukc.icon name="mail" :size="16" /> Inviter les payés non invités
+                    <x-ukc.icon name="mail" :size="16" /> {{ $restrictPaid ? 'Inviter les payés non invités' : 'Inviter les non-invités' }}
                 </button>
             </form>
         @endif
@@ -24,6 +29,20 @@
                 </select>
             </div>
         </div>
+
+        @if ($event_id !== '')
+            {{-- Périmètre de l'invitation groupée : tous, ou seulement les payés. --}}
+            <form method="POST" action="{{ route('admin.participants.invitation-options') }}" style="margin:-8px 0 16px;">
+                @csrf
+                <input type="hidden" name="restrict_paid" value="0">
+                <input type="hidden" name="event_id" value="{{ $event_id }}">
+                <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ukc-muted);cursor:pointer;">
+                    <input type="checkbox" name="restrict_paid" value="1" @checked($restrictPaid)
+                           onchange="this.closest('form').requestSubmit()">
+                    N’inviter en groupe que les participants ayant payé
+                </label>
+            </form>
+        @endif
 
         <div class="ukc-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val blue">{{ $stats['total'] }}</div><x-ukc.trend :trend="$trendTotal" period="7 j" /></div>

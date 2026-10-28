@@ -38,28 +38,32 @@ it('invite un participant et le marque invité', function () {
     expect($p->fresh()->isInvited())->toBeTrue();
 });
 
-it('invite en masse les payés non invités uniquement', function () {
+it('invite en masse les non-invités, sans retoucher les déjà invités', function () {
     Mail::fake();
     $staff = adminStaff();
     $event = openEdition();
 
-    $paid = $event->participants()->create(['first_name' => 'A', 'last_name' => 'Payé', 'email' => 'paid@example.tg', 'role' => 'author']);
+    // Par défaut, l'invitation s'adresse à TOUS les non-invités (payés ou non) ;
+    // le périmètre « payés seulement » est une option d'événement, éprouvée dans
+    // InvitationLetterTest.
+    // Rôle « attendee » : une inscription simple entre au registre sans paiement
+    // (un `author` sans dépôt ni paiement n'y figure pas - cf. EventParticipantRoster).
+    $paid = $event->participants()->create(['first_name' => 'A', 'last_name' => 'Payé', 'email' => 'paid@example.tg', 'role' => 'attendee']);
     $event->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
 
-    $unpaid = $event->participants()->create(['first_name' => 'B', 'last_name' => 'Impayé', 'email' => 'unpaid@example.tg', 'role' => 'author']);
+    $unpaid = $event->participants()->create(['first_name' => 'B', 'last_name' => 'Impayé', 'email' => 'unpaid@example.tg', 'role' => 'attendee']);
 
-    $alreadyInvited = $event->participants()->create(['first_name' => 'C', 'last_name' => 'Invité', 'email' => 'inv@example.tg', 'role' => 'author', 'meta' => ['invited_at' => now()->toDateTimeString()]]);
+    $alreadyInvited = $event->participants()->create(['first_name' => 'C', 'last_name' => 'Invité', 'email' => 'inv@example.tg', 'role' => 'attendee', 'meta' => ['invited_at' => now()->toDateTimeString()]]);
     $event->payments()->create(['participant_id' => $alreadyInvited->id, 'amount' => 15000, 'status' => 'paid']);
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.participants.invite-bulk'), ['event_id' => (string) $event->id])
         ->assertRedirect();
 
-    // Seul le payé non invité reçoit l'e-mail.
-    Mail::assertQueued(ParticipantInvitationMail::class, 1);
-    Mail::assertQueued(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('paid@example.tg'));
+    // Payé et impayé reçoivent l'invitation ; le déjà invité n'est pas relancé.
+    Mail::assertQueued(ParticipantInvitationMail::class, 2);
     expect($paid->fresh()->isInvited())->toBeTrue();
-    expect($unpaid->fresh()->isInvited())->toBeFalse();
+    expect($unpaid->fresh()->isInvited())->toBeTrue();
 });
 
 /** Une communication déposée POUR UN TIERS : le déposant n'en est pas l'auteur. */
