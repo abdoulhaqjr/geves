@@ -175,12 +175,43 @@
                             <a href="{{ route('admin.reports.export', [$event, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                         </span>
                     </h2>
-                    <p class="desc">Inscriptions, catégories, institutions et provenance.</p>
+                    <p class="desc">Inscriptions, modes de participation, catégories, institutions et provenance.</p>
                     <div class="ukc-stats" style="margin-bottom:14px;">
                         <div class="ukc-stat-card"><div class="lbl">Total inscrits</div><div class="val blue">{{ $summary['participants'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Payés</div><div class="val green">{{ $summary['paidCount'] }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Sans paiement</div><div class="val warn">{{ max(0, $summary['participants'] - $summary['paidCount']) }}</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Pays représentés</div><div class="val">{{ count($report->participantsByCountry()) }}</div></div>
+                    </div>
+                    @php($participationModes = $report->participantsByMode())
+                    <div style="margin-bottom:16px;">
+                        <h3 class="sub-h">Par mode de participation</h3>
+                        <p class="desc">Mode déclaré par les inscrits. Ouvrez une catégorie pour voir les personnes concernées.</p>
+                        <div class="ukc-table-wrap">
+                            <table class="ukc-table" style="min-width:0;">
+                                <thead><tr><th>Mode</th><th class="num">Inscrits</th></tr></thead>
+                                <tbody>
+                                    @foreach ($participationModes as $mode)
+                                        <tr>
+                                            <td>
+                                                <details>
+                                                    <summary style="cursor:pointer;">{{ $mode['label'] }}</summary>
+                                                    @if ($mode['people'] !== [])
+                                                        <ul style="margin:8px 0 4px 20px;padding:0;">
+                                                            @foreach ($mode['people'] as $person)
+                                                                <li>{{ $person['name'] ?: 'Sans nom' }}@if ($person['email']) — {{ $person['email'] }}@endif</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @else
+                                                        <p style="margin:8px 0 4px;color:var(--ukc-muted);">Aucun inscrit.</p>
+                                                    @endif
+                                                </details>
+                                            </td>
+                                            <td class="num">{{ $mode['count'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="layout-2">
                         <div>

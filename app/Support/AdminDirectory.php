@@ -40,14 +40,18 @@ class AdminDirectory
     private static function participants(EventReport $report, int $max): string
     {
         // participantRows : [0]=nom [1]=prénom [2]=email [3]=tél [4]=institution
-        // [5]=pays [6]=rôle [7]=grade [8]=payé(Oui/Non) [9]=montant [10]=invité
+        // [5]=pays [6]=rôle [7]=grade [8]=payé(Oui/Non) [9]=montant [10]=invité [11]=mode
         $rows = $report->participantRows();
         if ($rows === []) {
             return '';
         }
 
         $total = count($rows);
-        $lines = ['ANNUAIRE DES PARTICIPANTS (nominatif - '.$total.') : « Prénom Nom <e-mail> - grade - rôle - institution - état »'];
+        $modes = $report->participantsByMode();
+        $lines = [
+            'MODES DE PARTICIPATION DES INSCRITS ('.$total.' au total) : '.$modes['online']['count'].' en ligne, '.$modes['onsite']['count'].' en présentiel, '.$modes['unspecified']['count'].' non renseigné(s). Il s’agit du mode déclaré par le participant, distinct du mode de présentation d’une communication.',
+            'ANNUAIRE DES PARTICIPANTS (nominatif - '.$total.') : « Prénom Nom <e-mail> - grade - rôle - institution - état - mode de participation »',
+        ];
         foreach (array_slice($rows, 0, $max) as $r) {
             $name = trim(((string) $r[1]).' '.((string) $r[0]));
             $meta = array_filter([
@@ -56,11 +60,12 @@ class AdminDirectory
                 (string) $r[6],
                 ((string) $r[4]) !== '' ? (string) $r[4] : null,
                 $r[8] === 'Oui' ? 'payé' : 'à régler',
+                'mode de participation : '.$r[11],
             ]);
             $lines[] = '- '.($name !== '' ? $name : 'Sans nom').' : '.implode(' - ', $meta);
         }
         if ($total > $max) {
-            $lines[] = '… ('.($total - $max).' autre(s) non listé(s) - utiliser les filtres/export de la page Participants)';
+            $lines[] = '… ('.($total - $max).' autre(s) non listé(s) - les effectifs par mode ci-dessus restent complets ; pour la liste exhaustive, utiliser le rapport Participants ou son export)';
         }
 
         return implode("\n", $lines);

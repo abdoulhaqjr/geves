@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
  */
 class EventReport
 {
+    private ?array $participantRowsCache = null;
+
     public function __construct(public Event $event) {}
 
     /**
@@ -67,13 +69,13 @@ class EventReport
     /** @return list<string> */
     public function participantHeaders(): array
     {
-        return ['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Institution', 'Pays', 'Rôle', 'Grade', 'Payé', 'Montant', 'Invité'];
+        return ['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Institution', 'Pays', 'Rôle', 'Grade', 'Payé', 'Montant', 'Invité', 'Mode de participation'];
     }
 
     /** @return array<int, array<int, string|float>> */
     public function participantRows(): array
     {
-        return Participant::where('event_id', $this->event->id)
+        return $this->participantRowsCache ??= Participant::where('event_id', $this->event->id)
             ->with(['participationPayments', 'user'])
             ->orderBy('last_name')
             ->get()
@@ -92,9 +94,36 @@ class EventReport
                     $paid ? 'Oui' : 'Non',
                     $paid ? (float) $paid->amount : 0,
                     $p->isInvited() ? 'Oui' : 'Non',
+                    $p->participationModeLabel() ?? 'Non renseigné',
                 ];
             })
             ->all();
+    }
+
+    /** @return array<string, array{label:string, count:int, people:array<int, array{name:string, email:string}>}> */
+    public function participantsByMode(): array
+    {
+        $groups = [
+            'online' => ['label' => 'En ligne', 'count' => 0, 'people' => []],
+            'onsite' => ['label' => 'En présentiel', 'count' => 0, 'people' => []],
+            'unspecified' => ['label' => 'Non renseigné', 'count' => 0, 'people' => []],
+        ];
+
+        foreach ($this->participantRows() as $row) {
+            $mode = match ($row[11]) {
+                'En ligne' => 'online',
+                'En présentiel' => 'onsite',
+                default => 'unspecified',
+            };
+
+            $groups[$mode]['count']++;
+            $groups[$mode]['people'][] = [
+                'name' => trim($row[1].' '.$row[0]),
+                'email' => $row[2],
+            ];
+        }
+
+        return $groups;
     }
 
     /** @return list<string> */
