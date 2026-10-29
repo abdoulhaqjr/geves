@@ -4988,7 +4988,7 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     Grade / Contacts / Qualité) via `committeeOrganisationTable()`. Puis **programme synthétique**
     (`settings['program_synthesis']`), puis **« Communications en ateliers »** (`addAteliers()`) : un
     groupe **PAR ATELIER** (`Atelier::tracks`, ordre `ateliers.ordre`/`id`), chaque atelier listant
-    ses communications orales programmées, regroupées par jour - créneaux acceptés-canoniques
+    ses communications orales programmées, regroupées par **SÉANCE** - créneaux acceptés-canoniques
     seulement, même règle que les résumés. ⚠️⚠️ **UN ATELIER REGROUPE PLUSIEURS AXES ; LE LIVRET
     GROUPAIT PAR AXE** (`submission->track`) et sortait donc **un « atelier » par axe** - six pour un
     colloque qui en compte deux (2026-10-29). `ateliersGroups()` rattache chaque communication à SON
@@ -4996,10 +4996,19 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     projet). L'intitulé est « ATELIER n » (rang porté par `number`, pas un compteur local - il ne
     dérive pas si un atelier n'a aucune communication) + « : SOUS-TITRE » seulement si le titre de
     l'atelier dépasse le préfixe « Atelier n ». ⚠️ **Repli si l'événement n'a AUCUN atelier déclaré** :
-    un groupe par axe (ancien comportement), d'où le cas `general` historique qui tient toujours. ⚠️ **Le tableau de programme du style `general` a pour colonne de tête
-    le CODE de la communication** (`Code | Horaire | Communication | Salle`, comme la colonne « Codes »
-    du document de référence) et **n'affiche NI les auteurs NI leurs affiliations** (ils sont dans la
-    section Résumés) - les autres styles gardent `Horaire | Communication (titre + auteurs) | Salle`.
+    un groupe par axe (ancien comportement), d'où le cas `general` historique qui tient toujours.
+    ⚠️⚠️ **UN ATELIER SE DÉROULE SÉANCE PAR SÉANCE** (2026-10-29, demande organisateur). Sous chaque
+    atelier, `LivretDocx::atelierSessions()` découpe ses créneaux par `EventSession` (triées par
+    horaire ; les créneaux sans séance sont regroupés par jour). Chaque séance porte un **bandeau de
+    séance** (« Session : HHhMM - HHhMM - Salle »), une ligne **Modérateur : … Rapporteur : …**
+    (toujours affichée, « - » à défaut, lues sur `event_sessions.moderator_name`/`rapporteur_name`)
+    puis un tableau **`Horaire | Code | Auteur(s) | Titre de la communication`** - la colonne
+    **Auteur(s) = l'auteur correspondant** (`slotPresenter`, casse du style). Le bandeau de jour (bleu
+    `95B3D7`) n'apparaît qu'au CHANGEMENT de jour ; le bandeau de séance en bleu clair
+    (`REF_SESSION_FILL` `DCE6F1`, dans `generalCssPalette()` sous `session_fill`). ⚠️ Ancien tableau
+    `Code | Horaire | Communication | Salle` (sans auteurs ni séances) **retiré** ; `programmeDayTable`
+    ne sert plus QU'au Programme par jour des autres styles. Les autres styles gardent
+    `Horaire | Communication (titre + auteurs) | Salle`.
     ⚠️ **Les titres passent par `LivretDocx::bindPunctuation()`** (espace insécable U+00A0 avant
     `? ! : ; »`) : dans une colonne étroite, un « ? » (ou « : ») tombait seul sur la dernière ligne.
     C'est aussi la règle typographique française. Appliqué au titre de la communication (programme
@@ -5021,21 +5030,24 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     partagées** par les deux rendus : **`LivretDocx::authorCase($nom, $general)`** (la casse des
     auteurs - corps, programme, correspondant, index - MAJUSCULES pour `default`/`fss`, tel quel pour
     `general`) et **`LivretDocx::generalCssPalette()`** (les couleurs du style `general` : `black`,
-    `terracotta`, `day_fill`, `head_fill`, `border` - la vue lit ces valeurs, pas des hexadécimaux en
-    dur). ⚠️ Ne pas réintroduire dans la vue un `mb_strtoupper`/`trim` isolé ni une couleur en dur :
+    `terracotta`, `day_fill`, `session_fill`, `head_fill`, `border` - la vue lit ces valeurs, pas des
+    hexadécimaux en dur). ⚠️ Ne pas réintroduire dans la vue un `mb_strtoupper`/`trim` isolé ni une couleur en dur :
     c'est ainsi que la casse des auteurs du PDF (affichée TELLE QUELLE même en `default`) divergeait du
     .docx. Garde : `LivretTest` « casse des auteurs : le .docx et le PDF concordent selon le style »
     (rend les DEUX et compare).
     ⚠️ **La STRUCTURE du style `general` est elle aussi factorisée** (elle vivait en double dans
     `LivretDocx` et `livretViewData`) : **`LivretDocx::committeeOrder($general)`** (ordre + libellés
-    des comités), **`LivretDocx::ateliersGroups($event)`** (communications par ATELIER puis par JOUR -
+    des comités), **`LivretDocx::ateliersGroups($event)`** (communications par ATELIER puis par SÉANCE -
     `Atelier::tracks`, repli par axe sans atelier ; `->toBase()` pour rendre des collections Support
-    homogènes ; chaque groupe porte `number`) et **`LivretDocx::ateliersAxisLabel($track)`**
+    homogènes ; chaque groupe porte `number` et une collection `sessions` composée par
+    `atelierSessions()` : `day`/`time`/`room`/`moderator`/`rapporteur`/`label`/`slots`)
+    et **`LivretDocx::ateliersAxisLabel($track)`**
     (dé-préfixage « Atelier n - » des AXES, côté résumés). Le .docx (`addAteliers`, `addBody`),
     `livretViewData` et la vue PDF appellent ces trois sources ; chaque appelant ne compose QUE
     l'intitulé « ATELIER n[ : … ] »/« n- … » depuis `number`/`axis`. Ne pas recopier la requête de
-    créneaux, la regex de dé-préfixage ni l'ordre des comités ailleurs. Garde : `LivretTest`
-    « regroupe les communications par ATELIER, pas par axe ».
+    créneaux, la regex de dé-préfixage ni l'ordre des comités ailleurs. Gardes : `LivretTest`
+    « regroupe les communications par ATELIER, pas par axe » et « déroule un atelier SÉANCE PAR
+    SÉANCE avec modérateur, rapporteur et colonne auteurs » (vérifie .docx ET PDF).
     ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes
     + la **1re ligne de données** vivent dans un même `<tbody class="prog-start">` **insécable**
     (`page-break-inside: avoid`), les lignes suivantes dans un second `<tbody>`. L'en-tête ne reste

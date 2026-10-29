@@ -575,7 +575,7 @@ class SubmissionController extends Controller
         Log::info('Administrative submission abstract corrected', [
             'submission_id' => $submission->id,
             'event_id' => $submission->event_id,
-            'actor_id' => $request->user()?->id,
+            'actor_id' => $request->user()->id,
             'before_sha256' => hash('sha256', $before),
             'after_sha256' => hash('sha256', $after),
         ]);

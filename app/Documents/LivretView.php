@@ -131,7 +131,7 @@ final class LivretView
                 ->map(fn (array $g) => [
                     'heading' => 'ATELIER '.$g['number']
                         .($g['axis'] !== '' ? ' : '.mb_strtoupper($g['axis'], 'UTF-8') : ''),
-                    'days' => $g['days'],
+                    'sessions' => $g['sessions'],
                 ])->values();
         } else {
             $programmeTitle = 'Programme';

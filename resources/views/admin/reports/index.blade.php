@@ -198,7 +198,7 @@
                                                     @if ($mode['people'] !== [])
                                                         <ul style="margin:8px 0 4px 20px;padding:0;">
                                                             @foreach ($mode['people'] as $person)
-                                                                <li>{{ $person['name'] ?: 'Sans nom' }}@if ($person['email']) — {{ $person['email'] }}@endif</li>
+                                                                <li>{{ $person['name'] ?: 'Sans nom' }}@if ($person['email']) - {{ $person['email'] }}@endif</li>
                                                             @endforeach
                                                         </ul>
                                                     @else

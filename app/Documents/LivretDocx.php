@@ -59,6 +59,9 @@ class LivretDocx
 
     private const REF_HEAD_FILL = 'F2F2F2';
 
+    /** Bandeau d'une SÉANCE sous un atelier (style general) : bleu clair. */
+    private const REF_SESSION_FILL = 'DCE6F1';
+
     private const REF_GROUP_FILL = 'F2F2F2';
 
     /** @var array<string, string> rôle => libellé de comité (ordre d'affichage). */
@@ -817,12 +820,87 @@ class LivretDocx
                 ['bold' => true, 'size' => 14, 'color' => self::TERRACOTTA, 'name' => $font]);
             $section->addTitle($atelierRun, 1);
 
-            foreach ($group['days'] as $day => $slots) {
-                $this->programmeDayTable($section, (string) $day, $slots);
+            // Un atelier se déroule SÉANCE PAR SÉANCE : chaque séance porte son
+            // horaire, sa salle, son modérateur et son rapporteur, puis la liste
+            // de ses communications (Horaire | Code | Auteur(s) | Titre).
+            $lastDay = null;
+            foreach ($group['sessions'] as $sessData) {
+                $this->atelierSessionTable($section, $sessData, $lastDay);
             }
         }
 
         $section->addPageBreak();
+    }
+
+    /**
+     * Une SÉANCE sous un atelier (style general) : bandeau de jour (quand il change),
+     * bandeau de séance (horaire + salle), ligne modérateur/rapporteur, puis le
+     * tableau des communications « Horaire | Code | Auteur(s) | Titre ». Le jour
+     * courant est porté par référence pour n'écrire son bandeau qu'une fois par jour.
+     *
+     * @param  array{day:string, time:string, room:string, moderator:string, rapporteur:string, label:string, slots:Collection<int, Slot>}  $sess
+     *
+     * @param-out string $lastDay
+     */
+    private function atelierSessionTable(Section $section, array $sess, ?string &$lastDay): void
+    {
+        $font = (string) LivretAppearance::get($this->event, 'font_head', 'Jost');
+        $cols = ['Horaire' => 2.6, 'Code' => 1.8, 'Auteur(s)' => 4.0, 'Titre de la communication' => 7.6];
+        $full = (int) Converter::cmToTwip(array_sum($cols));
+        $headerRow = ['tblHeader' => true, 'cantSplit' => true];
+
+        $table = $section->addTable(['bordercolor' => 'BFBFBF', 'borderSize' => 4, 'cellMargin' => 60]);
+
+        // Bandeau de jour (bleu 95B3D7), une seule fois par journée.
+        if ($sess['day'] !== $lastDay) {
+            $lastDay = $sess['day'];
+            $label = $sess['day'] !== '' ? ucfirst(Carbon::parse($sess['day'])->translatedFormat('l j F Y')) : 'À programmer';
+            $table->addRow(null, $headerRow);
+            $table->addCell($full, ['gridSpan' => count($cols), 'bgColor' => self::REF_DAY_FILL])
+                ->addText($label, ['bold' => true, 'size' => 11, 'color' => self::BLACK, 'name' => $font], ['alignment' => 'center']);
+        }
+
+        // Bandeau de séance (bleu clair) : « Session : horaire - salle ».
+        $sessionLine = 'Session';
+        if ($sess['time'] !== '') {
+            $sessionLine .= ' : '.$sess['time'];
+        }
+        if ($sess['room'] !== '') {
+            $sessionLine .= ($sess['time'] !== '' ? ' - ' : ' : ').$sess['room'];
+        }
+        $table->addRow(null, $headerRow);
+        $table->addCell($full, ['gridSpan' => count($cols), 'bgColor' => self::REF_SESSION_FILL])
+            ->addText($sessionLine, ['bold' => true, 'size' => 10, 'color' => self::BLACK, 'name' => $font], ['alignment' => 'center']);
+
+        // Modérateur / Rapporteur : toujours affichés (structure demandée), « - » à défaut.
+        $roles = $table->addCell($full, ['gridSpan' => count($cols)])->addTextRun();
+        $roles->addText('Modérateur : ', ['bold' => true, 'size' => 9, 'color' => self::BLACK]);
+        $roles->addText(($sess['moderator'] !== '' ? $sess['moderator'] : '-').'      ', ['size' => 9, 'color' => self::BLACK]);
+        $roles->addText('Rapporteur : ', ['bold' => true, 'size' => 9, 'color' => self::BLACK]);
+        $roles->addText($sess['rapporteur'] !== '' ? $sess['rapporteur'] : '-', ['size' => 9, 'color' => self::BLACK]);
+
+        // En-tête de colonnes (gris F2F2F2).
+        $table->addRow(null, $headerRow);
+        foreach ($cols as $head => $cm) {
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => self::REF_HEAD_FILL])
+                ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLACK, 'name' => $font]);
+        }
+
+        foreach ($sess['slots'] as $sl) {
+            $h = $sl->starts_at?->format('H\hi') ?? '-';
+            if ($sl->ends_at) {
+                $h .= ' - '.$sl->ends_at->format('H\hi');
+            }
+            $code = trim((string) $sl->submission?->ref_code);
+            $author = $this->slotPresenter($sl);
+            $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+
+            $table->addRow();
+            $table->addCell((int) Converter::cmToTwip($cols['Horaire']))->addText($h, ['size' => 10, 'color' => self::BLACK]);
+            $table->addCell((int) Converter::cmToTwip($cols['Code']))->addText($code !== '' ? $code : '-', ['size' => 10, 'bold' => true, 'color' => self::BLACK]);
+            $table->addCell((int) Converter::cmToTwip($cols['Auteur(s)']))->addText($author !== '' ? $author : '-', ['size' => 10, 'color' => self::BLACK]);
+            $table->addCell((int) Converter::cmToTwip($cols['Titre de la communication']))->addText($title !== '' ? self::bindPunctuation($title) : '-', ['size' => 10, 'color' => self::BLACK]);
+        }
     }
 
     /** Programme : sessions datées regroupées par jour (tableau Horaire / Session / Salle). */
@@ -973,40 +1051,20 @@ class LivretDocx
      */
     private function programmeDayTable(Section $section, string $day, iterable $slots): void
     {
+        // ⚠️ Le style « general » ne passe PLUS par ici : ses « Communications en
+        // ateliers » sont rendues séance par séance par atelierSessionTable(). Cette
+        // méthode ne sert donc qu'au Programme par jour des AUTRES styles
+        // (Horaire | Communication + auteurs | Salle / Session).
         $label = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
-        $general = $this->isGeneral();
 
-        // Style « Document général » : la colonne de tête est le CODE de la
-        // communication (comme la colonne « Codes » du document de référence) ; le
-        // programme ne répète ni les auteurs ni leurs affiliations (ils figurent
-        // dans la section Résumés). Les autres styles gardent Horaire | Communication
-        // (titre + auteurs) | Salle.
-        $cols = $general
-            ? ['Code' => 2.2, 'Horaire' => 2.6, 'Communication' => 7.4, 'Salle' => 3.8]
-            : ['Horaire' => 2.6, 'Communication' => 9.4, 'Salle / Session' => 4];
-        $headFill = $general ? self::REF_HEAD_FILL : 'F1F5F9';
-        $headColor = $general ? self::BLACK : self::BLUE;
+        $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
 
-        $table = $section->addTable(['bordercolor' => $general ? 'BFBFBF' : 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
+        $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60, 'keepNext' => true]);
 
-        // ⚠️ Le bandeau de jour + l'en-tête du tableau sont des LIGNES D'EN-TÊTE
-        // répétées (`tblHeader`) et insécables (`cantSplit`) : Word ne les laisse
-        // jamais seuls en bas de page, le tableau démarre à la page suivante.
-        $headerRow = ['tblHeader' => true, 'cantSplit' => true];
-
-        if ($general) {
-            // Bandeau de jour en bleu 95B3D7, pleine largeur (doc de référence).
-            $table->addRow(null, $headerRow);
-            $table->addCell((int) Converter::cmToTwip(array_sum($cols)), ['gridSpan' => count($cols), 'bgColor' => self::REF_DAY_FILL])
-                ->addText($label, ['bold' => true, 'size' => 11, 'color' => self::BLACK], ['alignment' => 'center']);
-        } else {
-            $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60, 'keepNext' => true]);
-        }
-
-        $table->addRow(null, $general ? $headerRow : null);
-        foreach ($cols as $head => $cm) {
-            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => $headFill])
-                ->addText($head, ['bold' => true, 'size' => 10, 'color' => $headColor]);
+        $table->addRow();
+        foreach (['Horaire' => 2.6, 'Communication' => 9.4, 'Salle / Session' => 4] as $head => $cm) {
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => 'F1F5F9'])
+                ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
         }
         foreach ($slots as $sl) {
             $h = $sl->starts_at?->format('H:i') ?? '-';
@@ -1018,16 +1076,6 @@ class LivretDocx
             $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
 
             $table->addRow();
-            if ($general) {
-                $code = trim((string) $sl->submission?->ref_code);
-                $table->addCell((int) Converter::cmToTwip($cols['Code']))->addText($code !== '' ? $code : '-', ['size' => 10, 'bold' => true, 'color' => self::BLACK]);
-                $table->addCell((int) Converter::cmToTwip($cols['Horaire']))->addText($h, ['size' => 10, 'color' => self::BLACK]);
-                $table->addCell((int) Converter::cmToTwip($cols['Communication']))->addText($title !== '' ? self::bindPunctuation($title) : '-', ['size' => 10, 'color' => self::BLACK]);
-                $table->addCell((int) Converter::cmToTwip($cols['Salle']))->addText($room !== '' ? $room : '-', ['size' => 10, 'color' => self::BLACK]);
-
-                continue;
-            }
-
             $authors = $this->slotAuthors($sl);
             $table->addCell((int) Converter::cmToTwip(2.6))->addText($h, ['size' => 10]);
             $cell = $table->addCell((int) Converter::cmToTwip(9.4));
@@ -1509,6 +1557,7 @@ class LivretDocx
             'black' => '#'.self::BLACK,
             'terracotta' => '#'.self::TERRACOTTA,
             'day_fill' => '#'.self::REF_DAY_FILL,
+            'session_fill' => '#'.self::REF_SESSION_FILL,
             'head_fill' => '#'.self::REF_HEAD_FILL,
             'border' => '#bfbfbf',
         ];
@@ -1561,10 +1610,14 @@ class LivretDocx
 
     /**
      * Ateliers du style « general » : communications orales programmées (acceptées
-     * + canoniques) regroupées par ATELIER puis par JOUR. SOURCE UNIQUE partagée par
+     * + canoniques) regroupées par ATELIER puis par SÉANCE. SOURCE UNIQUE partagée par
      * le .docx (`addAteliers`) et l'aperçu PDF (`DocumentController::livretViewData`) :
      * on ne rend QUE la structure, l'intitulé « ATELIER n : … » étant composé par
      * chaque appelant (style de titre Word d'un côté, `<p>` de l'autre).
+     *
+     * Chaque atelier se déroule SÉANCE PAR SÉANCE : chaque séance (`EventSession`)
+     * porte son horaire, sa salle, son modérateur et son rapporteur, puis la liste de
+     * ses communications - cf. `atelierSessions()`.
      *
      * ⚠️⚠️ **UN ATELIER REGROUPE PLUSIEURS AXES** (`Atelier::tracks`), ce n'est PAS
      * un axe. Le livret groupait par `submission->track` (l'axe) et sortait donc **un
@@ -1578,7 +1631,7 @@ class LivretDocx
      * Repli (aucun atelier déclaré) : un groupe PAR AXE, comme avant, dans l'ordre
      * des axes réglés (`settings['tracks']`) puis les axes hors liste.
      *
-     * @return Collection<int, array{number: int, track: string, axis: string, days: Collection<int|string, Collection<int, Slot>>}>
+     * @return Collection<int, array{number: int, track: string, axis: string, sessions: Collection<int, array{day: string, time: string, room: string, moderator: string, rapporteur: string, label: string, slots: Collection<int, Slot>}>}>
      */
     public static function ateliersGroups(Event $event): Collection
     {
@@ -1622,8 +1675,7 @@ class LivretDocx
                     // « Atelier n » : vide quand il n'y a rien d'autre (l'intitulé
                     // reste alors « ATELIER n » tout court, sans « : »).
                     'axis' => trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $atelier->title)),
-                    'days' => $byAtelier[$i]
-                        ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
+                    'sessions' => self::atelierSessions($byAtelier[$i]),
                 ];
             }
 
@@ -1632,8 +1684,7 @@ class LivretDocx
                     'number' => count($groups) + 1,
                     'track' => 'Autres',
                     'axis' => 'Autres communications',
-                    'days' => $byAtelier[-1]
-                        ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
+                    'sessions' => self::atelierSessions($byAtelier[-1]),
                 ];
             }
 
@@ -1654,20 +1705,68 @@ class LivretDocx
         // repli `?? collect()` ferait perdre le type Slot à l'analyse statique.
         $groups = [];
         foreach ($keys as $track) {
-            $days = $byTrack[$track]
-                ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys();
-            if ($days->isEmpty()) {
+            $sessions = self::atelierSessions($byTrack[$track]);
+            if ($sessions->isEmpty()) {
                 continue;
             }
             $groups[] = [
                 'number' => count($groups) + 1,
                 'track' => (string) $track,
                 'axis' => self::ateliersAxisLabel((string) $track),
-                'days' => $days,
+                'sessions' => $sessions,
             ];
         }
 
         return collect($groups);
+    }
+
+    /**
+     * Découpe les créneaux d'un atelier en SÉANCES (`EventSession`), triées par
+     * horaire. Chaque séance porte sa fenêtre horaire, sa salle, son modérateur,
+     * son rapporteur et ses communications. Les créneaux sans séance rattachée sont
+     * regroupés par jour. SOURCE UNIQUE partagée par le .docx et l'aperçu PDF.
+     *
+     * @param  Collection<int, Slot>  $slots
+     * @return Collection<int, array{day: string, time: string, room: string, moderator: string, rapporteur: string, label: string, slots: Collection<int, Slot>}>
+     */
+    private static function atelierSessions(Collection $slots): Collection
+    {
+        return $slots
+            // Les créneaux reçus sont tous horodatés (filtre `whereNotNull('starts_at')`
+            // en amont), d'où `->` : Larastan type `starts_at` comme non-nul ici.
+            ->sortBy(fn (Slot $sl) => $sl->starts_at->timestamp)
+            ->groupBy(fn (Slot $sl) => $sl->session_id
+                ? 's:'.$sl->session_id
+                : 'd:'.($sl->starts_at?->format('Y-m-d') ?? ''))
+            ->map(function (Collection $group) {
+                $first = $group->first();
+                $sess = $first?->session;
+
+                // Fenêtre horaire : la séance si horodatée, sinon les bornes des créneaux
+                // (le groupe est trié, donc premier = plus tôt, dernier = plus tard).
+                $start = $sess?->starts_at ?: $first?->starts_at;
+                $end = $sess?->ends_at ?: ($group->last()?->ends_at ?: $group->last()?->starts_at);
+                $time = '';
+                if ($start) {
+                    $time = $start->format('H\hi');
+                    if ($end) {
+                        $time .= ' - '.$end->format('H\hi');
+                    }
+                }
+
+                return [
+                    'day' => (string) ($first?->starts_at?->format('Y-m-d')
+                        ?? optional($sess?->starts_at ?: $sess?->session_day)->format('Y-m-d')
+                        ?? ''),
+                    'time' => $time,
+                    'room' => trim((string) ($sess?->room ?: $first?->room)),
+                    'moderator' => trim((string) $sess?->moderator_name),
+                    'rapporteur' => trim((string) $sess?->rapporteur_name),
+                    'label' => trim((string) $sess?->label),
+                    'slots' => $group->values(),
+                ];
+            })
+            ->values();
     }
 
     /**

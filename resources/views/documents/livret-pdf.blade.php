@@ -76,6 +76,8 @@
         table.prog th, table.prog td { border-color: {{ $palette['border'] }}; }
         .atelier-head { color: {{ $palette['terracotta'] }}; }
         td.day-banner { background: {{ $palette['day_fill'] }}; color: {{ $palette['black'] }}; font-weight: bold; text-align: center; }
+        td.session-banner { background: {{ $palette['session_fill'] }}; color: {{ $palette['black'] }}; font-weight: bold; text-align: center; }
+        td.session-roles { background: #ffffff; color: {{ $palette['black'] }}; font-size: 9pt; }
         tr.grp td { background: {{ $palette['head_fill'] }}; font-weight: bold; text-align: center; }
     </style>
     @endif
@@ -247,61 +249,78 @@
                      dans les DONNÉES, l'en-tête se répétant à chaque page. --}}
                 <p class="sans @if ($isGen)atelier-head @endif keep-with-next" style="text-align:center;font-weight:bold;@if (! $isGen)color:{{ $primary }};@endif font-size:14pt;margin:18px 0 8px;">{{ $grp['heading'] }}</p>
             @endif
-            @foreach ($grp['days'] as $day => $daySlots)
-                @unless ($isGen)
-                    <p class="sans" style="font-weight:bold;color:{{ $primary }};margin:12px 0 4px;">{{ $dayLabel($day) }}</p>
-                @endunless
-                <table class="prog">
-                    @if ($isGen)
-                        {{-- Modèle « Document général » : colonne de tête = CODE de la communication
-                             (comme la colonne « Codes » du document de référence), sans auteurs ni
-                             affiliations (ils sont dans la section Résumés). Le bandeau de jour,
-                             l'en-tête de colonnes ET la 1re ligne vivent dans un même <tbody>
-                             insécable (`prog-start`) : l'en-tête ne reste donc JAMAIS seul en bas
-                             de page (il descend avec sa première ligne) ; les lignes suivantes, dans
-                             un second <tbody>, se coupent librement d'une page à l'autre. --}}
+            @if ($isGen)
+                {{-- Modèle « Document général » : un atelier se déroule SÉANCE PAR SÉANCE.
+                     Chaque séance porte son horaire + salle (bandeau), son modérateur et son
+                     rapporteur, puis le tableau « Horaire | Code | Auteur(s) | Titre ». Le
+                     bandeau de jour n'apparaît qu'au changement de jour. Les bandeaux + l'en-tête
+                     + la 1re ligne vivent dans un même <tbody> insécable (`prog-start`) ; les
+                     lignes suivantes se coupent librement d'une page à l'autre. --}}
+                @php $lastDay = null; @endphp
+                @foreach ($grp['sessions'] as $sess)
+                    @php
+                        $sline = 'Session';
+                        if ($sess['time'] !== '') { $sline .= ' : '.$sess['time']; }
+                        if ($sess['room'] !== '') { $sline .= ($sess['time'] !== '' ? ' - ' : ' : ').$sess['room']; }
+                    @endphp
+                    <table class="prog">
                         <tbody class="prog-start">
-                            <tr><td class="day-banner" colspan="4">{{ $dayLabel($day) }}</td></tr>
-                            <tr><th style="width:14%;">Code</th><th style="width:16%;">Horaire</th><th style="width:48%;">Communication</th><th style="width:22%;">Salle</th></tr>
-                            @foreach ($daySlots as $sl)
+                            @if ($sess['day'] !== $lastDay)
+                                @php $lastDay = $sess['day']; @endphp
+                                <tr><td class="day-banner" colspan="4">{{ $dayLabel($sess['day']) }}</td></tr>
+                            @endif
+                            <tr><td class="session-banner" colspan="4">{{ $sline }}</td></tr>
+                            <tr><td class="session-roles" colspan="4"><b>Modérateur :</b> {{ $sess['moderator'] !== '' ? $sess['moderator'] : '-' }} &nbsp;&nbsp;&nbsp; <b>Rapporteur :</b> {{ $sess['rapporteur'] !== '' ? $sess['rapporteur'] : '-' }}</td></tr>
+                            <tr><th style="width:16%;">Horaire</th><th style="width:12%;">Code</th><th style="width:25%;">Auteur(s)</th><th style="width:47%;">Titre de la communication</th></tr>
+                            @foreach ($sess['slots'] as $sl)
                                 @if ($loop->index === 1)</tbody><tbody>@endif
                                 @php
                                     $code = trim((string) $sl->submission?->ref_code);
                                     $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-                                    $room = trim((string) ($sl->room ?: $sl->session?->room));
+                                    $authorsArr = $sl->submission?->authors ?? [];
+                                    $ci = collect($authorsArr)->search(fn ($a) => (bool) ($a['corresponding'] ?? false));
+                                    $ci = $ci === false ? 0 : (int) $ci;
+                                    $ca = $authorsArr[$ci] ?? null;
+                                    $author = $ca && $sl->submission
+                                        ? \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::submissionAuthor($event, $sl->submission, $ca, $ci), $isGen)
+                                        : '';
                                 @endphp
                                 <tr>
-                                    <td style="font-weight:bold;white-space:nowrap;">{{ $code ?: '-' }}</td>
                                     <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
+                                    <td style="font-weight:bold;white-space:nowrap;">{{ $code ?: '-' }}</td>
+                                    <td>{{ $author !== '' ? $author : '-' }}</td>
                                     <td>{{ $title !== '' ? \App\Documents\LivretDocx::bindPunctuation($title) : '-' }}</td>
-                                    <td>{{ $room ?: '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
-                    @else
-                    <tr><th style="width:16%;">Horaire</th><th style="width:58%;">Communication</th><th style="width:26%;">Salle / Session</th></tr>
-                    @foreach ($daySlots as $sl)
-                        @php
-                            $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
-                            $auth = collect($sl->submission?->authors ?? [])->map(function ($a, $index) use ($isGen, $event, $sl) {
-                                // Même casse que le .docx (source unique) ; ce bloc n'est
-                                // atteint que hors « general » (le general n'a pas d'auteurs ici).
-                                $name = \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::submissionAuthor($event, $sl->submission, $a, (int) $index), $isGen);
-                                $aff = trim((string) ($a['affiliation'] ?? ''));
-                                return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
-                            })->filter()->implode('; ');
-                            $room = trim((string) ($sl->room ?: $sl->session?->room));
-                            $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
-                        @endphp
-                        <tr>
-                            <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
-                            <td>{{ $title ?: '-' }}@if ($auth !== '')<br><span class="muted" style="font-style:italic;font-size:8.5pt;">{{ $auth }}</span>@endif</td>
-                            <td>{{ $room }}@if ($sessLabel !== '' && $sessLabel !== $title)<br><span class="muted" style="font-size:8.5pt;">{{ $sessLabel }}</span>@endif</td>
-                        </tr>
-                    @endforeach
-                    @endif
-                </table>
-            @endforeach
+                    </table>
+                @endforeach
+            @else
+                @foreach ($grp['days'] as $day => $daySlots)
+                    <p class="sans" style="font-weight:bold;color:{{ $primary }};margin:12px 0 4px;">{{ $dayLabel($day) }}</p>
+                    <table class="prog">
+                        <tr><th style="width:16%;">Horaire</th><th style="width:58%;">Communication</th><th style="width:26%;">Salle / Session</th></tr>
+                        @foreach ($daySlots as $sl)
+                            @php
+                                $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+                                $auth = collect($sl->submission?->authors ?? [])->map(function ($a, $index) use ($isGen, $event, $sl) {
+                                    // Même casse que le .docx (source unique).
+                                    $name = \App\Documents\LivretDocx::authorCase(\App\Support\EventNameFormat::submissionAuthor($event, $sl->submission, $a, (int) $index), $isGen);
+                                    $aff = trim((string) ($a['affiliation'] ?? ''));
+                                    return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
+                                })->filter()->implode('; ');
+                                $room = trim((string) ($sl->room ?: $sl->session?->room));
+                                $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
+                            @endphp
+                            <tr>
+                                <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
+                                <td>{{ $title ?: '-' }}@if ($auth !== '')<br><span class="muted" style="font-style:italic;font-size:8.5pt;">{{ $auth }}</span>@endif</td>
+                                <td>{{ $room }}@if ($sessLabel !== '' && $sessLabel !== $title)<br><span class="muted" style="font-size:8.5pt;">{{ $sessLabel }}</span>@endif</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                @endforeach
+            @endif
         @endforeach
     </div>
 @endif

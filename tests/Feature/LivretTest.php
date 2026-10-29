@@ -231,6 +231,67 @@ it('regroupe les communications par ATELIER, pas par axe (un atelier couvre plus
         ->toContain('Comm C')->toContain('Comm D');
 });
 
+it('déroule un atelier SÉANCE PAR SÉANCE avec modérateur, rapporteur et colonne auteurs', function () {
+    $staff = adminStaff();
+    $event = openEdition(['tracks' => ['Axe A', 'Axe B']]);
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $event->ateliers()->create(['title' => 'Atelier 1', 'tracks' => ['Axe A', 'Axe B'], 'ordre' => 1]);
+
+    $sub = $event->submissions()->create([
+        'participant_id' => $participant->id,
+        'ref_code' => 'EAU-001',
+        'title' => 'Innovation durable',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Axe A',
+        'type' => 'oral',
+        'status' => 'accepted',
+        'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
+    ]);
+    $session = $event->sessions()->create([
+        'label' => 'Séance 1', 'type' => 'atelier', 'room' => 'Salle Master II',
+        'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 14:00', 'ends_at' => '2026-09-03 15:45',
+        'moderator_name' => 'Lardja KANATI', 'rapporteur_name' => 'Kibandoudeke BAMAZE',
+    ]);
+    Slot::create([
+        'event_id' => $event->id, 'session_id' => $session->id,
+        'submission_id' => $sub->id, 'participant_id' => $participant->id,
+        'starts_at' => '2026-09-03 14:00', 'ends_at' => '2026-09-03 14:15',
+    ]);
+
+    EventSettings::set($event, 'livret.template', 'general');
+
+    $xml = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
+            ->streamedContent()
+    );
+
+    expect($xml)
+        ->toContain('ATELIER 1')
+        // Bandeau de séance : horaire + salle, puis modérateur ET rapporteur.
+        ->toContain('Session : 14h00 - 15h45 - Salle Master II')
+        ->toContain('Modérateur :')->toContain('Lardja KANATI')
+        ->toContain('Rapporteur :')->toContain('Kibandoudeke BAMAZE')
+        // Colonne auteurs (auteur correspondant), avec le code et le titre.
+        ->toContain('Auteur(s)')
+        ->toContain('Awa Kodjo')
+        ->toContain('EAU-001')
+        ->toContain('Innovation durable');
+
+    // Même structure côté PDF (aperçu/téléchargement), séance par séance.
+    expect(livretPdfHtml($event->fresh()))
+        ->toContain('Session : 14h00 - 15h45 - Salle Master II')
+        ->toContain('Modérateur :')->toContain('Lardja KANATI')
+        ->toContain('Rapporteur :')->toContain('Kibandoudeke BAMAZE')
+        ->toContain('Auteur(s)')
+        ->toContain('Awa Kodjo')
+        ->toContain('EAU-001');
+});
+
 it('propose un bouton Télécharger sur CHAQUE modèle intégré, vers le gabarit à balises', function () {
     $staff = adminStaff();
     $event = openEdition();

@@ -22,7 +22,7 @@
         <div class="ukc-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
                 <span style="font-family:var(--ukc-mono);font-weight:700;color:var(--ukc-muted);font-size:.9rem;">Version v{{ $archive->version }}</span>
-                <span class="ukc-pill ukc-pill--muted">Archivée · lecture seule</span>
+                <span class="ukc-pill ukc-pill--muted">Archivée - lecture seule</span>
             </div>
             <div class="paper-title">{{ $archive->title }}</div>
             <div class="meta-row">
