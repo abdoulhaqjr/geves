@@ -809,6 +809,23 @@ it('FedaPay : l’URL de webhook dédiée à l’événement confirme aussi le p
     expect($payment->fresh()->status)->toBe('paid');
 });
 
+it('FedaPay : une URL de webhook dédiée à une édition INEXISTANTE ne 404 plus et confirme quand même', function () {
+    // ⚠️ L'id d'édition dans l'URL du prestataire peut devenir faux (réimport qui
+    // change les id, édition supprimée, id saisi à la main). Avant, `{event}` était
+    // lié à un modèle → 404 EN AMONT du contrôleur, que FedaPay lit comme un échec
+    // de livraison et réessaie en boucle. On retombe désormais sur toutes les
+    // configurations (ici la globale « whsec ») : un id périmé ne perd pas le paiement.
+    Mail::fake();
+    configureFedapay(); // config GLOBALE « whsec »
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '779', 'status' => 'pending']);
+
+    fedapayWebhook('/webhooks/paiement/fedapay/999999', 779, 'whsec')
+        ->assertOk(); // 200, PAS 404
+
+    expect($payment->fresh()->status)->toBe('paid');
+});
+
 it('FedaPay : le marchand d’un événement ne peut pas confirmer le paiement d’une AUTRE événement', function () {
     configureFedapay();
     [$event, $account, $participant] = onlineSetup();

@@ -103,7 +103,7 @@ class PaymentController extends Controller
      * rejets sont journalisés (canal `payments`) pour pouvoir diagnostiquer un
      * « j'ai payé mais le système dit non ».
      */
-    public function webhook(Request $request, string $gateway, ?Event $event = null): Response
+    public function webhook(Request $request, string $gateway, ?string $event = null): Response
     {
         $gw = $this->registry->get($gateway);
 
@@ -113,22 +113,45 @@ class PaymentController extends Controller
             return response('OK', 200);
         }
 
-        $candidates = $event ? [$event] : EventPaymentConfig::candidates($gateway);
+        // URL dédiée « /{gateway}/{edition} » : on vise la configuration de CETTE
+        // édition. ⚠️⚠️ `{event}` N'EST PLUS LIÉ IMPLICITEMENT à un modèle Event
+        // (d'où le type `?string`, et la résolution à la main ci-dessous) : un
+        // identifiant périmé ou inconnu dans l'URL - réimport qui change les id,
+        // édition supprimée, id saisi à la main chez le prestataire - faisait
+        // répondre **404 EN AMONT du contrôleur**, que le prestataire lit comme un
+        // échec de livraison et réessaie en boucle, alors que le paiement est bien
+        // là. Un id obsolète dans une URL EXTERNE ne doit jamais faire perdre un
+        // paiement : s'il ne correspond à rien, on RETOMBE sur le comportement
+        // générique (toutes les configurations), la signature restant le vrai
+        // juge. La forme générique `/{gateway}` reste recommandée, mais la forme
+        // dédiée ne pénalise plus un id devenu faux.
+        $scoped = null;
+        if ($event !== null && $event !== '') {
+            $scoped = Event::find((int) $event);
+            if (! $scoped) {
+                Log::channel('payments')->warning('Webhook paiement : édition inconnue dans l\'URL, repli sur toutes les configurations.', [
+                    'gateway' => $gateway,
+                    'edition_url' => $event,
+                ]);
+            }
+        }
+
+        $candidates = $scoped ? [$scoped] : EventPaymentConfig::candidates($gateway);
 
         foreach ($candidates as $candidate) {
-            $event = EventPaymentConfig::using($candidate, fn () => $gw->parseWebhook($request));
-            if (! $event) {
+            $parsed = EventPaymentConfig::using($candidate, fn () => $gw->parseWebhook($request));
+            if (! $parsed) {
                 continue; // signature invalide pour cette configuration : on essaie la suivante
             }
 
             $payment = Payment::where('gateway', $gateway)
-                ->where('gateway_ref', $event['reference'])
+                ->where('gateway_ref', $parsed['reference'])
                 ->first();
 
             if (! $payment) {
                 Log::channel('payments')->warning('Webhook paiement : aucune transaction connue pour cette référence.', [
                     'gateway' => $gateway,
-                    'reference' => $event['reference'],
+                    'reference' => $parsed['reference'],
                 ]);
 
                 return response('OK', 200);
@@ -147,12 +170,12 @@ class PaymentController extends Controller
                 return response('OK', 200);
             }
 
-            $this->settle($payment, $event['status'], $gw);
+            $this->settle($payment, $parsed['status'], $gw);
 
             Log::channel('payments')->info('Webhook paiement traité.', [
                 'gateway' => $gateway,
                 'payment' => $payment->id,
-                'statut_evenement' => $event['status'],
+                'statut_evenement' => $parsed['status'],
                 'statut_final' => $payment->fresh()?->status,
             ]);
 
@@ -161,7 +184,7 @@ class PaymentController extends Controller
 
         Log::channel('payments')->warning('Webhook paiement : signature non vérifiée (aucune configuration ne correspond).', [
             'gateway' => $gateway,
-            'event' => $event?->id,
+            'edition_url' => $event,
             'configurations_essayees' => count($candidates),
         ]);
 

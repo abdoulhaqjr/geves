@@ -938,6 +938,18 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   Toujours **fail-closed**, et tous les rejets sont journalisés dans le canal de log
   **`payments`** (`storage/logs/payments.log`, 90 j) - c'est la pièce à consulter pour un
   « j'ai payé mais le système dit non ».
+  - ⚠️⚠️ **LE `{event}` DE L'URL DÉDIÉE N'EST PLUS LIÉ À UN MODÈLE** (2026-10-29,
+    souci FedaPay en production). Lié implicitement, un **id périmé** dans l'URL du
+    prestataire - réimport qui change les id, édition supprimée, id saisi à la main -
+    faisait répondre **404 EN AMONT du contrôleur** : FedaPay le lit comme un échec de
+    livraison et réessaie en boucle (« nous ne parvenons pas à transmettre… »), alors
+    que le contrôleur, une fois atteint, **répond toujours 200**. Le paramètre est donc
+    typé **`?string`** et résolu à la main (`Event::find`) : s'il ne correspond à rien,
+    on **retombe sur `candidates()`** (toutes les configs, la signature restant le juge)
+    au lieu de 404. Un id externe obsolète ne doit jamais faire perdre un paiement. La
+    forme **générique reste recommandée** (insensible à l'id). ⚠️ Ne pas re-typer
+    `{event}` en `Event` (le 404 reviendrait). Garde : `PaymentGatewayTest` « une URL de
+    webhook dédiée à une édition INEXISTANTE ne 404 plus et confirme quand même ».
 - **Filet de sécurité paiements** : `App\Actions\ReconcilePayments` + `php artisan
   payments:reconcile` (planifié **toutes les 10 min**) revérifient auprès de la passerelle
   les paiements `pending` ayant une `gateway_ref`, et les confirment si réglés - couvre le
