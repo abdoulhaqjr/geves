@@ -439,6 +439,8 @@
 .admin-submission-detail .ukc-card { margin-bottom: 16px; }
 .admin-submission-detail .layout > div > .ukc-card:last-child { margin-bottom: 0; }
 .admin-submission-detail .ukc-card h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-muted); margin: 4px 0 10px; }
+.admin-submission-detail .submission-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 16px 0 10px; }
+.admin-submission-detail .submission-section-heading h3 { margin: 0; }
 
 .admin-submission-detail .paper-title { font-size: 1.25rem; font-weight: 800; line-height: 1.35; margin-bottom: 10px; }
 .admin-submission-detail .meta-row { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; color: var(--ukc-muted); margin-bottom: 16px; }

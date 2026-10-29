@@ -3,7 +3,7 @@
 
 {{ __('Bonjour') }} {{ $payment->participant?->full_name }},
 
-{{ __('Nous confirmons la réception de votre paiement pour **:edition**.', ['event' => $payment->event?->title]) }}
+{{ __('Nous confirmons la réception de votre paiement pour **:edition**.', ['edition' => $payment->event?->title]) }}
 
 - **{{ __('Reçu n° :') }}** {{ $payment->receipt_no }}
 - **{{ __('Montant :') }}** {{ number_format((float) $payment->amount, 0, ',', ' ') }} {{ $payment->currencyLabel() }}

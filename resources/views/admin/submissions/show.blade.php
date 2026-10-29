@@ -119,8 +119,8 @@
                         @endforeach
                     </ul>
 
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-                        <h3 style="margin-right:auto;">Résumé</h3>
+                    <div class="submission-section-heading">
+                        <h3>Résumé</h3>
                         @if ($peutCorrigerResume)
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="resumeOpen = true">
                                 <x-ukc.icon name="pen" :size="13" /> Corriger le résumé

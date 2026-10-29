@@ -7,6 +7,7 @@ use App\Models\EventSeries;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Fees;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Support\Facades\Mail;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
@@ -74,6 +75,40 @@ it('enregistre un encaissement manuel, génère le reçu et notifie', function (
     expect($payment->status)->toBe('paid');
     expect($payment->receipt_no)->not->toBeEmpty();
     Mail::assertQueued(PaymentReceiptMail::class, fn ($m) => $m->payment->is($payment));
+});
+
+it('nomme l’événement et joint le reçu PDF au courriel de confirmation', function () {
+    $event = payEdition();
+    [$account, $participant] = acceptedParticipant($event);
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id,
+        'amount' => 15000,
+        'currency' => 'XOF',
+        'method' => 'cash',
+        'status' => 'paid',
+        'receipt_no' => 'REC-2026-0001',
+        'paid_at' => now(),
+    ]);
+
+    $mail = new PaymentReceiptMail($payment);
+    $html = $mail->render();
+
+    expect($html)
+        ->toContain('UK 2026')
+        ->not->toContain(':edition');
+
+    $attachments = $mail->attachments();
+    expect($attachments)->toHaveCount(1)
+        ->and($attachments[0])->toBeInstanceOf(Attachment::class)
+        ->and($attachments[0]->as)->toBe('recu-rec-2026-0001.pdf')
+        ->and($attachments[0]->mime)->toBe('application/pdf');
+
+    $pdf = $attachments[0]->attachWith(
+        fn () => throw new RuntimeException('Le reçu doit être joint depuis les données PDF.'),
+        fn ($data) => $data(),
+    );
+
+    expect(substr($pdf, 0, 5))->toBe('%PDF-');
 });
 
 it('refuse un second paiement pour un participant déjà réglé (garde-fou)', function () {
