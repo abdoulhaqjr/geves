@@ -29,6 +29,7 @@
             {{-- COLONNE PRINCIPALE --}}
             <div>
                 {{-- Résumé & auteurs --}}
+                <div x-data="{ resumeOpen: @js($errors->has('admin_abstract')) }">
                 <div class="ukc-card">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
                         <span style="font-family:var(--ukc-mono);font-weight:700;color:var(--ukc-muted);font-size:.9rem;">{{ $s->ref_code }}</span>
@@ -118,7 +119,14 @@
                         @endforeach
                     </ul>
 
-                    <h3>Résumé</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                        <h3 style="margin-right:auto;">Résumé</h3>
+                        @if ($peutCorrigerResume)
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="resumeOpen = true">
+                                <x-ukc.icon name="pen" :size="13" /> Corriger le résumé
+                            </button>
+                        @endif
+                    </div>
                     <div class="abstract-box ukc-rte">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '-' !!}</div>
                     @if ($s->keywords)
                         <div class="ukc-keywords">
@@ -127,6 +135,36 @@
                             @endforeach
                         </div>
                     @endif
+                </div>
+
+                @if ($peutCorrigerResume)
+                    <x-ukc.slideover open="resumeOpen" onClose="resumeOpen = false" width="620px" title="Corriger le résumé">
+                        <form id="adminAbstractForm" method="POST" action="{{ route('admin.submissions.abstract.update', $s) }}">
+                            @csrf
+                            <p style="font-size:.86rem;color:var(--ukc-muted);margin:0 0 14px;">
+                                Cette correction remplace directement le texte, sans changer le statut ni créer une nouvelle version.
+                            </p>
+                            <div class="ukc-form-row">
+                                <label>Résumé <span class="req">*</span></label>
+                                @include('partials.abstract-editor', [
+                                    'name' => 'admin_abstract',
+                                    'initial' => old('admin_abstract', $s->abstract),
+                                    'min' => $abstractMin,
+                                    'max' => $abstractMax,
+                                    'help' => null,
+                                ])
+                                @error('admin_abstract')
+                                    <span class="error">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </form>
+
+                        <x-slot:footer>
+                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="resumeOpen = false">Annuler</button>
+                            <button type="submit" form="adminAbstractForm" class="ukc-btn ukc-btn--blue">Enregistrer la correction</button>
+                        </x-slot:footer>
+                    </x-ukc.slideover>
+                @endif
                 </div>
 
                 {{-- Similarité interne (anti-plagiat gratuit) --}}

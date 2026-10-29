@@ -27,6 +27,7 @@ use App\Models\User;
 use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
 use App\Support\EventNameFormat;
+use App\Support\Html;
 use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\ParticipantTypes;
@@ -422,6 +423,7 @@ class SubmissionController extends Controller
     public function show(Request $request, Submission $submission, SimilarityChecker $similarity, PlagiarismRegistry $plagiarism): View
     {
         $submission->load(['event', 'participant']);
+        $formConfig = new SubmissionFormConfig($submission->event);
 
         // Les affectations annulées ne figurent plus sur la fiche. Une personne
         // retirée du vivier n'y reste que si son évaluation a été rendue.
@@ -475,6 +477,12 @@ class SubmissionController extends Controller
             // même capacité. C'est pour ne pas montrer un geste que l'évaluateur
             // ou le secrétariat ne peuvent pas faire.
             'peutEcrireAuteurs' => (bool) $request->user()?->canOnEdition('editions_write', $submission->event_id),
+            // Correction exceptionnelle du texte après clôture/décision : elle
+            // appartient aux deux niveaux administrateurs de la plateforme,
+            // jamais aux fonctions affectées à ce seul événement.
+            'peutCorrigerResume' => (bool) $request->user()?->isColloqueAdmin(),
+            'abstractMin' => $formConfig->abstractMin(),
+            'abstractMax' => $formConfig->abstractMax(),
             // ⚠️ Préparé ICI, pas dans la vue : cet écran emploie la forme EN
             // LIGNE de la directive PHP de Blade, et y ouvrir un bloc ferait
             // avaler tout ce qui suit par le compilateur.
@@ -526,6 +534,53 @@ class SubmissionController extends Controller
         $submission->load('event');
 
         return view('admin.submissions.version', compact('submission', 'archive'));
+    }
+
+    /**
+     * Correction administrative silencieuse du corps d'un résumé.
+     *
+     * Elle ne crée ni version, ni resoumission, ni notification et ne change
+     * jamais le statut : l'auteur continue à voir simplement le texte corrigé.
+     * Une trace technique reste dans les logs pour l'exploitation, sans être
+     * exposée dans la fiche ou dans l'espace participant.
+     */
+    public function updateAbstract(Request $request, Submission $submission): RedirectResponse
+    {
+        abort_unless($request->user()?->isColloqueAdmin(), 403);
+        abort_unless((int) $submission->revision_of === 0, 404);
+
+        $config = new SubmissionFormConfig($submission->event);
+        $data = $request->validate([
+            'admin_abstract' => ['required', 'string', 'max:20000', function (string $attribute, string $value, \Closure $fail) use ($config): void {
+                $words = SubmissionFormConfig::wordCount($value);
+                if ($words < $config->abstractMin()) {
+                    $fail('Le résumé doit contenir au moins '.$config->abstractMin().' mots.');
+                } elseif ($words > $config->abstractMax()) {
+                    $fail('Le résumé ne doit pas dépasser '.$config->abstractMax().' mots.');
+                }
+            }],
+        ]);
+
+        $before = (string) $submission->abstract;
+        $after = Html::clean($data['admin_abstract']);
+
+        if ($after === $before) {
+            return back()->with('ukc_status', 'Le résumé est déjà à jour.');
+        }
+
+        // Pas d'événement métier : une correction administrative ne doit pas
+        // déclencher les effets de bord du workflow scientifique.
+        $submission->updateQuietly(['abstract' => $after]);
+
+        Log::info('Administrative submission abstract corrected', [
+            'submission_id' => $submission->id,
+            'event_id' => $submission->event_id,
+            'actor_id' => $request->user()?->id,
+            'before_sha256' => hash('sha256', $before),
+            'after_sha256' => hash('sha256', $after),
+        ]);
+
+        return back()->with('ukc_status', 'Résumé corrigé.');
     }
 
     /** Suppression explicite d'une communication depuis la liste. */
