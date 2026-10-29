@@ -36,7 +36,10 @@ it('enregistre les comités par groupe (organisation / scientifique / supervisio
 
     $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), [
         'title' => $event->title, 'status' => 'open', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
-        'committees_org' => [['person_name' => 'Pr Kadouza', 'person_title' => 'Président', 'institution' => 'UK']],
+        'committees_org' => [[
+            'person_name' => 'Pr Kadouza', 'person_title' => 'Professeur', 'institution' => 'UK',
+            'email' => 'kadouza@example.tg', 'phone' => '+22890000001', 'qualite' => 'Président',
+        ]],
         'committees_sci' => [
             ['person_name' => 'Pr Lawson', 'person_title' => 'Président', 'institution' => 'UP'],
             ['person_name' => 'Pr Tchalla', 'person_title' => 'Membre', 'institution' => 'UK'],
@@ -47,8 +50,21 @@ it('enregistre les comités par groupe (organisation / scientifique / supervisio
     $event->refresh();
     expect($event->committeeMembers()->count())->toBe(3);
     expect($event->committeeMembers()->where('role', 'scientifique')->count())->toBe(2);
-    expect($event->committeeMembers()->where('role', 'organisation')->first()->person_name)->toBe('Pr Kadouza');
+    $organisation = $event->committeeMembers()->where('role', 'organisation')->first();
+    expect($organisation->person_name)->toBe('Pr Kadouza')
+        ->and($organisation->email)->toBe('kadouza@example.tg')
+        ->and($organisation->phone)->toBe('+22890000001')
+        ->and($organisation->qualite)->toBe('Président');
     expect($event->committeeMembers()->where('role', 'supervision')->count())->toBe(0);
+
+    // Les valeurs sauvegardées sont réinjectées dans les tableaux Alpine du
+    // formulaire : le champ ne revient donc plus vide après Enregistrer.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.evenements.edit', ['event' => $event, 'tab' => 'committees']))
+        ->assertOk()
+        ->assertSee('kadouza@example.tg')
+        ->assertSee('+22890000001')
+        ->assertSee('Président');
 });
 
 it('remplace les comités existants à l’enregistrement (sync)', function () {
