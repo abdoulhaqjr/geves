@@ -294,7 +294,7 @@ class ReportController extends Controller
         foreach (Submission::statuses() as $key => $label) {
             $synthese[] = ['- '.$label, $summary['submissionsByStatus'][$key] ?? 0];
         }
-        $synthese[] = ['Paiements réglés', $summary['paidCount']];
+        $synthese[] = ['Paiements réglés', $report->paymentStats()['ok']];
         $synthese[] = ['Encaissé ('.$summary['currency'].')', $summary['collected']];
         $synthese[] = ['En attente ('.$summary['currency'].')', $summary['pending']];
 

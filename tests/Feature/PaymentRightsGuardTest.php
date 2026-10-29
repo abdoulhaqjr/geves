@@ -36,7 +36,6 @@ it('n’interroge jamais les paiements « payés » sans filtrer la participatio
     $allowed = [
         'app/Support/EventReport.php' => [
             '$collected = (float) Payment::where',      // recette encaissée
-            "'paidCount' => Payment::where",            // nombre de paiements encaissés
         ],
     ];
 

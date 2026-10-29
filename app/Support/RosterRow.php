@@ -28,6 +28,7 @@ class RosterRow
         public readonly ?string $participationMode,
         public readonly ?string $participationModeLabel,
         public readonly bool $paid,
+        public readonly float $paidAmount,
         public readonly bool $invited,
         public readonly ?Carbon $createdAt,
         public readonly string $name,

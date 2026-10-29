@@ -133,7 +133,9 @@ class EventParticipantRoster
     private function ligne(array $group): ?RosterRow
     {
         $rows = collect($group['rows']);
-        $paid = $rows->contains(fn (Participant $p) => $p->participationPayments->contains('status', 'paid'));
+        $paidPayments = $rows->flatMap(fn (Participant $p) => $p->participationPayments)
+            ->where('status', 'paid');
+        $paid = $paidPayments->isNotEmpty();
         // Un déposant non auteur entre comme auditeur seulement s'il a payé.
         // Les inscriptions simples sans dépôt gardent leur statut habituel.
         if (! $group['corresponding'] && ! $group['coauthor'] && ! $paid
@@ -166,6 +168,7 @@ class EventParticipantRoster
             participationMode: $modeParticipant?->participation_mode,
             participationModeLabel: $modeParticipant?->participationModeLabel(),
             paid: $paid,
+            paidAmount: (float) $paidPayments->sum('amount'),
             invited: $rows->contains(fn (Participant $p) => $p->isInvited()),
             // `$rows->min('created_at')` ne se type pas : il rend `mixed`. On
             // nomme donc la date (d'où `@property Carbon|null $created_at` sur le

@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Submission;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -21,7 +22,17 @@ class EventReport
 {
     private ?array $participantRowsCache = null;
 
+    /** @var Collection<int, RosterRow>|null */
+    private ?Collection $participantsCache = null;
+
     public function __construct(public Event $event) {}
+
+    /** @return Collection<int, RosterRow> */
+    private function participants(): Collection
+    {
+        return $this->participantsCache ??= app(EventParticipantRoster::class)
+            ->forEvent((string) $this->event->id);
+    }
 
     /**
      * Indicateurs de synthèse.
@@ -52,12 +63,14 @@ class EventReport
         $collected = (float) Payment::where('event_id', $editionId)->where('status', 'paid')->sum('amount');
         $pending = (float) Payment::where('event_id', $editionId)->where('status', 'pending')->sum('amount');
 
+        $participants = $this->participants();
+
         return [
-            'participants' => Participant::where('event_id', $editionId)->count(),
+            'participants' => $participants->count(),
             'submissions' => Submission::where('event_id', $editionId)->where('revision_of', 0)->count(),
             'submissionsByStatus' => $submissionsByStatus,
             'accepted' => $submissionsByStatus['accepted'] ?? 0,
-            'paidCount' => Payment::where('event_id', $editionId)->where('status', 'paid')->count(),
+            'paidCount' => $participants->where('paid', true)->count(),
             'collected' => $collected,
             'pending' => $pending,
             'currency' => (string) (Payment::where('event_id', $editionId)->value('currency') ?: 'XOF'),
@@ -75,12 +88,11 @@ class EventReport
     /** @return array<int, array<int, string|float>> */
     public function participantRows(): array
     {
-        return $this->participantRowsCache ??= Participant::where('event_id', $this->event->id)
-            ->with(['participationPayments', 'user'])
-            ->orderBy('last_name')
-            ->get()
-            ->map(function (Participant $p) {
-                $paid = $p->participationPayments->firstWhere('status', 'paid');
+        return $this->participantRowsCache ??= $this->participants()
+            ->sortBy(fn (RosterRow $row) => mb_strtolower((string) $row->participant->last_name.' '.(string) $row->participant->first_name))
+            ->values()
+            ->map(function (RosterRow $row) {
+                $p = $row->participant;
 
                 return [
                     $p->last_name,
@@ -89,12 +101,12 @@ class EventReport
                     (string) $p->phone,
                     $p->displayInstitution(),
                     (string) $p->country,
-                    $p->roleLabel(),
+                    Participant::ROLES[$row->role] ?? ucfirst($row->role),
                     (string) $p->title,
-                    $paid ? 'Oui' : 'Non',
-                    $paid ? (float) $paid->amount : 0,
-                    $p->isInvited() ? 'Oui' : 'Non',
-                    $p->participationModeLabel() ?? 'Non renseigné',
+                    $row->paid ? 'Oui' : 'Non',
+                    $row->paidAmount,
+                    $row->invited ? 'Oui' : 'Non',
+                    $row->participationModeLabel ?? 'Non renseigné',
                 ];
             })
             ->all();
@@ -386,14 +398,12 @@ class EventReport
      */
     public function participantsByRole(): array
     {
-        return Participant::where('event_id', $this->event->id)
-            ->with('participationPayments')
-            ->get()
+        return $this->participants()
             ->groupBy('role')
             ->map(fn ($group, $role) => [
                 'role' => Participant::ROLES[$role] ?? ucfirst((string) $role),
                 'count' => $group->count(),
-                'paid' => $group->filter(fn (Participant $p) => $p->participationPayments->firstWhere('status', 'paid') !== null)->count(),
+                'paid' => $group->where('paid', true)->count(),
             ])
             ->sortByDesc('count')
             ->values()
@@ -407,22 +417,22 @@ class EventReport
      */
     public function participantsByCountry(): array
     {
-        $grand = max(1, Participant::where('event_id', $this->event->id)->count());
+        $participants = $this->participants();
+        $grand = max(1, $participants->count());
 
-        $byCountry = Participant::where('event_id', $this->event->id)
-            ->selectRaw("COALESCE(NULLIF(country, ''), 'Non précisé') as country, count(*) as c")
-            ->groupBy('country')
-            ->orderByDesc('c')
-            ->toBase()
-            ->get();
+        $byCountry = $participants
+            ->groupBy(fn (RosterRow $row) => trim((string) $row->participant->country) ?: 'Non précisé')
+            ->map(fn ($group, $country) => ['country' => (string) $country, 'count' => $group->count()])
+            ->sortByDesc('count')
+            ->values();
 
         $top = $byCountry->take(6);
-        $rest = $byCountry->slice(6)->sum('c');
+        $rest = $byCountry->slice(6)->sum('count');
 
         $rows = $top->map(fn ($r) => [
-            'country' => (string) $r->country,
-            'count' => (int) $r->c,
-            'part' => (int) round((int) $r->c / $grand * 100),
+            'country' => $r['country'],
+            'count' => $r['count'],
+            'part' => (int) round($r['count'] / $grand * 100),
         ])->all();
 
         if ($rest > 0) {
@@ -440,14 +450,12 @@ class EventReport
      */
     public function participantsByInstitution(): array
     {
-        $participants = Participant::where('event_id', $this->event->id)
-            ->with('user')
-            ->get();
+        $participants = $this->participants();
         $grand = max(1, $participants->count());
 
         $byInstitution = $participants
-            ->groupBy(function (Participant $participant): string {
-                $institution = trim((string) preg_replace('/\s+/u', ' ', $participant->displayInstitution()));
+            ->groupBy(function (RosterRow $row): string {
+                $institution = trim((string) preg_replace('/\s+/u', ' ', $row->participant->displayInstitution()));
 
                 return $institution !== '' ? $institution : 'Non précisée';
             })

@@ -22,7 +22,9 @@ function reportEdition(): Event
     $s->reviews()->create(['recommendation' => 'accept', 'score' => 16, 'status' => 'submitted']);
     $s->reviews()->create(['recommendation' => 'accept', 'score' => 18, 'status' => 'submitted']);
 
-    $event->submissions()->create(['participant_id' => $p2->id, 'title' => 'Refusée', 'status' => 'rejected', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'track' => 'Axe 2', 'type' => 'poster']);
+    // Ben est un participant simple ; il ne doit pas devenir déposant d'une
+    // communication sans auteur, sinon le registre le traite comme déposant seul.
+    $event->submissions()->create(['participant_id' => $p1->id, 'title' => 'Refusée', 'status' => 'rejected', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'track' => 'Axe 2', 'type' => 'poster']);
 
     return $event;
 }
