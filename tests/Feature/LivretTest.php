@@ -174,6 +174,63 @@ it('applique le style « Document général du colloque » (comité en tableau +
         ->toContain('<w:bookmarkStart');
 });
 
+it('regroupe les communications par ATELIER, pas par axe (un atelier couvre plusieurs axes)', function () {
+    $staff = adminStaff();
+    // Quatre axes, répartis en DEUX ateliers (comme le colloque de l'eau : 6 axes,
+    // 2 ateliers). Le livret sortait un « atelier » par axe - ici ce serait quatre.
+    $event = openEdition(['tracks' => ['Axe A', 'Axe B', 'Axe C', 'Axe D']]);
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $event->ateliers()->create(['title' => 'Atelier 1', 'tracks' => ['Axe A', 'Axe B'], 'ordre' => 1]);
+    $event->ateliers()->create(['title' => 'Atelier 2', 'tracks' => ['Axe C', 'Axe D'], 'ordre' => 2]);
+
+    // Une communication acceptée et programmée par axe.
+    foreach (['Axe A' => 'Comm A', 'Axe B' => 'Comm B', 'Axe C' => 'Comm C', 'Axe D' => 'Comm D'] as $axe => $titre) {
+        $sub = $event->submissions()->create([
+            'participant_id' => $participant->id,
+            'ref_code' => 'REF-'.str_replace(' ', '', $titre),
+            'title' => $titre,
+            'abstract' => str_repeat('Contexte. ', 10),
+            'track' => $axe,
+            'type' => 'oral',
+            'status' => 'accepted',
+            'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
+        ]);
+        $session = $event->sessions()->create([
+            'label' => $axe.' séance', 'type' => 'atelier',
+            'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 12:00',
+        ]);
+        Slot::create([
+            'event_id' => $event->id, 'session_id' => $session->id,
+            'submission_id' => $sub->id, 'participant_id' => $participant->id,
+            'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 09:30',
+        ]);
+    }
+
+    EventSettings::set($event, 'livret.template', 'general');
+
+    $xml = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))
+            ->streamedContent()
+    );
+
+    // DEUX ateliers, pas quatre : l'intitulé est « ATELIER 1 » / « ATELIER 2 » (le
+    // sous-titre « : … » disparaît quand le titre se réduit au préfixe « Atelier n »),
+    // et il n'existe PAS de troisième atelier.
+    expect($xml)
+        ->toContain('COMMUNICATIONS EN ATELIERS')
+        ->toContain('ATELIER 1')
+        ->toContain('ATELIER 2')
+        ->not->toContain('ATELIER 3')
+        // Les deux axes d'un même atelier sont réunis sous lui.
+        ->toContain('Comm A')->toContain('Comm B')
+        ->toContain('Comm C')->toContain('Comm D');
+});
+
 it('propose un bouton Télécharger sur CHAQUE modèle intégré, vers le gabarit à balises', function () {
     $staff = adminStaff();
     $event = openEdition();

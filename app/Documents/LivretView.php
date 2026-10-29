@@ -128,8 +128,9 @@ final class LivretView
         if ($general) {
             $programmeTitle = 'Communications en ateliers';
             $programmeGroups = LivretDocx::ateliersGroups($event)
-                ->map(fn (array $g, int $i) => [
-                    'heading' => 'ATELIER '.($i + 1).' : '.mb_strtoupper($g['axis'], 'UTF-8'),
+                ->map(fn (array $g) => [
+                    'heading' => 'ATELIER '.$g['number']
+                        .($g['axis'] !== '' ? ' : '.mb_strtoupper($g['axis'], 'UTF-8') : ''),
                     'days' => $g['days'],
                 ])->values();
         } else {

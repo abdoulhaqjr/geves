@@ -10,6 +10,7 @@ use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\EventNameFormat;
 use App\Support\EventSettings;
+use App\Support\ReviewerExpertise;
 use App\Support\SubmissionFormConfig;
 use App\Support\SubmissionKeywords;
 use Illuminate\Support\Carbon;
@@ -803,15 +804,16 @@ class LivretDocx
         $section->addText($heading, ['bold' => true, 'size' => 14, 'color' => self::BLACK, 'name' => $font],
             ['alignment' => 'center', 'spaceBefore' => 300, 'spaceAfter' => 160, 'keepNext' => true]);
 
-        $n = 0;
         foreach ($groups as $group) {
-            $n++;
             // Titre d'atelier en TERRACOTTA (#C0504D), centré, gras 14 pt - couleur
             // signature du document de référence. addTitle (Heading1) → navigable ;
             // la couleur terracotta reste portée par le TextRun (le style est noir).
-            // L'axe est déjà dé-préfixé par ateliersGroups().
+            // Le rang vient de l'atelier (`number`) ; le sous-titre « : … » n'apparaît
+            // que s'il reste quelque chose après le préfixe « Atelier n ».
+            $label = 'ATELIER '.$group['number']
+                .($group['axis'] !== '' ? ' : '.mb_strtoupper($group['axis'], 'UTF-8') : '');
             $atelierRun = new TextRun;
-            $atelierRun->addText('ATELIER '.$n.' : '.mb_strtoupper($group['axis'], 'UTF-8'),
+            $atelierRun->addText($label,
                 ['bold' => true, 'size' => 14, 'color' => self::TERRACOTTA, 'name' => $font]);
             $section->addTitle($atelierRun, 1);
 
@@ -1559,26 +1561,88 @@ class LivretDocx
 
     /**
      * Ateliers du style « general » : communications orales programmées (acceptées
-     * + canoniques) regroupées par AXE puis par JOUR, dans l'ordre des axes réglés
-     * (`settings['tracks']`) puis les axes hors liste. SOURCE UNIQUE partagée par le
-     * .docx (`addAteliers`) et l'aperçu PDF (`DocumentController::livretViewData`) :
+     * + canoniques) regroupées par ATELIER puis par JOUR. SOURCE UNIQUE partagée par
+     * le .docx (`addAteliers`) et l'aperçu PDF (`DocumentController::livretViewData`) :
      * on ne rend QUE la structure, l'intitulé « ATELIER n : … » étant composé par
      * chaque appelant (style de titre Word d'un côté, `<p>` de l'autre).
      *
-     * @return Collection<int, array{track: string, axis: string, days: Collection<int|string, Collection<int, Slot>>}>
+     * ⚠️⚠️ **UN ATELIER REGROUPE PLUSIEURS AXES** (`Atelier::tracks`), ce n'est PAS
+     * un axe. Le livret groupait par `submission->track` (l'axe) et sortait donc **un
+     * atelier par axe** - six « ateliers » pour un colloque qui en compte deux. On
+     * rattache chaque communication à SON atelier par la clé normalisée de son axe
+     * (`ReviewerExpertise::axisKey`, la même grammaire que partout ailleurs : un tiret
+     * cadratin ou une casse ne doit pas rompre l'appariement). `number` porte le rang
+     * de l'atelier pour que l'intitulé ne dérive pas si un atelier n'a aucune
+     * communication programmée.
+     *
+     * Repli (aucun atelier déclaré) : un groupe PAR AXE, comme avant, dans l'ordre
+     * des axes réglés (`settings['tracks']`) puis les axes hors liste.
+     *
+     * @return Collection<int, array{number: int, track: string, axis: string, days: Collection<int|string, Collection<int, Slot>>}>
      */
     public static function ateliersGroups(Event $event): Collection
     {
         // `toBase()` : on travaille en collections de base (Support), pas Eloquent -
         // c'est une structure de données, pas un jeu de modèles, et le type de retour
         // reste homogène pour les deux appelants.
-        $byTrack = $event->slots()->with(['submission', 'session'])
+        $slots = $event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()->toBase()
-            ->filter(fn (Slot $sl) => $sl->submission && $sl->submission->isAcceptedCanonical())
-            ->groupBy(fn (Slot $sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+            ->filter(fn (Slot $sl) => $sl->submission && $sl->submission->isAcceptedCanonical());
 
-        // Ordre : axes réglés d'abord (dans leur ordre), puis les axes hors liste
-        // (ordre d'arrivée des créneaux, conservé car sortBy est stable).
+        $ateliers = $event->ateliers()->orderBy('ordre')->orderBy('id')->get();
+
+        if ($ateliers->isNotEmpty()) {
+            // Clé normalisée de l'axe -> rang (0-based) de l'atelier qui le couvre.
+            $atelierOf = [];
+            foreach ($ateliers as $i => $atelier) {
+                foreach ((array) $atelier->tracks as $t) {
+                    $k = ReviewerExpertise::axisKey((string) $t);
+                    if ($k !== '' && ! isset($atelierOf[$k])) {
+                        $atelierOf[$k] = $i;
+                    }
+                }
+            }
+
+            // -1 = communication dont l'axe n'est rattaché à aucun atelier.
+            // `$sl->submission` est garanti non nul par le filtre ci-dessus (d'où `->`,
+            // pas `?->` : Larastan type la relation BelongsTo comme non-nulle).
+            $byAtelier = $slots->groupBy(
+                fn (Slot $sl) => $atelierOf[ReviewerExpertise::axisKey((string) $sl->submission->track)] ?? -1
+            );
+
+            $groups = [];
+            foreach ($ateliers as $i => $atelier) {
+                if (! $byAtelier->has($i)) {
+                    continue; // atelier sans communication programmée
+                }
+                $groups[] = [
+                    'number' => $i + 1,
+                    'track' => (string) $atelier->title,
+                    // Sous-titre = le titre de l'atelier débarrassé de son préfixe
+                    // « Atelier n » : vide quand il n'y a rien d'autre (l'intitulé
+                    // reste alors « ATELIER n » tout court, sans « : »).
+                    'axis' => trim((string) preg_replace('/^\s*atelier\s*\d*\s*[-:\x{2013}\x{2014}]?\s*/iu', '', (string) $atelier->title)),
+                    'days' => $byAtelier[$i]
+                        ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
+                ];
+            }
+
+            if ($byAtelier->has(-1)) {
+                $groups[] = [
+                    'number' => count($groups) + 1,
+                    'track' => 'Autres',
+                    'axis' => 'Autres communications',
+                    'days' => $byAtelier[-1]
+                        ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')->sortKeys(),
+                ];
+            }
+
+            return collect($groups);
+        }
+
+        // Repli : aucun atelier déclaré -> un groupe par axe (comportement historique).
+        $byTrack = $slots->groupBy(fn (Slot $sl) => trim((string) $sl->submission?->track) ?: 'Autres');
+
         $order = collect($event->settings['tracks'] ?? [])
             ->map(fn ($t) => trim((string) $t))->filter()->values();
         $keys = $byTrack->keys()
@@ -1596,6 +1660,7 @@ class LivretDocx
                 continue;
             }
             $groups[] = [
+                'number' => count($groups) + 1,
                 'track' => (string) $track,
                 'axis' => self::ateliersAxisLabel((string) $track),
                 'days' => $days,

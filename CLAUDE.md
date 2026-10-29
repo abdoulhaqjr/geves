@@ -4987,9 +4987,16 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     scientifique → **organisation** ; le **comité d'organisation est un TABLEAU** (N° / Nom & Prénom /
     Grade / Contacts / Qualité) via `committeeOrganisationTable()`. Puis **programme synthétique**
     (`settings['program_synthesis']`), puis **« Communications en ateliers »** (`addAteliers()`) : un
-    atelier PAR AXE (ordre `settings['tracks']`, puis axes hors liste), chaque atelier listant ses
-    communications orales programmées, regroupées par jour - créneaux acceptés-canoniques seulement,
-    même règle que les résumés. ⚠️ **Le tableau de programme du style `general` a pour colonne de tête
+    groupe **PAR ATELIER** (`Atelier::tracks`, ordre `ateliers.ordre`/`id`), chaque atelier listant
+    ses communications orales programmées, regroupées par jour - créneaux acceptés-canoniques
+    seulement, même règle que les résumés. ⚠️⚠️ **UN ATELIER REGROUPE PLUSIEURS AXES ; LE LIVRET
+    GROUPAIT PAR AXE** (`submission->track`) et sortait donc **un « atelier » par axe** - six pour un
+    colloque qui en compte deux (2026-10-29). `ateliersGroups()` rattache chaque communication à SON
+    atelier par la **clé normalisée de son axe** (`ReviewerExpertise::axisKey`, la grammaire de tout le
+    projet). L'intitulé est « ATELIER n » (rang porté par `number`, pas un compteur local - il ne
+    dérive pas si un atelier n'a aucune communication) + « : SOUS-TITRE » seulement si le titre de
+    l'atelier dépasse le préfixe « Atelier n ». ⚠️ **Repli si l'événement n'a AUCUN atelier déclaré** :
+    un groupe par axe (ancien comportement), d'où le cas `general` historique qui tient toujours. ⚠️ **Le tableau de programme du style `general` a pour colonne de tête
     le CODE de la communication** (`Code | Horaire | Communication | Salle`, comme la colonne « Codes »
     du document de référence) et **n'affiche NI les auteurs NI leurs affiliations** (ils sont dans la
     section Résumés) - les autres styles gardent `Horaire | Communication (titre + auteurs) | Salle`.
@@ -5021,12 +5028,14 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     (rend les DEUX et compare).
     ⚠️ **La STRUCTURE du style `general` est elle aussi factorisée** (elle vivait en double dans
     `LivretDocx` et `livretViewData`) : **`LivretDocx::committeeOrder($general)`** (ordre + libellés
-    des comités), **`LivretDocx::ateliersGroups($event)`** (communications par AXE puis par JOUR,
-    ordre des axes réglés - `->toBase()` pour rendre des collections Support homogènes) et
-    **`LivretDocx::ateliersAxisLabel($track)`** (dé-préfixage « Atelier n - »). Le .docx (`addAteliers`,
-    `addBody`), `livretViewData` et la vue PDF appellent ces trois sources ; chaque appelant ne
-    compose QUE l'intitulé « ATELIER n : … »/« n- … ». Ne pas recopier la requête de créneaux, la
-    regex de dé-préfixage ni l'ordre des comités ailleurs.
+    des comités), **`LivretDocx::ateliersGroups($event)`** (communications par ATELIER puis par JOUR -
+    `Atelier::tracks`, repli par axe sans atelier ; `->toBase()` pour rendre des collections Support
+    homogènes ; chaque groupe porte `number`) et **`LivretDocx::ateliersAxisLabel($track)`**
+    (dé-préfixage « Atelier n - » des AXES, côté résumés). Le .docx (`addAteliers`, `addBody`),
+    `livretViewData` et la vue PDF appellent ces trois sources ; chaque appelant ne compose QUE
+    l'intitulé « ATELIER n[ : … ] »/« n- … » depuis `number`/`axis`. Ne pas recopier la requête de
+    créneaux, la regex de dé-préfixage ni l'ordre des comités ailleurs. Garde : `LivretTest`
+    « regroupe les communications par ATELIER, pas par axe ».
     ⚠️ **Coupures de page du programme général (dompdf)** : le bandeau de jour + l'en-tête de colonnes
     + la **1re ligne de données** vivent dans un même `<tbody class="prog-start">` **insécable**
     (`page-break-inside: avoid`), les lignes suivantes dans un second `<tbody>`. L'en-tête ne reste
