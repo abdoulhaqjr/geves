@@ -30,7 +30,7 @@ interface OnlineGateway extends PaymentGateway
     /**
      * Interroge le prestataire et renvoie un statut normalisé.
      *
-     * @return 'paid'|'pending'|'failed'|'refunded'
+     * @return 'paid'|'pending'|'failed'
      */
     public function verify(Payment $payment): string;
 
@@ -57,7 +57,7 @@ interface OnlineGateway extends PaymentGateway
      * Vérifie l'authenticité d'une notification et en extrait la référence et le
      * statut. Retourne null si la signature est invalide (fail-closed).
      *
-     * @return array{reference: string, status: 'paid'|'pending'|'failed'|'refunded'}|null
+     * @return array{reference: string, status: 'paid'|'pending'|'failed'}|null
      */
     public function parseWebhook(Request $request): ?array;
 }

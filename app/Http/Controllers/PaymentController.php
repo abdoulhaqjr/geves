@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ReconcilePayments;
-use App\Actions\RefundPayment;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
@@ -25,7 +24,6 @@ class PaymentController extends Controller
     public function __construct(
         protected GatewayRegistry $registry,
         protected ReconcilePayments $reconciler,
-        protected RefundPayment $refund,
     ) {}
 
     /** Retour du navigateur après paiement : vérifie puis confirme. */
@@ -167,26 +165,6 @@ class PaymentController extends Controller
                     'payment' => $payment->id,
                     'signataire' => $candidate->id,
                     'paiement_edition' => $payment->event_id,
-                ]);
-
-                return response('OK', 200);
-            }
-
-            // ⚠️⚠️ **FedaPay → GEVES : un remboursement fait chez le prestataire
-            // RETIRE les droits ici.** Sans ça, rembourser au tableau de bord FedaPay
-            // laissait le participant avec une « inscription réglée » et des
-            // attestations encore valides - les deux systèmes de remboursement
-            // n'étaient pas synchronisés. Même effet EXACT que le bouton du
-            // back-office (source unique `RefundPayment`), idempotent : le clic
-            // manuel et ce webhook peuvent arriver tous deux sans double effet.
-            if ($parsed['status'] === 'refunded') {
-                $revoked = $this->refund->handle($payment, source: 'gateway');
-
-                Log::channel('payments')->info('Webhook paiement : remboursement appliqué.', [
-                    'gateway' => $gateway,
-                    'payment' => $payment->id,
-                    'attestations_revoquees' => $revoked,
-                    'statut_final' => $payment->fresh()?->status,
                 ]);
 
                 return response('OK', 200);

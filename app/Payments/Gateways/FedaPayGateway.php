@@ -285,11 +285,7 @@ class FedaPayGateway implements OnlineGateway
     {
         return match (mb_strtolower($status)) {
             'approved', 'transferred' => 'paid',
-            // ⚠️ `refunded` est DISTINCT de `failed` : il déclenche la révocation des
-            // droits (cf. PaymentController::webhook → RefundPayment), là où `failed`
-            // ne fait qu'écarter un paiement jamais abouti.
-            'refunded' => 'refunded',
-            'declined', 'canceled', 'cancelled', 'expired' => 'failed',
+            'declined', 'canceled', 'cancelled', 'expired', 'refunded' => 'failed',
             default => 'pending',
         };
     }

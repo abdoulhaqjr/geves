@@ -102,11 +102,7 @@ class ReconcilePayments
             } catch (\DomainException) {
                 // Déjà réglé (ou un autre paiement l'est) : rien à faire.
             }
-        } elseif (in_array($status, ['failed', 'refunded'], true) && $payment->status === 'pending') {
-            // Un paiement JAMAIS abouti qui ressort « échoué » ou « remboursé » côté
-            // prestataire est écarté. ⚠️ Le vrai remboursement (révocation des droits)
-            // vit dans le webhook (RefundPayment) : la réconciliation ne traite que
-            // les paiements `pending`, elle ne « dé-confirme » jamais un `paid`.
+        } elseif ($status === 'failed' && $payment->status === 'pending') {
             $payment->update(['status' => 'failed']);
         }
     }

@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\IssueAttestation;
 use App\Actions\ReconcilePayments;
 use App\Models\Event;
 use App\Models\EventSeries;
@@ -1016,56 +1015,4 @@ it('Back-office : la confirmation de remboursement prévient avant le clic', fun
     $this->actingAs(adminStaff())
         ->get(route('admin.payments.index'))
         ->assertSee('le virement se fait depuis le tableau de bord du prestataire', false);
-});
-
-/**
- * ⚠️⚠️ **FedaPay → GEVES : un remboursement fait chez le prestataire RETIRE les
- * droits ici.** Sans cette synchro, rembourser au tableau de bord FedaPay laissait
- * le participant avec une « inscription réglée » et des attestations encore
- * valides. Le webhook `transaction.refunded` applique désormais EXACTEMENT les
- * mêmes effets que le bouton du back-office (source unique `RefundPayment`).
- */
-it('FedaPay → GEVES : le webhook de remboursement marque remboursé et révoque les attestations', function () {
-    Mail::fake();
-    configureFedapay(); // config globale « whsec »
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
-        'gateway' => 'fedapay', 'gateway_ref' => '5151', 'status' => 'paid']);
-
-    $att = (new IssueAttestation)->handle($participant, 'participation');
-    expect($att->fresh()->revoked)->toBeFalse();
-
-    fedapayWebhook(route('payment.webhook', ['gateway' => 'fedapay']), 5151, 'whsec', 'refunded')
-        ->assertOk();
-
-    expect($payment->fresh()->status)->toBe('refunded');
-    expect($att->fresh()->revoked)->toBeTrue();
-    expect($payment->fresh()->meta['refunded_source'] ?? null)->toBe('gateway');
-
-    // Idempotent : un second webhook (ou le clic manuel du back-office) ne rejoue rien.
-    fedapayWebhook(route('payment.webhook', ['gateway' => 'fedapay']), 5151, 'whsec', 'refunded')
-        ->assertOk();
-    expect($payment->fresh()->status)->toBe('refunded');
-    expect($att->fresh()->revoked)->toBeTrue();
-});
-
-/**
- * ⚠️ Garde : SEUL « refunded » révoque. Un `canceled`/`declined` (mappé sur
- * `failed`) ne doit NI dé-confirmer un paiement déjà réglé, NI toucher aux
- * attestations - sinon le moindre événement non-abouti ferait tomber des droits.
- */
-it('FedaPay → GEVES : un webhook « canceled » ne révoque RIEN et ne dé-confirme pas', function () {
-    Mail::fake();
-    configureFedapay();
-    [$event, $account, $participant] = onlineSetup();
-    $payment = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000,
-        'gateway' => 'fedapay', 'gateway_ref' => '5252', 'status' => 'paid']);
-
-    $att = (new IssueAttestation)->handle($participant, 'participation');
-
-    fedapayWebhook(route('payment.webhook', ['gateway' => 'fedapay']), 5252, 'whsec', 'canceled')
-        ->assertOk();
-
-    expect($payment->fresh()->status)->toBe('paid');  // un paiement réglé n'est pas dé-confirmé
-    expect($att->fresh()->revoked)->toBeFalse();       // aucune révocation
 });
