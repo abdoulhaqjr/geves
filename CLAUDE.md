@@ -43,6 +43,41 @@ Larastan **niveau 5**.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
+### Le livre des résumés se MONTRE ou se CACHE, comme les badges (2026-10-30)
+
+Le livre compile les résumés acceptés. Tant que le programme n'est pas arrêté,
+ou que des corrections d'auteurs arrivent encore, l'organisation ne veut pas
+qu'il circule : **un livre lu trop tôt est un livre qu'on devra démentir.** Il
+se règle donc comme les badges - *Documents › Livre des résumés › Contenu du
+livre*, sélecteur **Affiché / Caché**.
+
+- **Réglage** : `livret.visible_to_participants` par `EventSettings` (propre à
+  l'événement, repli sur le réglage global de la plateforme), lu par
+  **`LivretView::visibleToParticipant()`** - la classe qui répond déjà « ce que
+  le participant reçoit ». Même grammaire que
+  `BadgeCatalog::visibleToParticipant()`.
+- ⚠️ **Ouvert par défaut** : c'était le comportement jusqu'ici, et un défaut à
+  « caché » retirerait le livre à **tous les événements déjà en base** sans que
+  personne ne l'ait décidé.
+- ⚠️⚠️ **ON FERME LA PORTE, PAS SEULEMENT LA CARTE.** Retirer le lien de « Mes
+  documents » n'empêche personne de poster l'adresse : `livret()` porte la même
+  garde. Sans elle, le livre resterait téléchargeable alors que l'organisation
+  l'a fermé - et c'est précisément le cas où elle ne veut pas qu'il circule.
+  Même doctrine que les passerelles de paiement et le choix d'opérateur.
+- ⚠️⚠️ **LE BACK-OFFICE N'EST JAMAIS CONCERNÉ.** Le gestionnaire garde son
+  livre, ses exports et son aperçu : lui fermer la porte lui retirerait
+  précisément l'outil qui sert à décider si le livre est prêt. Un cas de garde
+  le vérifie.
+- ⚠️ **Deux conditions pour la carte**, et les deux comptent : le livre doit
+  AVOIR du contenu (au moins un résumé accepté canonique) **et** être ouvert.
+- ⚠️ **Un `select`, pas une case à cocher**, et la valeur est lue par
+  `input('livretVisible', '1')` et non `boolean()` : décochée, une case n'envoie
+  RIEN, et on ne distinguerait plus « caché » de « champ absent » - un
+  enregistrement du formulaire qui ne porterait pas le champ fermerait le livre
+  dans le dos du gestionnaire. Même piège que la case du bandeau de cookies.
+
+Gardes : `LivretVisibiliteTest` (9 cas, **5 sabotages vérifiés**).
+
 ### Catégories tarifaires HORS GRADE (2026-10-26)
 
 ONG, entreprise, association : **aucun grade ne les désigne**. Il n'existe
@@ -6394,6 +6429,19 @@ Sources, pour ne pas les redéclarer à chaque fois :
   qu'on a su que l'exemption des séances d'horloge n'avait pas affaibli la garde des
   dates du seeder, et que le tri **naturel** des versions WinGet était bien couvert
   (trié comme des chaînes, le résolveur servait `7.0` au lieu de `10.0`).
+  - ⚠️⚠️ **NE JAMAIS PASSER DE CODE PHP EN ARGUMENT DE `php.bat`.** `cmd`
+    reparse l'argument : un `->` y devient une **redirection**, et le script de
+    sabotage écrit son « ok » dans un fichier parasite (vu ici :
+    `boolean('livretVisible')` apparu à la racine du dépôt) au lieu de
+    substituer quoi que ce soit. Le sabotage ne s'applique pas, le cas passe au
+    **rouge pour une autre raison**, et on croit la garde vérifiée - c'est
+    arrivé, et le sabotage rejoué proprement ne mordait PAS. Les arguments
+    **multi-lignes** sont aplatis de la même façon. Remède : écrire la
+    substitution dans un **fichier JSON** (heredoc à délimiteur quoté) que le
+    script PHP lit lui-même - aucun code sur la ligne de commande.
+  - ⚠️ **Un sabotage doit CHANGER le fichier** : le harnais compare le md5 avant
+    et après, et refuse de conclure si rien n'a bougé. Sans ce contrôle, un
+    motif qui ne s'applique pas se lit comme une garde qui tient.
   - ⚠️ **Restaurer par une COPIE du fichier, jamais par `git checkout --`.** Le
     sabotage porte par définition sur du travail **pas encore commité** :
     `git checkout --` ne remet pas le fichier d'avant le sabotage, il le remet au

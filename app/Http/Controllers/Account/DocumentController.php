@@ -111,8 +111,10 @@ class DocumentController extends Controller
             ->sortBy(fn (Attestation $a) => $a->title())
             ->values();
 
-        $hasBooklet = $event->submissions()
-            ->where('revision_of', 0)->where('status', 'accepted')->exists();
+        // ⚠️ Deux conditions, et les deux comptent : le livre doit AVOIR du
+        // contenu, et l'organisation doit l'avoir OUVERT aux participants.
+        $hasBooklet = LivretView::visibleToParticipant($event)
+            && $event->submissions()->where('revision_of', 0)->where('status', 'accepted')->exists();
 
         // Média « appel à communications » de l'événement (le plus pertinent) + tous les médias.
         $event->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
@@ -306,6 +308,12 @@ class DocumentController extends Controller
             ->exists();
 
         abort_unless($participates, 403);
+
+        // ⚠️ **On ferme la porte, pas seulement la carte.** Retirer le lien de
+        // « Mes documents » n'empêche personne de poster l'adresse : sans cette
+        // garde, le livre resterait téléchargeable alors que l'organisation l'a
+        // fermé - et c'est précisément le cas où elle ne veut pas qu'il circule.
+        abort_unless(LivretView::visibleToParticipant($event), 403);
 
         // ⚠️ **UNE SEULE règle pour « ce que le livre contient »** : le scope,
         // jamais ses conditions recopiées - c'est ainsi que le programme avait

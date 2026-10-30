@@ -13,6 +13,7 @@ use App\Documents\LivretAppearance;
 use App\Documents\LivretCover;
 use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
+use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\BadgeExport;
@@ -277,6 +278,8 @@ class DocumentHubController extends Controller
                 'attDidMethod' => (string) EventSettings::get($event, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
                 'attCryptoSuite' => (string) EventSettings::get($event, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
                 'attCertEnabled' => app(AttestationCertifier::class)->enabled(),
+                // Visibilité du livre dans l'espace participant (grammaire des badges).
+                'livretVisible' => LivretView::visibleToParticipant($event),
                 'forewordTitle' => (string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos'),
                 'forewordText' => (string) EventSettings::get($event, 'livret.foreword_text', ''),
                 'forewordSignature' => (string) EventSettings::get($event, 'livret.signature', ''),
@@ -547,6 +550,11 @@ class DocumentHubController extends Controller
             'livret.show_theme' => $request->boolean('livretShowTheme'),
             'livret.show_dates' => $request->boolean('livretShowDates'),
             'livret.number_abstracts' => $request->boolean('livretNumber'),
+            // ⚠️ Visibilité dans l'espace participant, comme pour les badges.
+            // Un `select` et non une case à cocher : décochée, une case n'envoie
+            // RIEN, et `boolean()` rendrait faux sans qu'on sache si le champ a
+            // été soumis - le même piège que la case du bandeau de cookies.
+            'livret.visible_to_participants' => $request->input('livretVisible', '1') === '1',
         ]);
 
         return back()->with('ukc_status', 'Contenu du livre enregistré.');

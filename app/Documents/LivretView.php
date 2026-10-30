@@ -4,6 +4,7 @@ namespace App\Documents;
 
 use App\Models\Event;
 use App\Models\Submission;
+use App\Support\BadgeCatalog;
 use App\Support\EventNameFormat;
 use App\Support\EventSettings;
 use Illuminate\Support\Carbon;
@@ -26,6 +27,31 @@ use Illuminate\Support\Facades\Storage;
  */
 final class LivretView
 {
+    /**
+     * Le livre est-il ouvert aux participants sur CET événement ?
+     *
+     * ⚠️⚠️ **IL NE L'EST PAS TOUJOURS, ET CE N'EST PAS UN DÉTAIL.** Le livre
+     * compile les résumés acceptés : tant que le programme n'est pas arrêté ou
+     * que les corrections d'auteurs arrivent encore, l'organisation ne veut pas
+     * qu'il circule - un livre lu trop tôt est un livre qu'on devra démentir.
+     * Même grammaire que les badges
+     * ({@see BadgeCatalog::visibleToParticipant()}) : réglage
+     * propre à l'événement, repli sur le réglage global de la plateforme.
+     *
+     * ⚠️ **Ouvert par défaut** : c'était le comportement jusqu'ici, et un
+     * défaut à « caché » retirerait le livre à tous les événements déjà en base
+     * sans que personne ne l'ait décidé.
+     *
+     * ⚠️ **Le back-office n'est JAMAIS concerné** : le gestionnaire garde son
+     * livre, ses exports et son aperçu. Ce réglage ne gouverne que l'espace
+     * participant - fermer la porte au gestionnaire lui retirerait précisément
+     * l'outil qui sert à décider si le livre est prêt.
+     */
+    public static function visibleToParticipant(?Event $event): bool
+    {
+        return (bool) EventSettings::get($event, 'livret.visible_to_participants', true);
+    }
+
     /** Style intégré actif pour le .docx : 'fss' si sélectionné, sinon 'default'. */
     public static function style(Event $event): string
     {

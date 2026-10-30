@@ -496,6 +496,26 @@
                             <span class="ukc-pill ukc-pill--info">{{ $livretSectionsFilled }}/{{ $livretSectionCount }} section(s) renseignée(s)</span>
                         </div>
                         <x-ukc.scope-edition :event="$event" />
+
+                        {{-- ⚠️ Visibilité, même grammaire que les options des badges : un
+                             `select` Affiché / Caché, et non une case à cocher - décochée,
+                             une case n'envoie rien et on ne distingue plus « masqué » de
+                             « champ absent ». ⚠️ Le back-office garde toujours le livre :
+                             ce réglage ne ferme que l'espace participant. --}}
+                        @php($livretVisible = (string) old('livretVisible', $opts['livretVisible'] ? '1' : '0'))
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                                <div>
+                                    <strong style="color:var(--ukc-blue);">Visibilité dans l’espace participant</strong>
+                                    <div class="desc" style="margin:4px 0 0;">Tant que le livre est caché, il reste disponible pour vous : seuls les participants ne le voient pas dans « Mes documents ».</div>
+                                </div>
+                                <select name="livretVisible" aria-label="Visibilité du livre des résumés" style="max-width:180px;">
+                                    <option value="1" @selected($livretVisible === '1')>Affiché</option>
+                                    <option value="0" @selected($livretVisible === '0')>Caché</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="desc">Pages de tête du livret, dans l’ordre d’apparition. <strong>Une section laissée vide n’apparaît pas</strong> dans le livre généré.</div>
 
                         {{-- Avant-propos --}}

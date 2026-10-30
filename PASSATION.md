@@ -135,6 +135,15 @@ le Bénin, quel que soit l'indicatif.
 
 **Garde** : `PaymentOperatorTest` (13 cas) et `PaymentGatewayTest` (31 cas),
 **cinq sabotages vérifiés**.
+### Visibilité du livre des résumés (2026-10-30)
+
+- Le livre des résumés se montre ou se cache aux participants **comme les badges** : sélecteur *Affiché / Caché* dans **Documents › Livre des résumés › Contenu du livre**. Réglage `livret.visible_to_participants` par `EventSettings` (propre à l'événement, repli global), lu par `LivretView::visibleToParticipant()`.
+- **Ouvert par défaut** : c'était le comportement jusqu'ici, et un défaut à « caché » retirerait le livre à tous les événements déjà en base sans que personne ne l'ait décidé.
+- ⚠️⚠️ **On ferme la porte, pas seulement la carte** : `Account\DocumentController::livret()` porte la même garde que la liste. Retirer le lien n'empêche personne de poster l'adresse.
+- ⚠️⚠️ **Le back-office n'est jamais concerné** : le gestionnaire garde son livre, ses exports et son aperçu - lui fermer la porte lui retirerait l'outil qui sert à décider si le livre est prêt.
+- ⚠️ Un `select` et non une case à cocher, lu par `input('livretVisible', '1')` : décochée, une case n'envoie rien et un enregistrement du formulaire fermerait le livre dans le dos du gestionnaire.
+- Gardes : `LivretVisibiliteTest` (9 cas, **5 sabotages vérifiés**).
+
 ### Catégories tarifaires hors grade (2026-10-26)
 
 - Une catégorie de la grille peut être marquée **hors grade** (`fees[].selectable`, case dans le répéteur des tarifs) : ONG, entreprise, association. Aucun grade ne les désigne, donc rien à déduire - le participant les **déclare** sur sa page Inscription & paiement. C'est la seule exception à « le tarif ne se choisit pas ».
