@@ -5273,15 +5273,32 @@ lettre PDF personnalisée**, rendue depuis un **modèle éditable du concepteur*
     les navigations sans page HTML ; `BrandedPdf` renseigne les métadonnées des
     PDF serveur (livre, attestations, reçus).
 - **Remboursement → révocation des attestations** : une attestation atteste d'un droit
-  acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
-  `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste
-  vérifiable publiquement, signalée révoquée) : *participation* + *communication* si
-  le remboursement porte sur les frais de participation, *formation* si c'est une
-  formation. ⚠️ **Seulement s'il ne reste aucun paiement réglé couvrant le même
-  droit** (double règlement, ou autre formation encore payée : la vérification est
-  faite `formation_id` par `formation_id`). L'attestation *formation_animation* n'est
-  jamais concernée : un formateur ne paie pas. Le remboursement remet aussi
-  l'inscription à la formation en « registered ».
+  acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` **révoque** (jamais ne
+  supprime - l'attestation reste vérifiable publiquement, signalée révoquée) :
+  *participation* + *communication* si le remboursement porte sur les frais de
+  participation, *formation* si c'est une formation. ⚠️ **Seulement s'il ne reste aucun
+  paiement réglé couvrant le même droit** (double règlement, ou autre formation encore
+  payée : la vérification est faite `formation_id` par `formation_id`). L'attestation
+  *formation_animation* n'est jamais concernée : un formateur ne paie pas. Le
+  remboursement remet aussi l'inscription à la formation en « registered ».
+- ⚠️⚠️ **UN SEUL CHEMIN POUR LES EFFETS D'UN REMBOURSEMENT : `App\Actions\RefundPayment`**
+  (2026-10-29). Il marque le paiement `refunded` + trace, remet l'inscription formation en
+  « registered » et appelle `RevokeAttestationsOnRefund`. Appelé par **DEUX** sources qui
+  doivent appliquer EXACTEMENT les mêmes effets : le bouton du back-office
+  (`admin.payments.refund`, `source: 'admin'`, `refunded_by_name` = l'humain) **et** le
+  **webhook `transaction.refunded` du prestataire** (`PaymentController::webhook`,
+  `source: 'gateway'`). ⚠️ **FedaPay → GEVES est maintenant SYNCHRONISÉ** : un
+  remboursement fait au tableau de bord FedaPay retire les droits ici (avant, il laissait
+  une « inscription réglée » et des attestations encore valides). ⚠️ **Idempotent** : le
+  clic manuel ET le webhook peuvent arriver tous les deux, dans n'importe quel ordre, sans
+  double effet (un paiement déjà `refunded` n'est pas retouché). ⚠️ `FedaPayGateway::mapStatus`
+  mappe `refunded` sur un statut **`'refunded'` DISTINCT de `failed`** : `failed`
+  (declined/canceled/expired) n'écarte qu'un paiement jamais abouti (et `ReconcilePayments::settle`
+  ne l'applique qu'à un paiement `pending`, jamais à un `paid`), SEUL `refunded` révoque les
+  droits. ⚠️ **Sens GEVES → FedaPay toujours IMPOSSIBLE** (voir ci-dessous) : on ne
+  déclenche pas le virement, on ne fait que suivre celui du prestataire. Gardes :
+  `PaymentGatewayTest` (« le webhook de remboursement marque remboursé et révoque les
+  attestations », idempotence, et « un webhook canceled ne révoque RIEN et ne dé-confirme pas »).
 - ⚠️⚠️ **REMBOURSER DANS GEVES NE RENVOIE PAS L'ARGENT, ET NE LE PEUT PAS.**
   Le prestataire **ne rembourse que depuis son tableau de bord**, et seulement
   **pour un opérateur (MTN)** - c'est écrit dans son assistance, et son API le

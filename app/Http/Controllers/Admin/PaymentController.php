@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\ConfirmPayment;
 use App\Actions\ReconcilePayments;
-use App\Actions\RevokeAttestationsOnRefund;
+use App\Actions\RefundPayment;
 use App\Http\Controllers\Controller;
 use App\Models\FormationEnrollment;
 use App\Models\Participant;
@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -331,36 +330,13 @@ class PaymentController extends Controller
      * GEVES et « approuvé » chez le prestataire se contredisent sans que personne
      * ne sache lequel croire ni qui demander.
      */
-    public function refund(Payment $payment, RevokeAttestationsOnRefund $revoke): RedirectResponse
+    public function refund(Payment $payment, RefundPayment $refund): RedirectResponse
     {
         $enLigne = $payment->gateway !== 'manual' && filled($payment->gateway_ref);
 
-        $payment->update([
-            'status' => 'refunded',
-            'meta' => [...(array) $payment->meta, 'refunded_at' => now()->toIso8601String(),
-                'refunded_by_name' => Auth::user()?->name],
-        ]);
-
-        Log::channel('payments')->info('Paiement marqué remboursé.', [
-            'payment' => $payment->id,
-            'gateway' => $payment->gateway,
-            'reference_passerelle' => (string) $payment->gateway_ref,
-            'par' => Auth::user()?->name,
-            'argent_renvoye_par_geves' => false,
-        ]);
-
-        // Rembourser doit RETIRER les droits acquis, sinon le participant garde une
-        // « inscription réglée » et l'accès à la visio après remboursement.
-        // Miroir exact de ce que ConfirmPayment applique à la confirmation.
-        if ($payment->flow() === 'formation' && ($enrollmentId = $payment->meta['enrollment_id'] ?? null)) {
-            FormationEnrollment::whereKey($enrollmentId)
-                ->where('status', 'paid')
-                ->update(['status' => 'registered']);
-        }
-
-        // Les attestations que ce paiement justifiait tombent avec lui, sauf si un
-        // autre paiement réglé couvre encore le même droit.
-        $revoked = $revoke->handle($payment);
+        // SOURCE UNIQUE des effets d'un remboursement (marquage + retrait des droits
+        // + trace), partagée avec le webhook `transaction.refunded` du prestataire.
+        $revoked = $refund->handle($payment, source: 'admin', actorName: Auth::user()?->name);
 
         $dit = $revoked > 0
             ? 'Paiement marqué remboursé - '.$revoked.' attestation(s) révoquée(s).'
