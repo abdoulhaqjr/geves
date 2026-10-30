@@ -396,7 +396,16 @@
                                     <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="file" :size="16" /> Créer la page de garde</button>
                                 </form>
                             @else
-                                <p class="ukc-hint">Configurez DocSpace et activez les liens d’édition dans les réglages pour créer cette page.</p>
+                                {{-- Même manque, même remède que l'onglet « Pages ajoutées ». --}}
+                                <p class="ukc-hint">
+                                    La page de garde se compose dans l’éditeur Word en ligne : renseignez l’adresse DocSpace,
+                                    la salle et la clé API, puis cochez « Autoriser les liens d’édition »
+                                    @can('settings')
+                                        dans <a href="{{ route('admin.settings', ['tab' => 'integrations']) }}">Réglages › Intégrations</a>.
+                                    @else
+                                        dans <strong>Réglages › Intégrations</strong> - un administrateur de la plateforme s’en charge.
+                                    @endcan
+                                </p>
                             @endif
                         @else
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0;">
@@ -617,7 +626,19 @@
                                     <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="plus" :size="16" /> Ajouter une page</button>
                                 </form>
                             @else
-                                <p class="ukc-hint" style="margin-top:16px;">Configurez DocSpace et activez les liens d’édition dans les réglages pour ajouter une page.</p>
+                                {{-- ⚠️ Un message qui dit ce qui manque SANS dire où le régler fait
+                                     chercher dans neuf onglets de réglages. On nomme l'écran, et on
+                                     n'ouvre le lien qu'à qui peut y entrer - « Réglages » est gardé
+                                     par `can:settings`, que le gestionnaire n'a pas. --}}
+                                <p class="ukc-hint" style="margin-top:16px;">
+                                    Une page ajoutée se compose dans l’éditeur Word en ligne : renseignez l’adresse DocSpace,
+                                    la salle et la clé API, puis cochez « Autoriser les liens d’édition »
+                                    @can('settings')
+                                        dans <a href="{{ route('admin.settings', ['tab' => 'integrations']) }}">Réglages › Intégrations</a>.
+                                    @else
+                                        dans <strong>Réglages › Intégrations</strong> - un administrateur de la plateforme s’en charge.
+                                    @endcan
+                                </p>
                             @endif
                         @else
                             <p class="ukc-hint" style="margin-top:16px;">Ce livre porte déjà {{ $livretPagesMax }} pages ajoutées, le maximum.</p>

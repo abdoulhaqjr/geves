@@ -8,6 +8,7 @@ use App\Documents\LivretPdf;
 use App\Models\Event;
 use App\Support\Settings;
 use App\Support\TaskDocSpace;
+use Illuminate\Support\Str;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Writer\Word2007;
 use setasign\Fpdi\Fpdi;
@@ -308,6 +309,31 @@ it('se crée depuis l’onglet « Pages ajoutées », avec son document Word', f
         ->and($pages[0]['file_id'])->not->toBe('')
         ->and(LivretPages::slot($pages[0]))->toBe('apres:programme')
         ->and(LivretPages::token($pages[0]))->not->toBe('');
+});
+
+it('dit OÙ configurer DocSpace quand il manque', function () {
+    // ⚠️ Sans DocSpace, aucune page ne peut être composée - c'est la même
+    // dépendance que la page de garde. Un message qui dit ce qui manque sans
+    // dire où le régler fait chercher dans neuf onglets de réglages.
+    // ⚠️⚠️ ON BORNE DES DEUX CÔTÉS. Tous les onglets du livre sont rendus dans
+    // la même page (les autres sont seulement masqués) : cherché dans la page
+    // entière, le nom de l'écran se trouve AUSSI dans le panneau de la page de
+    // garde, qui porte le même message - et le cas reste vert alors que celui-ci
+    // ne dit plus rien. Mesuré : le sabotage ne mordait pas. Même piège que les
+    // deux cas de CookiesTest.
+    $event = openEdition();
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre', 'stab' => 'pages']))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toContain('Pages ajoutées au livre')
+        ->and($html)->toContain('Générer le livre des résumés');
+
+    $panneau = Str::between($html, 'Pages ajoutées au livre', 'Générer le livre des résumés');
+
+    expect($panneau)->toContain('Réglages › Intégrations');
 });
 
 it('ne retire PAS la page du livre quand le champ n’est pas posté', function () {

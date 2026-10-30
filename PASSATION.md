@@ -146,7 +146,7 @@ le Bénin, quel que soit l'indicatif.
 - ⚠️ **Une seule liste de points d'ancrage** (`LivretPages::SECTIONS`), partagée par le PDF et le .docx ; un cas de garde balaie les deux fichiers. Le gabarit Word les porte aussi (`DocxCoverMerger::insert()`), avec deux limites annoncées à l'écran : modèle .docx personnalisé sans repères, et placement par numéro reporté en fin de gabarit.
 - ⚠️ Un `select` Ajoutée/Retirée lu par `input('pageActive', '1')`, jamais `boolean()`. Retirer n'est pas supprimer.
 - **Node** : `scripts/livret-assemble.mjs` (actions `count` et `assemble`), spécification passée dans un **fichier JSON**, jamais en arguments.
-- Gardes : `PagesAjouteesLivretTest` (16 cas, **6 sabotages vérifiés**).
+- Gardes : `PagesAjouteesLivretTest` (17 cas, **7 sabotages vérifiés**). ⚠️ Tous les sous-onglets du livre sont rendus dans la même page : un cas qui cherche un texte dans la page entière le trouve aussi dans le panneau de la page de garde - borner des deux côtés.
 - ⚠️ **Débordement horizontal préexistant à 375 px** sur les sous-onglets du livre, dû à `.ukc-scope-cue` (`<x-ukc.scope-edition>`) : mesuré 424 pour 375, l'onglet Badges qui ne le porte pas étant à 375 pile. À corriger dans le composant partagé.
 
 ### Visibilité du livre des résumés (2026-10-30)

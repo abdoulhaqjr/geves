@@ -130,7 +130,8 @@ Pages ajoutées*.
   fichier JSON, jamais en arguments** - chemins et titres portent espaces,
   accents et guillemets, que cmd recoupe à sa façon.
 
-Gardes : `PagesAjouteesLivretTest` (16 cas, **6 sabotages vérifiés**).
+Gardes : `PagesAjouteesLivretTest` (17 cas, **7 sabotages vérifiés**).
+⚠️ **Piège payé ici** : tous les sous-onglets du livre sont rendus dans la MÊME page (les autres sont seulement masqués). Un cas qui cherche un texte dans la page entière le trouve aussi dans le panneau de la page de garde - il reste vert alors que le panneau visé ne dit plus rien. On borne des DEUX côtés, comme les deux cas de `CookiesTest`.
 ⚠️ **Débordement horizontal PRÉEXISTANT à 375 px sur cet onglet** (mesuré :
 `scrollWidth` 424 pour 375) : il vient de `.ukc-scope-cue`
 (`<x-ukc.scope-edition>`), partagé par les autres sous-onglets du livre - l'onglet
