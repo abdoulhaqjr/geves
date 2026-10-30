@@ -655,6 +655,9 @@ Route::prefix('admin')->group(function () {
             Route::post('/livret/options', [DocumentHubController::class, 'saveLivretOptions'])->name('admin.documents.livret.options');
             Route::post('/livret/couverture', [DocumentHubController::class, 'createLivretCover'])->name('admin.documents.livret.cover.create');
             Route::delete('/livret/couverture', [DocumentHubController::class, 'deleteLivretCover'])->name('admin.documents.livret.cover.delete');
+            Route::post('/livret/pages', [DocumentHubController::class, 'createLivretPage'])->name('admin.documents.livret.pages.create');
+            Route::post('/livret/pages/emplacement', [DocumentHubController::class, 'updateLivretPage'])->name('admin.documents.livret.pages.update');
+            Route::delete('/livret/pages', [DocumentHubController::class, 'deleteLivretPage'])->name('admin.documents.livret.pages.delete');
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');
             Route::post('/livret/apparence', [DocumentHubController::class, 'saveLivretApparence'])->name('admin.documents.livret.apparence');
             Route::post('/livret/modele', [DocumentHubController::class, 'saveLivretTemplate'])->name('admin.documents.livret.template');

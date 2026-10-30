@@ -43,6 +43,100 @@ Larastan **niveau 5**.
 - Les fonctions de `event_user` lisent la matrice Spatie enregistrée via `StaffRoles::permissionsFor()`. Le seeder installe les valeurs par défaut à la création d'un rôle sans écraser une matrice déjà personnalisée. Les compteurs de la page Utilisateurs lisent les niveaux d'accès, les fiches évaluateur et les affectations d'équipe, avec dédoublonnage des personnes.
 - Les candidatures spontanées se règlent par événement dans **Soumissions → Options** (`settings.reviewer_volunteering`, désactivé par défaut). L'admissibilité reprend `participants.title` (grade de l'édition), puis `users.grade`. `reviewer_applications` conserve les demandes en attente ; seul le rôle `participants.role=reviewer` ouvre l'attribution et l'espace d'évaluation après acceptation dans **Évaluateurs & expertise**. L'acceptation déclenche immédiatement la notification in-app `reviewer_application_accepted` ; `ReviewerRegistrationMail` envoie l'e-mail transactionnel distinct, aussi lors d'un ajout direct par le gestionnaire. Le type de notification a `hasMail=true` pour éviter le doublon. `LinkPendingReviewers` rattache à leur fiche d'évaluateur les personnes ajoutées par e-mail qui créent ensuite un compte avec cette adresse.
 
+### Ajouter ses propres pages au livre des résumés (2026-10-30)
+
+Même grammaire que la **page de garde** : un .docx par page, composé dans
+l'éditeur Word en ligne (DocSpace), propre à l'événement. La seule chose en plus
+- et c'est tout l'objet du module - est que la page **ne va plus forcément en
+tête** : le gestionnaire dit où elle se pose. *Documents › Livre des résumés ›
+Pages ajoutées*.
+
+- **Stockage** : `event.settings['doc']['livret.pages']`, lu par
+  **`App\Documents\LivretPages`** (id, intitulé, fichier DocSpace, jeton chiffré,
+  mode, ancre, position, numéro, actif). Plafonné à **`LivretPages::MAX` = 10** -
+  chaque page coûte une conversion DocSpace **à chaque export**, et le livre est
+  déjà le document le plus lourd de la plateforme.
+- ⚠️⚠️ **LECTURE DIRECTE DES RÉGLAGES, JAMAIS `EventSettings::get`.** Celui-ci
+  retombe sur le réglage **global** quand l'événement n'a rien : des pages
+  déposées une fois au niveau plateforme s'inviteraient dans le livre de **tous**
+  les événements qui n'en ont pas. Un livre ne se remplit pas des pages d'un
+  autre colloque. Même précaution que `LivretCover::storedFileId()`.
+- ⚠️⚠️ **DEUX FAÇONS DE DIRE OÙ, ET ELLES NE SE VALENT PAS.**
+  - **Par section** (`mode = section`) : « avant les Résumés », « après le
+    Programme ». L'ancre suit le livre - on ajoute un résumé, le livre grossit,
+    la page reste à sa place.
+  - **Par numéro** (`mode = page`) : le livre est **reconstruit à chaque
+    export**, donc la page 7 d'hier n'est plus celle d'aujourd'hui. Le réglage
+    reste exact, c'est ce qu'il y a autour qui a bougé. L'écran le dit **avant**
+    le choix.
+- ⚠️⚠️ **RIEN NE PASSE DEVANT LA COUVERTURE.** « Avant la page de garde » ferait
+  de la page ajoutée la première page du livre, et la couverture DocSpace - qui
+  prend la place de la **première** page - s'écraserait sur elle.
+  `LivretPages::normalise()` **force** `apres` sur l'ancre `garde` plutôt que de
+  s'en remettre au formulaire.
+- ⚠️⚠️ **ON RÉSERVE, ON NE GLISSE PAS** (`App\Documents\LivretAssembly`). Le
+  livre **numérote** ses pages : une page glissée au milieu décale tous les
+  numéros imprimés qui la suivent, **sans que rien ne le signale**. D'où trois
+  temps dont **l'ordre ne se permute pas** :
+  1. convertir chaque page ajoutée en PDF et **compter** ses pages ;
+  2. rendre le livre en lui faisant **réserver** ce nombre de pages blanches à
+     l'endroit voulu ;
+  3. **remplacer** les pages réservées par les vraies.
+  Le comptage vient donc **avant** le rendu : personne ne sait combien de pages
+  fait un .docx avant de l'avoir converti, et c'est ce nombre qui dit combien de
+  place réserver. ⚠️ Les pages placées **par numéro** font exception - elles ne
+  peuvent rien réserver, donc elles décalent ; c'est la rançon de ce mode.
+- ⚠️⚠️ **LE REPÈRE EST UN LIEN INVISIBLE, ET C'EST LA SEULE MESURE FIABLE.**
+  dompdf transforme un `<a href="ukc-livret://<id>/<k>">` en **annotation**, que
+  `pdf-lib` relit pour connaître le **numéro de page exact** de chaque
+  réservation. Aucune autre méthode ne tient : la longueur d'une section dépend
+  de son contenu, et personne ne peut la prédire avant le rendu.
+  ⚠️ **L'inline PHP de dompdf (`<script type="text/php">`) est EXCLU** : la vue
+  rend le résumé des auteurs en `{!! !!}`, donc un déposant pourrait faire
+  exécuter du PHP sur le serveur en l'écrivant dans son résumé.
+  ⚠️ L'assemblage **s'arrête** si les pages réservées ne se suivent pas, ou si le
+  document a changé de longueur en route : mieux vaut un export qui échoue qu'un
+  export qui écrase du contenu du livre.
+- ⚠️ **Le repère est posé HORS de la condition d'affichage de sa section** : un
+  avant-propos vide ne rend rien, mais la page rangée « avant l'avant-propos »
+  doit tout de même paraître, là où cette section serait venue. Sinon elle
+  disparaîtrait du livre en silence.
+- ⚠️⚠️ **UNE SEULE LISTE DE POINTS D'ANCRAGE** (`LivretPages::SECTIONS`) : le PDF
+  (`documents/livret-pdf`, via le partial `documents/_livret-reserve`) et le
+  .docx (`LivretDocx::addPageMarkers()`) posent leurs repères **aux mêmes
+  endroits, sous les mêmes clés**. Deux listes se décaleraient, et la page
+  atterrirait à un endroit dans le PDF, à un autre dans le Word. Un cas de garde
+  balaie les deux fichiers.
+- ⚠️ **Le gabarit Word les porte aussi** (`DocxCoverMerger::insert()`, repères
+  `[[UKC-PAGE:<id>]]`) : sans cela, celui qui reprend le .docx travaillerait sur
+  un livre incomplet sans qu'aucun écran le dise. **Un repère introuvable est
+  laissé EN CLAIR** plutôt que la page glissée au jugé. **Deux limites assumées,
+  et annoncées à l'écran** : un **modèle .docx personnalisé** ne porte aucun
+  repère (ses pages restent dans le PDF), et une page placée **par numéro**
+  atterrit en **fin de gabarit** - « page 7 » ne veut rien dire dans Word.
+- ⚠️ **Un `select` Ajoutée/Retirée, pas une case à cocher**, lu par
+  `input('pageActive', '1')` et non `boolean()` : même piège que la visibilité du
+  livre et le bandeau de cookies - décochée, une case n'envoie **rien**, et un
+  enregistrement retirerait la page du livre dans le dos du gestionnaire.
+- ⚠️ **Retirer n'est pas supprimer** : une page désactivée reste en base, le temps
+  d'une relecture, sans refaire sa mise en page. La **suppression**, elle, retire
+  la ligne **avant** le fichier DocSpace - un refus côté prestataire ne doit pas
+  laisser dans le livre une page qu'on vient d'en retirer.
+- ⚠️ **Les deux lecteurs passent par `LivretAssembly::pdf()`** - back-office et
+  espace participant. C'est la règle « deux lecteurs, un seul assemblage » de
+  `LivretView`, qui avait déjà été payée une fois.
+- **Node** : `scripts/livret-assemble.mjs` (pdf-lib), deux actions `count` et
+  `assemble`, binaire `LIVRET_PDF_NODE_BINARY`. ⚠️ **La spécification part dans un
+  fichier JSON, jamais en arguments** - chemins et titres portent espaces,
+  accents et guillemets, que cmd recoupe à sa façon.
+
+Gardes : `PagesAjouteesLivretTest` (16 cas, **6 sabotages vérifiés**).
+⚠️ **Débordement horizontal PRÉEXISTANT à 375 px sur cet onglet** (mesuré :
+`scrollWidth` 424 pour 375) : il vient de `.ukc-scope-cue`
+(`<x-ukc.scope-edition>`), partagé par les autres sous-onglets du livre - l'onglet
+Badges, qui ne le porte pas, est à 375 pile. **À corriger dans le composant**, pas
+ici.
+
 ### Le livre des résumés se MONTRE ou se CACHE, comme les badges (2026-10-30)
 
 Le livre compile les résumés acceptés. Tant que le programme n'est pas arrêté,

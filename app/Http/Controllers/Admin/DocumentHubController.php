@@ -12,6 +12,7 @@ use App\Documents\LayoutSanitizer;
 use App\Documents\LivretAppearance;
 use App\Documents\LivretCover;
 use App\Documents\LivretDocx;
+use App\Documents\LivretPages;
 use App\Documents\LivretTemplate;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
@@ -36,6 +37,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -194,7 +196,7 @@ class DocumentHubController extends Controller
         $allowed = match ($tab) {
             'badges' => ['modeles', 'prets', 'options'],
             'attestations' => ['modeles', 'delivrees', 'options'],
-            'livre' => ['main', 'couverture', 'modeles', 'apparence'],
+            'livre' => ['main', 'couverture', 'pages', 'modeles', 'apparence'],
         };
         $defaultStab = $tab === 'livre' ? 'main' : 'modeles';
         $stab = (string) $request->query('stab', $defaultStab);
@@ -232,6 +234,44 @@ class DocumentHubController extends Controller
             }
         }
 
+        // Pages ajoutées au livre : la liste, et l'éditeur Word de celle qu'on
+        // vient d'ouvrir (`?page=`). Même grammaire que la page de garde.
+        $livretPages = $event ? LivretPages::all($event) : [];
+        $pageEditor = null;
+        $pageOuverte = null;
+        $pageError = null;
+        if ($tab === 'livre' && $stab === 'pages' && $event && ($pageId = (string) $request->query('page', '')) !== '') {
+            $pageOuverte = LivretPages::find($event, $pageId);
+            if (! $pageOuverte || $pageOuverte['file_id'] === '') {
+                $pageError = 'Cette page ajoutée est introuvable.';
+            } elseif (! $docspace->configured($event)) {
+                $pageError = 'DocSpace doit être configuré pour ouvrir cette page.';
+            } else {
+                try {
+                    $token = LivretPages::token($pageOuverte);
+                    if ($token === '') {
+                        throw new \RuntimeException('Le lien d’édition de cette page est introuvable.');
+                    }
+                    $pageEditor = [
+                        'frameId' => 'ukcPageEditor',
+                        'src' => $docspace->url(),
+                        'id' => $pageOuverte['file_id'],
+                        'requestToken' => $token,
+                        'width' => '100%',
+                        'height' => '100%',
+                        'editorCustomization' => [
+                            'anonymous' => [
+                                'request' => false,
+                                'label' => mb_substr($request->user()?->salutationName() ?: (string) $request->user()?->name, 0, 64),
+                            ],
+                        ],
+                    ];
+                } catch (\Throwable $error) {
+                    $pageError = $error->getMessage();
+                }
+            }
+        }
+
         return view('admin.documents.attestations', [
             'events' => $this->accessibleEditions($request, 'documents'),
             'event' => $event,
@@ -248,6 +288,14 @@ class DocumentHubController extends Controller
             'coverError' => $coverError,
             'coverOfficeScript' => $coverEditor ? $docspace->scriptUrl() : null,
             'coverDocspaceAvailable' => $event && $docspace->configured($event) && $docspace->fileLinksEnabled(),
+            'livretPages' => $livretPages,
+            'livretSections' => LivretPages::SECTIONS,
+            'livretPositions' => LivretPages::POSITIONS,
+            'livretPagesMax' => LivretPages::MAX,
+            'pageEditor' => $pageEditor,
+            'pageOuverte' => $pageOuverte,
+            'pageError' => $pageError,
+            'pageOfficeScript' => $pageEditor ? $docspace->scriptUrl() : null,
             ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event, $offerts) : []),
             ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $event) : []),
             // ⚠️ La page qui ÉMET doit dire ce que l'émission déclenche : en ligne,
@@ -622,6 +670,148 @@ class DocumentHubController extends Controller
 
         return redirect()->route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre', 'stab' => 'couverture'])
             ->with('ukc_status', 'Couverture automatique rétablie. L’éditeur a été retiré et une nouvelle page de garde sera vierge.');
+    }
+
+    /**
+     * Crée une page à ajouter au livre, et son document Word dans DocSpace.
+     *
+     * ⚠️ Le fichier est créé AVANT la ligne : si DocSpace refuse, il n'y a rien
+     * à nettoyer. Dans l'autre sens, une ligne resterait sans document - une
+     * page fantôme que le gestionnaire ne pourrait ni ouvrir ni retirer.
+     */
+    public function createLivretPage(Request $request, TaskDocSpace $docspace): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+        if (! $docspace->configured($event) || ! $docspace->fileLinksEnabled()) {
+            return back()->with('ukc_error', 'Configurez DocSpace et activez ses liens d’édition avant d’ajouter une page.');
+        }
+
+        $pages = LivretPages::all($event);
+        if (count($pages) >= LivretPages::MAX) {
+            return back()->with('ukc_error', 'Ce livre porte déjà '.LivretPages::MAX.' pages ajoutées, le maximum.');
+        }
+
+        $data = $request->validate($this->livretPageRules());
+        $id = LivretPages::newId();
+
+        $fileId = null;
+        try {
+            $titre = 'GEVES - Page du livret - '.$event->id.' - '.now()->format('YmdHis').'-'.bin2hex(random_bytes(3));
+            $fileId = $docspace->createFile($docspace->roomId($event), $titre, 'docx');
+            $token = $docspace->createFileEditLink($fileId);
+            $pages[] = $data + [
+                'id' => $id,
+                'file_id' => $fileId,
+                'token' => LivretPages::encryptedToken($token),
+                'active' => true,
+            ];
+            LivretPages::save($event, $pages);
+        } catch (\Throwable $error) {
+            if ($fileId !== null) {
+                try {
+                    $docspace->deleteFile($fileId);
+                } catch (\Throwable) {
+                }
+            }
+
+            return back()->with('ukc_error', $error->getMessage());
+        }
+
+        return redirect()->route('admin.documents.attestations', [
+            'event_id' => $event->id, 'tab' => 'livre', 'stab' => 'pages', 'page' => $id,
+        ])->with('ukc_status', 'Page créée. Composez-la ci-dessous ; elle entre dans le livre à son emplacement.');
+    }
+
+    /** Renomme une page ajoutée, change son emplacement, l'active ou la retire du livre. */
+    public function updateLivretPage(Request $request): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+
+        $data = $request->validate($this->livretPageRules() + [
+            'pageId' => ['required', 'string', 'max:64'],
+        ]);
+        $pages = LivretPages::all($event);
+        $trouvee = false;
+        foreach ($pages as $i => $page) {
+            if ($page['id'] !== $data['pageId']) {
+                continue;
+            }
+            $trouvee = true;
+            // ⚠️ `active` est un SÉLECTEUR, lu par `input(..., '1')` : une case
+            // décochée n'envoie RIEN, et `boolean()` ne distinguerait pas
+            // « retirée du livre » de « champ absent » - un enregistrement qui ne
+            // porterait pas le champ retirerait la page sans un mot. Même piège
+            // que la visibilité du livre et la case du bandeau de cookies.
+            $pages[$i] = array_merge($page, $data, [
+                'active' => $request->input('pageActive', '1') === '1',
+            ]);
+        }
+        if (! $trouvee) {
+            return back()->with('ukc_error', 'Cette page ajoutée est introuvable.');
+        }
+        LivretPages::save($event, $pages);
+
+        return back()->with('ukc_status', 'Emplacement de la page enregistré.');
+    }
+
+    /**
+     * Retire une page du livre, et son document de DocSpace.
+     *
+     * ⚠️ La ligne part AVANT le fichier : un refus de suppression côté DocSpace
+     * ne doit pas laisser dans le livre une page que le gestionnaire vient de
+     * retirer. Le fichier orphelin, lui, se signale dans le journal.
+     */
+    public function deleteLivretPage(Request $request, TaskDocSpace $docspace): RedirectResponse
+    {
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
+        }
+
+        $id = (string) $request->input('pageId');
+        $page = LivretPages::find($event, $id);
+        if (! $page) {
+            return back()->with('ukc_error', 'Cette page ajoutée est introuvable.');
+        }
+
+        LivretPages::save($event, array_values(array_filter(
+            LivretPages::all($event),
+            fn (array $ligne) => $ligne['id'] !== $id,
+        )));
+
+        if ($page['file_id'] !== '') {
+            try {
+                $docspace->deleteFile($page['file_id']);
+            } catch (\Throwable $error) {
+                report($error);
+            }
+        }
+
+        return redirect()->route('admin.documents.attestations', [
+            'event_id' => $event->id, 'tab' => 'livre', 'stab' => 'pages',
+        ])->with('ukc_status', 'Page retirée du livre.');
+    }
+
+    /**
+     * Règles communes à la création et à la mise à jour d'une page ajoutée.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function livretPageRules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:120'],
+            'mode' => ['required', Rule::in(['section', 'page'])],
+            'anchor' => ['required', Rule::in(array_keys(LivretPages::SECTIONS))],
+            'position' => ['required', Rule::in(array_keys(LivretPages::POSITIONS))],
+            'page' => ['required', 'integer', 'between:2,9999'],
+        ];
     }
 
     /**

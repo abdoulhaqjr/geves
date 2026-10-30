@@ -12,8 +12,11 @@ use ZipArchive;
 final class DocxCoverMerger
 {
     private const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
     private const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
     private const P = 'http://schemas.openxmlformats.org/package/2006/relationships';
+
     private const C = 'http://schemas.openxmlformats.org/package/2006/content-types';
 
     public static function merge(string $bookBinary, string $coverBinary): string
@@ -99,7 +102,129 @@ final class DocxCoverMerger
         return self::rezip($book);
     }
 
-    private static function copyRelationship(string $id, DOMDocument $source, DOMDocument $target, array $cover, array &$book, DOMDocument $types, DOMDocument $coverTypes, int $number): string
+    /**
+     * Remplace chaque repère de page ajoutée par le corps de son document Word.
+     *
+     * ⚠️⚠️ **LE GABARIT WORD NE DOIT PAS PERDRE CE QUE LE PDF PORTE.** Les pages
+     * conçues par le gestionnaire sont dans le livre que lisent les participants :
+     * si le .docx les ignorait, celui qui le retouche travaillerait sur un livre
+     * incomplet sans qu'aucun écran ne le dise.
+     *
+     * ⚠️ **Un repère introuvable est laissé TEL QUEL**, en clair dans le document :
+     * la page n'a pas pu être posée, et on préfère que cela se lise plutôt que de
+     * la glisser au jugé à un endroit que personne n'a choisi.
+     *
+     * ⚠️ **Les sauts de page internes sont CONSERVÉS**, contrairement à la
+     * couverture : un document ajouté peut compter plusieurs pages, et les
+     * retirer les souderait en une seule.
+     *
+     * @param  array<string, string>  $pages  repère => binaire .docx
+     */
+    public static function insert(string $bookBinary, array $pages): string
+    {
+        if ($pages === []) {
+            return $bookBinary;
+        }
+
+        $book = self::unzip($bookBinary);
+        $bookDoc = self::xml($book['word/document.xml'] ?? null, 'livret');
+        $bookBody = $bookDoc->getElementsByTagNameNS(self::W, 'body')->item(0);
+        if (! $bookBody) {
+            throw new RuntimeException('Le livre Word ne contient pas de corps de document.');
+        }
+        $bookRels = self::xml($book['word/_rels/document.xml.rels'] ?? null, 'relations du livret');
+        $types = self::xml($book['[Content_Types].xml'] ?? null, 'types du livret');
+
+        $mediaIndex = 0;
+        foreach ($pages as $marker => $binary) {
+            $cible = self::markerParagraph($bookDoc, $bookBody, (string) $marker);
+            if (! $cible) {
+                continue;
+            }
+
+            $page = self::unzip($binary);
+            $pageDoc = self::xml($page['word/document.xml'] ?? null, 'page ajoutée');
+            $pageBody = $pageDoc->getElementsByTagNameNS(self::W, 'body')->item(0);
+            if (! $pageBody) {
+                throw new RuntimeException('Une page ajoutée ne contient pas de corps de document.');
+            }
+            $pageRels = self::xml($page['word/_rels/document.xml.rels'] ?? null, 'relations d’une page ajoutée');
+            $pageTypes = self::xml($page['[Content_Types].xml'] ?? null, 'types d’une page ajoutée');
+            $relationMap = [];
+
+            // La page ajoutée commence sur une page à elle.
+            $bookBody->insertBefore(self::pageBreak($bookDoc), $cible);
+
+            foreach (iterator_to_array($pageBody->childNodes) as $sourceNode) {
+                if (! $sourceNode instanceof DOMElement || $sourceNode->localName === 'sectPr') {
+                    continue;
+                }
+                $node = $bookDoc->importNode($sourceNode, true);
+                if (! $node instanceof DOMElement) {
+                    throw new RuntimeException('Une page ajoutée contient un élément Word invalide.');
+                }
+                $bookBody->insertBefore($node, $cible);
+
+                $nodeXp = new DOMXPath($bookDoc);
+                $nodeXp->registerNamespace('w', self::W);
+                // ⚠️ Les styles NOMMÉS du document source n’existent pas dans le
+                // livre : les garder ferait pointer le texte vers des styles
+                // absents. La mise en forme directe, elle, suit l'élément.
+                foreach (iterator_to_array($nodeXp->query('.//w:pStyle | .//w:rStyle | .//w:tblStyle | .//w:numPr | .//w:sectPr', $node)) as $style) {
+                    $style->parentNode?->removeChild($style);
+                }
+
+                foreach (self::elements($node) as $element) {
+                    foreach (iterator_to_array($element->attributes ?? []) as $attribute) {
+                        if ($attribute->namespaceURI !== self::R) {
+                            continue;
+                        }
+                        $oldId = $attribute->value;
+                        if (! isset($relationMap[$oldId])) {
+                            $relationMap[$oldId] = self::copyRelationship($oldId, $pageRels, $bookRels, $page, $book, $types, $pageTypes, ++$mediaIndex, 'page');
+                        }
+                        $attribute->value = $relationMap[$oldId];
+                    }
+                }
+            }
+
+            $cible->parentNode?->removeChild($cible);
+        }
+
+        $book['word/document.xml'] = (string) $bookDoc->saveXML();
+        $book['word/_rels/document.xml.rels'] = (string) $bookRels->saveXML();
+        $book['[Content_Types].xml'] = (string) $types->saveXML();
+
+        return self::rezip($book);
+    }
+
+    /** Le paragraphe qui porte ce repère, ou null s'il n'y en a aucun. */
+    private static function markerParagraph(DOMDocument $document, DOMElement $body, string $marker): ?DOMElement
+    {
+        $xp = new DOMXPath($document);
+        $xp->registerNamespace('w', self::W);
+        foreach (iterator_to_array($xp->query('./w:p', $body)) as $paragraph) {
+            if ($paragraph instanceof DOMElement && str_contains($paragraph->textContent, $marker)) {
+                return $paragraph;
+            }
+        }
+
+        return null;
+    }
+
+    private static function pageBreak(DOMDocument $document): DOMElement
+    {
+        $paragraph = $document->createElementNS(self::W, 'w:p');
+        $run = $document->createElementNS(self::W, 'w:r');
+        $break = $document->createElementNS(self::W, 'w:br');
+        $break->setAttributeNS(self::W, 'w:type', 'page');
+        $run->appendChild($break);
+        $paragraph->appendChild($run);
+
+        return $paragraph;
+    }
+
+    private static function copyRelationship(string $id, DOMDocument $source, DOMDocument $target, array $cover, array &$book, DOMDocument $types, DOMDocument $coverTypes, int $number, string $prefix = 'cover'): string
     {
         if (! preg_match('/^[A-Za-z][A-Za-z0-9_.-]{0,100}$/', $id)) {
             throw new RuntimeException('La couverture contient une relation Word invalide.');
@@ -124,13 +249,13 @@ final class DocxCoverMerger
             if (! preg_match('/^[a-z0-9]{1,8}$/', $extension)) {
                 throw new RuntimeException('Le format d’une image de la couverture est invalide.');
             }
-            $newName = 'cover-'.$number.'.'.$extension;
+            $newName = $prefix.'-'.$number.'.'.$extension;
             $book['word/media/'.$newName] = $cover[$sourcePath];
             $targetPath = 'media/'.$newName;
             self::copyContentType($extension, $types, $coverTypes);
         }
 
-        $newId = 'rIdCover'.bin2hex(random_bytes(6));
+        $newId = 'rId'.ucfirst($prefix).bin2hex(random_bytes(6));
         $new = $target->createElementNS(self::P, 'Relationship');
         $new->setAttribute('Id', $newId);
         $new->setAttribute('Type', $relationship->getAttribute('Type'));

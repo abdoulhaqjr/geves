@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Documents\BadgePdfRenderer;
 use App\Documents\BadgeSheet;
 use App\Documents\DocxCoverMerger;
+use App\Documents\LivretAssembly;
 use App\Documents\LivretCover;
 use App\Documents\LivretDocx;
-use App\Documents\LivretPdf;
 use App\Documents\LivretTemplate;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
@@ -57,40 +57,49 @@ class DocumentController extends Controller
         if ($request->query('format') === 'docx') {
             $base = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.docx';
             $template = $this->selectedLivretTemplate($event);
-            if (LivretCover::fileId($event) !== '') {
-                $book = $template
-                    ? (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))->render()
-                    : (new LivretDocx($event, $groups, $request->boolean('harmonize'), LivretView::style($event)))->render();
-                $merged = DocxCoverMerger::merge($book, $docspace->downloadFile(LivretCover::fileId($event)));
+            $pagesAjoutees = LivretAssembly::wordPages($event, $docspace);
 
-                return response()->streamDownload(static function () use ($merged): void { echo $merged; }, $base, [
-                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                ]);
-            }
             // Modèle .docx personnalisé sélectionné ? On remplit ses balises ; sinon
             // on retombe sur le générateur intégré paramétrable.
-            if ($template) {
-                return (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))
-                    ->download($base);
+            if (LivretCover::fileId($event) === '' && $pagesAjoutees === []) {
+                return $template
+                    ? (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))->download($base)
+                    : (new LivretDocx($event, $groups, $request->boolean('harmonize'), LivretView::style($event)))->download($base);
             }
 
-            return (new LivretDocx($event, $groups, $request->boolean('harmonize'), LivretView::style($event)))->download($base);
+            $book = $template
+                ? (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))->render()
+                : (new LivretDocx($event, $groups, $request->boolean('harmonize'), LivretView::style($event)))->render();
+
+            if (LivretCover::fileId($event) !== '') {
+                $book = DocxCoverMerger::merge($book, $docspace->downloadFile(LivretCover::fileId($event)));
+            }
+            // ⚠️ Un modèle .docx PERSONNALISÉ ne porte aucun repère : ses pages
+            // ajoutées restent dans le PDF et n'entrent pas dans le gabarit.
+            // L'écran le dit au gestionnaire, qui les y remet à la main.
+            $book = DocxCoverMerger::insert($book, $pagesAjoutees);
+
+            return response()->streamDownload(static function () use ($book): void {
+                echo $book;
+            }, $base, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ]);
         }
 
         if ($request->query('format') === 'pdf') {
-            $pdf = LivretPdf::make($event, $groups);
             $file = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf';
-            if (LivretCover::fileId($event) !== '') {
-                $binary = LivretCover::pdf($event, $pdf->output(), $docspace);
 
-                return response($binary, 200, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => ($request->boolean('inline') ? 'inline' : 'attachment').'; filename="'.$file.'"',
-                ]);
-            }
+            // ⚠️ **UN SEUL ASSEMBLAGE**, partagé avec l'espace participant :
+            // couverture DocSpace, pages ajoutées et corps du livre. L'aperçu du
+            // gestionnaire doit montrer EXACTEMENT ce que le participant reçoit -
+            // c'est l'écran qui sert à décider si le livre est prêt.
+            $binary = LivretAssembly::pdf($event, $groups, $docspace);
 
             // `inline` → aperçu dans le navigateur (vrai rendu final) ; sinon téléchargement.
-            return $request->boolean('inline') ? $pdf->stream($file) : $pdf->download($file);
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => ($request->boolean('inline') ? 'inline' : 'attachment').'; filename="'.$file.'"',
+            ]);
         }
 
         return view('documents.livret', [

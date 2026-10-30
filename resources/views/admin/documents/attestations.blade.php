@@ -5,6 +5,12 @@
             <script src="{{ $coverOfficeScript }}"></script>
         @endpush
     @endif
+    @if ($tab === 'livre' && $stab === 'pages' && $pageOfficeScript)
+        @push('head')
+            @vite(['resources/css/task-office.css'])
+            <script src="{{ $pageOfficeScript }}"></script>
+        @endpush
+    @endif
     <div class="admin-page admin-documents" x-data="{ newAtt: false, del: null, typed: '' }">
         {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -370,6 +376,7 @@
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'main']) }}" @class(['active' => $stab === 'main'])>Livre des résumés</a>
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'couverture']) }}" @class(['active' => $stab === 'couverture'])>Page de garde</a>
+                    <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'pages']) }}" @class(['active' => $stab === 'pages'])>Pages ajoutées</a>
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'modeles']) }}" @class(['active' => $stab === 'modeles'])>Modèles de document</a>
                     <a href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'apparence']) }}" @class(['active' => $stab === 'apparence'])>Apparence du livre</a>
                 </div>
@@ -454,6 +461,222 @@
                             @endif
                         @endif
                     </div>
+                </div>
+
+                {{-- ---------- Pages ajoutées au livre (Word conçu dans DocSpace) ---------- --}}
+                <div @if ($stab !== 'pages') style="display:none;" @endif>
+                    <div class="ukc-card">
+                        <h3 style="margin:0 0 6px;">Pages ajoutées au livre</h3>
+                        <x-ukc.scope-edition :event="$event" />
+                        <p class="desc" style="margin:10px 0 0;">
+                            Composez une page dans l’éditeur Word, puis dites où elle se pose : avant ou après une
+                            section du livre. Elle entre dans le PDF que lisent les participants, à l’endroit choisi.
+                        </p>
+
+                        @if ($livretPages === [])
+                            <p class="ukc-hint" style="margin:16px 0 0;">Aucune page ajoutée : le livre s’imprime tel qu’il est composé.</p>
+                        @else
+                            <div class="ukc-table-wrap" style="margin:16px 0 0;">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Page</th><th>Emplacement</th><th>Dans le livre</th><th></th></tr></thead>
+                                    <tbody>
+                                        @foreach ($livretPages as $p)
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ $p['title'] }}</strong>
+                                                    @if ($p['file_id'] === '')
+                                                        <div class="ukc-pill ukc-pill--err" style="margin-top:4px;">Document manquant</div>
+                                                    @endif
+                                                </td>
+                                                <td>{{ \App\Documents\LivretPages::placementLabel($p) }}</td>
+                                                <td>
+                                                    @if ($p['active'])
+                                                        <span class="ukc-pill ukc-pill--ok">Ajoutée</span>
+                                                    @else
+                                                        <span class="ukc-pill ukc-pill--muted">Retirée</span>
+                                                    @endif
+                                                </td>
+                                                <td class="ukc-cell-actions">
+                                                    <a class="ukc-btn ukc-btn--outline ukc-btn--sm"
+                                                       href="{{ route('admin.documents.attestations', $livreBase + ['stab' => 'pages', 'page' => $p['id']]) }}">Composer</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="4" style="padding-top:0;">
+                                                    <form method="POST" action="{{ route('admin.documents.livret.pages.update') }}"
+                                                          x-data="{ mode: @js($p['mode']) }"
+                                                          style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+                                                        @csrf
+                                                        <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                                        <input type="hidden" name="pageId" value="{{ $p['id'] }}">
+                                                        <div class="ukc-form-row" style="margin:0;min-width:200px;flex:1;">
+                                                            <label>Intitulé</label>
+                                                            <input type="text" name="title" value="{{ $p['title'] }}" maxlength="120" required>
+                                                        </div>
+                                                        <div class="ukc-form-row" style="margin:0;min-width:170px;">
+                                                            <label>Placement</label>
+                                                            <select name="mode" x-model="mode">
+                                                                <option value="section">Par rapport à une section</option>
+                                                                <option value="page">À un numéro de page</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="ukc-form-row" style="margin:0;min-width:120px;" x-show="mode === 'section'">
+                                                            <label>Position</label>
+                                                            <select name="position">
+                                                                @foreach ($livretPositions as $k => $lbl)
+                                                                    <option value="{{ $k }}" @selected($p['position'] === $k)>{{ $lbl }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="ukc-form-row" style="margin:0;min-width:200px;" x-show="mode === 'section'">
+                                                            <label>Section</label>
+                                                            <select name="anchor">
+                                                                @foreach ($livretSections as $k => $lbl)
+                                                                    <option value="{{ $k }}" @selected($p['anchor'] === $k)>{{ $lbl }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="ukc-form-row" style="margin:0;min-width:120px;" x-show="mode === 'page'" x-cloak>
+                                                            <label>Page</label>
+                                                            <input type="number" name="page" value="{{ $p['page'] }}" min="2" max="9999">
+                                                        </div>
+                                                        <div class="ukc-form-row" style="margin:0;min-width:140px;">
+                                                            <label>Dans le livre</label>
+                                                            <select name="pageActive">
+                                                                <option value="1" @selected($p['active'])>Ajoutée</option>
+                                                                <option value="0" @selected(! $p['active'])>Retirée</option>
+                                                            </select>
+                                                        </div>
+                                                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer</button>
+                                                    </form>
+                                                    <form method="POST" action="{{ route('admin.documents.livret.pages.delete') }}" style="margin-top:8px;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                                        <input type="hidden" name="pageId" value="{{ $p['id'] }}">
+                                                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+                                                                data-confirm="Retirer « {{ $p['title'] }} » du livre ? Son document Word sera supprimé.">
+                                                            <x-ukc.icon name="trash" :size="16" /> Retirer
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+
+                        {{-- ⚠️ Deux limites annoncées AVANT de composer, pas découvertes après :
+                             le numéro de page bouge quand le livre grossit, et le gabarit Word
+                             ne reçoit pas ces pages quand un modèle personnalisé est actif. --}}
+                        <p class="ukc-hint" style="margin:14px 0 0;">
+                            Un emplacement par section suit le livre : ajoutez un résumé, la page reste à sa place.
+                            Un numéro de page, lui, désigne la page qui portera ce numéro le jour de l’export - le livre
+                            est recomposé à chaque fois.
+                        </p>
+
+                        @if (count($livretPages) < $livretPagesMax)
+                            @if ($coverDocspaceAvailable)
+                                <form method="POST" action="{{ route('admin.documents.livret.pages.create') }}"
+                                      x-data="{ mode: 'section' }"
+                                      style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:16px;border-top:1px solid var(--ukc-border);padding-top:16px;">
+                                    @csrf
+                                    <input type="hidden" name="event_id" value="{{ $event->id }}">
+                                    <div class="ukc-form-row" style="margin:0;min-width:200px;flex:1;">
+                                        <label>Intitulé de la page</label>
+                                        <input type="text" name="title" value="{{ old('title') }}" maxlength="120" placeholder="Mot du recteur" required>
+                                    </div>
+                                    <div class="ukc-form-row" style="margin:0;min-width:170px;">
+                                        <label>Placement</label>
+                                        <select name="mode" x-model="mode">
+                                            <option value="section">Par rapport à une section</option>
+                                            <option value="page">À un numéro de page</option>
+                                        </select>
+                                    </div>
+                                    <div class="ukc-form-row" style="margin:0;min-width:120px;" x-show="mode === 'section'">
+                                        <label>Position</label>
+                                        <select name="position">
+                                            @foreach ($livretPositions as $k => $lbl)
+                                                <option value="{{ $k }}">{{ $lbl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="ukc-form-row" style="margin:0;min-width:200px;" x-show="mode === 'section'">
+                                        <label>Section</label>
+                                        <select name="anchor">
+                                            @foreach ($livretSections as $k => $lbl)
+                                                <option value="{{ $k }}" @selected($k === 'resumes')>{{ $lbl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="ukc-form-row" style="margin:0;min-width:120px;" x-show="mode === 'page'" x-cloak>
+                                        <label>Page</label>
+                                        <input type="number" name="page" value="2" min="2" max="9999">
+                                    </div>
+                                    <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="plus" :size="16" /> Ajouter une page</button>
+                                </form>
+                            @else
+                                <p class="ukc-hint" style="margin-top:16px;">Configurez DocSpace et activez les liens d’édition dans les réglages pour ajouter une page.</p>
+                            @endif
+                        @else
+                            <p class="ukc-hint" style="margin-top:16px;">Ce livre porte déjà {{ $livretPagesMax }} pages ajoutées, le maximum.</p>
+                        @endif
+                    </div>
+
+                    @if ($pageOuverte)
+                        <div class="ukc-card">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+                                <div>
+                                    <h3 style="margin:0 0 4px;">{{ $pageOuverte['title'] }}</h3>
+                                    <div class="desc" style="margin:0;">{{ \App\Documents\LivretPages::placementLabel($pageOuverte) }}</div>
+                                </div>
+                                <a href="{{ route('admin.documents.livret', ['event' => $event, 'format' => 'pdf', 'inline' => 1]) }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-btn--sm">Aperçu du livre</a>
+                            </div>
+                            @if ($pageEditor)
+                                <div class="ukc-office">
+                                    <div class="ukc-office__heading">
+                                        <strong>Éditeur Word de la page</strong>
+                                        <div class="ukc-office__heading-actions">
+                                            <span id="ukcPageStatus" class="ukc-office__status">Ouverture de l’éditeur…</span>
+                                            <button type="button" id="ukcPageFullscreen" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Plein écran</button>
+                                        </div>
+                                    </div>
+                                    <div id="ukcPageArea" class="ukc-office__editor" style="min-height:700px;" aria-label="Éditeur de la page ajoutée">
+                                        <div id="ukcPageEditor" class="ukc-office__editor-frame"></div>
+                                    </div>
+                                </div>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        const status = document.getElementById('ukcPageStatus');
+                                        const area = document.getElementById('ukcPageArea');
+                                        const fullscreen = document.getElementById('ukcPageFullscreen');
+                                        if (area && fullscreen && area.requestFullscreen) {
+                                            fullscreen.addEventListener('click', function () { area.requestFullscreen(); });
+                                        } else if (fullscreen) {
+                                            fullscreen.hidden = true;
+                                        }
+                                        if (!window.DocSpace?.SDK?.initEditor) {
+                                            status.textContent = 'SDK DocSpace inaccessible. Réessayez plus tard.';
+                                            status.classList.add('ukc-office__status--error');
+                                            return;
+                                        }
+                                        const config = @json($pageEditor);
+                                        config.events = {
+                                            onAppReady: function () { status.textContent = 'Éditeur prêt'; },
+                                            onNoAccess: function () { status.textContent = 'Accès au document refusé.'; status.classList.add('ukc-office__status--error'); },
+                                            onNotFound: function () { status.textContent = 'Fichier DocSpace introuvable.'; status.classList.add('ukc-office__status--error'); },
+                                        };
+                                        window.DocSpace.SDK.initEditor(config);
+                                    });
+                                </script>
+                            @else
+                                <p class="ukc-hint" role="alert">{{ $pageError ?: 'Éditeur indisponible.' }}</p>
+                            @endif
+                        </div>
+                    @elseif ($pageError)
+                        <div class="ukc-card"><p class="ukc-hint" role="alert">{{ $pageError }}</p></div>
+                    @endif
                 </div>
 
                 {{-- ---------- Livre : génération + état + contenu ---------- --}}

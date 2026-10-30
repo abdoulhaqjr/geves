@@ -135,6 +135,20 @@ le Bénin, quel que soit l'indicatif.
 
 **Garde** : `PaymentOperatorTest` (13 cas) et `PaymentGatewayTest` (31 cas),
 **cinq sabotages vérifiés**.
+### Pages ajoutées au livre des résumés (2026-10-30)
+
+- Même grammaire que la **page de garde** : un .docx par page, composé dans l'éditeur Word en ligne (DocSpace), propre à l'événement, dans **Documents › Livre des résumés › Pages ajoutées**. La nouveauté est l'**emplacement** : le gestionnaire dit où la page se pose. Stockage `event.settings['doc']['livret.pages']`, classe **`App\Documents\LivretPages`**, plafond **10**.
+- ⚠️⚠️ **Lecture directe des réglages de l'événement, jamais `EventSettings::get`** : son repli global ferait entrer des pages de plateforme dans le livre de tous les événements qui n'en ont pas.
+- **Deux modes** : **par section** (« avant les Résumés ») - l'ancre suit le livre ; **par numéro de page** - le livre étant reconstruit à chaque export, la page 7 d'hier n'est plus celle d'aujourd'hui, et l'écran le dit avant le choix.
+- ⚠️⚠️ **Rien ne passe devant la couverture** : l'ancre `garde` est **forcée** à « après », sinon la couverture DocSpace - qui prend la place de la première page - s'écraserait sur la page ajoutée.
+- ⚠️⚠️ **On réserve, on ne glisse pas** (`App\Documents\LivretAssembly`) : le livre numérote ses pages, donc on convertit et on **compte** d'abord, on fait **réserver** autant de pages blanches au rendu, puis on les **remplace**. Les pages placées par numéro font exception et décalent - c'est la rançon de ce mode.
+- ⚠️⚠️ **Le repère est un lien invisible** que dompdf transforme en annotation, relue par `pdf-lib` : seule mesure fiable du numéro de page d'une réservation. L'inline PHP de dompdf est exclu (la vue rend le résumé des auteurs en `{!! !!}`).
+- ⚠️ **Une seule liste de points d'ancrage** (`LivretPages::SECTIONS`), partagée par le PDF et le .docx ; un cas de garde balaie les deux fichiers. Le gabarit Word les porte aussi (`DocxCoverMerger::insert()`), avec deux limites annoncées à l'écran : modèle .docx personnalisé sans repères, et placement par numéro reporté en fin de gabarit.
+- ⚠️ Un `select` Ajoutée/Retirée lu par `input('pageActive', '1')`, jamais `boolean()`. Retirer n'est pas supprimer.
+- **Node** : `scripts/livret-assemble.mjs` (actions `count` et `assemble`), spécification passée dans un **fichier JSON**, jamais en arguments.
+- Gardes : `PagesAjouteesLivretTest` (16 cas, **6 sabotages vérifiés**).
+- ⚠️ **Débordement horizontal préexistant à 375 px** sur les sous-onglets du livre, dû à `.ukc-scope-cue` (`<x-ukc.scope-edition>`) : mesuré 424 pour 375, l'onglet Badges qui ne le porte pas étant à 375 pile. À corriger dans le composant partagé.
+
 ### Visibilité du livre des résumés (2026-10-30)
 
 - Le livre des résumés se montre ou se cache aux participants **comme les badges** : sélecteur *Affiché / Caché* dans **Documents › Livre des résumés › Contenu du livre**. Réglage `livret.visible_to_participants` par `EventSettings` (propre à l'événement, repli global), lu par `LivretView::visibleToParticipant()`.

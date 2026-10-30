@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Documents\BadgeLayout;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
-use App\Documents\LivretCover;
-use App\Documents\LivretPdf;
+use App\Documents\LivretAssembly;
 use App\Documents\LivretView;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
@@ -325,18 +324,16 @@ class DocumentController extends Controller
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
-        $pdf = LivretPdf::make($event, $groups);
-
-        if (LivretCover::fileId($event) !== '') {
-            $binary = LivretCover::pdf($event, $pdf->output(), $docspace);
-
-            return response($binary, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf"',
-            ]);
-        }
+        // ⚠️ **LE MÊME ASSEMBLAGE QUE LE BACK-OFFICE** : couverture DocSpace,
+        // pages ajoutées par le gestionnaire, corps du livre. Deux assemblages
+        // se décalent toujours, et celui-là l'avait déjà fait - le participant
+        // recevait une version appauvrie sans que rien ne le signale.
+        $binary = LivretAssembly::pdf($event, $groups, $docspace);
 
         // Ouvert dans l'onglet : le lecteur du navigateur sait l'enregistrer.
-        return $pdf->stream('livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf');
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf"',
+        ]);
     }
 }

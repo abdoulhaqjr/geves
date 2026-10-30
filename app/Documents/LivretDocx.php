@@ -41,6 +41,15 @@ class LivretDocx
     /** Espace de noms WordprocessingML (extraction des fragments OOXML pour les modèles). */
     public const WNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
+    /**
+     * Préfixe des repères de pages ajoutées, relus par {@see DocxCoverMerger::insert()}.
+     *
+     * ⚠️ Volontairement illisible pour un rédacteur : personne ne doit le taper
+     * par hasard dans un avant-propos et voir son paragraphe remplacé par une
+     * page ajoutée.
+     */
+    public const PAGE_MARKER = '[[UKC-PAGE:';
+
     // Charte Université de Kara (littéraux : Word ne lit pas les tokens CSS).
     private const BLUE = '223EA4';
 
@@ -184,41 +193,90 @@ class LivretDocx
         }
 
         $this->addCover($section);
+        $this->addPageMarkers($section, 'apres:garde');
         // Sections de tête GÉNÉRIQUES, affichées seulement si le champ est rempli
         // (haut patronage, remerciements, mots signés) - sinon rien ne s'insère.
+        $this->addPageMarkers($section, 'avant:patronage');
         $this->addPatronage($section);
+        $this->addPageMarkers($section, 'apres:patronage');
+        $this->addPageMarkers($section, 'avant:remerciements');
         $this->addAcknowledgements($section);
+        $this->addPageMarkers($section, 'apres:remerciements');
+        $this->addPageMarkers($section, 'avant:avant-propos');
         $this->addForeword($section);
+        $this->addPageMarkers($section, 'apres:avant-propos');
+        $this->addPageMarkers($section, 'avant:bienvenue');
         $this->addMessage(
             $section,
             trim((string) EventSettings::get($this->event, 'livret.welcome_title', 'Mot de bienvenue')) ?: 'Mot de bienvenue',
             (string) EventSettings::get($this->event, 'livret.welcome_text', ''),
             (string) EventSettings::get($this->event, 'livret.welcome_signature', ''),
         );
+        $this->addPageMarkers($section, 'apres:bienvenue');
+        $this->addPageMarkers($section, 'avant:president');
         $this->addMessage(
             $section,
             trim((string) EventSettings::get($this->event, 'livret.president_title', 'Mot du président')) ?: 'Mot du président',
             (string) EventSettings::get($this->event, 'livret.president_text', ''),
             (string) EventSettings::get($this->event, 'livret.president_signature', ''),
         );
+        $this->addPageMarkers($section, 'apres:president');
+        $this->addPageMarkers($section, 'avant:commissions');
         if ($this->isGeneral()) {
             // « Document général du colloque » : commissions (comité d'organisation
             // en TABLEAU) + programme synthétique, puis « Communications en ateliers »
             // (planning par atelier), puis les résumés.
             $num = $this->addCommissionsGeneral($section);
+            $this->addPageMarkers($section, 'apres:commissions');
+            $this->addPageMarkers($section, 'avant:programme');
             $this->addAteliers($section, $num + 1);
         } else {
             $this->addCommissionsProgramme($section);
+            $this->addPageMarkers($section, 'apres:commissions');
+            $this->addPageMarkers($section, 'avant:programme');
             $this->isFss() ? $this->addProgrammeFss($section) : $this->addProgramme($section);
         }
+        $this->addPageMarkers($section, 'apres:programme');
+        $this->addPageMarkers($section, 'avant:resumes');
         $this->addBody($section);
+        $this->addPageMarkers($section, 'apres:resumes');
 
         // Index des auteurs (renvoie au numéro de résumé). Réglage `livret.author_index`.
+        $this->addPageMarkers($section, 'avant:index');
         if ((bool) LivretAppearance::get($this->event, 'author_index', true)) {
             $this->addAuthorIndex($section);
         }
+        $this->addPageMarkers($section, 'apres:index');
+
+        // ⚠️⚠️ **LES PAGES PLACÉES PAR NUMÉRO ATTERRISSENT EN FIN DE GABARIT.**
+        // « En page 7 » ne veut rien dire dans Word, qui repagine à la moindre
+        // retouche. On ne les perd pas pour autant - une page qu'on a conçue ne
+        // doit jamais disparaître en silence - et le gestionnaire les remonte à
+        // leur place : le .docx est un gabarit, c'est précisément son office.
+        $this->addPageMarkers($section, '');
 
         return $doc;
+    }
+
+    /**
+     * Repères des pages ajoutées à ce point du livre.
+     *
+     * ⚠️ Ils sont posés AUX MÊMES endroits que dans le PDF, sous les mêmes clés
+     * ({@see LivretPages::SECTIONS}) : deux listes se décaleraient, et la page
+     * atterrirait à un endroit dans le PDF, à un autre dans le Word.
+     *
+     * ⚠️ Un repère est un paragraphe de TEXTE, remplacé ensuite par
+     * {@see DocxCoverMerger::insert()}. S'il survit jusqu'au document final,
+     * c'est que la fusion n'a pas eu lieu - mieux vaut le lire en clair qu'un
+     * trou silencieux.
+     */
+    private function addPageMarkers(Section $section, string $slot): void
+    {
+        foreach (LivretPages::active($this->event) as $page) {
+            if (LivretPages::slot($page) === $slot) {
+                $section->addText(self::PAGE_MARKER.$page['id'].']]');
+            }
+        }
     }
 
     // --- Modèles .docx personnalisés (balises remplies) : valeurs + fragments OOXML ---

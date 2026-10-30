@@ -108,7 +108,10 @@
     <p class="center sans" style="font-weight:bold;color:{{ $opts['color_secondary'] }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>
 </div>
 
+@include('documents._livret-reserve', ['slot' => 'apres:garde'])
+
 {{-- ===================== HAUT PATRONAGE ===================== --}}
+@include('documents._livret-reserve', ['slot' => 'avant:patronage'])
 @if ($opts['patronage'] !== '')
     <div class="page-break" style="padding-top:60px;">
         @foreach (preg_split('/\R+/', $opts['patronage']) ?: [] as $i => $line)
@@ -119,7 +122,10 @@
     </div>
 @endif
 
+@include('documents._livret-reserve', ['slot' => 'apres:patronage'])
+
 {{-- ===================== REMERCIEMENTS ===================== --}}
+@include('documents._livret-reserve', ['slot' => 'avant:remerciements'])
 @if ($opts['acknowledgements'] !== '')
     <div class="page-break">
         <h1 class="part sans">{{ $opts['ack_title'] }}</h1>
@@ -131,7 +137,10 @@
     </div>
 @endif
 
+@include('documents._livret-reserve', ['slot' => 'apres:remerciements'])
+
 {{-- ===================== AVANT-PROPOS ===================== --}}
+@include('documents._livret-reserve', ['slot' => 'avant:avant-propos'])
 @if ($opts['foreword_text'] !== '')
     <div class="page-break">
         <h1 class="part sans">{{ $opts['foreword_title'] }}</h1>
@@ -142,8 +151,15 @@
     </div>
 @endif
 
+@include('documents._livret-reserve', ['slot' => 'apres:avant-propos'])
+
 {{-- ================= MOTS SIGNÉS (bienvenue, président) ================= --}}
-@foreach ([['welcome_title', 'welcome_text', 'welcome_signature'], ['president_title', 'president_text', 'president_signature']] as $msg)
+{{-- ⚠️ La quatrième valeur est la CLÉ D'ANCRAGE de la section (cf.
+     LivretPages::SECTIONS) : les deux mots signés partagent cette boucle, mais
+     ils se rangent séparément dans le livre - on doit pouvoir glisser une page
+     entre les deux. --}}
+@foreach ([['welcome_title', 'welcome_text', 'welcome_signature', 'bienvenue'], ['president_title', 'president_text', 'president_signature', 'president']] as $msg)
+    @include('documents._livret-reserve', ['slot' => 'avant:'.$msg[3]])
     @if ($opts[$msg[1]] !== '')
         <div class="page-break">
             <h1 class="part sans">{{ $opts[$msg[0]] }}</h1>
@@ -153,7 +169,10 @@
             @if ($opts[$msg[2]] !== '')<p class="muted" style="text-align:right;font-style:italic;margin-top:18px;">{{ $opts[$msg[2]] }}</p>@endif
         </div>
     @endif
+    @include('documents._livret-reserve', ['slot' => 'apres:'.$msg[3]])
 @endforeach
+
+@include('documents._livret-reserve', ['slot' => 'avant:commissions'])
 
 {{-- ========== DIFFÉRENTES COMMISSIONS ET PROGRAMMES DU COLLOQUE ========== --}}
 @php
@@ -233,7 +252,10 @@
     </div>
 @endif
 
+@include('documents._livret-reserve', ['slot' => 'apres:commissions'])
+
 {{-- ============ PROGRAMME (par jour) / COMMUNICATIONS EN ATELIERS (par axe) ============ --}}
+@include('documents._livret-reserve', ['slot' => 'avant:programme'])
 @if (($programmeGroups ?? collect())->isNotEmpty())
     <div class="page-break">
         @if ($isGen)
@@ -325,7 +347,10 @@
     </div>
 @endif
 
+@include('documents._livret-reserve', ['slot' => 'apres:programme'])
+
 {{-- ===================== RÉSUMÉS ===================== --}}
+@include('documents._livret-reserve', ['slot' => 'avant:resumes'])
 <div class="page-break">
     @if ($isGen)
         <p class="sans center" style="font-weight:bold;font-size:16pt;color:{{ $palette['black'] }};margin:0 0 14px;">B) Résumés des communications</p>
@@ -418,7 +443,10 @@
     @endforelse
 </div>
 
+@include('documents._livret-reserve', ['slot' => 'apres:resumes'])
+
 {{-- ===================== INDEX DES AUTEURS ===================== --}}
+@include('documents._livret-reserve', ['slot' => 'avant:index'])
 @if ($opts['author_index'] && ! empty($authorIndex))
     <div class="page-break">
         <h1 class="part sans">Index des auteurs</h1>
@@ -427,5 +455,6 @@
         @endforeach
     </div>
 @endif
+@include('documents._livret-reserve', ['slot' => 'apres:index'])
 </body>
 </html>
