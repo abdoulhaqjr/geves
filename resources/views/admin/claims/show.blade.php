@@ -42,9 +42,13 @@
                             </div>
                             <div class="ukc-field"><label>Réponse au déclarant (facultatif)</label>
                                 <textarea name="resolution" rows="4" placeholder="Ce qui a été fait / la réponse apportée…">{{ $claim->resolution }}</textarea>
-                                <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Une nouvelle réponse, ou le passage au statut « Résolue », déclenche un e-mail au déclarant.</p>
+                                {{-- ⚠️ Tient sur UNE ligne dans la colonne de gauche (mesuré) : les
+                                     deux incises de la version précédente la faisaient déborder. --}}
+                                <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Une nouvelle réponse ou le statut « Résolue » déclenche un e-mail au déclarant.</p>
                             </div>
-                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Enregistrer</button>
+                            <div class="ukc-form-actions ukc-form-actions--plain">
+                                <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Enregistrer</button>
+                            </div>
                         </form>
                         <form method="POST" action="{{ route('admin.claims.assign', $claim) }}">
                             @csrf
@@ -79,8 +83,12 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="external" :size="15" /> Transférer</button>
+                            {{-- ⚠️ La conséquence se lit AVANT le geste, pas après : placée sous
+                                 le bouton, elle n'était découverte qu'une fois le transfert fait. --}}
                             <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Les gestionnaires et co-gestionnaires de l’événement d’arrivée recevront une notification et un e-mail.</p>
+                            <div class="ukc-form-actions">
+                                <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="external" :size="15" /> Transférer</button>
+                            </div>
                         </form>
                     </div>
                 @endif

@@ -7638,3 +7638,43 @@ un participant saisi au guichet n'a pas forcément de compte.
 ⚠️ **À surveiller** : `participants.phone` n'étant modifiable par aucun écran, un
 numéro fautif sur une fiche **sans compte** (guichet) n'est corrigeable qu'en
 base. À ouvrir le jour où le cas se présente.
+
+### ⚠️⚠️ LES ESPACES NE SE RÈGLENT PAS À L'ŒIL : `.ukc-form-actions` (2026-10-31)
+
+Demandé « tous les jours », et pour une raison simple : **le primitif existe
+depuis longtemps, c'est son APPLICATION qui se perd.** Un bouton posé nu après
+un champ se colle à lui, écran après écran, et il faut le signaler à chaque
+fois. Il n'y a rien à inventer, rien à régler au cas par cas.
+
+**La règle, en une ligne : tout bouton qui CLÔT un formulaire vit dans une
+rangée `.ukc-form-actions`.** Jamais un `<button>` posé directement après un
+`.ukc-field`, jamais un `style="margin-top:…"` inventé pour l'occasion.
+
+```html
+<div class="ukc-form-actions">
+    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">…</button>
+</div>
+```
+
+- Elle donne **20px au-dessus**, un **filet**, puis **18px** avant le bouton, et
+  **12px** entre deux boutons. Ces valeurs sont le rang du projet : on ne les
+  recopie pas en dur, on emploie la classe.
+- **`.ukc-form-actions--plain`** : même dégagement, **sans filet**. Pour un
+  formulaire qui n'occupe qu'une **colonne** d'une grille ou un sous-bloc -
+  sinon le trait s'arrête au milieu de la carte, en face d'une colonne qu'il ne
+  traverse pas, et on lit une carte coupée en deux.
+- ⚠️ **La conséquence d'un geste se lit AVANT le geste.** Une phrase du type
+  « les gestionnaires recevront un e-mail » se place **au-dessus** de la rangée
+  d'actions ; sous le bouton, elle n'est découverte qu'une fois l'action faite.
+- ⚠️ **Un texte d'aide tient sur UNE ligne dans sa colonne**, et cela se
+  **mesure** (largeur réelle de la colonne, dans la vraie fonte du navigateur) -
+  pas au jugé. Mesuré ici : colonne de **449px**, Public Sans **12px** ; les deux
+  incises de « Une nouvelle réponse**, ou le passage au statut** « Résolue »**,**
+  déclenche… » la faisaient passer à deux lignes. ⚠️ **Public Sans n'est pas
+  hébergée en TTF** : contrairement à la phrase du bandeau de cookies (Jost), on
+  ne peut pas la remesurer dans un cas Pest - on fige donc le texte exact.
+- ⚠️ **Et `html.ukc-dense { zoom: .9 }` fausse toute mesure naïve** : une marge
+  de 20px se lit **18** dans le navigateur. Diviser par 0,9 avant de conclure.
+
+Gardes : `ClaimsTest` (3 cas, **2 sabotages vérifiés**) - les boutons dans leur
+rangée, la phrase figée, et la variante sans filet déclarée dans la feuille.

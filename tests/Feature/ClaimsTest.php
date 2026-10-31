@@ -7,6 +7,7 @@ use App\Models\Claim;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 // bindFakeAi(), fakeAiProvider() -> GenerateReportTest ; adminStaff() -> helpers ; openEdition(), verifiedAccount() -> tests/Pest.php
 
@@ -296,4 +297,62 @@ it('un gestionnaire ne peut pas transférer une réclamation (réservé à l’a
     $this->actingAs($gerant, 'web')
         ->post(route('admin.claims.transfer', $claim), ['event_id' => $event->id])
         ->assertForbidden();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Le dégagement des boutons se règle par le PRIMITIF, pas au cas par cas
+|--------------------------------------------------------------------------
+|
+| ⚠️⚠️ `.ukc-form-actions` existe depuis longtemps et douze vues l'emploient -
+| cette page-ci ne l'employait pas, et ses deux boutons se collaient au champ
+| du dessus. C'est la raison pour laquelle on redemande « de l'espace » écran
+| après écran : la règle existe, c'est son application qui se perd.
+|
+*/
+it('clôt ses deux formulaires par le primitif d’actions', function () {
+    $claim = seedClaim();
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+
+    $sansRangee = [];
+    foreach (['Enregistrer', 'Transférer'] as $bouton) {
+        // Le bouton doit être précédé, de peu, de l'ouverture de sa rangée
+        // d'actions : on regarde les 300 caractères qui le précèdent.
+        $position = mb_strpos($html, $bouton.'</button>');
+        $amont = $position === false ? '' : mb_substr($html, max(0, $position - 600), 600);
+        if (! str_contains($amont, 'ukc-form-actions')) {
+            $sansRangee[] = $bouton;
+        }
+    }
+
+    expect($sansRangee)->toBe([]);
+});
+
+it('garde sur UNE ligne l’avertissement d’envoi au déclarant', function () {
+    // ⚠️ Mesuré au navigateur (la colonne fait 449 px, Public Sans 12 px) : les
+    // deux incises de la version précédente la faisaient passer à deux lignes.
+    // Public Sans n'est pas hébergée en TTF, on ne peut donc pas la remesurer
+    // ici comme la phrase du bandeau de cookies - on fige le texte exact.
+    $claim = seedClaim();
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toContain('Une nouvelle réponse ou le statut « Résolue » déclenche un e-mail au déclarant.')
+        ->and($html)->not->toContain('ou le passage au statut');
+});
+
+it('offre une variante SANS filet pour un formulaire en colonne', function () {
+    // ⚠️ Un filet qui s'arrête au milieu de la carte, en face d'une colonne
+    // voisine qu'il ne traverse pas, se lit comme une carte coupée en deux.
+    $css = file_get_contents(resource_path('css/ukc.css'));
+
+    expect($css)->toContain('.ukc-form-actions--plain')
+        ->and(Str::after($css, '.ukc-form-actions--plain'))->toStartWith(' { padding-top: 0; border-top: 0; }');
 });

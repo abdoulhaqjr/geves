@@ -994,10 +994,20 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-rte p { margin: 0 0 10px; }
 .ukc-rte ul, .ukc-rte ol { padding-left: 1.4em; margin: 8px 0; }
 .ukc-rte li { margin-bottom: 4px; }
+/* ---- Actions qui CLÔTURENT un formulaire ----
+   Le dégagement d'un bouton de fin de formulaire ne se règle pas au cas par cas :
+   c'est ce rang-là, partout. 20px au-dessus, 18px après le filet. Un bouton posé
+   nu après un champ se colle à lui, et on le redemande à chaque écran. */
 .ukc-form-actions {
   display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px;
   padding-top: 18px; border-top: 1px solid var(--ukc-border);
 }
+
+/* ⚠️ Variante SANS filet, pour un formulaire qui n'occupe qu'une COLONNE d'une
+   grille (ou un sous-bloc) : le trait s'arrêterait au milieu de la carte, en
+   face d'une colonne voisine qu'il ne traverse pas - on lirait une carte coupée
+   en deux. Le dégagement, lui, reste le même : c'est lui qu'on vient chercher. */
+.ukc-form-actions--plain { padding-top: 0; border-top: 0; }
 
 /* ---- Etapes ---- */
 .ukc-steps { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
