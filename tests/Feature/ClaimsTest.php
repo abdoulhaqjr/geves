@@ -1,11 +1,14 @@
 <?php
 
+use App\Actions\AnalyzeClaim;
 use App\Actions\NotifyClaimRecipients;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\Models\Claim;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Payments\GatewayRegistry;
+use App\Support\EventPaymentConfig;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -355,4 +358,139 @@ it('offre une variante SANS filet pour un formulaire en colonne', function () {
 
     expect($css)->toContain('.ukc-form-actions--plain')
         ->and(Str::after($css, '.ukc-form-actions--plain'))->toStartWith(' { padding-top: 0; border-top: 0; }');
+});
+
+/*
+|--------------------------------------------------------------------------
+| L'analyse IA s'appuie sur la BASE, et le panneau ne s'allonge plus
+|--------------------------------------------------------------------------
+|
+| ⚠️⚠️ Constaté le 31/10/2026 sur une vraie réclamation : faute de faits, le
+| modèle comblait. Il proposait « virement bancaire direct » et « paiement sur
+| place » à un participant dont l'événement n'offre QUE le paiement réglé, et
+| inventait une heure de passage. Le gestionnaire aurait transmis au déclarant
+| des démarches que la plateforme refuse - pire que pas d'analyse du tout.
+|
+*/
+
+/** Capture l'instruction envoyée au modèle. */
+function capterInstructionIa(array $reponse): object
+{
+    $sonde = new class
+    {
+        public string $instruction = '';
+    };
+
+    $manager = Mockery::mock(AiManager::class);
+    $manager->shouldReceive('resolve')->andReturn(fakeAiProvider([]));
+    $manager->shouldReceive('extract')->andReturnUsing(
+        function (string $instruction) use ($sonde, $reponse) {
+            $sonde->instruction = $instruction;
+
+            return $reponse;
+        }
+    );
+    app()->instance(AiManager::class, $manager);
+
+    return $sonde;
+}
+
+it('donne au modèle les MOYENS DE PAIEMENT réels, et lui interdit d’en inventer', function () {
+    $claim = seedClaim(['event_id' => openEdition()->id]);
+    $sonde = capterInstructionIa(['verdict' => 'procedure', 'summary' => 'ok', 'steps' => ['a']]);
+
+    app(AnalyzeClaim::class)->handle($claim->fresh());
+
+    $offerts = array_map(
+        fn ($g) => $g->label(),
+        EventPaymentConfig::using($claim->event, fn () => app(GatewayRegistry::class)->offered()),
+    );
+
+    expect($sonde->instruction)->toContain('FAITS DU DOSSIER')
+        ->and($sonde->instruction)->toContain('Moyens de paiement proposés par cet événement')
+        ->and($sonde->instruction)->toContain('ni virement bancaire, ni espèces, ni')
+        ->and($sonde->instruction)->toContain($offerts[0]);
+});
+
+it('dit « inconnu » plutôt que de taire un manque', function () {
+    // ⚠️ Une absence silencieuse est exactement ce que le modèle remplit tout seul.
+    $claim = seedClaim(['event_id' => openEdition()->id, 'email' => 'inconnu@nulle-part.test']);
+    $sonde = capterInstructionIa(['verdict' => 'procedure', 'summary' => 'ok', 'steps' => ['a']]);
+
+    app(AnalyzeClaim::class)->handle($claim->fresh());
+
+    expect($sonde->instruction)->toContain('AUCUNE fiche participant');
+});
+
+it('ne déplie que la DERNIÈRE analyse, et replie les précédentes', function () {
+    // ⚠️ Empilées, dix analyses faisaient une page entière à faire défiler, et la
+    // plus récente - la seule qu'on vient lire - s'y perdait. On ne les supprime
+    // pas : quelqu'un a pu agir sur une analyse ancienne.
+    $claim = seedClaim();
+    $meta = (array) $claim->meta;
+    $meta['analyses'] = [
+        ['verdict' => 'procedure', 'summary' => 'LA PLUS RECENTE', 'steps' => ['x'], 'at' => '31/10/2026 - 06:10'],
+        ['verdict' => 'resolvable', 'summary' => 'UNE PRECEDENTE', 'resolution' => 'y', 'at' => '30/10/2026 - 22:40'],
+    ];
+    $claim->update(['meta' => $meta]);
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+
+    // La précédente est là - mais DANS un bloc repliable, pas dépliée.
+    expect($html)->toContain('UNE PRECEDENTE')
+        ->and($html)->toContain('1 analyse(s) précédente(s)')
+        ->and($html)->toContain('ukc-claim-ancienne');
+
+    $recente = mb_strpos($html, 'LA PLUS RECENTE');
+    $repli = mb_strpos($html, 'ukc-claim-anciennes');
+
+    expect($recente)->toBeLessThan($repli, 'la plus récente doit précéder le bloc replié');
+    expect(mb_strpos($html, 'UNE PRECEDENTE'))->toBeGreaterThan($repli);
+});
+
+it('n’affiche PAS deux fois la réponse déjà envoyée', function () {
+    // ⚠️⚠️ Le champ repeuplé montrait le même texte que le bloc « Résolution »
+    // juste au-dessus, et se lisait comme un brouillon qu'on aurait oublié
+    // d'effacer après l'envoi. Vide, il dit ce qu'il est : ce qu'on s'apprête à
+    // envoyer EN PLUS. ⚠️ Et le laisser vide n'efface rien - `updateStatus()`
+    // n'écrase la résolution que si le champ est rempli (cas suivant).
+    $claim = seedClaim();
+    $claim->update(['resolution' => 'REPONSE DEJA ENVOYEE', 'status' => 'resolved']);
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toContain('Nouvelle réponse au déclarant')
+        ->and($html)->toContain('<textarea name="resolution" rows="4" placeholder="Une nouvelle réponse remplacera celle ci-dessus et sera envoyée…"></textarea>');
+});
+
+it('enregistrer SANS rien écrire ne détruit pas la réponse déjà envoyée', function () {
+    $claim = seedClaim();
+    $claim->update(['resolution' => 'REPONSE DEJA ENVOYEE', 'status' => 'resolved']);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.claims.status', $claim), ['status' => 'closed', 'resolution' => ''])
+        ->assertRedirect();
+
+    expect($claim->fresh()->resolution)->toBe('REPONSE DEJA ENVOYEE');
+});
+
+it('espace les champs EMPILÉS d’un formulaire', function () {
+    // ⚠️ `.ukc-field` n'a que sa gouttière interne : deux champs posés l'un sous
+    // l'autre se touchent, et le libellé du second colle au champ du premier.
+    $claim = seedClaim();
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+    $css = file_get_contents(resource_path('css/ukc.css'));
+
+    expect($html)->toContain('ukc-field-stack')
+        ->and($css)->toContain('.ukc-field-stack { display: grid; gap: 16px; }');
 });

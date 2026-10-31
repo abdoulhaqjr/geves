@@ -1528,3 +1528,35 @@
   background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
   font-size: 12.5px; line-height: 1.5;
 }
+
+/* ---- Réclamations : analyses IA précédentes, repliées ----
+   ⚠️ Empilées, dix analyses faisaient une page entière à faire défiler, et la
+   plus récente - la seule qu'on vient lire - s'y perdait. Seule la dernière
+   reste dépliée ; les précédentes tiennent sur une ligne cliquable. On ne les
+   SUPPRIME pas : quelqu'un a pu agir sur une analyse ancienne, et il faut
+   pouvoir la retrouver. */
+.admin-page .ukc-claim-anciennes { margin-top: 16px; border-top: 1px solid var(--ukc-border); padding-top: 12px; }
+.admin-page .ukc-claim-anciennes__titre {
+  margin: 0 0 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ukc-muted);
+}
+.admin-page .ukc-claim-ancienne { border-top: 1px solid var(--ukc-border); }
+.admin-page .ukc-claim-ancienne:first-of-type { border-top: 0; }
+.admin-page .ukc-claim-ancienne > summary {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 9px 0; cursor: pointer; list-style: none;
+}
+.admin-page .ukc-claim-ancienne > summary::-webkit-details-marker { display: none; }
+/* Le chevron est tracé en CSS : une icône par ligne repliée alourdirait le
+   balisage pour un ornement, et la règle « icônes = x-ukc.icon » vise les
+   icônes porteuses de sens. */
+.admin-page .ukc-claim-ancienne > summary::before {
+  content: ''; width: 6px; height: 6px; flex: none;
+  border-right: 1.5px solid var(--ukc-muted); border-bottom: 1.5px solid var(--ukc-muted);
+  transform: rotate(-45deg); transition: transform .15s ease;
+}
+.admin-page .ukc-claim-ancienne[open] > summary::before { transform: rotate(45deg); }
+.admin-page .ukc-claim-ancienne > summary:hover { color: var(--ukc-blue); }
+.admin-page .ukc-claim-ancienne > summary .quand { font-size: 11.5px; color: var(--ukc-muted); }
+.admin-page .ukc-claim-ancienne > summary:focus-visible { outline: 2px solid var(--ukc-blue); outline-offset: 2px; }
+.admin-page .ukc-claim-ancienne[open] { padding-bottom: 12px; }

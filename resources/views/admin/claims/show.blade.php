@@ -35,16 +35,25 @@
                     <div class="ukc-grid-2" style="align-items:start;gap:16px;margin-top:8px;">
                         <form method="POST" action="{{ route('admin.claims.status', $claim) }}">
                             @csrf
+                            <div class="ukc-field-stack">
                             <div class="ukc-field"><label>Statut</label>
                                 <select name="status">
                                     @foreach ($statuses as $k => $l)<option value="{{ $k }}" @selected($claim->status === $k)>{{ $l }}</option>@endforeach
                                 </select>
                             </div>
-                            <div class="ukc-field"><label>Réponse au déclarant (facultatif)</label>
-                                <textarea name="resolution" rows="4" placeholder="Ce qui a été fait / la réponse apportée…">{{ $claim->resolution }}</textarea>
+                            <div class="ukc-field"><label>{{ filled($claim->resolution) ? 'Nouvelle réponse au déclarant (facultatif)' : 'Réponse au déclarant (facultatif)' }}</label>
+                                {{-- ⚠️⚠️ Le champ part VIDE, même quand une réponse a déjà été
+                                     envoyée : celle-ci est affichée juste au-dessus, dans le bloc
+                                     « Résolution ». Repeuplé, il montrait deux fois le même texte
+                                     et se lisait comme un brouillon qu'on aurait oublié d'effacer.
+                                     Vide, il dit ce qu'il est : ce qu'on s'apprête à ENVOYER EN
+                                     PLUS. ⚠️ Le laisser vide n'efface rien - `updateStatus()`
+                                     n'écrase la résolution que si le champ est rempli. --}}
+                                <textarea name="resolution" rows="4" placeholder="{{ filled($claim->resolution) ? 'Une nouvelle réponse remplacera celle ci-dessus et sera envoyée…' : 'Ce qui a été fait / la réponse apportée…' }}">{{ old('resolution') }}</textarea>
                                 {{-- ⚠️ Tient sur UNE ligne dans la colonne de gauche (mesuré) : les
                                      deux incises de la version précédente la faisaient déborder. --}}
                                 <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">Une nouvelle réponse ou le statut « Résolue » déclenche un e-mail au déclarant.</p>
+                            </div>
                             </div>
                             <div class="ukc-form-actions ukc-form-actions--plain">
                                 <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Enregistrer</button>
@@ -107,42 +116,42 @@
                     <div class="ukc-alert ukc-alert--err" style="margin-top:12px;"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>{{ session('ukc_error') }}</div></div>
                 @endif
 
-                @forelse ($claim->analyses() as $a)
-                    @php($verdict = $a['verdict'] ?? 'procedure')
+                {{-- ⚠️ Les analyses sont rangées de la PLUS RÉCENTE à la plus ancienne
+                     (`array_unshift` côté contrôleur). Seule la première est dépliée :
+                     empilées, dix analyses faisaient une page à faire défiler, et la
+                     dernière - la seule qu'on vient lire - se perdait dedans. Les
+                     précédentes restent accessibles d'un clic : quelqu'un a pu agir
+                     sur une analyse ancienne, et on doit pouvoir la retrouver. --}}
+                @php($analyses = $claim->analyses())
+                @php($recente = $analyses[0] ?? null)
+                @php($anciennes = array_slice($analyses, 1))
+
+                @if ($recente)
                     <div style="margin-top:14px;border-top:1px solid var(--ukc-border);padding-top:12px;">
                         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            @if ($verdict === 'resolvable')
-                                <span class="ukc-pill ukc-pill--ok">L'IA propose une résolution</span>
-                            @elseif ($verdict === 'unresolvable')
-                                <span class="ukc-pill ukc-pill--err">Irrésolvable en l'état</span>
-                            @else
-                                <span class="ukc-pill ukc-pill--warn">Procédure à suivre</span>
-                            @endif
-                            <span style="font-size:11.5px;color:var(--ukc-muted);">{{ $a['at'] ?? '' }} @if (! empty($a['by']))- {{ $a['by'] }}@endif</span>
+                            <x-claims.verdict :verdict="$recente['verdict'] ?? 'procedure'" />
+                            <span style="font-size:11.5px;color:var(--ukc-muted);">{{ $recente['at'] ?? '' }} @if (! empty($recente['by']))- {{ $recente['by'] }}@endif</span>
                         </div>
-
-                        @if (! empty($a['summary']))<div style="margin-top:8px;line-height:1.55;">{{ $a['summary'] }}</div>@endif
-
-                        @if ($verdict === 'resolvable' && filled($a['resolution'] ?? ''))
-                            <div style="margin-top:8px;background:var(--ukc-bg);border-radius:10px;padding:10px 12px;white-space:pre-line;line-height:1.55;">{{ $a['resolution'] }}</div>
-                            <form method="POST" action="{{ route('admin.claims.status', $claim) }}" style="margin-top:8px;">
-                                @csrf
-                                <input type="hidden" name="status" value="resolved">
-                                <input type="hidden" name="resolution" value="{{ $a['resolution'] }}">
-                                <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Utiliser cette résolution et marquer résolue</button>
-                                <p style="font-size:12px;color:var(--ukc-muted);margin:6px 0 0;">La résolution proposée sera envoyée au déclarant par e-mail.</p>
-                            </form>
-                        @elseif ($verdict === 'procedure' && ! empty($a['steps']))
-                            <ol style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.5;">
-                                @foreach ($a['steps'] as $step)<li>{{ $step }}</li>@endforeach
-                            </ol>
-                        @elseif ($verdict === 'unresolvable' && filled($a['reason'] ?? ''))
-                            <div style="margin-top:8px;white-space:pre-line;line-height:1.55;">{{ $a['reason'] }}</div>
-                        @endif
+                        @include('admin.claims._analysis', ['a' => $recente, 'claim' => $claim])
                     </div>
-                @empty
+
+                    @if ($anciennes !== [])
+                        <div class="ukc-claim-anciennes">
+                            <p class="ukc-claim-anciennes__titre">{{ count($anciennes) }} analyse(s) précédente(s)</p>
+                            @foreach ($anciennes as $a)
+                                <details class="ukc-claim-ancienne">
+                                    <summary>
+                                        <x-claims.verdict :verdict="$a['verdict'] ?? 'procedure'" />
+                                        <span class="quand">{{ $a['at'] ?? '' }} @if (! empty($a['by']))- {{ $a['by'] }}@endif</span>
+                                    </summary>
+                                    @include('admin.claims._analysis', ['a' => $a, 'claim' => $claim])
+                                </details>
+                            @endforeach
+                        </div>
+                    @endif
+                @else
                     <p style="font-size:.9rem;color:var(--ukc-muted);margin-top:12px;">Aucune analyse pour l'instant.</p>
-                @endforelse
+                @endif
             </div>
         </div>
     </div>

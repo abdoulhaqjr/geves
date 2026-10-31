@@ -493,6 +493,12 @@ table.ukc-table .title { font-weight: 700; color: var(--ukc-text); }
 table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2px; }
 
 /* ---- Formulaires ---- */
+/* ⚠️ Champs EMPILÉS dans un formulaire : `.ukc-field` n'a que sa gouttière
+   INTERNE (label/champ, 6px) et aucune marge extérieure. Deux champs posés l'un
+   sous l'autre se touchent donc, et le libellé du second colle au champ du
+   premier - on croit lire une seule paire. C'est le pendant vertical de
+   `.ukc-form-grid` : même rang de 16px. */
+.ukc-field-stack { display: grid; gap: 16px; }
 .ukc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .ukc-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 @media (max-width: 640px) { .ukc-form-grid, .ukc-form-grid-3 { grid-template-columns: 1fr; } }

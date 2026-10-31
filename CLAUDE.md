@@ -7678,3 +7678,49 @@ rangée `.ukc-form-actions`.** Jamais un `<button>` posé directement après un
 
 Gardes : `ClaimsTest` (3 cas, **2 sabotages vérifiés**) - les boutons dans leur
 rangée, la phrase figée, et la variante sans filet déclarée dans la feuille.
+
+### L'analyse IA d'une réclamation s'appuie sur la BASE (2026-10-31)
+
+⚠️⚠️ **SANS FAITS, LE MODÈLE COMBLE.** Constaté sur une vraie réclamation : il
+proposait « virement bancaire direct » et « paiement sur place » à un
+participant dont l'événement **n'offre que le paiement en ligne** (depuis que
+`GatewayRegistry::offered()` ne propose que la passerelle réglée), et inventait
+une heure de passage. Le gestionnaire aurait transmis au déclarant des démarches
+que la plateforme refuse - **pire que pas d'analyse du tout**.
+
+- **`AnalyzeClaim::faits()`** injecte ce que la base dit du dossier : les moyens
+  de paiement **réellement offerts** par cet événement (via
+  `EventPaymentConfig::using()` + `GatewayRegistry::offered()`, les mêmes
+  sources que les écrans), la fiche participant du déclarant, son montant
+  (`Fees::forParticipant`) et l'état de son règlement.
+- **Des règles absolues** priment sur le reste du prompt : ne proposer aucun
+  moyen, canal, lieu ni démarche absent des FAITS ; n'inventer ni horaire, ni
+  salle, ni montant, ni référence.
+- ⚠️ **On écrit « inconnu » plutôt que de taire un manque** : une absence
+  silencieuse est exactement ce que le modèle remplit tout seul.
+- ⚠️ Même famille que la garde du copilote (« le chiffre qui fait foi est celui
+  de l'action ») : les faits viennent des sources des écrans, jamais d'une
+  déduction du modèle.
+
+**Le panneau ne s'allonge plus** : seule la **dernière** analyse est dépliée, les
+précédentes tiennent sur une ligne cliquable (`.ukc-claim-ancienne`). ⚠️ Elles
+ne sont **pas supprimées** : quelqu'un a pu agir sur une analyse ancienne, et il
+faut pouvoir la retrouver. Le rendu d'une analyse vit dans **un seul** partial
+(`admin/claims/_analysis`), rendu à l'identique déplié et replié - deux copies
+finiraient par diverger, et c'est l'ancienne qu'on oublierait.
+
+⚠️⚠️ **ET LE CHAMP DE RÉPONSE PART VIDE**, même quand une réponse a déjà été
+envoyée : celle-ci s'affiche déjà dans le bloc « Résolution » au-dessus.
+Repeuplé, il montrait **deux fois le même texte** et se lisait comme un
+brouillon qu'on aurait oublié d'effacer. Vide, il dit ce qu'il est : ce qu'on
+s'apprête à envoyer **en plus**. ⚠️ Le laisser vide **n'efface rien** -
+`updateStatus()` n'écrase la résolution que si le champ est rempli, et
+ré-enregistrer le même texte ne renvoie aucun e-mail (`$responseChanged`).
+
+**Complément à la règle des espaces** : `.ukc-field-stack` (grille, 16px) pour
+des champs **empilés**. `.ukc-field` n'a que sa gouttière interne (6px) et
+aucune marge extérieure : deux champs l'un sous l'autre se touchent, et le
+libellé du second colle au champ du premier. C'est le pendant vertical de
+`.ukc-form-grid`.
+
+Gardes : `ClaimsTest` (9 cas sur ce lot, **6 sabotages vérifiés**).
