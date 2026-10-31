@@ -7581,3 +7581,20 @@ d'attendre une réparation qui ne viendrait jamais.
 
 Gardes : `PaymentGatewayTest` (6 cas au total sur cet incident, **5 sabotages
 vérifiés**).
+
+### Et ce n'est PAS une mise à jour de l'API du prestataire (vérifié le 2026-10-31)
+
+Question posée au bon moment, et la réponse est **non** - autant l'écrire une
+fois pour toutes plutôt que refaire la recherche :
+
+- **Changelog FedaPay** : dernière entrée **septembre 2026** (« New Balance
+  Interface »). **Rien** en octobre ni novembre, et rien touchant la validation
+  des numéros, les `customers`, la création de transactions, ni le Togo.
+- **Format du numéro** : leur documentation est **elle-même incohérente** - un
+  exemple PHP montre `number: "+22966666600"` avec `country: 'bj'`, un exemple
+  Ruby `number: '66000001'` avec le même pays. Les deux formes sont donc
+  admises, et **la nôtre est prouvée** : deux paiements ont abouti le 29/10 avec
+  exactement ce code. ⚠️ **Ne pas « corriger » vers le numéro national** sur la
+  foi d'un exemple de documentation : on casserait ce qui marche.
+- **Conclusion** : quand le refus porte sur `phone_number`, c'est **le numéro de
+  ce payeur-là** qui ne convient pas, pas notre intégration.

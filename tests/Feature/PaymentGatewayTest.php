@@ -1194,3 +1194,64 @@ it('DIT au payeur de corriger son numéro, au lieu d’annoncer une indisponibil
         ->and($message)->not->toContain('indisponible')
         ->and(strtolower((string) $message))->not->toContain('fedapay');
 });
+
+it('DIT au payeur de corriger son numéro quand le prestataire le refuse', function () {
+    // ⚠️⚠️ Deux paiements ont abouti le 29/10 avec exactement ce code : la forme
+    // E.164 est acceptée. Quand le refus porte sur `phone_number`, c'est donc ce
+    // numéro-là qui ne convient pas, et l'intéressé est le seul à pouvoir le
+    // corriger - lui annoncer une indisponibilité le ferait attendre pour rien.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/transactions' => Http::response([
+            'message' => 'La création de la transaction a échoué',
+            'errors' => ['phone_number.number' => ['n’est pas valide']],
+        ], 400),
+    ]);
+
+    $message = null;
+    try {
+        (new FedaPayGateway)->initiate($payment);
+    } catch (PayerInputException $e) {
+        $message = $e->getMessage();
+    }
+
+    expect($message)->not->toBeNull('le refus du numéro doit être dit au payeur')
+        ->and($message)->toContain('numéro de téléphone')
+        ->and($message)->not->toContain('indisponible')
+        ->and(strtolower((string) $message))->not->toContain('fedapay');
+});
+
+it('ne consigne le numéro du payeur que MASQUÉ', function () {
+    // ⚠️ Assez pour reconnaître une forme fautive, jamais la coordonnée entière :
+    // le canal `payments` est conservé 90 jours.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $participant->update(['phone' => '+22890015284']);
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake(['*/transactions' => Http::response(['message' => 'refus'], 400)]);
+
+    $vu = [];
+    Log::shouldReceive('channel')->with('payments')->andReturnSelf();
+    Log::shouldReceive('error')->andReturnUsing(function (string $m, array $c) use (&$vu) {
+        $vu[] = json_encode($c, JSON_UNESCAPED_UNICODE);
+    });
+
+    try {
+        (new FedaPayGateway)->initiate($payment);
+    } catch (Throwable) {
+    }
+
+    expect(implode('', $vu))->toContain('telephone_envoye')
+        ->and(implode('', $vu))->not->toContain('22890015284')
+        ->and(implode('', $vu))->toContain('284');
+});

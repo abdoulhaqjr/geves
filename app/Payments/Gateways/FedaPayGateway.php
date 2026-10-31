@@ -131,10 +131,56 @@ class FedaPayGateway implements OnlineGateway
                 'reponse' => is_array($corps)
                     ? self::sansJeton($corps)
                     : mb_substr((string) $response->body(), 0, 500),
+                // ⚠️ Le numéro est MASQUÉ : il suffit à reconnaître une forme
+                // fautive (longueur, indicatif) sans recopier la coordonnée
+                // personnelle d'un payeur dans un journal conservé 90 jours.
+                'telephone_envoye' => self::masque((string) data_get($body, 'customer.phone_number.number')),
+                'pays_envoye' => data_get($body, 'customer.phone_number.country'),
             ]);
+
+            // ⚠️⚠️ **UN NUMÉRO QUE LE PRESTATAIRE REFUSE EST UNE DONNÉE DU
+            // PAYEUR, PAS UNE PANNE.** Deux paiements ont abouti le 29/10 avec
+            // exactement ce code : la forme E.164 est acceptée. Quand le refus
+            // porte sur `phone_number`, c'est donc ce numéro-là qui ne convient
+            // pas - et l'intéressé est le seul à pouvoir le corriger. Lui
+            // annoncer une indisponibilité le ferait attendre pour rien.
+            if (self::refusDuTelephone($corps)) {
+                throw new PayerInputException(
+                    'Le numéro de téléphone de votre profil n’est pas accepté pour le paiement mobile. '
+                    .'Corrigez-le au format international (par exemple +228 90 00 00 00), puis réessayez.'
+                );
+            }
         }
 
         return (array) $response->throw()->json();
+    }
+
+    /** Le refus porte-t-il sur le numéro du payeur ? */
+    private static function refusDuTelephone(mixed $corps): bool
+    {
+        if (! is_array($corps)) {
+            return false;
+        }
+
+        foreach (array_keys((array) ($corps['errors'] ?? [])) as $champ) {
+            if (str_starts_with((string) $champ, 'phone_number')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** « +228…935 » : assez pour reconnaître une forme, pas pour identifier. */
+    private static function masque(string $numero): string
+    {
+        if ($numero === '') {
+            return '(aucun)';
+        }
+
+        return mb_strlen($numero) <= 7
+            ? str_repeat('•', mb_strlen($numero))
+            : mb_substr($numero, 0, 4).str_repeat('•', mb_strlen($numero) - 7).mb_substr($numero, -3);
     }
 
     /**
