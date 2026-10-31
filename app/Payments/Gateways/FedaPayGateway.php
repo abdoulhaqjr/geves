@@ -6,6 +6,8 @@ use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * FedaPay - mobile money (MTN, Moov, Togocom…) via page hébergée ou formulaire
@@ -97,6 +99,57 @@ class FedaPayGateway implements OnlineGateway
         return $res['v1/transaction'] ?? $res['transaction'] ?? $res['data'] ?? $res;
     }
 
+    /**
+     * Un appel au prestataire, dont le REFUS est consigné avant d'être relancé.
+     *
+     * ⚠️⚠️ **UN 400 SANS CORPS N'APPREND RIEN À PERSONNE.** `->throw()` ne retient
+     * que « HTTP request returned status code 400 » : le payeur lit « service
+     * momentanément indisponible », le journal répète le code, et la raison -
+     * que le prestataire écrit pourtant dans sa réponse - est jetée. Constaté en
+     * production le 30/10/2026, deux fois, sans qu'aucune trace ne dise pourquoi.
+     * Le canal `payments` existe précisément pour cette pièce-là.
+     *
+     * ⚠️ **Le corps est consigné, JAMAIS le jeton ni l'adresse de paiement.**
+     * Celle-ci porte le jeton dans son adresse, et la règle du projet est qu'il
+     * n'entre dans aucun journal, aucun fichier, aucun document.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function appel(string $path, array $body, string $etape, Payment $payment): array
+    {
+        $response = $this->http()->post($this->baseUrl().$path, $body);
+
+        if ($response->failed()) {
+            $corps = $response->json();
+
+            Log::channel('payments')->error('FedaPay a refusé '.$etape.'.', [
+                'payment' => $payment->id,
+                'statut' => $response->status(),
+                'reponse' => is_array($corps)
+                    ? self::sansJeton($corps)
+                    : mb_substr((string) $response->body(), 0, 500),
+            ]);
+        }
+
+        return (array) $response->throw()->json();
+    }
+
+    /**
+     * @param  array<string, mixed>  $corps
+     * @return array<string, mixed>
+     */
+    private static function sansJeton(array $corps): array
+    {
+        foreach (['token', 'url'] as $cle) {
+            if (array_key_exists($cle, $corps)) {
+                $corps[$cle] = '[retiré]';
+            }
+        }
+
+        return $corps;
+    }
+
     public function initiate(Payment $payment): array
     {
         $payer = $payment->payerContact();
@@ -132,12 +185,30 @@ class FedaPayGateway implements OnlineGateway
         // rien** : la page affichait son propre sélecteur quand même. Le remettre
         // ne ferait que risquer un code refusé, donc la création de la transaction
         // - donc le paiement ENTIER.
-        $create = $this->http()->post($this->baseUrl().'/transactions', $body)->throw()->json();
+        $create = $this->appel('/transactions', $body, 'la création de la transaction', $payment);
 
         $id = $this->unwrap($create)['id'] ?? null;
+
+        // ⚠️⚠️ **SANS IDENTIFIANT, ON S'ARRÊTE ICI.** Laissé à `null`, il était
+        // écrit tel quel dans `gateway_ref` puis recollé dans l'adresse suivante
+        // (`/transactions//token`), qui répond 404 : le payeur lisait « service
+        // indisponible » pour un **404 sur une URL malformée**, pendant que le
+        // prestataire gardait une transaction que plus rien ne raccrochait à
+        // personne - ni le webhook, ni `payments:reconcile`, qui cherchent tous
+        // deux par la référence. Un paiement sans référence est un paiement
+        // perdu : mieux vaut refuser avant d'engager le payeur.
+        if (! filled($id)) {
+            Log::channel('payments')->error('FedaPay n’a rendu aucun identifiant de transaction.', [
+                'payment' => $payment->id,
+                'enveloppe' => array_keys($create),
+            ]);
+
+            throw new RuntimeException('Le prestataire n’a pas rendu d’identifiant de transaction.');
+        }
+
         $payment->update(['gateway_ref' => $id]);
 
-        $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
+        $token = $this->appel("/transactions/{$id}/token", [], 'la demande de lien de paiement', $payment);
         $url = (string) ($token['url'] ?? '');
 
         // ⚠️ **Sans clé PUBLIQUE, pas de formulaire embarqué** : on repart en

@@ -7508,3 +7508,34 @@ statique `public/error-pages.css` : les pages 500/503 ne doivent pas dépendre
 de Vite, du widget ou d'une lecture en base pour rester affichables pendant
 une panne. Laravel conserve les réponses JSON des requêtes API/fetch ; en
 développement, `APP_DEBUG=true` affiche toujours la trace des erreurs 500.
+
+### Un refus du prestataire doit DIRE pourquoi (2026-10-31)
+
+⚠️⚠️ **400 EN PRODUCTION, ET AUCUNE TRACE DE LA RAISON.** Le 30/10/2026, la page
+de paiement affichait « Le service de paiement est momentanément indisponible »
+et le journal ne portait que `HTTP request returned status code 400:` -
+`FedaPayGateway.php(135)`, soit `POST /transactions`. La clé était donc acceptée
+(ce serait 401) et le prestataire répondait (ce ne serait pas 5xx) : **il
+refusait notre requête**, et il écrit la raison dans le corps de sa réponse -
+que `->throw()` jetait. **On ne diagnostique pas un refus qu'on n'enregistre pas.**
+
+- **`FedaPayGateway::appel()`** est désormais le seul chemin des deux appels de
+  `initiate()` : il consigne dans le canal **`payments`** le **statut** et le
+  **corps** de toute réponse en échec, puis relance. Comportement inchangé pour
+  le payeur.
+- ⚠️ **Le jeton n'entre dans aucun journal** (`sansJeton()` remplace `token` et
+  `url` - l'adresse de paiement porte le jeton dans son adresse). Règle du
+  projet, tenue par un cas.
+- ⚠️⚠️ **SANS IDENTIFIANT, ON S'ARRÊTE AVANT D'ENGAGER LE PAYEUR.** `$id` laissé
+  à `null` était écrit tel quel dans `gateway_ref`, puis recollé dans
+  `/transactions//token` - 404, donc « service indisponible » pour une **URL
+  malformée**. Pire : la transaction créée chez le prestataire n'était plus
+  rattachable, **ni par le webhook ni par `payments:reconcile`**, qui cherchent
+  tous deux par la référence. Un paiement sans référence est un paiement perdu.
+- ⚠️ **Le canal `payments` est en rotation QUOTIDIENNE** : le fichier s'appelle
+  `payments-AAAA-MM-JJ.log`, pas `payments.log`. Un `tail payments.log` qui
+  échoue n'est pas une panne.
+- ⚠️ **Lire un 400 ne dit pas encore lequel** : la cause réelle du refus reste à
+  établir avec le corps que ce correctif fait enfin apparaître.
+
+Gardes : `PaymentGatewayTest` (3 cas ajoutés, **2 sabotages vérifiés**).

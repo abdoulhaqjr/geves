@@ -5,7 +5,9 @@ use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\User;
 use App\Payments\Gateways\FedaPayGateway;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 
@@ -1015,4 +1017,93 @@ it('Back-office : la confirmation de remboursement prévient avant le clic', fun
     $this->actingAs(adminStaff())
         ->get(route('admin.payments.index'))
         ->assertSee('le virement se fait depuis le tableau de bord du prestataire', false);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Un refus du prestataire doit DIRE pourquoi
+|--------------------------------------------------------------------------
+|
+| ⚠️⚠️ Constaté en production le 30/10/2026 : `POST /transactions` répondait
+| **400**, deux fois, et le seul mot du journal était « HTTP request returned
+| status code 400 ». Le payeur lisait « service momentanément indisponible »,
+| et la raison - écrite par le prestataire dans le corps de sa réponse - était
+| jetée par `->throw()`. On ne diagnostique pas un refus qu'on n'enregistre pas.
+|
+*/
+it('consigne le REFUS du prestataire, corps compris', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/transactions' => Http::response(['message' => 'Le champ callback_url est invalide.'], 400),
+    ]);
+
+    Log::shouldReceive('channel')->with('payments')->andReturnSelf();
+    Log::shouldReceive('error')->once()->withArgs(function (string $message, array $contexte) use ($payment) {
+        return str_contains($message, 'la création de la transaction')
+            && $contexte['statut'] === 400
+            && $contexte['payment'] === $payment->id
+            && str_contains(json_encode($contexte['reponse']), 'callback_url');
+    });
+
+    expect(fn () => (new FedaPayGateway)->initiate($payment))->toThrow(RequestException::class);
+});
+
+it('ne consigne JAMAIS le jeton de paiement', function () {
+    // ⚠️ L'adresse de paiement porte le jeton dans son adresse, et la règle du
+    // projet est qu'il n'entre dans aucun journal, aucun fichier, aucun document.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response([
+            'url' => 'https://paiement.exemple/SECRET-TOKEN', 'token' => 'SECRET-TOKEN',
+        ], 400),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 77]], 201),
+    ]);
+
+    $vu = [];
+    Log::shouldReceive('channel')->with('payments')->andReturnSelf();
+    Log::shouldReceive('error')->andReturnUsing(function (string $message, array $contexte) use (&$vu) {
+        $vu[] = json_encode($contexte);
+    });
+
+    try {
+        (new FedaPayGateway)->initiate($payment);
+    } catch (Throwable) {
+    }
+
+    expect($vu)->not->toBeEmpty()
+        ->and(implode('', $vu))->not->toContain('SECRET-TOKEN');
+});
+
+it('refuse d’engager le payeur quand le prestataire ne rend AUCUN identifiant', function () {
+    // ⚠️⚠️ Laissé à null, l'identifiant était écrit tel quel dans `gateway_ref`
+    // puis recollé dans `/transactions//token` : le payeur lisait « service
+    // indisponible » pour un 404 sur une URL malformée, et la transaction créée
+    // chez le prestataire n'était plus rattachable - ni par le webhook, ni par
+    // `payments:reconcile`, qui cherchent tous deux par la référence.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake(['*/transactions' => Http::response(['v1/transaction' => ['reference' => 'sans-id']], 201)]);
+
+    expect(fn () => (new FedaPayGateway)->initiate($payment))
+        ->toThrow(RuntimeException::class);
+
+    expect($payment->fresh()->gateway_ref)->toBeNull();
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), '/token'));
 });
