@@ -6873,6 +6873,20 @@ drapeau béninois compris - le payeur devait corriger à la main ce que nous
 savions déjà. On lui passe donc le **`customer`**, pays compris
 (`phone_number.country`, option documentée de `FedaPay.init`).
 
+⚠️⚠️ **ET CELA NE SUFFIT PAS : L'OPÉRATEUR RESTE SUR « MTN BÉNIN ».** Corrigé
+ici le **31/10/2026**, capture à l'appui : nous envoyons bien
+`phone_number.country = 'tg'`, leur formulaire **pré-remplit le numéro**
+(`+22870323810`) - donc il lit bien notre `customer` - mais sa liste
+« Choisissez votre opérateur » s'ouvre quand même sur **Mtn Bénin**. Le pays
+gouverne le champ du numéro, **pas le choix de l'opérateur**. La phrase
+ci-dessus laissait croire le contraire : elle décrivait l'intention, pas le
+résultat mesuré.
+⚠️ **Conséquence à ne pas sous-estimer** : un payeur qui ne change pas la liste
+règle avec un opérateur qui n'est pas le sien, et le paiement échoue. Rien dans
+notre code ne peut l'empêcher - la liste appartient à leur formulaire, dans un
+cadre d'un autre domaine. À poser au prestataire ; en attendant, c'est une perte
+de paiement possible à chaque règlement.
+
 ⚠️ **C'est le MÊME `customer` que celui de la transaction**, rendu par
 `initiate()`, pas une seconde construction : deux assemblages se décaleraient, et
 le formulaire finirait par contredire la transaction qu'il règle.
