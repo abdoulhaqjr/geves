@@ -294,7 +294,26 @@ class Payment extends Model
             'firstname' => $pick($p?->first_name, $u?->first_name),
             'lastname' => $pick($p?->last_name, $u?->last_name),
             'email' => $pick($p?->email, $u?->email),
-            'phone' => $pick($p?->phone, $u?->phone),
+            // ⚠️⚠️ **LE TÉLÉPHONE DU COMPTE PASSE DEVANT CELUI DE LA FICHE, ET
+            // C'EST LE SEUL CHAMP DANS CE SENS-LÀ.** Mesuré le 31/10/2026 : un
+            // payeur dont le numéro était refusé l'a corrigé dans son profil, et
+            // le journal a continué d'envoyer l'ANCIEN - `participants.phone`
+            // l'emportait. Trois raisons de l'inverser, et seulement pour le
+            // téléphone :
+            //   - `users.phone` est normalisé par le mutateur du modèle et il est
+            //     UNIQUE ; `participants.phone` est une copie libre, posée par un
+            //     import ou par le guichet, qui n'est normalisée nulle part ;
+            //   - c'est le seul des deux que l'intéressé peut corriger, et
+            //     **aucun écran du back-office ne modifie `participants.phone`** :
+            //     la fiche gagnait donc un bras de fer que personne ne pouvait
+            //     arbitrer ;
+            //   - il sert à JOINDRE quelqu'un maintenant (le paiement mobile
+            //     sonne sur ce numéro), pas à dire qui il était à l'inscription.
+            // ⚠️ La fiche reste le repli : un participant saisi au guichet n'a pas
+            // forcément de compte.
+            // ⚠️ Nom, prénom et e-mail gardent l'ordre inverse, délibérément :
+            // ceux-là décrivent la personne **telle qu'inscrite à cet événement**.
+            'phone' => $pick($u?->phone, $p?->phone),
         ];
     }
 }

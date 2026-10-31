@@ -1255,3 +1255,45 @@ it('ne consigne le numéro du payeur que MASQUÉ', function () {
         ->and(implode('', $vu))->not->toContain('22890015284')
         ->and(implode('', $vu))->toContain('284');
 });
+
+it('envoie le téléphone CORRIGÉ dans le profil, pas celui figé sur la fiche', function () {
+    // ⚠️⚠️ Mesuré le 31/10/2026 : un payeur dont le numéro était refusé l'a
+    // corrigé dans son profil, et le paiement a continué d'envoyer l'ancien -
+    // `participants.phone` l'emportait, et AUCUN écran du back-office ne le
+    // modifie. La correction de l'intéressé restait donc sans effet.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $participant->update(['phone' => '+22899999999']);   // copie figée, refusée
+    $account->update(['phone' => '+22870323810']);       // corrigé par l'intéressé
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    expect($payment->payerContact()['phone'])->toBe('+22870323810');
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 71]], 201),
+    ]);
+
+    (new FedaPayGateway)->initiate($payment);
+
+    expect(corpsDeCreation()['customer']['phone_number']['number'])->toBe('+22870323810');
+});
+
+it('garde la fiche en repli quand le participant n’a pas de compte', function () {
+    // ⚠️ Un participant saisi au guichet n'a pas forcément de compte : sans ce
+    // repli, son paiement partirait sans aucun numéro.
+    $event = openEdition();
+    $participant = $event->participants()->create([
+        'first_name' => 'Ama', 'last_name' => 'KODJO',
+        'email' => 'guichet@test.tg', 'phone' => '+22891234567', 'role' => 'attendee',
+    ]);
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    expect($payment->payerContact()['phone'])->toBe('+22891234567');
+});

@@ -7598,3 +7598,29 @@ fois pour toutes plutôt que refaire la recherche :
   foi d'un exemple de documentation : on casserait ce qui marche.
 - **Conclusion** : quand le refus porte sur `phone_number`, c'est **le numéro de
   ce payeur-là** qui ne convient pas, pas notre intégration.
+
+### Le téléphone du PAIEMENT vient du compte, pas de la fiche (2026-10-31)
+
+⚠️⚠️ **LA CORRECTION DU PAYEUR RESTAIT SANS EFFET.** Le numéro refusé a été
+corrigé dans le profil, et le journal a continué d'envoyer l'**ancien** :
+`Payment::payerContact()` lisait `participants.phone` **en premier**, le compte
+seulement en repli. Or :
+
+- `users.phone` est **normalisé** par le mutateur du modèle et il est **unique** ;
+  `participants.phone` est une copie libre, posée par un import ou par le
+  guichet, normalisée nulle part ;
+- c'est le seul des deux que l'intéressé peut corriger, et **aucun écran du
+  back-office ne modifie `participants.phone`** : la fiche gagnait un bras de fer
+  que personne ne pouvait arbitrer ;
+- il sert à **joindre** quelqu'un maintenant - le paiement mobile sonne sur ce
+  numéro - pas à dire qui il était à l'inscription.
+
+⚠️ **Seul le téléphone est inversé.** Nom, prénom et e-mail gardent l'ordre
+`participant` d'abord : ceux-là décrivent la personne **telle qu'inscrite à cet
+événement**, et c'est la grammaire de l'identité figée
+({@see Participant::eventIdentity()}). La fiche reste le **repli** du téléphone :
+un participant saisi au guichet n'a pas forcément de compte.
+
+⚠️ **À surveiller** : `participants.phone` n'étant modifiable par aucun écran, un
+numéro fautif sur une fiche **sans compte** (guichet) n'est corrigeable qu'en
+base. À ouvrir le jour où le cas se présente.
