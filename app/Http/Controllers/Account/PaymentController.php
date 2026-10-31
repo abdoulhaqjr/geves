@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Payments\PayerInputException;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
 use App\Support\Fees;
@@ -206,6 +207,12 @@ class PaymentController extends Controller
 
         try {
             $result = $gateway->initiate($payment);
+        } catch (PayerInputException $e) {
+            // ⚠️⚠️ **CE QUE LE PAYEUR PEUT CORRIGER SE DIT.** « Momentanément
+            // indisponible » lui fait attendre une réparation qui ne viendra
+            // jamais : la donnée fautive est dans son profil, et il la corrige
+            // en trente secondes - à condition qu'on la lui nomme.
+            return back()->withErrors(['pay' => $e->getMessage()]);
         } catch (\Throwable $e) {
             report($e);
 

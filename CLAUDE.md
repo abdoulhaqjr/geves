@@ -7539,3 +7539,45 @@ que `->throw()` jetait. **On ne diagnostique pas un refus qu'on n'enregistre pas
   établir avec le corps que ce correctif fait enfin apparaître.
 
 Gardes : `PaymentGatewayTest` (3 cas ajoutés, **2 sabotages vérifiés**).
+
+### La cause du 400 : le TÉLÉPHONE du payeur (2026-10-31)
+
+Le corps enfin consigné (section précédente) a nommé la cause en une ligne :
+
+```
+"errors": {"phone_number.number": ["n'est pas valide"],
+           "phone_number.country": ["doit être rempli(e)"]}, "model": "V1::Customer"
+```
+
+⚠️⚠️ **LE PAYS EST OBLIGATOIRE, ET SON ABSENCE FAIT REFUSER TOUTE LA
+TRANSACTION.** On envoyait le numéro **tel qu'il est stocké** et on **retirait**
+le champ `country` quand `countryFromE164()` ne savait pas le déduire
+(`array_filter`). Un seul payeur au numéro mal formé suffisait à faire lire
+« service momentanément indisponible » - un message qui dit à l'intéressé
+d'attendre une réparation qui ne viendrait jamais.
+
+- ⚠️⚠️ **`participants.phone` NE PASSE PAS par le mutateur de `User::phone`.**
+  C'est une colonne à part, remplie par un import, par le guichet
+  (`/admin/paiements/creer`) ou à la main : elle arrive en « 90 01 52 84 », en
+  « 0022890015284 », dans toutes les formes. Et `payerContact()` la lit **en
+  priorité**, avant celle du compte. Supposer l'E.164 là était faux.
+- **Remède : `Phone::toE164()`**, et le pays part **toujours**
+  (`countryFromE164($e164) ?? Phone::DEFAULT_COUNTRY`).
+- ⚠️⚠️ **`toE164()` N'EST PAS `normalize()`, ET LA DISTINCTION EST LE CŒUR DU
+  SUJET.** `normalize()` sert à **identifier** (unicité de `users.phone`,
+  rapprochement d'auteurs) et n'invente **jamais** d'indicatif : en inventer un
+  rattacherait deux personnes différentes au même numéro. `toE164()` ne
+  reconnaît personne - elle rend un numéro **composable** à un prestataire qui
+  refuse un numéro sans pays. Ne pas fondre les deux.
+- ⚠️ **`Phone::DEFAULT_COUNTRY` (`tg`) doit rester d'accord avec
+  `initialCountry` de `resources/js/app.js`** : sinon l'écran propose un pays et
+  le paiement en suppose un autre.
+- ⚠️⚠️ **CE QUE LE PAYEUR PEUT CORRIGER SE DIT**
+  ({@see App\Payments\PayerInputException}) : un numéro inexploitable lui demande
+  désormais de le corriger **dans son profil, au format international**, au lieu
+  d'annoncer une indisponibilité. Le message ne nomme pas le prestataire
+  (convention du projet) et il est affiché tel quel - les deux parcours
+  (participation et formation) l'attrapent avant le `catch` générique.
+
+Gardes : `PaymentGatewayTest` (6 cas au total sur cet incident, **5 sabotages
+vérifiés**).

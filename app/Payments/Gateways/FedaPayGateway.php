@@ -4,6 +4,8 @@ namespace App\Payments\Gateways;
 
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
+use App\Payments\PayerInputException;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -154,20 +156,35 @@ class FedaPayGateway implements OnlineGateway
     {
         $payer = $payment->payerContact();
 
-        // Le téléphone pré-remplit la page FedaPay (mobile money). Il est stocké en
-        // E.164 (`<x-ukc.phone>`) : on en déduit le pays attendu par l'API.
+        // Le téléphone pré-remplit la page du prestataire (mobile money).
         $customer = array_filter([
             'firstname' => $payer['firstname'],
             'lastname' => $payer['lastname'],
             'email' => $payer['email'],
         ], fn ($v) => filled($v));
 
-        if (filled($payer['phone'])) {
-            $customer['phone_number'] = array_filter([
-                'number' => $payer['phone'],
-                'country' => self::countryFromE164((string) $payer['phone']),
-            ], fn ($v) => filled($v));
+        // ⚠️⚠️ **LE PRESTATAIRE EXIGE UN PAYS, ET IL REFUSE TOUTE LA TRANSACTION
+        // SANS LUI.** Mesuré en production le 31/10/2026 :
+        // `phone_number.country: « doit être rempli(e) »`, `phone_number.number:
+        // « n'est pas valide »`, HTTP 400 - et le payeur lisait « service
+        // momentanément indisponible ». On envoyait le numéro **tel qu'il est
+        // stocké** et on **retirait** le pays quand on ne savait pas le déduire :
+        // or `participants.phone` ne passe pas par le mutateur de `User::phone`,
+        // il arrive d'un import ou du guichet, souvent sans indicatif. Le numéro
+        // est donc remis en forme internationale ({@see Phone::toE164()}), et le
+        // pays part TOUJOURS.
+        $telephone = Phone::toE164($payer['phone']);
+        if ($telephone === '') {
+            throw new PayerInputException(
+                'Votre numéro de téléphone n’est pas exploitable pour le paiement mobile. '
+                .'Corrigez-le dans votre profil, au format international (par exemple +228 90 00 00 00).'
+            );
         }
+
+        $customer['phone_number'] = [
+            'number' => $telephone,
+            'country' => self::countryFromE164($telephone) ?? Phone::DEFAULT_COUNTRY,
+        ];
 
         $body = [
             'description' => 'Frais d\'inscription - '.($payment->event?->title ?? 'Événement'),

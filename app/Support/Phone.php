@@ -44,4 +44,55 @@ class Phone
     {
         return strlen(preg_replace('/\D/', '', (string) $phone) ?? '') >= self::MIN_DIGITS;
     }
+
+    /**
+     * Indicatif et pays de la plateforme, pour COMPOSER - jamais pour identifier.
+     *
+     * ⚠️ `tg` est déjà le pays initial du composant de saisie
+     * (`initialCountry` dans `resources/js/app.js`) : les deux doivent rester
+     * d'accord, sans quoi l'écran proposerait un pays et le paiement en
+     * supposerait un autre.
+     */
+    public const DEFAULT_DIAL = '228';
+
+    public const DEFAULT_COUNTRY = 'tg';
+
+    /**
+     * Forme internationale d'un numéro, pour un service qui doit l'APPELER.
+     *
+     * ⚠️⚠️ **CE N'EST PAS `normalize()`, ET LA DISTINCTION EST TOUT LE SUJET.**
+     * `normalize()` sert à **identifier** (unicité de `users.phone`,
+     * rapprochement d'auteurs) et n'invente donc **jamais** d'indicatif :
+     * en inventer un rattacherait deux personnes différentes au même numéro.
+     * Ici on n'identifie personne - on remet à un prestataire de paiement un
+     * numéro qu'il doit pouvoir composer, et **il refuse un numéro sans pays**.
+     * Un numéro local reçoit donc l'indicatif de la plateforme.
+     *
+     * ⚠️ `payments.phone` d'un participant n'est PAS passé par le mutateur de
+     * `User::phone` : il vient d'un import, du guichet ou d'une saisie libre, et
+     * arrive dans toutes les formes - « 90 01 52 84 », « 0022890015284 ».
+     *
+     * Rend une chaîne vide quand il n'y a pas assez de chiffres : on ne fabrique
+     * pas un numéro à partir de rien.
+     */
+    public static function toE164(?string $phone, string $dial = self::DEFAULT_DIAL): string
+    {
+        $value = self::normalize($phone);
+        if ($value === '' || ! self::usable($value)) {
+            return '';
+        }
+
+        if (str_starts_with($value, '+')) {
+            return $value;
+        }
+
+        // « 00 » est le préfixe international composé : il vaut un « + ».
+        if (str_starts_with($value, '00')) {
+            return '+'.substr($value, 2);
+        }
+
+        // Numéro national : on ne retire le zéro de tête que s'il y en a un
+        // (plans où il s'écrit « 06… » ), le Togo n'en ayant pas.
+        return '+'.$dial.ltrim($value, '0');
+    }
 }

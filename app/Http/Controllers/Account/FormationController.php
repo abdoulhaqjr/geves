@@ -9,6 +9,7 @@ use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Payments\PayerInputException;
 use App\Support\CurrentEvent;
 use App\Support\EventLock;
 use App\Support\EventPaymentConfig;
@@ -138,6 +139,9 @@ class FormationController extends Controller
         $enrollment->update(['payment_id' => $payment->id]);
         try {
             $result = $gateway->initiate($payment);
+        } catch (PayerInputException $e) {
+            // ⚠️ Ce que le payeur peut corriger lui-même se DIT (cf. la classe).
+            return $back->withErrors(['pay' => $e->getMessage()]);
         } catch (\Throwable) {
             return $back->withErrors(['pay' => 'Le service de paiement est momentanément indisponible. Réessayez plus tard.']);
         }

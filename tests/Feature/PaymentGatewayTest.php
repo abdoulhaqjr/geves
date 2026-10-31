@@ -5,6 +5,7 @@ use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\User;
 use App\Payments\Gateways\FedaPayGateway;
+use App\Payments\PayerInputException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1106,4 +1107,90 @@ it('refuse d’engager le payeur quand le prestataire ne rend AUCUN identifiant'
 
     expect($payment->fresh()->gateway_ref)->toBeNull();
     Http::assertNotSent(fn ($request) => str_contains($request->url(), '/token'));
+});
+
+/*
+|--------------------------------------------------------------------------
+| Le pays du payeur part TOUJOURS, et un numéro local ne bloque plus rien
+|--------------------------------------------------------------------------
+|
+| ⚠️⚠️ Mesuré en production le 31/10/2026, corps de la réponse à l'appui :
+| `phone_number.country: « doit être rempli(e) »` + `phone_number.number:
+| « n'est pas valide »`, HTTP 400, transaction refusée ENTIÈREMENT. On
+| envoyait le numéro tel qu'il est stocké et on RETIRAIT le pays quand on ne
+| savait pas le déduire - or `participants.phone` ne passe pas par le mutateur
+| de `User::phone` et arrive souvent sans indicatif.
+|
+*/
+it('remet un numéro LOCAL en forme internationale et nomme son pays', function () {
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $participant->update(['phone' => '90 01 52 84']); // tel que le guichet le saisit
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 61]], 201),
+    ]);
+
+    (new FedaPayGateway)->initiate($payment);
+
+    $corps = corpsDeCreation();
+
+    expect($corps['customer']['phone_number']['number'])->toBe('+22890015284')
+        ->and($corps['customer']['phone_number']['country'])->toBe('tg');
+});
+
+it('nomme le pays même quand l’indicatif est inconnu', function () {
+    // ⚠️ Le champ est OBLIGATOIRE côté prestataire : le retirer faisait refuser
+    // toute la transaction. Un pays par défaut vaut mieux qu'un champ absent.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $participant->update(['phone' => '+99912345678']); // indicatif hors de la table
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/transactions/*/token' => Http::response(['url' => 'https://paiement.exemple/abc']),
+        '*/transactions' => Http::response(['v1/transaction' => ['id' => 62]], 201),
+    ]);
+
+    (new FedaPayGateway)->initiate($payment);
+
+    // ⚠️ On exige la VALEUR, pas seulement la clé : un `country` présent mais
+    // vide est exactement ce que le prestataire a refusé.
+    expect(corpsDeCreation()['customer']['phone_number']['country'])->toBe('tg');
+});
+
+it('DIT au payeur de corriger son numéro, au lieu d’annoncer une indisponibilité', function () {
+    // ⚠️⚠️ « Momentanément indisponible » fait attendre une réparation qui ne
+    // viendra jamais : la donnée fautive est dans le profil du payeur.
+    configureFedapay();
+    [$event, $account, $participant] = onlineSetup();
+    $participant->update(['phone' => '12']); // trop court pour être composé
+    $payment = $event->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 10000,
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+
+    Http::preventStrayRequests();
+
+    expect(fn () => (new FedaPayGateway)->initiate($payment))
+        ->toThrow(PayerInputException::class);
+
+    $message = null;
+    try {
+        (new FedaPayGateway)->initiate($payment);
+    } catch (PayerInputException $e) {
+        $message = $e->getMessage();
+    }
+
+    expect($message)->toContain('profil')
+        ->and($message)->not->toContain('indisponible')
+        ->and(strtolower((string) $message))->not->toContain('fedapay');
 });
