@@ -7723,4 +7723,15 @@ aucune marge extérieure : deux champs l'un sous l'autre se touchent, et le
 libellé du second colle au champ du premier. C'est le pendant vertical de
 `.ukc-form-grid`.
 
-Gardes : `ClaimsTest` (9 cas sur ce lot, **6 sabotages vérifiés**).
+⚠️ **ET LE CORPS D'UNE ANALYSE A SA TAILLE : `.ukc-claim-analyse` (13,5 px).**
+Il n'en avait **aucune** : il héritait des **16 px de la racine** pendant que
+tout le back-office lit à 13-13,5 px (tableaux, champs, paragraphes de carte).
+Un **avis** du modèle s'affichait donc plus grand que la réclamation qu'il
+commente - mesuré : 16 px contre 13 pour le texte d'intro de la même carte. La
+taille se pose **une fois sur le conteneur** du partial, jamais champ par
+champ : les quatre formes d'une analyse (résumé, résolution, étapes, motif)
+passent par le même partial et doivent rester à la même échelle, dépliée comme
+repliée. ⚠️ `.ukc-rte` (le message du déclarant) **garde ses 16 px** : c'est
+l'échelle de prose de tout le projet, et la changer ici la changerait partout.
+
+Gardes : `ClaimsTest` (10 cas sur ce lot, **8 sabotages vérifiés**).

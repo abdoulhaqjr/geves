@@ -494,3 +494,30 @@ it('espace les champs EMPILÉS d’un formulaire', function () {
     expect($html)->toContain('ukc-field-stack')
         ->and($css)->toContain('.ukc-field-stack { display: grid; gap: 16px; }');
 });
+
+it('lit l’analyse à la taille du reste du back-office', function () {
+    // ⚠️ Le corps d'une analyse n'avait AUCUNE taille de police : il héritait
+    // des 16 px de la racine quand tout le back-office lit à 13-13,5 px. Un
+    // AVIS du modèle s'affichait donc plus grand que la réclamation qu'il
+    // commente. La taille se pose sur le CONTENEUR, une fois : les quatre
+    // formes d'une analyse (résumé, résolution, étapes, motif) passent par le
+    // même partial, et doivent rester à la même échelle, dépliées ou repliées.
+    $claim = seedClaim();
+    $meta = (array) $claim->meta;
+    $meta['analyses'] = [
+        ['verdict' => 'procedure', 'summary' => 'LA PLUS RECENTE', 'steps' => ['x'], 'at' => '31/10/2026 - 06:10'],
+        ['verdict' => 'unresolvable', 'reason' => 'UNE PRECEDENTE', 'at' => '30/10/2026 - 22:40'],
+    ];
+    $claim->update(['meta' => $meta]);
+
+    $html = $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.claims.show', $claim))
+        ->assertOk()
+        ->getContent();
+    $css = (string) file_get_contents(resource_path('css/admin.css'));
+
+    // La dépliée ET la repliée : une seule des deux habillée, et le panneau
+    // mélangerait deux échelles.
+    expect(substr_count($html, 'class="ukc-claim-analyse"'))->toBe(2)
+        ->and($css)->toContain('.admin-page .ukc-claim-analyse { font-size: 13.5px; }');
+});

@@ -1529,6 +1529,15 @@
   font-size: 12.5px; line-height: 1.5;
 }
 
+/* ---- Réclamations : corps d'une analyse IA ----
+   ⚠️ Le corps d'une analyse n'avait AUCUNE taille de police : il héritait des
+   16 px de la racine, quand le reste du back-office lit à 13-13,5 px (tableaux,
+   champs, paragraphes de carte). L'analyse - un AVIS du modèle - s'affichait
+   donc plus grand que la réclamation qu'elle commente. La taille se pose ICI,
+   sur le conteneur, et jamais champ par champ : les quatre formes d'une analyse
+   (résumé, résolution, étapes, motif) doivent rester à la même échelle. */
+.admin-page .ukc-claim-analyse { font-size: 13.5px; }
+
 /* ---- Réclamations : analyses IA précédentes, repliées ----
    ⚠️ Empilées, dix analyses faisaient une page entière à faire défiler, et la
    plus récente - la seule qu'on vient lire - s'y perdait. Seule la dernière
